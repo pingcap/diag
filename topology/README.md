@@ -14,9 +14,12 @@
 ```json
 {
     "status": "success|exception",    // 表示本次检测任务的正常与否
+    "message": "异常信息，若为success则可为空",
     "hosts": [{                       // 若status为success则列表不为空
         "ip": "1.1.1.1",
         "user": "见说明",
+        "status": "success|exception",
+        "message": "异常信息，若为success则可为空",
         "components": [{
             "name": "tidb",
             "port": 4000              // 端口号用于标示进程
@@ -26,6 +29,8 @@
         }]
     }, {
         "ip": "1.1.1.2",
+        "status": "success|exception",
+        "message": "异常信息，若为success则可为空",
         "user": "见说明",
         "components": [{
             "name": "tidb",
