@@ -8,15 +8,6 @@ import (
 )
 
 const INIT = `
-CREATE TABLE IF NOT EXISTS config (
-	id INTEGER PRIMARY KEY AUTOINCREMENT,
-	user VARCHAR(32),
-	user_pass VARCHAR(32),
-	admin VARCHAR(32),
-	admin_pass VARCHAR(32),
-	create_t DATETIME DEFAULT CURRENT_TIMESTAMP
-);
-
 CREATE TABLE IF NOT EXISTS items (
 	name VARCHAR(32),
 	collect INT2,
@@ -25,19 +16,16 @@ CREATE TABLE IF NOT EXISTS items (
 );
 
 CREATE TABLE IF NOT EXISTS instances (
-	id VARCHAR(64),
-	name VARCHAR(32),
-	status VARCHAR(32),
+	id VARCHAR(64) NOT NULL,
+	name VARCHAR(32) NOT NULL,
+	status VARCHAR(32) NOT NULL,
+	user VARCHAR(32) NOT NULL DEFAULT "",
+	tidb VARCHAR(256) NOT NULL DEFAULT "",
+	tikv VARCHAR(256) NOT NULL DEFAULT "",
+	pd VARCHAR(256) NOT NULL DEFAULT "",
+	grafana VARCHAR(256) NOT NULL DEFAULT "",
+	prometheus VARCHAR(256) NOT NULL DEFAULT "",
 	create_t DATETIME DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE TABLE IF NOT EXISTS instance_topology (
-	instance_id VARCHAR(64),
-	tidb VARCHAR(256),
-	tikv VARCHAR(256),
-	pd VARCHAR(256),
-	grafana VARCHAR(256),
-	prometheus VARCHAR(256)
 );
 
 CREATE TABLE IF NOT EXISTS inspections (
@@ -45,16 +33,12 @@ CREATE TABLE IF NOT EXISTS inspections (
 	instance VARCHAR(64),
 	status VARCHAR(32),
 	type VARCHAR(16),
-	create_t DATETIME DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE TABLE IF NOT EXISTS inspection_topology (
-	inspection_id VARCHAR(64),
 	tidb VARCHAR(256),
 	tikv VARCHAR(256),
 	pd VARCHAR(256),
 	grafana VARCHAR(256),
-	prometheus VARCHAR(256)
+	prometheus VARCHAR(256),
+	create_t DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 `
 

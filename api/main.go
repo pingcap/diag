@@ -11,6 +11,7 @@ import (
 func main() {
 	homepath := flag.String("home", "/tmp/tidb-foresight", "tidb-foresight work home")
 	address := flag.String("address", "0.0.0.0:8888", "tidb foresight listen address")
+	//pioneer := flag.String("pioneer", "ls", "tool to parse inventory.ini and get basic cluster info")
 
 	flag.Parse()
 

@@ -36,7 +36,7 @@ func (s *Server) upload(w http.ResponseWriter, r *http.Request) {
 
 	// Create a temporary file within our temp-images directory that follows
 	// a particular naming pattern
-	localFile, err := os.Create(path.Join(s.home, "static", handler.Filename))
+	localFile, err := os.Create(path.Join(s.config.Home, "static", handler.Filename))
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		log.Error(err)
