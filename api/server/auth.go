@@ -1,12 +1,15 @@
 package server
 
 import (
+	"context"
 	"crypto/sha1"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"time"
+
+	"github.com/pingcap/tidb-foresight/utils"
 
 	log "github.com/sirupsen/logrus"
 )
@@ -18,19 +21,30 @@ type AuthInfo struct {
 	Signature string `json:"signature"`
 }
 
-func (s *Server) authFunc(next func(http.ResponseWriter, *http.Request)) http.Handler {
+func (s *Server) auth(ctx context.Context, r *http.Request) (context.Context, error) {
+	cookie, err := r.Cookie("tidb-foresight-auth")
+	if err != nil {
+		log.Error("parse cookie in self identity: ", err)
+		return ctx, utils.NewForesightError(http.StatusForbidden, "COOKIE_MISSING", "用户Cookie缺失，禁止访问")
+	}
 
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		log.Info("enter auth")
-		next(w, r)
-	})
-}
+	decoded, err := base64.StdEncoding.DecodeString(cookie.Value)
+	if err != nil {
+		log.Error("decode cookie failed: ", err)
+		return ctx, utils.NewForesightError(http.StatusBadRequest, "DECODE_B64_ERROR", "无法解析的Cookie")
+	}
 
-func (s *Server) auth(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		log.Info("enter auth")
-		next.ServeHTTP(w, r)
-	})
+	authInfo := AuthInfo{}
+	err = json.Unmarshal(decoded, &authInfo)
+	if err != nil {
+		log.Error("unmarshal json failed: ", err)
+		return ctx, utils.NewForesightError(http.StatusBadRequest, "DECODE_JSON_ERROR", "无法解析的Cookie")
+	}
+
+	ctx = context.WithValue(ctx, "user_name", authInfo.UserName)
+	ctx = context.WithValue(ctx, "user_role", authInfo.Role)
+
+	return ctx, nil
 }
 
 func setAuthCookie(w http.ResponseWriter, user, role, token string) {
@@ -59,13 +73,8 @@ func setAuthCookie(w http.ResponseWriter, user, role, token string) {
 	})
 	log.Info(role, " login successfully")
 	w.WriteHeader(http.StatusOK)
+	w.Write([]byte(`{"status": "OK", "message": "success"}`))
 }
-
-/*
-func checkAuthCookie(r *http.Request) bool {
-
-}
-*/
 
 func (s *Server) login(w http.ResponseWriter, r *http.Request) {
 	usernames, ok := r.URL.Query()["username"]
@@ -96,21 +105,20 @@ func (s *Server) login(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (s *Server) me(w http.ResponseWriter, r *http.Request) {
-	cookie, err := r.Cookie("tidb-foresight-auth")
-	if err != nil {
-		log.Error("parse cookie in self identity: ", err)
-	}
-
-	decoded, err := base64.StdEncoding.DecodeString(cookie.Value)
-	if err != nil {
-		log.Error("decode cookie failed: ", err)
-		w.WriteHeader(http.StatusInternalServerError)
-		w.Write([]byte(`{"status": "UKNOWN_ERROR", "message": "获取用户信息时发生未知错误"}`))
-		return
-	}
-	log.Info(string(decoded))
+func (s *Server) me(ctx context.Context) (map[string]string, error) {
+	return map[string]string{
+		"user": ctx.Value("user_name").(string),
+		"role": ctx.Value("user_role").(string),
+	}, nil
 }
 
-func (s *Server) logout(http.ResponseWriter, *http.Request) {
+func (s *Server) logout(w http.ResponseWriter, r *http.Request) {
+	http.SetCookie(w, &http.Cookie{
+		Name:   "tidb-foresight-auth",
+		Value:  "",
+		MaxAge: 0,
+	})
+
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte(`{"status": "OK", "message": "success"}`))
 }

@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/gorilla/mux"
+	"github.com/pingcap/fn"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -50,10 +51,16 @@ func (s *Server) CreateRouter() http.Handler {
 	r := mux.NewRouter()
 	AttachProfiler(r)
 
-	// instance
-	r.HandleFunc("/instances", s.listInstance).Methods("GET")
+	fn.Plugin(s.auth)
 
+	// instance
+	r.Handle("/instances", fn.Wrap(s.listInstance)).Methods("GET")
+	r.Handle("/instances", fn.Wrap(s.createInstance)).Methods("POST")
+	r.Handle("/instances/{id}", fn.Wrap(s.deleteInstance)).Methods("DELETE")
+
+	// auth
 	r.HandleFunc("/login", s.login).Methods("GET")
+	r.Handle("/me", fn.Wrap(s.me)).Methods("GET")
 	r.HandleFunc("/logout", s.logout).Methods("GET")
 	r.HandleFunc("/ping", s.ping).Methods("GET")
 	r.HandleFunc("/upload", s.upload)
