@@ -15,6 +15,9 @@
 {
     "status": "success|exception",    // 表示本次检测任务的正常与否
     "message": "异常信息，若为success则可为空",
+    "deploy_dir": "inventory文件中的deploy_dir变量",
+    "ansible_user": "inventory文件中的ansible_user变量",
+    "cluster_name": "inventory文件中的cluster_name变量",
     "hosts": [{                       // 若status为success则列表不为空
         "ip": "1.1.1.1",
         "user": "见说明",
