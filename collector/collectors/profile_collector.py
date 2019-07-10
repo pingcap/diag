@@ -23,7 +23,7 @@ class PProfHTTPCollector(HTTPCollector):
 
 
 class CPUProfileCollector(PProfHTTPCollector):
-    def __init__(self, name='cpuprofile', addr='172.0.0.1:6060',
+    def __init__(self, name='cpuprofile', addr='127.0.0.1:6060',
                  path='/debug/pprof/profile', params={'seconds': 10}):
         PProfHTTPCollector.__init__(self, name, addr, path, params)
 
