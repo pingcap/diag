@@ -5,6 +5,10 @@ import socket
 
 
 class PProfHTTPCollector(HTTPCollector):
+    """PProfHTTPCollector is a collector to
+    collect profiles from go pprof
+    """
+
     def __init__(self, name='pprof', addr='127.0.0.1:6060',
                  path='/debug/pprof', params={}):
         HTTPCollector.__init__(self, name, addr, path, params)
@@ -67,6 +71,7 @@ class TraceProfileCollector(PProfHTTPCollector):
 
 
 def setup_pprof_collectors(addr='127.0.0.1:6060'):
+    """Setup all pprof related collectors for a host"""
     collectors = [
         CPUProfileCollector(addr),
         MemProfileCollector(addr),
