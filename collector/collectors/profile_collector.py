@@ -1,32 +1,9 @@
-from collector import Collector
+# coding: utf8
+from collector import Collector, HTTPCollector
 import urllib
 import urllib2
 import uuid
 import socket
-
-
-class HTTPCollector(Collector):
-    def __init__(self, name='http', addr='172.0.0.1:80',
-                 path='/', params={}):
-        self.id = uuid.uuid4()
-        self.name = name
-        self.addr = addr
-        self.path = path
-        self.params = params
-
-    def __repr__(self):
-        return "%s %s %s" % (self.id, self.name, self.url())
-
-    def url(self):
-        params = ""
-        if len(self.params) > 0:
-            params = "?" + urllib.urlencode(self.params)
-        url = "http://%s%s%s" % (self.addr, self.path, params)
-        return url
-
-    def collect(self):
-        f = urllib2.urlopen(self.url())
-        return f.read()
 
 
 class PProfHTTPCollector(HTTPCollector):
@@ -89,6 +66,19 @@ class TraceProfileCollector(PProfHTTPCollector):
     def __init__(self, name='traceprofile', addr='127.0.0.1:6060',
                  path='/debug/pprof/trace', params={}):
         PProfHTTPCollector.__init__(self, name, addr, path, params)
+
+
+def setup_pprof_collectors(addr='127.0.0.1:6060'):
+    collectors = [
+        CPUProfileCollector(addr),
+        MemProfileCollector(addr),
+        BlockProfileCollector(addr),
+        AllocsProfileCollector(addr),
+        MutexProfileCollector(addr),
+        TheadCreateProfileCollector(addr),
+        TraceProfileCollector(addr)
+    ]
+    return collectors
 
 
 if __name__ == "__main__":
