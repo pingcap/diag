@@ -28,7 +28,7 @@ class HTTPCollector(Collector):
     def __repr__(self):
         return "%s %s %s" % (self.name, self.id, self.url())
 
-    def url(self):
+    def _url(self):
         params = ""
         if len(self.params) > 0:
             params = "?" + urllib.urlencode(self.params)
@@ -36,5 +36,5 @@ class HTTPCollector(Collector):
         return url
 
     def collect(self):
-        f = urllib2.urlopen(self.url())
+        f = urllib2.urlopen(self._url())
         return f.read()

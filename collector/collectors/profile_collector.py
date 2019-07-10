@@ -14,7 +14,7 @@ class PProfHTTPCollector(HTTPCollector):
         if seconds != None:
             timeout = float(seconds) + 10
             socket.setdefaulttimeout(timeout)
-        f = urllib2.urlopen(self.url())
+        f = urllib2.urlopen(self._url())
         return f.read()
 
 
