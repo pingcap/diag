@@ -1,6 +1,5 @@
 # coding: utf8
 from collector import Collector, HTTPCollector
-import urllib
 import urllib2
 import socket
 

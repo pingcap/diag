@@ -1,5 +1,7 @@
 # coding:utf8
 import uuid
+import urllib
+import urllib2
 
 
 class Collector:
