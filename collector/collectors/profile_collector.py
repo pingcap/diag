@@ -73,13 +73,13 @@ class TraceProfileCollector(PProfHTTPCollector):
 def setup_pprof_collectors(addr='127.0.0.1:6060'):
     """Setup all pprof related collectors for a host"""
     collectors = [
-        CPUProfileCollector(addr),
-        MemProfileCollector(addr),
-        BlockProfileCollector(addr),
-        AllocsProfileCollector(addr),
-        MutexProfileCollector(addr),
-        TheadCreateProfileCollector(addr),
-        TraceProfileCollector(addr)
+        CPUProfileCollector(addr=addr),
+        MemProfileCollector(addr=addr),
+        BlockProfileCollector(addr=addr),
+        AllocsProfileCollector(addr=addr),
+        MutexProfileCollector(addr=addr),
+        ThreadCreateProfileCollector(addr=addr),
+        TraceProfileCollector(addr=addr)
     ]
     return collectors
 
