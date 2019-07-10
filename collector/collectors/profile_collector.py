@@ -58,8 +58,8 @@ class MutexProfileCollector(PProfHTTPCollector):
         PProfHTTPCollector.__init__(self, name, addr, path)
 
 
-class TheadCreateProfileCollector(PProfHTTPCollector):
-    def __init__(self, name='threadcreateprofile', addr='127.0.0.1:6060',
+class ThreadCreateProfileCollector(PProfHTTPCollector):
+    def __init__(self, name='threadprofile', addr='127.0.0.1:6060',
                  path='/debug/pprof/threadcreate'):
         PProfHTTPCollector.__init__(self, name, addr, path)
 
