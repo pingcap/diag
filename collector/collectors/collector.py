@@ -26,7 +26,7 @@ class HTTPCollector(Collector):
         self.params = params
 
     def __repr__(self):
-        return "%s %s %s" % (self.name, self.id, self.url())
+        return "%s %s %s" % (self.name, self.id, self._url())
 
     def _url(self):
         params = ""
