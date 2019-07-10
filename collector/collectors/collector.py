@@ -1,4 +1,7 @@
 # coding:utf8
+import uuid
+
+
 class Collector:
     """The base collector which define the necessary attributes and methods"""
 

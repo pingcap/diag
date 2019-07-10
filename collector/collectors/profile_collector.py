@@ -2,7 +2,6 @@
 from collector import Collector, HTTPCollector
 import urllib
 import urllib2
-import uuid
 import socket
 
 

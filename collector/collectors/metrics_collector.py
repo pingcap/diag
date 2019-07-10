@@ -1,5 +1,5 @@
 # coding: utf8
-from collector import Collector
+from collector import Collector, HTTPCollector
 
 
 class MetricsCollector(Collector):
