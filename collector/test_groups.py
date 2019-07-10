@@ -1,7 +1,7 @@
 # coding: utf8
 import unittest
 from groups import CollectorGroup
-from collector import Collector
+from collectors import Collector
 
 
 class TestCollectorGroup(unittest.TestCase):
