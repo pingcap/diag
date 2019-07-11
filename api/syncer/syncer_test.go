@@ -67,10 +67,7 @@ var topologyJsonExample = `
                     "status": "success", 
                     "deploy_dir": "/data1/liubo/deploy", 
                     "name": "tidb", 
-                    "port": [
-                        "14000", 
-                        "30080"
-                    ]
+                    "port": "14000"
                 }, 
                 {
                     "status": "success", 
@@ -189,37 +186,49 @@ func (s *SyncTestSuit) TestClusterParseFile(c *C) {
 						Status:    "success",
 						DeployDir: "/data1/liubo/deploy",
 						Name:      "node_exporter",
+						Port:      "39100",
 					},
 					{
 						Status:    "success",
 						DeployDir: "/data1/liubo/deploy",
-						Name:      "blackbox_exporter"},
+						Name:      "blackbox_exporter",
+						Port:      "39115",
+					},
 					{
 						Status:    "success",
 						DeployDir: "/data1/liubo/deploy",
-						Name:      "prometheus"},
+						Name:      "prometheus",
+						Port:      "39090",
+					},
 					{
 						Status:    "success",
 						DeployDir: "/data1/liubo/deploy",
-						Name:      "pushgateway"},
+						Name:      "pushgateway",
+						Port:      "39091",
+					},
 					{
 						Status:    "success",
 						DeployDir: "/data1/liubo/deploy",
-						Name:      "pd"},
+						Name:      "pd",
+						Port:      "32379",
+					},
 					{
 						Status:    "success",
 						DeployDir: "/data1/liubo/deploy",
 						Name:      "tidb",
+						Port:      "14000",
 					},
 					{
 						Status:    "success",
 						DeployDir: "/data1/liubo/deploy",
 						Name:      "grafana",
+						Port:      "12325",
 					},
 					{
 						Status:    "success",
 						DeployDir: "/data1/liubo/deploy",
 						Name:      "tikv",
+						Port:      "30160",
 					},
 				},
 				Message: "",
@@ -234,16 +243,19 @@ func (s *SyncTestSuit) TestClusterParseFile(c *C) {
 						Status:    "success",
 						DeployDir: "/data1/liubo/deploy",
 						Name:      "node_exporter",
+						Port:      "39100",
 					},
 					{
 						Status:    "success",
 						DeployDir: "/data1/liubo/deploy",
 						Name:      "blackbox_exporter",
+						Port:      "39115",
 					},
 					{
 						Status:    "success",
 						DeployDir: "/data1/liubo/deploy",
 						Name:      "tikv",
+						Port:      "30160",
 					},
 				},
 				Message: "",
@@ -253,16 +265,24 @@ func (s *SyncTestSuit) TestClusterParseFile(c *C) {
 				Ip:         "10.0.1.11",
 				EnableSudo: true,
 				User:       "tidb",
-				Components: []component{{
-					Status:    "success",
-					DeployDir: "/data1/liubo/deploy",
-					Name:      "node_exporter"}, {Status: "success",
-					DeployDir: "/data1/liubo/deploy",
-					Name:      "blackbox_exporter"},
+				Components: []component{
+					{
+						Status:    "success",
+						DeployDir: "/data1/liubo/deploy",
+						Name:      "node_exporter",
+						Port:      "39100",
+					},
+					{
+						Status:    "success",
+						DeployDir: "/data1/liubo/deploy",
+						Name:      "blackbox_exporter",
+						Port:      "39115",
+					},
 					{
 						Status:    "success",
 						DeployDir: "/data1/liubo/deploy",
 						Name:      "tikv",
+						Port:      "30160",
 					},
 				},
 				Message: ""},
@@ -277,19 +297,102 @@ func (s *SyncTestSuit) TestClusterParseFile(c *C) {
 		},
 	}
 	if !reflect.DeepEqual(s.cluster, expect) {
-		c.Fatalf("want %+v, get %+v\n", expect, s.cluster)
+		c.Fatalf("want %#+v, get %#+v\n", expect, s.cluster)
 	}
 }
 
 func (s *SyncTestSuit) TestClusterParserSyncTasks(c *C) {
 	targetDir := "."
 	tasks := s.cluster.parseSyncTasks(targetDir, s.uuid)
-	expect := make(syncTasks)
-	expect["tidb@10.0.1.11:/data1/liubo/deploy/log/"] = "f5f1ef3c-de65-439d-8d9c-b25e92b455be/10.0.1.11"
-	expect["tidb@10.0.1.8:/data1/liubo/deploy/log/"] = "f5f1ef3c-de65-439d-8d9c-b25e92b455be/10.0.1.8"
-	expect["tidb@10.0.1.9:/data1/liubo/deploy/log/"] = "f5f1ef3c-de65-439d-8d9c-b25e92b455be/10.0.1.9"
+	expect := syncTasks{
+		"f5f1ef3c-de65-439d-8d9c-b25e92b455be_10.0.1.11_blackbox_exporter_39115":
+		syncTask{
+			From:    "tidb@10.0.1.11:/data1/liubo/deploy/log/",
+			To:      "f5f1ef3c-de65-439d-8d9c-b25e92b455be/10.0.1.11/blackbox_exporter-39115",
+			Filters: []string{"blackbox_exporter*"},
+		},
+		"f5f1ef3c-de65-439d-8d9c-b25e92b455be_10.0.1.11_node_exporter_39100":
+		syncTask{
+			From:    "tidb@10.0.1.11:/data1/liubo/deploy/log/",
+			To:      "f5f1ef3c-de65-439d-8d9c-b25e92b455be/10.0.1.11/node_exporter-39100",
+			Filters: []string{"node_exporter*"},
+		},
+		"f5f1ef3c-de65-439d-8d9c-b25e92b455be_10.0.1.11_tikv_30160":
+		syncTask{
+			From:    "tidb@10.0.1.11:/data1/liubo/deploy/log/",
+			To:      "f5f1ef3c-de65-439d-8d9c-b25e92b455be/10.0.1.11/tikv-30160",
+			Filters: []string{"tikv*"},
+		},
+		"f5f1ef3c-de65-439d-8d9c-b25e92b455be_10.0.1.8_blackbox_exporter_39115":
+		syncTask{
+			From:    "tidb@10.0.1.8:/data1/liubo/deploy/log/",
+			To:      "f5f1ef3c-de65-439d-8d9c-b25e92b455be/10.0.1.8/blackbox_exporter-39115",
+			Filters: []string{"blackbox_exporter*"},
+		},
+		"f5f1ef3c-de65-439d-8d9c-b25e92b455be_10.0.1.8_grafana_12325":
+		syncTask{
+			From:    "tidb@10.0.1.8:/data1/liubo/deploy/log/",
+			To:      "f5f1ef3c-de65-439d-8d9c-b25e92b455be/10.0.1.8/grafana-12325",
+			Filters: []string{"grafana*"},
+		},
+		"f5f1ef3c-de65-439d-8d9c-b25e92b455be_10.0.1.8_node_exporter_39100":
+		syncTask{
+			From:    "tidb@10.0.1.8:/data1/liubo/deploy/log/",
+			To:      "f5f1ef3c-de65-439d-8d9c-b25e92b455be/10.0.1.8/node_exporter-39100",
+			Filters: []string{"node_exporter*"},
+		},
+		"f5f1ef3c-de65-439d-8d9c-b25e92b455be_10.0.1.8_pd_32379":
+		syncTask{
+			From:    "tidb@10.0.1.8:/data1/liubo/deploy/log/",
+			To:      "f5f1ef3c-de65-439d-8d9c-b25e92b455be/10.0.1.8/pd-32379",
+			Filters: []string{"pd*"},
+		},
+		"f5f1ef3c-de65-439d-8d9c-b25e92b455be_10.0.1.8_prometheus_39090":
+		syncTask{
+			From:    "tidb@10.0.1.8:/data1/liubo/deploy/log/",
+			To:      "f5f1ef3c-de65-439d-8d9c-b25e92b455be/10.0.1.8/prometheus-39090",
+			Filters: []string{"prometheus*", "alertmanager*"},
+		},
+		"f5f1ef3c-de65-439d-8d9c-b25e92b455be_10.0.1.8_pushgateway_39091":
+		syncTask{
+			From:    "tidb@10.0.1.8:/data1/liubo/deploy/log/",
+			To:      "f5f1ef3c-de65-439d-8d9c-b25e92b455be/10.0.1.8/pushgateway-39091",
+			Filters: []string{"pushgateway*"},
+		},
+		"f5f1ef3c-de65-439d-8d9c-b25e92b455be_10.0.1.8_tidb_14000":
+		syncTask{
+			From:    "tidb@10.0.1.8:/data1/liubo/deploy/log/",
+			To:      "f5f1ef3c-de65-439d-8d9c-b25e92b455be/10.0.1.8/tidb-14000",
+			Filters: []string{"tidb*"},
+		},
+		"f5f1ef3c-de65-439d-8d9c-b25e92b455be_10.0.1.8_tikv_30160":
+		syncTask{
+			From:    "tidb@10.0.1.8:/data1/liubo/deploy/log/",
+			To:      "f5f1ef3c-de65-439d-8d9c-b25e92b455be/10.0.1.8/tikv-30160",
+			Filters: []string{"tikv*"},
+		},
+		"f5f1ef3c-de65-439d-8d9c-b25e92b455be_10.0.1.9_blackbox_exporter_39115":
+		syncTask{
+			From:    "tidb@10.0.1.9:/data1/liubo/deploy/log/",
+			To:      "f5f1ef3c-de65-439d-8d9c-b25e92b455be/10.0.1.9/blackbox_exporter-39115",
+			Filters: []string{"blackbox_exporter*"},
+		},
+		"f5f1ef3c-de65-439d-8d9c-b25e92b455be_10.0.1.9_node_exporter_39100":
+		syncTask{
+			From:    "tidb@10.0.1.9:/data1/liubo/deploy/log/",
+			To:      "f5f1ef3c-de65-439d-8d9c-b25e92b455be/10.0.1.9/node_exporter-39100",
+			Filters: []string{"node_exporter*"},
+		},
+		"f5f1ef3c-de65-439d-8d9c-b25e92b455be_10.0.1.9_tikv_30160":
+		syncTask{
+			From:    "tidb@10.0.1.9:/data1/liubo/deploy/log/",
+			To:      "f5f1ef3c-de65-439d-8d9c-b25e92b455be/10.0.1.9/tikv-30160",
+			Filters: []string{"tikv*"},
+		},
+	}
+
 	if !reflect.DeepEqual(tasks, expect) {
-		c.Fatalf("want %+v, get %+v\n", expect, tasks)
+		c.Fatalf("want %+v\n, get %#+v\n", expect, tasks)
 	}
 }
 
@@ -309,15 +412,25 @@ func (s *SyncTestSuit) TestClusterCallRsync(c *C) {
 		c.Fatal(err)
 	}
 
-	f, err := os.Create(path.Join(deployDir,"test.json"))
-	if err != nil {
-		c.Fatal(err)
+	fileList := []string{
+		"tikv.log",
+		"tikv_stderr.log",
 	}
-	defer f.Close()
+	for _, filename := range fileList {
+		f, err := os.Create(path.Join(deployDir, filename))
+		if err != nil {
+			c.Fatal(err)
+		}
+		f.Close()
+	}
 
-	tasks := make(syncTasks)
-	tasks[deployDir] = targetDir
-
+	tasks := syncTasks{
+		"test": syncTask{
+			From:    deployDir,
+			To:      targetDir,
+			Filters: []string{"tikv*"},
+		},
+	}
 	rsyncCfg := rsyncConfig{
 		Args: []string{"-avz", fmt.Sprintf("--bwlimit=%d", 1000)},
 	}
@@ -325,7 +438,9 @@ func (s *SyncTestSuit) TestClusterCallRsync(c *C) {
 	if err != nil {
 		c.Fatal(err)
 	}
-	if _, err := os.Stat(path.Join(targetDir,"test.json")); os.IsNotExist(err) {
-		c.Fatal("failed to rsync, file in target folder is not exist")
+	for _, filename := range fileList {
+		if _, err := os.Stat(path.Join(targetDir, filename)); os.IsNotExist(err) {
+			c.Fatalf("failed to rsync, file %s in target folder is not exist.\n", filename)
+		}
 	}
 }

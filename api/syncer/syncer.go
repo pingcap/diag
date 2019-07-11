@@ -52,7 +52,7 @@ type component struct {
 	Status    string
 	DeployDir string `json:"deploy_dir"`
 	Name      string
-	// Port string | []string
+	Port string       // []string
 }
 
 func Sync(topoDir string, targetDir string, interval time.Duration, bwlimit int) error {
@@ -60,7 +60,7 @@ func Sync(topoDir string, targetDir string, interval time.Duration, bwlimit int)
 	rsyncCfg := rsyncConfig{
 		Args: []string{"-avz", fmt.Sprintf("--bwlimit=%d", bwlimit)},
 	}
-	err := watchDir(topoDir, targetDir, rsyncCfg)
+	err := watchDir(topoDir, targetDir, rsyncCfg, interval)
 	if err != nil {
 		return err
 	}
@@ -68,7 +68,7 @@ func Sync(topoDir string, targetDir string, interval time.Duration, bwlimit int)
 	return nil
 }
 
-func watchDir(topoDir string, targetDir string, rsyncCfg rsyncConfig) error {
+func watchDir(topoDir string, targetDir string, rsyncCfg rsyncConfig, interval time.Duration) error {
 	var g errgroup.Group
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
@@ -86,10 +86,11 @@ func watchDir(topoDir string, targetDir string, rsyncCfg rsyncConfig) error {
 				if (event.Op&fsnotify.Write == fsnotify.Write) ||
 					(event.Op&fsnotify.Create == fsnotify.Create) {
 					log.Println("topology file modified:", event.Name)
-					// 解析 json 文件
 					changedFile := event.Name
 					uuid := strings.TrimSuffix(changedFile, filepath.Ext(changedFile))
 					c := cluster{}
+
+					// 解析 json 文件
 					err := c.parseFile(changedFile)
 					if err != nil {
 						return err
@@ -97,11 +98,14 @@ func watchDir(topoDir string, targetDir string, rsyncCfg rsyncConfig) error {
 
 					// 需要同步的机器（和路径）和对应的 deploy 目录
 					syncTasks := c.parseSyncTasks(targetDir, uuid)
+
 					// 调用 rsync 进行同步
 					err = callRsync(syncTasks, rsyncCfg)
 					if err != nil {
 						return err
 					}
+					// 休息一段时间，再重新重新回到这个流程
+					time.Sleep(interval)
 				}
 			case err, ok := <-watcher.Errors:
 				if !ok {
@@ -129,9 +133,20 @@ func (c *cluster) parseFile(fileName string) error {
 
 // syncTasks inform a pair of folder path
 // rsync use them to collect log from each host to localhost
-// Key:   src_path
-// Value: dist_path
-type syncTasks map[string]string
+// Key:   {cluster_uuid}_{host_ip}_{component_name}_{component_port}
+// Value: syncTask {
+//		From:    src_path
+//		To:      dist_path
+//		Filters: log file name pattern
+// }
+type syncTasks map[string]syncTask
+
+type syncTask struct {
+	From string
+	To string
+	Filters []string
+	Status string
+}
 
 func (c *cluster) parseSyncTasks(targetDir string, uuid string) syncTasks {
 	tasks := make(syncTasks)
@@ -141,22 +156,37 @@ func (c *cluster) parseSyncTasks(targetDir string, uuid string) syncTasks {
 			continue
 		}
 		for _, component := range host.Components {
-			// {user}@ip:{deploy}/log
+			// {cluster_uuid}_{host_ip}_{component_name}_{component_port}
+			key := fmt.Sprintf("%s_%s_%s_%s", uuid, host.Ip, component.Name,component.Port)
+			// {user}@{host_ip}:{deploy_dir}/log
 			from := fmt.Sprintf("%s@%s:%s/log/", host.User, host.Ip, component.DeployDir)
-			// {target_dir}/{cluster_uuid}/{host_ip}
-			to := path.Join(targetDir, uuid, host.Ip)
-			tasks[from] = to
+
+			folderName := fmt.Sprintf("%s-%s", component.Name, component.Port)
+			// {target_dir}/{cluster_uuid}/{host_ip}/{component_name}-{component_port}
+			to := path.Join(targetDir, uuid, host.Ip, folderName)
+			// log file filter pattern, e.g. "tikv*"
+			filters := []string{component.Name + "*"}
+			if pattern, ok := componentPattern[component.Name]; ok {
+				filters = append(filters, pattern + "*")
+			}
+			tasks[key] = syncTask{
+				From: from,
+				To: to,
+				Filters: filters,
+			}
 		}
 	}
 	return tasks
 }
 
 func callRsync(tasks syncTasks, cfg rsyncConfig) error {
-	// TODO: 控制同步时间间隔
 	var g errgroup.Group
-	for from, to := range tasks {
+	for _, task := range tasks {
 		g.Go(func() error {
-			args := append(cfg.Args, from, to)
+			for _, v := range task.Filters {
+				cfg.Args = append(cfg.Args, fmt.Sprintf("--include=\"%s\"", v))
+			}
+			args := append(cfg.Args, task.From, task.To)
 			cmd := exec.Command("rsync", args...)
 			cmd.Stdout = os.Stdout
 			cmd.Stderr = os.Stderr
