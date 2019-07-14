@@ -1,20 +1,13 @@
 package syncer
 
 import (
+	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
-	"golang.org/x/sync/errgroup"
 	"io/ioutil"
-	"log"
 	"os"
-	"os/exec"
 	"path"
-	"path/filepath"
-	"strings"
 	"time"
-
-	"github.com/fsnotify/fsnotify"
 )
 
 /*
@@ -26,177 +19,124 @@ import (
  * rsync命令行参数支持bwlimit
  */
 
-type rsyncConfig struct {
+type RsyncConfig struct {
 	Args []string
 	From string
 	To   string
 }
 
-type cluster struct {
+func Sync(topoDir string, targetDir string, interval time.Duration, bwlimit int) error {
+	watcher := Watcher{
+		topoDir,
+		targetDir,
+	}
+	manager := TaskManager{
+		Interval: interval,
+		Cfg: RsyncConfig{
+			Args: []string{"-avz", fmt.Sprintf("--bwlimit=%d", bwlimit)},
+		},
+	}
+	// watch 指定目录，发生改变时，重新扫描所有文件，构造新的 rsync 任务列表，传递给 manager
+	err := watcher.watch(manager)
+	if err != nil {
+		return err
+	}
+	// 解析新的任务列表，cancel 旧任务，运行新添加任务
+	go manager.Start()
+	return nil
+}
+
+type Cluster struct {
 	Name    string `json:"cluster_name"`
 	Status  string
 	Message string
-	Hosts   []host
+	Hosts   []Host
 }
 
-type host struct {
+type Host struct {
 	Status     string
 	Ip         string
 	EnableSudo bool `json:"enable_sudo"`
 	User       string
-	Components []component
+	Components []Component
 	Message    string
 }
 
-type component struct {
+type Component struct {
 	Status    string
 	DeployDir string `json:"deploy_dir"`
 	Name      string
-	Port string       // []string
+	Port      string
 }
 
-func Sync(topoDir string, targetDir string, interval time.Duration, bwlimit int) error {
-	// watch 指定目录，当改变时，解析文件，然后调用 rsync
-	rsyncCfg := rsyncConfig{
-		Args: []string{"-avz", fmt.Sprintf("--bwlimit=%d", bwlimit)},
-	}
-	err := watchDir(topoDir, targetDir, rsyncCfg, interval)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func watchDir(topoDir string, targetDir string, rsyncCfg rsyncConfig, interval time.Duration) error {
-	var g errgroup.Group
-	watcher, err := fsnotify.NewWatcher()
-	if err != nil {
-		return err
-	}
-
-	g.Go(func() error {
-		for {
-			select {
-			case event, ok := <-watcher.Events:
-				if !ok {
-					return errors.New("failed to receive watcher events")
-				}
-				log.Println("event:", event)
-				if (event.Op&fsnotify.Write == fsnotify.Write) ||
-					(event.Op&fsnotify.Create == fsnotify.Create) {
-					log.Println("topology file modified:", event.Name)
-					changedFile := event.Name
-					uuid := strings.TrimSuffix(changedFile, filepath.Ext(changedFile))
-					c := cluster{}
-
-					// 解析 json 文件
-					err := c.parseFile(changedFile)
-					if err != nil {
-						return err
-					}
-
-					// 需要同步的机器（和路径）和对应的 deploy 目录
-					syncTasks := c.parseSyncTasks(targetDir, uuid)
-
-					// 调用 rsync 进行同步
-					err = callRsync(syncTasks, rsyncCfg)
-					if err != nil {
-						return err
-					}
-					// 休息一段时间，再重新重新回到这个流程
-					time.Sleep(interval)
-				}
-			case err, ok := <-watcher.Errors:
-				if !ok {
-					return err
-				}
-			}
-		}
-	})
-
-	err = watcher.Add(topoDir)
-	if err != nil {
-		return err
-	}
-	return g.Wait()
-}
-
-func (c *cluster) parseFile(fileName string) error {
+func NewCluster(fileName string) (*Cluster, error) {
+	c := &Cluster{}
 	f, err := os.Open(fileName)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	b, _ := ioutil.ReadAll(f)
-	return json.Unmarshal(b, &c)
+	err = json.Unmarshal(b, c)
+	if err != nil {
+		return nil, err
+	}
+	return c, nil
 }
 
-// syncTasks inform a pair of folder path
-// rsync use them to collect log from each host to localhost
-// Key:   {cluster_uuid}_{host_ip}_{component_name}_{component_port}
-// Value: syncTask {
-//		From:    src_path
-//		To:      dist_path
-//		Filters: log file name pattern
-// }
-type syncTasks map[string]syncTask
-
-type syncTask struct {
-	From string
-	To string
-	Filters []string
-	Status string
-}
-
-func (c *cluster) parseSyncTasks(targetDir string, uuid string) syncTasks {
-	tasks := make(syncTasks)
-	// 构造去重的 syncTasks
+func (c *Cluster) LoadTasks(targetDir, uuid string) []SyncTask {
+	var tasks []SyncTask
 	for _, host := range c.Hosts {
 		if host.Status != "success" {
 			continue
 		}
 		for _, component := range host.Components {
 			// {cluster_uuid}_{host_ip}_{component_name}_{component_port}
-			key := fmt.Sprintf("%s_%s_%s_%s", uuid, host.Ip, component.Name,component.Port)
+			key := fmt.Sprintf("%s_%s_%s_%s", uuid, host.Ip, component.Name, component.Port)
 			// {user}@{host_ip}:{deploy_dir}/log
 			from := fmt.Sprintf("%s@%s:%s/log/", host.User, host.Ip, component.DeployDir)
-
-			folderName := fmt.Sprintf("%s-%s", component.Name, component.Port)
 			// {target_dir}/{cluster_uuid}/{host_ip}/{component_name}-{component_port}
+			folderName := fmt.Sprintf("%s-%s", component.Name, component.Port)
 			to := path.Join(targetDir, uuid, host.Ip, folderName)
 			// log file filter pattern, e.g. "tikv*"
-			filters := []string{component.Name + "*"}
-			if pattern, ok := componentPattern[component.Name]; ok {
-				filters = append(filters, pattern + "*")
+			filters := []string{PatternStr(component.Name)}
+			if patterns, ok := componentPattern[component.Name]; ok {
+				for _, filename := range patterns {
+					filters = append(filters, PatternStr(filename))
+				}
 			}
-			tasks[key] = syncTask{
-				From: from,
-				To: to,
+			task := SyncTask{
+				Key:     key,
+				From:    from,
+				To:      to,
 				Filters: filters,
 			}
+			tasks = append(tasks, task)
 		}
 	}
 	return tasks
 }
 
-func callRsync(tasks syncTasks, cfg rsyncConfig) error {
-	var g errgroup.Group
-	for _, task := range tasks {
-		g.Go(func() error {
-			for _, v := range task.Filters {
-				cfg.Args = append(cfg.Args, fmt.Sprintf("--include=\"%s\"", v))
-			}
-			args := append(cfg.Args, task.From, task.To)
-			cmd := exec.Command("rsync", args...)
-			cmd.Stdout = os.Stdout
-			cmd.Stderr = os.Stderr
-			err := cmd.Run()
-			if err != nil {
-				return err
-			}
-			return nil
-		})
-	}
+func PatternStr(filename string) string {
+	return filename + "*"
+}
 
-	return g.Wait()
+// syncTask inform a pair of folder path
+// rsync use them to collect log from each Host to localhost
+//      Key:     Component identity
+//		From:    src_path
+//		To:      dist_path
+//		Filters: log file name pattern
+// }
+
+type SyncTask struct {
+	Key        string
+	From       string
+	To         string
+	Filters    []string
+	Ctx        context.Context
+	CancelFunc context.CancelFunc
+}
+
+func (s *SyncTask) Cancel() {
+	s.CancelFunc()
 }
