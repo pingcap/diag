@@ -1,6 +1,6 @@
 import unittest
 
-from profile_collector import PProfHTTPCollector, setup_pprof_collectors
+from profile_collector import PProfHTTPCollector
 from profile_collector import CPUProfileCollector, MemProfileCollector
 from profile_collector import BlockProfileCollector, AllocsProfileCollector
 from profile_collector import ThreadCreateProfileCollector, TraceProfileCollector
@@ -53,19 +53,3 @@ class TestPProfHTTPCollector(unittest.TestCase):
         self.assertEqual(c.name, "mutexprofile")
         self.assertEqual(c.addr, '127.0.0.1:6060')
         self.assertEqual(c.path, '/debug/pprof/mutex')
-
-
-class TestUtil(unittest.TestCase):
-    def test_setup_pprof_collectors(self):
-        collectors = setup_pprof_collectors('127.0.0.1:6060')
-        self.assertEqual(len(collectors), 7)
-
-        names = (c.name for c in collectors)
-        for name in names:
-            print name
-            self.assertNotEqual(name, "")
-            self.assertRegexpMatches(name, ".*profile$")
-        addrs = (c.addr for c in collectors)
-        for addr in addrs:
-            print addr
-            self.assertEqual(addr, '127.0.0.1:6060')

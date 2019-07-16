@@ -29,3 +29,15 @@ class FileOutput:
             decode = self.codec.decode
             encode = self.codec.encode
             out.write(encode(decode(content)))
+
+
+class NullOutput:
+    def __init__(self, codec=None):
+        self.codec = codec
+
+    def output(self, content):
+        if self.codec == None:
+            return
+        decode = self.codec.decode
+        encode = self.codec.encode
+        encode(decode(content))
