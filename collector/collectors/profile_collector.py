@@ -1,5 +1,6 @@
 # coding: utf8
 from collector import Collector, HTTPCollector
+from output import FileOutput
 import urllib2
 import socket
 
@@ -87,8 +88,9 @@ def setup_pprof_collectors(addr='127.0.0.1:6060'):
 if __name__ == "__main__":
     c = CPUProfileCollector(addr='127.0.0.1:8000')
     print c
-    print c.collect()
-
+    content = c.collect()
+    FileOutput("pprof/cpuprofile.pb.gz").output(content)
     c = MemProfileCollector(addr='127.0.0.1:8000')
     print c
-    print c.collect()
+    content = c.collect()
+    FileOutput("pprof/memprofile.pb.gz").output(content)
