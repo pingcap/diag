@@ -1,0 +1,52 @@
+export default {
+  'GET /api/v1/instances': [
+    {
+      uuid: '111',
+      name: 'test-cluster',
+      pd: '100.0.0.0:1000, 100.0.0.1:1001, 100.0.0.2:1002',
+      create_time: '2019-07-15T06:24:51Z',
+      status: 'exception',
+      message: 'Failed to connect to the host via ssh',
+    },
+    {
+      uuid: '222',
+      name: 'test-cluster',
+      pd: '100.0.0.0:1000, 100.0.0.1:1001, 100.0.0.2:1002',
+      create_time: '2019-07-15T06:24:51Z',
+      status: 'exception',
+      message: 'Failed to connect to the host via ssh',
+    },
+    {
+      uuid: '333',
+      name: 'test-cluster',
+      pd: '100.0.0.0:1000, 100.0.0.1:1001, 100.0.0.2:1002',
+      create_time: '2019-07-15T06:24:51Z',
+      status: 'exception',
+      message: 'Failed to connect to the host via ssh',
+    },
+    {
+      uuid: '444',
+      name: 'test-cluster',
+      pd: '100.0.0.0:1000, 100.0.0.1:1001, 100.0.0.2:1002',
+      create_time: '2019-07-15T06:24:51Z',
+      status: 'running',
+      message: '',
+    },
+    {
+      uuid: '555',
+      name: 'test-cluster',
+      pd: '100.0.0.0:1000, 100.0.0.1:1001, 100.0.0.2:1002',
+      create_time: '2019-07-15T06:24:51Z',
+      status: 'running',
+      message: '',
+    },
+    {
+      uuid: '666',
+      name: 'test-cluster',
+      pd: '100.0.0.0:1000, 100.0.0.1:1001, 100.0.0.2:1002',
+      create_time: '2019-07-15T06:24:51Z',
+      status: 'running',
+      message: '',
+    },
+  ],
+};

@@ -21,17 +21,17 @@ export default [
           },
           {
             path: '/inspection/instances',
-            name: 'instance list',
+            name: 'instance_list',
             component: './Inspection/InstanceList',
           },
           {
             path: '/inspection/instances/:id/reports',
-            name: 'report list',
+            name: 'report_list',
             component: './Inspection/ReportList',
           },
           {
             path: '/inspection/reports/:id',
-            name: 'report detail',
+            name: 'report_detail',
             component: './Inspection/ReportDetail',
           },
         ],
