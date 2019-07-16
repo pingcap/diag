@@ -1,9 +1,11 @@
 import { IConfig, IPlugin } from 'umi-types';
 
+import slash from 'slash2';
 import defaultSettings from './defaultSettings';
 // https://umijs.org/config/
-import slash from 'slash2';
 import webpackPlugin from './plugin.config';
+
+import pageRoutes from './router.config';
 
 const { pwa, primaryColor } = defaultSettings;
 
@@ -88,28 +90,7 @@ export default {
   },
   devtool: isAntDesignProPreview ? 'source-map' : false,
   // umi routes: https://umijs.org/zh/guide/router.html
-  routes: [
-    {
-      path: '/',
-      component: '../layouts/BasicLayout',
-      Routes: ['src/pages/Authorized'],
-      authority: ['admin', 'user'],
-      routes: [
-        {
-          path: '/',
-          name: 'welcome',
-          icon: 'smile',
-          component: './Welcome',
-        },
-        {
-          component: './404',
-        },
-      ],
-    },
-    {
-      component: './404',
-    },
-  ],
+  routes: pageRoutes,
   // Theme for antd: https://ant.design/docs/react/customize-theme-cn
   theme: {
     'primary-color': primaryColor,
