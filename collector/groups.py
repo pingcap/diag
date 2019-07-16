@@ -68,17 +68,22 @@ def setup_pprof_ops(inspection_id, addr='127.0.0.1:6060', basedir='pprof'):
     """Setup all pprof related collectors for a host"""
     join = os.path.join
 
+    # replace the ':' when building part of a filename, if not,
+    # the command 'go tool pprof <filename>' will throw an error, because
+    # it mistake filename as an url.
+    name = addr.replace(':', '-')
+    parts = (name, inspection_id)
+
     def op(cls, filename):
         return Op(cls(addr=addr), FileOutput(join(basedir, filename)))
 
     ops = [
-        op(CPUProfileCollector, '%s-%s-cpu.pb.gz' % (addr, inspection_id)),
-        op(MemProfileCollector, '%s-%s-mem.pb.gz' % (addr, inspection_id)),
-        op(BlockProfileCollector, '%s-%s-block.pb.gz' % (addr, inspection_id)),
-        op(AllocsProfileCollector, '%s-%s-allocs.pb.gz' % (addr, inspection_id)),
-        op(MutexProfileCollector, '%s-%s-mutex.pb.gz' % (addr, inspection_id)),
-        op(ThreadCreateProfileCollector, '%s-%s-threadcreate.pb.gz' %
-           (addr, inspection_id)),
-        op(TraceProfileCollector, '%s-%s-trace.pb.gz' % (addr, inspection_id))
+        op(CPUProfileCollector, '%s-%s-cpu.pb.gz' % parts),
+        op(MemProfileCollector, '%s-%s-mem.pb.gz' % parts),
+        op(BlockProfileCollector, '%s-%s-block.pb.gz' % parts),
+        op(AllocsProfileCollector, '%s-%s-allocs.pb.gz' % parts),
+        op(MutexProfileCollector, '%s-%s-mutex.pb.gz' % parts),
+        op(ThreadCreateProfileCollector, '%s-%s-threadcreate.pb.gz' % parts),
+        op(TraceProfileCollector, '%s-%s-trace.pb.gz' % parts)
     ]
     return ops
