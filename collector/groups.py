@@ -42,12 +42,12 @@ def setup_op_groups(topology, datadir, inspection_id):
         logging.debug("host:%s status:%s user:%s", ip, status, user)
         for svc in services:
             status = svc['status']
+            name = svc['name']
             if status != 'success':
                 logging.warn('skip host:%s service:%s status:%s',
-                             ip, svc, status)
+                             ip, name, status)
                 continue
 
-            name = svc['name']
             if name == 'tidb':
                 status_port = svc['status_port']
                 addr = "%s:%s" % (ip, status_port)
