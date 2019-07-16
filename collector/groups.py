@@ -22,7 +22,7 @@ class OpGroup:
         return iter(self.ops)
 
 
-def setup_ops(topology, datadir):
+def setup_op_groups(topology, datadir, inspection_id):
     groups = {
         'basic': OpGroup('basic'),
         'pprof': OpGroup('pprof'),
@@ -51,7 +51,8 @@ def setup_ops(topology, datadir):
             if name == 'tidb':
                 status_port = svc['status_port']
                 addr = "%s:%d" % (host, status_port)
-                groups['pprof'].add_ops(setup_pprof_ops(addr, datadir))
+                groups['pprof'].add_ops(
+                    setup_pprof_ops(inspection_id, addr, datadir+'/pprof'))
             if name == 'tikv':
                 pass
             if name == 'pd':
@@ -63,19 +64,21 @@ def setup_ops(topology, datadir):
     return groups
 
 
-def setup_pprof_ops(addr='http://127.0.0.1:6060', basedir='pprof'):
+def setup_pprof_ops(inspection_id, addr='127.0.0.1:6060', basedir='pprof'):
     """Setup all pprof related collectors for a host"""
     join = os.path.join
 
     def op(cls, filename):
         return Op(cls(addr=addr), FileOutput(join(basedir, filename)))
+
     ops = [
-        op(CPUProfileCollector, addr+'-cpu.pb.gz'),
-        op(MemProfileCollector, addr+'-mem.pb.gz'),
-        op(BlockProfileCollector, addr+'-block.pb.gz'),
-        op(AllocsProfileCollector, addr+'-allocs.pb.gz'),
-        op(MutexProfileCollector, addr+'-mutex.pb.gz'),
-        op(ThreadCreateProfileCollector, addr+'-threadcreate.pb.gz'),
-        op(TraceProfileCollector, addr+'-trace.pb.gz')
+        op(CPUProfileCollector, '%s-%s-cpu.pb.gz' % (addr, inspection_id)),
+        op(MemProfileCollector, '%s-%s-mem.pb.gz' % (addr, inspection_id)),
+        op(BlockProfileCollector, '%s-%s-block.pb.gz' % (addr, inspection_id)),
+        op(AllocsProfileCollector, '%s-%s-allocs.pb.gz' % (addr, inspection_id)),
+        op(MutexProfileCollector, '%s-%s-mutex.pb.gz' % (addr, inspection_id)),
+        op(ThreadCreateProfileCollector, '%s-%s-threadcreate.pb.gz' %
+           (addr, inspection_id)),
+        op(TraceProfileCollector, '%s-%s-trace.pb.gz' % (addr, inspection_id))
     ]
     return ops
