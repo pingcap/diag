@@ -251,7 +251,7 @@ var clusterSample = &syncer.Cluster{
 }
 
 func (s *SyncTestSuit) TestNewCluster(c *C) {
-	s.uuid = "f5f1ef3c-de65-439d-8d9c-b25e92b455be"
+	s.uuid = ""
 	fileName := s.uuid + ".json"
 	f, err := os.Create(fileName)
 	if err != nil {

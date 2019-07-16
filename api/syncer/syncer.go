@@ -11,19 +11,16 @@ import (
 )
 
 /*
- * 正常情况下该函数不返回
- * 它应该watch topoDir指定的目录，该目录为每一个集群存放了一个topology.json的json文件
- * 这些json文件指示了该集群包含哪些机器，以及该集群的deploy目录
- * 该函数需要针对每台机器，通过rsync将{user}@ip:{deploy}/log同步到targetDir指定的目录中，同步之后
- * 需要能够区分哪些日志属于哪些集群以及哪些组件，同步的时间间隔为interval指定的间隔，同步的带宽限制由bwlimit指定
- * rsync命令行参数支持bwlimit
- */
-
-type RsyncConfig struct {
-	Args []string
-	From string
-	To   string
-}
+* Normally this function does not return
+* It should watch the directory specified by topoDir, which holds a json file of topology.json for each cluster.
+* These json files indicate which hosts the cluster contains and the deployment directory of the component in these hosts
+* This function needs to synchronize {user}@ip:{deploy}/log to
+* the directory specified by targetDir through rsync for each machine.
+* We need to be able to distinguish which logs belong to which clusters and which components,
+* the synchronization interval is specified by interval,
+* and the bandwidth limit for synchronization is specified by bwlimit
+* (the rsync command line parameter supports bwlimit.)
+*/
 
 func Sync(topoDir string, targetDir string, interval time.Duration, bwlimit int) error {
 	watcher := Watcher{
@@ -36,14 +33,25 @@ func Sync(topoDir string, targetDir string, interval time.Duration, bwlimit int)
 			Args: []string{"-avz", fmt.Sprintf("--bwlimit=%d", bwlimit)},
 		},
 	}
-	// watch 指定目录，发生改变时，重新扫描所有文件，构造新的 rsync 任务列表，传递给 manager
-	err := watcher.watch(manager)
+	// Watch specifies the directory,
+	// rescans all files when changes occur,
+	// build a new rsync task list,
+	// and passes it to the TaskManager.runTasks()
+	err := watcher.Watch(manager)
 	if err != nil {
 		return err
 	}
-	// 解析新的任务列表，cancel 旧任务，运行新添加任务
-	go manager.Start()
+	// Receive the new task list,
+	// cancel all the old task,
+	// and run the newly added task
+	manager.Start()
 	return nil
+}
+
+type RsyncConfig struct {
+	Args []string
+	From string
+	To   string
 }
 
 type Cluster struct {
@@ -69,6 +77,7 @@ type Component struct {
 	Port      string
 }
 
+// NewCluster return a new Cluster
 func NewCluster(fileName string) (*Cluster, error) {
 	c := &Cluster{}
 	f, err := os.Open(fileName)
@@ -83,6 +92,7 @@ func NewCluster(fileName string) (*Cluster, error) {
 	return c, nil
 }
 
+// LoadTask construct the SyncTask slice according to the Cluster
 func (c *Cluster) LoadTasks(targetDir, uuid string) []SyncTask {
 	var tasks []SyncTask
 	for _, host := range c.Hosts {
@@ -116,18 +126,19 @@ func (c *Cluster) LoadTasks(targetDir, uuid string) []SyncTask {
 	return tasks
 }
 
+// PatternStr return the pattern string used by rsync parameter: --filter
 func PatternStr(filename string) string {
 	return filename + "*"
 }
 
 // syncTask inform a pair of folder path
-// rsync use them to collect log from each Host to localhost
-//      Key:     Component identity
-//		From:    src_path
-//		To:      dist_path
-//		Filters: log file name pattern
-// }
-
+// rsync uses them as parameters
+// Key:        component unique identification
+// From:       src_path
+// To:         dist_path
+// Filters:    log file name pattern
+// Ctx:        used for receive the cancel signal
+// CancelFunc: used for cancel the task
 type SyncTask struct {
 	Key        string
 	From       string

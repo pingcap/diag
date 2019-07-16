@@ -15,6 +15,7 @@ type TaskManager struct {
 	TodoTaskCh chan SyncTask
 	Cfg        RsyncConfig
 	Interval   time.Duration
+	StopCh     chan struct{}
 }
 
 func (t *TaskManager) CancelAllTask() {
@@ -28,15 +29,17 @@ func (t *TaskManager) CancelAllTask() {
 }
 
 func (t *TaskManager) RunTasks(tasks []SyncTask) {
-	// Todo: diff 新旧任务列表，分情况增删任务
-	// 新添加的任务：添加到任务列表，并传入 TodoTaskCh 中
-	// 被删除的任务：Cancel 旧任务，任务列表中删除这个任务
-	// 被修改的任务：Cancel 旧任务，任务列表中删除这个任务，添加新任务到任务列表中，并传入 TodoTaskCh
+	// Todo: diff list of new and old tasks, add or delete tasks according to the situation
+	// Newly added task: Added to task list and passed into TodoTaskCh
+	// Deleted Task: Cancel the old task and delete this task from the task list
+	// Modified Task: Cancel the old task, delete this task from the task list,
+	//                and pass the new task into TodoTaskCh
 
-	// 目前的做法：
-	// cancel 所有旧任务，再添加所有新的任务
+	// Current practice:
+	// cancel all old tasks and add all new ones
 	t.CancelAllTask()
 	for _, task := range tasks {
+		log.Infof("start a new sync task. key=%s", task.Key)
 		t.TodoTaskCh <- task
 	}
 }
@@ -53,9 +56,18 @@ func (t *TaskManager) Start() {
 			t.Tasks.Store(task.Key, task)
 			go execCommand(cmd, task, t.Interval, t.TodoTaskCh)
 		case <-ticker.C:
+			// Prevent deadlock when syncTasks is empty
 			continue
+		case <-t.StopCh:
+			// only for test
+			return
 		}
 	}
+}
+
+func (t *TaskManager) Stop() {
+	fmt.Println("stop tasks manager")
+	t.StopCh <- struct{}{}
 }
 
 func buildCmdWithCancel(task SyncTask, cfg RsyncConfig) (*exec.Cmd, context.Context, context.CancelFunc) {
@@ -74,19 +86,27 @@ func execCommand(cmd *exec.Cmd, task SyncTask, interval time.Duration, todoTaskC
 		log.Errorf("failed to start command %s ", task.Key)
 		return
 	}
-	done := make(chan struct{})
-	// 等待 rsync 执行结束，之后，再等待一段时间（Interval），通知 done channel
+	// done indicate the reason for task quitting
+	// true: this task finished normally
+	// false: this task has been canceled
+	done := make(chan bool)
+	// Wait for rsync execution finished ,
+	// then wait for an while (specified by interval),
+	// notify done channel.
 	go func() {
 		err := cmd.Wait()
 		if err != nil {
 			log.Errorf("task stopped: %s err=%s", task.Key, err)
+			done <- true
 			return
 		}
 		time.Sleep(interval)
-		done <- struct{}{}
+		done <- false
 	}()
 	select {
-	// 如果该任务被 cancel 了，kill rsync 进程，直接 return
+	// If the task is cancelled,
+	// kill rsync process,
+	// and quit current task
 	case <-task.Ctx.Done():
 		err := task.Ctx.Err()
 		if err == context.Canceled {
@@ -102,8 +122,11 @@ func execCommand(cmd *exec.Cmd, task SyncTask, interval time.Duration, todoTaskC
 			log.Errorf("failed to kill rsync progress. key=%s err=%s", task.Key, err)
 		}
 		return
-	// 如果 rsync 进程已经结束，重新开始一次同步
-	case <-done:
-		todoTaskCh <- task
+	// If the rsync process has completed, restart a new synchronization task
+	case finished, ok := <-done:
+		fmt.Printf("get finished=%v\n", finished)
+		if ok && !finished {
+			todoTaskCh <- task
+		}
 	}
 }

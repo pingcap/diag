@@ -5,14 +5,11 @@ import (
 	"io/ioutil"
 	"os"
 	"path"
-	"testing"
 	"time"
 
 	. "github.com/pingcap/check"
 	"github.com/pingcap/tidb-foresight/api/syncer"
 )
-
-func TestTaskManager(t *testing.T) { TestingT(t) }
 
 type taskManagerTestSuit struct{}
 
@@ -28,6 +25,7 @@ func (s *taskManagerTestSuit) TestRunTasks(c *C) {
 			Args: []string{"-avz", fmt.Sprintf("--bwlimit=%d", 1000)},
 		},
 		TodoTaskCh: make(chan syncer.SyncTask, 1),
+		StopCh: make(chan struct{}),
 	}
 	task := syncer.SyncTask{
 		Key:     "tikv_1",
@@ -49,6 +47,10 @@ func (s *taskManagerTestSuit) TestRunTasks(c *C) {
 	go func() {
 		time.Sleep(5 * time.Second)
 		manager.RunTasks([]syncer.SyncTask{})
+	}()
+	go func() {
+		time.Sleep(7 * time.Second)
+		manager.Stop()
 	}()
 	manager.Start()
 }
