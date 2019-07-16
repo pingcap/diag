@@ -52,11 +52,14 @@ def setup_op_groups(topology, datadir, inspection_id):
                 status_port = svc['status_port']
                 addr = "%s:%s" % (ip, status_port)
                 groups['pprof'].add_ops(
-                    setup_pprof_ops(inspection_id, addr, datadir+'/pprof'))
+                    setup_pprof_ops(inspection_id, addr, datadir+'/pprof/tidb'))
             if name == 'tikv':
                 pass
             if name == 'pd':
-                pass
+                status_port = svc['status_port']
+                addr = "%s:%s" % (ip, status_port)
+                groups['pprof'].add_ops(
+                    setup_pprof_ops(inspection_id, addr, datadir+'/pprof/pd'))
             if name == 'prometheus':
                 pass
             if name == 'alertmanager':

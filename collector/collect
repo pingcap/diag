@@ -15,6 +15,10 @@ def ping():
 
 
 def collect_basic(group):
+    print "basic"
+
+
+def collect_pprof(group):
     for op in group:
         op.do()
 
@@ -57,6 +61,8 @@ def main():
     for item in items:
         if item[0] == "basic":
             collect_basic(groups['basic'])
+        elif item[0] == "pprof":
+            collect_pprof(groups['pprof'])
         elif item[0] == "software":
             collect_software()
         elif item[0] == "hardware":
