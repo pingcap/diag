@@ -1,6 +1,7 @@
 # coding: utf8
 import logging
 import os
+import time
 
 from collectors.profile_collector import *
 from collectors.output import *
@@ -53,7 +54,7 @@ def setup_op_groups(topology, datadir, inspection_id):
                 status_port = svc['status_port']
                 addr = "%s:%s" % (ip, status_port)
                 basedir = os.path.join(
-                        datadir, inspection_id, 'pprof', addr, 'tidb')
+                    datadir, inspection_id, 'pprof', addr, 'tidb')
                 groups['pprof'].add_ops(
                     setup_pprof_ops(addr, basedir))
             if name == 'tikv':
@@ -61,7 +62,10 @@ def setup_op_groups(topology, datadir, inspection_id):
             if name == 'pd':
                 pass
             if name == 'prometheus':
-                pass
+                port = svc['port']
+                addr = "%s:%s" % (ip, port)
+                basedir = os.path.join(datadir, inspection_id, 'metric')
+                groups['metric'].add_ops(setup_metric_ops(addr, basedir))
             if name == 'alertmanager':
                 pass
     return groups
@@ -69,11 +73,12 @@ def setup_op_groups(topology, datadir, inspection_id):
 
 def setup_pprof_ops(addr='127.0.0.1:6060', basedir='pprof'):
     """Setup all pprof related collectors for a host"""
-    join=os.path.join
+    join = os.path.join
+
     def op(cls, filename):
         return Op(cls(addr=addr), FileOutput(join(basedir, filename)))
 
-    ops=[
+    ops = [
         op(CPUProfileCollector, 'cpu.pb.gz'),
         op(MemProfileCollector, 'mem.pb.gz'),
         op(BlockProfileCollector, 'block.pb.gz'),
@@ -85,19 +90,46 @@ def setup_pprof_ops(addr='127.0.0.1:6060', basedir='pprof'):
     return ops
 
 
-def setup_metric_ops(addr='127.0.0.1:9090', basedir='metric'):
-    metrics=get_metrics(addr)
+def setup_metric_ops(addr='127.0.0.1:9090', basedir='metric', duration='1h'):
+    metrics = get_metrics(addr)
     if metrics['status'] != 'success':
         logging.error('get metrics failed, status:%s', metrics['status'])
         return
 
-    ops=[]
-    join=os.path.join
+    ops = []
+    join = os.path.join
 
     def op(metric):
-        filename=join(basedir, "%s.json" % metric)
-        return Op(MetricCollector(name=metric, addr=addr),
-                  FileOutput(filename=filename))
+        end = int(time.time())
+        start = end - parse_duration(duration)
+
+        # fixed to get 60 points when the time range is large
+        step = (end - start)/60
+
+        # the value should not be too small
+        if step < 15:
+            step = 15
+
+        filename = join(basedir, "%s_%s_to_%s_%ss.json" %
+                        (metric, start, end, step))
+        return Op(MetricCollector(name=metric, addr=addr, metric=metric,
+                                  path='/api/v1/query_range', start=start, end=end, step=step), FileOutput(filename))
 
     for m in metrics['data']:
         ops.append(op(m))
+
+
+def parse_duration(duration):
+    seconds = 0
+    for c in str(duration):
+        if '0' <= c <= '9':
+            seconds = seconds * 10 + (ord('c')-ord('0'))
+        elif c in ('h', 'H'):
+            seconds = seconds * 3600
+        elif c in ('m', 'M'):
+            seconds = seconds * 60
+        elif c == 's':
+            pass
+        else:
+            raise Exception("invalid format")
+    return seconds

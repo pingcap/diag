@@ -6,22 +6,15 @@ import time
 
 from collector import Collector, HTTPCollector
 
-min_step = 30
-
 
 class MetricCollector(HTTPCollector):
     def __init__(self, name='metrics', addr='127.0.0.1:9090', metric='up',
-                 path='/api/v1/', start=None, end=None):
+                 path='/api/v1/', start=None, end=None, step=15):
         now = int(time.time())
         if start == None:
             start = now - 3600  # 1h
         if end == None:
             end = now
-        # fixed to 60 points, so it is responsive to the time range
-        step = (end-start)/60
-        if step < min_step:
-            step = min_step
-
         params = {
             'query': metric,
             'start': start,
