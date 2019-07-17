@@ -77,7 +77,7 @@ def setup_op_groups(topology, datadir, inspection_id, target):
                 port = svc['port']
                 addr = "%s:%s" % (ip, port)
                 basedir = os.path.join(datadir, inspection_id, 'metric')
-                duration = options['metric']
+                duration = options.setdefault('metric', '1h')
                 groups['metric'].add_ops(
                     setup_metric_ops(addr, basedir, duration))
                 groups['metric'].add_ops(setup_alert_ops(addr,
