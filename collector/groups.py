@@ -56,6 +56,11 @@ def setup_op_groups(topology, datadir, inspection_id, target):
     logging.info("cluster:%s status:%s", cluster, status)
 
     db_collected = False
+    deploydir = {}
+    ips = (host['ip'] for host in hosts)
+    for i in len(ips):
+        deploydir[ips[i]] = hosts[i]['components'][0]['deploy_dir']
+
     for host in hosts:
         status = host['status']
         ip = host['ip']
@@ -65,6 +70,8 @@ def setup_op_groups(topology, datadir, inspection_id, target):
 
         groups['basic'].add_ops(setup_os_ops(ip,
                                              os.path.join(datadir, inspection_id)))
+        groups['basic'].add_ops(setup_deploy_ops(ip,
+                                                 os.path.join(datadir, inspection_id, deploydir[ip])))
 
         for svc in services:
             status = svc['status']
@@ -212,5 +219,19 @@ def setup_os_ops(addr='127.0.0.1', basedir=''):
            FileOutput(join(basedir, addr, 'net', 'netstat'))),
         Op(CommandCollector(addr=addr, command='/sbin/lshw'),
            FileOutput(join(basedir, addr, 'hardware', 'lshw'))),
+        Op(CommandCollector(addr=addr, command='/sbin/lshw'),
+           FileOutput(join(basedir, 'insight', addr, 'lshw'))),
+    ]
+    return ops
+
+
+def setup_deploy_ops(addr='127.0.0.1', basedir='insight',
+                     deploydir='/home/tidb'):
+    join = os.path.join
+    ops = [
+        Op(CommandCollector(addr=addr,
+                            command=join(deploydir,
+                                         'scripts/tidb-insight/bin/collector')),
+            FileOutput(join(basedir, 'insight', addr, 'collector.json'))),
     ]
     return ops
