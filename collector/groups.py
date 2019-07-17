@@ -57,8 +57,8 @@ def setup_op_groups(topology, datadir, inspection_id, target):
 
     db_collected = False
     deploydir = {}
-    ips = (host['ip'] for host in hosts)
-    for i in len(ips):
+    ips = [host['ip'] for host in hosts]
+    for i in range(len(ips)):
         deploydir[ips[i]] = hosts[i]['components'][0]['deploy_dir']
 
     for host in hosts:
@@ -71,8 +71,9 @@ def setup_op_groups(topology, datadir, inspection_id, target):
         groups['basic'].add_ops(setup_os_ops(ip,
                                              os.path.join(datadir, inspection_id)))
         groups['basic'].add_ops(setup_deploy_ops(ip,
-                                                 os.path.join(datadir, inspection_id, deploydir[ip])))
-
+                                                 os.path.join(datadir,
+                                                              inspection_id),
+                                                 deploydir[ip]))
         for svc in services:
             status = svc['status']
             name = svc['name']
