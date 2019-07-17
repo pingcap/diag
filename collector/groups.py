@@ -203,13 +203,14 @@ def setup_os_ops(addr='127.0.0.1', basedir=''):
     join = os.path.join
     ops = [
         Op(CommandCollector(addr=addr, command='dmesg'),
-           FileOutput(join(basedir, 'os', 'dmesg'))),
-        Op(CommandCollector(addr=addr, command='/sbin/ntpdate -q 1.cn.pool.ntp.org'), FileOutput(join(basedir, 'os', 'ntpdate'))),
+           FileOutput(join(basedir, addr, 'os', 'dmesg'))),
+        Op(CommandCollector(addr=addr, command='/sbin/ntpdate -q 1.cn.pool.ntp.org'),
+           FileOutput(join(basedir, addr, 'os', 'ntpdate'))),
         Op(CommandCollector(addr=addr, command='uname -r'),
-           FileOutput(join(basedir, 'os', 'os_version'))),
+           FileOutput(join(basedir, addr, 'os', 'os_version'))),
         Op(CommandCollector(addr=addr, command='netstat -s'),
-           FileOutput(join(basedir, 'net', 'netstat'))),
+           FileOutput(join(basedir, addr, 'net', 'netstat'))),
         Op(CommandCollector(addr=addr, command='/sbin/lshw'),
-           FileOutput(join(basedir, 'hardware', 'lshw'))),
+           FileOutput(join(basedir, addr, 'hardware', 'lshw'))),
     ]
     return ops
