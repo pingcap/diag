@@ -25,6 +25,12 @@ class MetricCollector(HTTPCollector):
             self, name, addr, path, params)
 
 
+class AlertCollector(HTTPCollector):
+    def __init__(self, name='alerts', addr='127.0.0.1:9090'):
+        HTTPCollector.__init__(
+            self, name, addr, '/api/v1/query', {'query': 'ALERTS'})
+
+
 def get_metrics(addr):
     url = 'http://' + addr + '/api/v1/label/__name__/values'
     return json.loads(urllib2.urlopen(url).read())

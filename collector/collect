@@ -55,7 +55,7 @@ def main():
     args = parser.parse_args()
 
     topology = json.load(open(args.topology))
-    groups = setup_op_groups(topology, args.data_dir, args.inspection_id)
+    groups = setup_op_groups(topology, args.data_dir, args.inspection_id, args.collect)
 
     items = map(lambda x: x.split(':'), args.collect.split(','))
     for item in items:

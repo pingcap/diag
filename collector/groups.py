@@ -24,13 +24,25 @@ class OpGroup:
         return iter(self.ops)
 
 
-def setup_op_groups(topology, datadir, inspection_id):
+def setup_op_groups(topology, datadir, inspection_id, target):
+    items = map(lambda x: x.split(':'), target.split(','))
     groups = {
         'basic': OpGroup('basic'),
         'pprof': OpGroup('pprof'),
         'hardware': OpGroup('hardware'),
         'metric': OpGroup('metric'),
     }
+
+    # for some targets, they come along with an option
+    # Ex. metric:1h, slowlog:1h
+    options = {}
+    for item in items:
+        if groups.has_key(item[0]):
+            if len(item) == 2:
+                options[item[0]] = item[1]
+        else:
+            raise Exception("unsupported target: "+item[0])
+
     cluster = topology['cluster_name']
     status = topology['status']
     hosts = topology['hosts']
@@ -65,7 +77,11 @@ def setup_op_groups(topology, datadir, inspection_id):
                 port = svc['port']
                 addr = "%s:%s" % (ip, port)
                 basedir = os.path.join(datadir, inspection_id, 'metric')
-                groups['metric'].add_ops(setup_metric_ops(addr, basedir))
+                duration = options['metric']
+                groups['metric'].add_ops(
+                    setup_metric_ops(addr, basedir, duration))
+                groups['metric'].add_ops(setup_alert_ops(addr,
+                                                         os.path.join(datadir, inspection_id)))
             if name == 'alertmanager':
                 pass
     return groups
@@ -116,7 +132,15 @@ def setup_metric_ops(addr='127.0.0.1:9090', basedir='metric', duration='1h'):
                                   path='/api/v1/query_range', start=start, end=end, step=step), FileOutput(filename))
 
     for m in metrics['data']:
+        # skip the alerts, it is collected by the alert collector
+        if m == 'ALERTS':
+            continue
         ops.append(op(m))
+
+
+def setup_alert_ops(addr='127.0.0.1:9090', basedir='alert'):
+    filename = os.path.join(basedir, 'alert.json')
+    return [Op(AlertCollector(addr=addr), FileOutput(filename))]
 
 
 def parse_duration(duration):
