@@ -9,7 +9,7 @@ from collector import Collector, HTTPCollector
 
 class MetricCollector(HTTPCollector):
     def __init__(self, name='metrics', addr='127.0.0.1:9090', metric='up',
-                 path='/api/v1/', start=None, end=None, step=15):
+                 path='/api/v1/query', start=None, end=None, step=15):
         now = int(time.time())
         if start == None:
             start = now - 3600  # 1h
@@ -37,4 +37,8 @@ def get_metrics(addr):
 
 
 if __name__ == '__main__':
-    print(MetricCollector().collect())
+    c = MetricCollector(addr='172.16.4.4:30648')
+    print(c.collect())
+
+    c = AlertCollector(addr='172.16.4.4:30648')
+    print(c.collect())
