@@ -49,6 +49,7 @@ def setup_op_groups(topology, datadir, inspection_id, target):
     hosts = topology['hosts']
     logging.info("cluster:%s status:%s", cluster, status)
 
+    db_collected = False
     for host in hosts:
         status = host['status']
         ip = host['ip']
@@ -74,8 +75,10 @@ def setup_op_groups(topology, datadir, inspection_id, target):
                     setup_pprof_ops(addr, basedir))
 
                 # db collectors
-                basedir = os.path.join(datadir, inspection_id, 'dbinfo')
-                groups['basic'].add_ops(setup_db_ops(addr, basedir))
+                if not db_collected:
+                    basedir = os.path.join(datadir, inspection_id, 'dbinfo')
+                    groups['basic'].add_ops(setup_db_ops(addr, basedir))
+                    db_collected = True
             if name == 'tikv':
                 pass
             if name == 'pd':
