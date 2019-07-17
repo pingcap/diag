@@ -179,10 +179,10 @@ def parse_duration(duration):
 def setup_db_ops(addr='127.0.0.1:10080', basedir='dbinfo'):
     ops = []
     dbs = get_databases(addr)
-    jion = os.path.jion
+    join = os.path.join
 
     def op(name):
-        return Op(DBCollector(addr=addr, db=name), FileOutput(jion(basedir,
+        return Op(DBCollector(addr=addr, db=name), FileOutput(join(basedir,
                                                                    db+'.json')))
     for db in dbs:
         ops.append(op(db))
