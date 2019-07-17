@@ -14,13 +14,13 @@ def ping():
     inventory = InventoryManager(loader=loader, sources='localhost,')
 
 
-def collect_basic(group):
-    print "basic"
-
-
-def collect_pprof(group):
+def collect(group):
     for op in group:
         op.do()
+
+
+def collect_basic(group):
+    print "basic"
 
 
 def collect_software():
@@ -55,18 +55,21 @@ def main():
     args = parser.parse_args()
 
     topology = json.load(open(args.topology))
-    groups = setup_op_groups(topology, args.data_dir, args.inspection_id, args.collect)
+    groups = setup_op_groups(topology, args.data_dir,
+                             args.inspection_id, args.collect)
 
     items = map(lambda x: x.split(':'), args.collect.split(','))
     for item in items:
         if item[0] == "basic":
             collect_basic(groups['basic'])
         elif item[0] == "pprof":
-            collect_pprof(groups['pprof'])
+            collect(groups['pprof'])
         elif item[0] == "software":
             collect_software()
         elif item[0] == "hardware":
             collect_hardware()
+        elif item[0] == "metric":
+            collect(groups['metric'])
 
 
 if __name__ == "__main__":
