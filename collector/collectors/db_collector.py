@@ -19,4 +19,4 @@ class DBCollector(HTTPCollector):
 def get_databases(addr):
     c = SchemaCollector(addr=addr)
     schema = json.loads(c.collect())
-    return (db['dbname']['L'] for db in schema)
+    return (db['db_name']['L'] for db in schema)
