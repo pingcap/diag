@@ -1,6 +1,6 @@
 # coding: utf8
 import unittest
-from groups import OpGroup, setup_pprof_ops
+from groups import OpGroup, setup_pprof_ops, parse_duration
 from collectors import Collector
 
 
@@ -29,6 +29,17 @@ class TestUtil(unittest.TestCase):
         for addr in addrs:
             print addr
             self.assertEqual(addr, '127.0.0.1:6060')
+
+    def test_parse_duration(self):
+        self.assertEqual(parse_duration('1h'), 3600)
+        self.assertEqual(parse_duration('1m'), 60)
+        self.assertEqual(parse_duration('1s'), 1)
+        self.assertEqual(parse_duration('1'), 1)
+        self.assertEqual(parse_duration('1h1m'), 3660)
+        self.assertEqual(parse_duration('1h1m1s'), 3661)
+        self.assertEqual(parse_duration('1h1m1'), 3661)
+        self.assertEqual(parse_duration('3661'), 3661)
+        self.assertEqual(parse_duration(3661), 3661)
 
 
 if __name__ == '__main__':

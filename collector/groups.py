@@ -146,15 +146,21 @@ def setup_alert_ops(addr='127.0.0.1:9090', basedir='alert'):
 
 def parse_duration(duration):
     seconds = 0
+    part = 0
     for c in str(duration):
         if '0' <= c <= '9':
-            seconds = seconds * 10 + (ord('c')-ord('0'))
+            part = part * 10 + (ord(c)-ord('0'))
         elif c in ('h', 'H'):
-            seconds = seconds * 3600
+            seconds += part * 3600
+            part = 0
         elif c in ('m', 'M'):
-            seconds = seconds * 60
+            seconds += part * 60
+            part = 0
         elif c == 's':
-            pass
+            seconds += part
+            part = 0
         else:
             raise Exception("invalid format")
+    if part != 0:
+        seconds += part
     return seconds
