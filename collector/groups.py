@@ -4,6 +4,7 @@ import os
 
 from collectors.profile_collector import *
 from collectors.output import *
+from collectors.metric_collector import *
 from operation import Op
 
 
@@ -72,18 +73,35 @@ def setup_pprof_ops(inspection_id, addr='127.0.0.1:6060', basedir='pprof'):
     # the command 'go tool pprof <filename>' will throw an error, because
     # it mistake filename as an url.
     name = addr.replace(':', '-')
-    parts = (name, inspection_id)
 
     def op(cls, filename):
         return Op(cls(addr=addr), FileOutput(join(basedir, filename)))
 
     ops = [
-        op(CPUProfileCollector, '%s-%s-cpu.pb.gz' % parts),
-        op(MemProfileCollector, '%s-%s-mem.pb.gz' % parts),
-        op(BlockProfileCollector, '%s-%s-block.pb.gz' % parts),
-        op(AllocsProfileCollector, '%s-%s-allocs.pb.gz' % parts),
-        op(MutexProfileCollector, '%s-%s-mutex.pb.gz' % parts),
-        op(ThreadCreateProfileCollector, '%s-%s-threadcreate.pb.gz' % parts),
-        op(TraceProfileCollector, '%s-%s-trace.pb.gz' % parts)
+        op(CPUProfileCollector, '%s-cpu.pb.gz' % name),
+        op(MemProfileCollector, '%s-mem.pb.gz' % name),
+        op(BlockProfileCollector, '%s-block.pb.gz' % name),
+        op(AllocsProfileCollector, '%s-allocs.pb.gz' % name),
+        op(MutexProfileCollector, '%s-mutex.pb.gz' % name),
+        op(ThreadCreateProfileCollector, '%s-threadcreate.pb.gz' % name),
+        op(TraceProfileCollector, '%s-trace.pb.gz' % name)
     ]
     return ops
+
+
+def setup_metric_ops(addr='127.0.0.1:9090', basedir='metric'):
+    metrics = get_metrics(addr)
+    if metrics['status'] != 'success':
+        logging.error('get metrics failed, status:%s', metrics['status'])
+        return
+
+    ops = []
+    join = os.path.join
+
+    def op(metric):
+        filename = join(basedir, "%s.json" % metric)
+        return Op(MetricCollector(name=metric, addr=addr),
+                  FileOutput(filename=filename))
+
+    for m in metrics['data']:
+        ops.append(op(m))
