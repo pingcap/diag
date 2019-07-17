@@ -3,6 +3,7 @@
 
 import argparse
 import json
+import multiprocessing
 from ansible.parsing.dataloader import DataLoader
 from ansible.inventory.manager import InventoryManager
 
@@ -15,8 +16,8 @@ def ping():
 
 
 def collect(group):
-    for op in group:
-        op.do()
+    p = multiprocessing.Pool(multiprocessing.cpu_count())
+    p.map(lambda x: x.do(), group)
 
 
 def collect_basic(group):
