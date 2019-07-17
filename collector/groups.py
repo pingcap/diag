@@ -36,62 +36,63 @@ def setup_op_groups(topology, datadir, inspection_id, target):
         'global': OpGroup('global'),
     }
     groups['global'].add_ops([
-        Op(VarCollector(var_name='collect', var_value=target), FileOutput(datadir+'/collect.json'))])
+        Op(VarCollector(var_name='collect', var_value=target),
+         FileOutput(os.path.join(datadir, inspection_id, '/collect.json')))])
 
     # for some targets, they come along with an option
     # Ex. metric:1h, slowlog:1h
-    options = {}
+    options={}
     for item in items:
         if groups.has_key(item[0]):
             if len(item) == 2:
-                options[item[0]] = item[1]
+                options[item[0]]=item[1]
         else:
             raise Exception("unsupported target: "+item[0])
 
-    cluster = topology['cluster_name']
-    status = topology['status']
-    hosts = topology['hosts']
+    cluster=topology['cluster_name']
+    status=topology['status']
+    hosts=topology['hosts']
     logging.info("cluster:%s status:%s", cluster, status)
 
-    db_collected = False
+    db_collected=False
     for host in hosts:
-        status = host['status']
-        ip = host['ip']
-        user = host['user']
-        services = host['components']
+        status=host['status']
+        ip=host['ip']
+        user=host['user']
+        services=host['components']
         logging.debug("host:%s status:%s user:%s", ip, status, user)
         for svc in services:
-            status = svc['status']
-            name = svc['name']
+            status=svc['status']
+            name=svc['name']
             if status != 'success':
                 logging.warn('skip host:%s service:%s status:%s',
                              ip, name, status)
                 continue
 
             if name == 'tidb':
-                status_port = svc['status_port']
-                addr = "%s:%s" % (ip, status_port)
+                status_port=svc['status_port']
+                addr="%s:%s" % (ip, status_port)
 
                 # pprof collectors
-                basedir = os.path.join(
+                basedir=os.path.join(
                     datadir, inspection_id, 'pprof', addr, 'tidb')
                 groups['pprof'].add_ops(
                     setup_pprof_ops(addr, basedir))
 
                 # db collectors
                 if not db_collected:
-                    basedir = os.path.join(datadir, inspection_id, 'dbinfo')
+                    basedir=os.path.join(datadir, inspection_id, 'dbinfo')
                     groups['basic'].add_ops(setup_db_ops(addr, basedir))
-                    db_collected = True
+                    db_collected=True
             if name == 'tikv':
                 pass
             if name == 'pd':
                 pass
             if name == 'prometheus':
-                port = svc['port']
-                addr = "%s:%s" % (ip, port)
-                basedir = os.path.join(datadir, inspection_id, 'metric')
-                duration = options.setdefault('metric', '1h')
+                port=svc['port']
+                addr="%s:%s" % (ip, port)
+                basedir=os.path.join(datadir, inspection_id, 'metric')
+                duration=options.setdefault('metric', '1h')
                 groups['metric'].add_ops(
                     setup_metric_ops(addr, basedir, duration))
                 groups['metric'].add_ops(setup_alert_ops(addr,
@@ -103,12 +104,12 @@ def setup_op_groups(topology, datadir, inspection_id, target):
 
 def setup_pprof_ops(addr='127.0.0.1:6060', basedir='pprof'):
     """Setup all pprof related collectors for a host"""
-    join = os.path.join
+    join=os.path.join
 
     def op(cls, filename):
         return Op(cls(addr=addr), FileOutput(join(basedir, filename)))
 
-    ops = [
+    ops=[
         op(CPUProfileCollector, 'cpu.pb.gz'),
         op(MemProfileCollector, 'mem.pb.gz'),
         op(BlockProfileCollector, 'block.pb.gz'),
@@ -121,26 +122,26 @@ def setup_pprof_ops(addr='127.0.0.1:6060', basedir='pprof'):
 
 
 def setup_metric_ops(addr='127.0.0.1:9090', basedir='metric', duration='1h'):
-    metrics = get_metrics(addr)
+    metrics=get_metrics(addr)
     if metrics['status'] != 'success':
         logging.error('get metrics failed, status:%s', metrics['status'])
         return
 
-    ops = []
-    join = os.path.join
+    ops=[]
+    join=os.path.join
 
     def op(metric):
-        end = int(time.time())
-        start = end - parse_duration(duration)
+        end=int(time.time())
+        start=end - parse_duration(duration)
 
         # fixed to get 60 points when the time range is large
-        step = (end - start)/60
+        step=(end - start)/60
 
         # the value should not be too small
         if step < 15:
-            step = 15
+            step=15
 
-        filename = join(basedir, "%s_%s_to_%s_%ss.json" %
+        filename=join(basedir, "%s_%s_to_%s_%ss.json" %
                         (metric, start, end, step))
         return Op(MetricCollector(name=metric, addr=addr, metric=metric,
                                   path='/api/v1/query_range', start=start, end=end, step=step), FileOutput(filename))
@@ -154,25 +155,25 @@ def setup_metric_ops(addr='127.0.0.1:9090', basedir='metric', duration='1h'):
 
 
 def setup_alert_ops(addr='127.0.0.1:9090', basedir='alert'):
-    filename = os.path.join(basedir, 'alert.json')
+    filename=os.path.join(basedir, 'alert.json')
     return [Op(AlertCollector(addr=addr), FileOutput(filename))]
 
 
 def parse_duration(duration):
-    seconds = 0
-    part = 0
+    seconds=0
+    part=0
     for c in str(duration):
         if '0' <= c <= '9':
-            part = part * 10 + (ord(c)-ord('0'))
+            part=part * 10 + (ord(c)-ord('0'))
         elif c in ('h', 'H'):
             seconds += part * 3600
-            part = 0
+            part=0
         elif c in ('m', 'M'):
             seconds += part * 60
-            part = 0
+            part=0
         elif c == 's':
             seconds += part
-            part = 0
+            part=0
         else:
             raise Exception("invalid format")
     if part != 0:
@@ -181,9 +182,9 @@ def parse_duration(duration):
 
 
 def setup_db_ops(addr='127.0.0.1:10080', basedir='dbinfo'):
-    ops = []
-    dbs = get_databases(addr)
-    join = os.path.join
+    ops=[]
+    dbs=get_databases(addr)
+    join=os.path.join
 
     def op(name):
         return Op(DBCollector(addr=addr, db=name), FileOutput(join(basedir,
