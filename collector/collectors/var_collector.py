@@ -11,4 +11,4 @@ class VarCollector(Collector):
 
     def collect(self):
         d = {self.var_name: self.var_value}
-        json.dumps(d)
+        return json.dumps(d)
