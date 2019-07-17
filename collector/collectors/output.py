@@ -1,5 +1,6 @@
 # coding:utf8
 import os
+import errno
 
 from codec import Codec, RawEncoder, RawDecoder
 
@@ -17,8 +18,11 @@ class FileOutput:
         path = os.path.dirname(self.filename)
         if path.strip() == '':
             return
-        if not os.path.exists(path):
+        try:
             os.makedirs(path)
+        except OSError as e:
+            if e.errno != errno.EEXIST:
+                raise
 
     def output(self, content):
         """output accepits the content and transforms its format
