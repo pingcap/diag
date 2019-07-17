@@ -7,6 +7,7 @@ from collectors.profile_collector import *
 from collectors.output import *
 from collectors.metric_collector import *
 from collectors.db_collector import *
+from collectors.var_collector import VarCollector
 from operation import Op
 
 
@@ -32,7 +33,10 @@ def setup_op_groups(topology, datadir, inspection_id, target):
         'pprof': OpGroup('pprof'),
         'hardware': OpGroup('hardware'),
         'metric': OpGroup('metric'),
+        'global': OpGroup('global'),
     }
+    groups['global'].add_ops([
+        Op(VarCollector(var_name='collect', var_value=target), FileOutput(datadir+'/collect.json'))])
 
     # for some targets, they come along with an option
     # Ex. metric:1h, slowlog:1h
