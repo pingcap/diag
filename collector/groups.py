@@ -53,7 +53,7 @@ def setup_op_groups(topology, datadir, inspection_id):
                 status_port = svc['status_port']
                 addr = "%s:%s" % (ip, status_port)
                 basedir = os.path.join(
-                        datadir, inspection_idh, 'pprof', addr, 'tidb')
+                        datadir, inspection_id, 'pprof', addr, 'tidb')
                 groups['pprof'].add_ops(
                     setup_pprof_ops(addr, basedir))
             if name == 'tikv':
