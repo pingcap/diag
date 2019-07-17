@@ -10,9 +10,9 @@ from operation import Op
 
 
 class OpGroup:
-    def __init__(self, name, ops=[]):
+    def __init__(self, name, ops=None):
         self.name = name
-        self.ops = ops
+        self.ops = [] if ops == None else ops
 
     def get_ops(self):
         return self.ops
