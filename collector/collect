@@ -15,9 +15,13 @@ def ping():
     inventory = InventoryManager(loader=loader, sources='localhost,')
 
 
+def do(op):
+    op.do()
+
+
 def collect(group):
     p = multiprocessing.Pool(multiprocessing.cpu_count())
-    p.map(lambda x: x.do(), group)
+    p.map(do, group)
 
 
 def collect_basic(group):
