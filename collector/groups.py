@@ -136,6 +136,7 @@ def setup_metric_ops(addr='127.0.0.1:9090', basedir='metric', duration='1h'):
         if m == 'ALERTS':
             continue
         ops.append(op(m))
+    return metrics
 
 
 def setup_alert_ops(addr='127.0.0.1:9090', basedir='alert'):
