@@ -52,8 +52,10 @@ def setup_op_groups(topology, datadir, inspection_id):
             if name == 'tidb':
                 status_port = svc['status_port']
                 addr = "%s:%s" % (ip, status_port)
+                basedir = os.path.join(
+                        datadir, inspection_idh, 'pprof', addr, 'tidb')
                 groups['pprof'].add_ops(
-                    setup_pprof_ops(inspection_id, addr, datadir+'/pprof/tidb'))
+                    setup_pprof_ops(addr, basedir))
             if name == 'tikv':
                 pass
             if name == 'pd':
@@ -65,41 +67,35 @@ def setup_op_groups(topology, datadir, inspection_id):
     return groups
 
 
-def setup_pprof_ops(inspection_id, addr='127.0.0.1:6060', basedir='pprof'):
+def setup_pprof_ops(addr='127.0.0.1:6060', basedir='pprof'):
     """Setup all pprof related collectors for a host"""
-    join = os.path.join
-
-    # replace the ':' when building part of a filename, if not,
-    # the command 'go tool pprof <filename>' will throw an error, because
-    # it mistake filename as an url.
-    name = addr.replace(':', '-')
-
+    join=os.path.join
     def op(cls, filename):
         return Op(cls(addr=addr), FileOutput(join(basedir, filename)))
 
-    ops = [
-        op(CPUProfileCollector, '%s-cpu.pb.gz' % name),
-        op(MemProfileCollector, '%s-mem.pb.gz' % name),
-        op(BlockProfileCollector, '%s-block.pb.gz' % name),
-        op(AllocsProfileCollector, '%s-allocs.pb.gz' % name),
-        op(MutexProfileCollector, '%s-mutex.pb.gz' % name),
-        op(ThreadCreateProfileCollector, '%s-threadcreate.pb.gz' % name),
-        op(TraceProfileCollector, '%s-trace.pb.gz' % name)
+    ops=[
+        op(CPUProfileCollector, 'cpu.pb.gz'),
+        op(MemProfileCollector, 'mem.pb.gz'),
+        op(BlockProfileCollector, 'block.pb.gz'),
+        op(AllocsProfileCollector, 'allocs.pb.gz'),
+        op(MutexProfileCollector, 'mutex.pb.gz'),
+        op(ThreadCreateProfileCollector, 'threadcreate.pb.gz'),
+        op(TraceProfileCollector, 'trace.pb.gz')
     ]
     return ops
 
 
 def setup_metric_ops(addr='127.0.0.1:9090', basedir='metric'):
-    metrics = get_metrics(addr)
+    metrics=get_metrics(addr)
     if metrics['status'] != 'success':
         logging.error('get metrics failed, status:%s', metrics['status'])
         return
 
-    ops = []
-    join = os.path.join
+    ops=[]
+    join=os.path.join
 
     def op(metric):
-        filename = join(basedir, "%s.json" % metric)
+        filename=join(basedir, "%s.json" % metric)
         return Op(MetricCollector(name=metric, addr=addr),
                   FileOutput(filename=filename))
 
