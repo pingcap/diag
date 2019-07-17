@@ -24,10 +24,6 @@ def collect(group):
     p.map(do, group)
 
 
-def collect_basic(group):
-    print "basic"
-
-
 def collect_software():
     print "software"
 
@@ -66,7 +62,7 @@ def main():
     items = map(lambda x: x.split(':'), args.collect.split(','))
     for item in items:
         if item[0] == "basic":
-            collect_basic(groups['basic'])
+            collect(groups['basic'])
         elif item[0] == "pprof":
             collect(groups['pprof'])
         elif item[0] == "software":

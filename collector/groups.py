@@ -6,6 +6,7 @@ import time
 from collectors.profile_collector import *
 from collectors.output import *
 from collectors.metric_collector import *
+from collectors.db_collector import *
 from operation import Op
 
 
@@ -65,10 +66,16 @@ def setup_op_groups(topology, datadir, inspection_id, target):
             if name == 'tidb':
                 status_port = svc['status_port']
                 addr = "%s:%s" % (ip, status_port)
+
+                # pprof collectors
                 basedir = os.path.join(
                     datadir, inspection_id, 'pprof', addr, 'tidb')
                 groups['pprof'].add_ops(
                     setup_pprof_ops(addr, basedir))
+
+                # db collectors
+                basedir = os.path.join(datadir, inspection_id, 'dbinfo')
+                groups['basic'].add_ops(setup_db_ops(addr, basedir))
             if name == 'tikv':
                 pass
             if name == 'pd':
@@ -164,3 +171,16 @@ def parse_duration(duration):
     if part != 0:
         seconds += part
     return seconds
+
+
+def setup_db_ops(addr='127.0.0.1:10080', basedir='dbinfo'):
+    ops = []
+    dbs = get_databases(addr)
+    jion = os.path.jion
+
+    def op(name):
+        return Op(DBCollector(addr=addr, db=name), FileOutput(jion(basedir,
+                                                                   db+'.json')))
+    for db in dbs:
+        ops.append(op(db))
+    return ops
