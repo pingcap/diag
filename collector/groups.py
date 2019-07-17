@@ -220,8 +220,6 @@ def setup_os_ops(addr='127.0.0.1', basedir=''):
            FileOutput(join(basedir, addr, 'net', 'netstat'))),
         Op(CommandCollector(addr=addr, command='/sbin/lshw'),
            FileOutput(join(basedir, addr, 'hardware', 'lshw'))),
-        Op(CommandCollector(addr=addr, command='/sbin/lshw'),
-           FileOutput(join(basedir, 'insight', addr, 'lshw'))),
     ]
     return ops
 
