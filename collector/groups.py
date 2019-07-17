@@ -8,6 +8,7 @@ from collectors.output import *
 from collectors.metric_collector import *
 from collectors.db_collector import *
 from collectors.var_collector import VarCollector
+from collectors.command_collector import CommandCollector
 from operation import Op
 
 
@@ -61,6 +62,10 @@ def setup_op_groups(topology, datadir, inspection_id, target):
         user = host['user']
         services = host['components']
         logging.debug("host:%s status:%s user:%s", ip, status, user)
+
+        groups['basic'].add_ops(setup_os_ops(ip,
+                                             os.path.join(datadir, inspection_id)))
+
         for svc in services:
             status = svc['status']
             name = svc['name']
@@ -191,4 +196,21 @@ def setup_db_ops(addr='127.0.0.1:10080', basedir='dbinfo'):
                                                                    db+'.json')))
     for db in dbs:
         ops.append(op(db))
+    return ops
+
+
+def setup_os_ops(addr='127.0.0.1', basedir=''):
+    join = os.path.join
+    ops = [
+        Op(CommandCollector(addr=addr, command='dmesg'),
+           FileOutput(join(basedir, 'os', 'dmesg'))),
+        Op(CommandCollector(addr=addr, command='ntpdate -q 1.cn.pool.ntp.org'),
+           FileOutput(join(basedir, 'os', 'ntpdate'))),
+        Op(CommandCollector(addr=addr, command='uname -r'),
+           FileOutput(join(basedir, 'os', 'os_version'))),
+        Op(CommandCollector(addr=addr, command='/sbin/netstat -s'),
+           FileOutput(join(basedir, 'net', 'netstat'))),
+        Op(CommandCollector(addr=addr, command='/sbin/lshw'),
+           FileOutput(join(basedir, 'hardware', 'lshw'))),
+    ]
     return ops
