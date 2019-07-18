@@ -2,7 +2,8 @@ import { Effect } from 'dva';
 import { Reducer } from 'redux';
 import moment from 'moment';
 
-import { queryInstances } from '@/services/inspection';
+import { message } from 'antd';
+import { queryInstances, deleteInstance } from '@/services/inspection';
 
 export interface IInstance {
   uuid: string;
@@ -23,6 +24,10 @@ export interface InspectionModelState {
   instances: IFormatInstance[];
 }
 
+const initialState: InspectionModelState = {
+  instances: [],
+};
+
 function convertInstances(instances: IInstance[]): IFormatInstance[] {
   return instances.map(item => ({
     ...item,
@@ -37,19 +42,20 @@ export interface InspectionModelType {
   state: InspectionModelState;
   effects: {
     fetchInstances: Effect;
+    deleteInstance: Effect;
   };
   reducers: {
     saveInstances: Reducer<InspectionModelState>;
+    removeInstance: Reducer<InspectionModelState>;
   };
 }
 
 const InspectionModel: InspectionModelType = {
   namespace: 'inspection',
 
-  state: {
-    instances: [],
-  },
+  state: initialState,
 
+  // effects verbs: fetch, add, delete, update
   effects: {
     *fetchInstances(_, { call, put }) {
       const response: IInstance[] = yield call(queryInstances);
@@ -58,13 +64,29 @@ const InspectionModel: InspectionModelType = {
         payload: convertInstances(response),
       });
     },
+    *deleteInstance({ payload }, { call, put }) {
+      const instanceId = payload;
+      yield call(deleteInstance, instanceId);
+      yield put({
+        type: 'removeInstance',
+        payload,
+      });
+      message.success(`实例 ${instanceId} 已删除！`);
+    },
   },
 
+  // reducers verbs: save (multiple or singal), remove, modify
   reducers: {
     saveInstances(state, action) {
       return {
         ...state,
         instances: action.payload || [],
+      };
+    },
+    removeInstance(state = initialState, action) {
+      return {
+        ...state,
+        instances: state.instances.filter(item => item.uuid !== action.payload),
       };
     },
   },

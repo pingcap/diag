@@ -1,5 +1,5 @@
-import React, { useEffect } from 'react';
-import { Table, Button, Tooltip, Icon, Divider } from 'antd';
+import React, { useEffect, useMemo } from 'react';
+import { Table, Button, Tooltip, Icon, Divider, Modal } from 'antd';
 import { connect } from 'dva';
 import { Link } from 'umi';
 import { ConnectState, ConnectProps, InspectionModelState, Dispatch } from '@/models/connect';
@@ -7,7 +7,7 @@ import { IFormatInstance } from '@/models/inspection';
 
 const styles = require('./InstanceList.less');
 
-const columns = [
+const tableColumns = (onDelete: any) => [
   {
     title: '用户名',
     dataIndex: 'user',
@@ -58,7 +58,7 @@ const columns = [
         <Divider type="vertical" />
         <a href="#">设置</a>
         <Divider type="vertical" />
-        <a href="#" style={{ color: 'red' }}>
+        <a style={{ color: 'red' }} onClick={() => onDelete(record)}>
           删除
         </a>
       </span>
@@ -75,6 +75,24 @@ function InstanceList({ inspection, dispatch }: InstanceListProps) {
   useEffect(() => {
     dispatch({ type: 'inspection/fetchInstances' });
   }, []);
+
+  const columns = useMemo(() => tableColumns(onDelete), []);
+
+  function onDelete(record: IFormatInstance) {
+    Modal.confirm({
+      title: '删除实例？',
+      content: '你确定要删除这个实例吗？删除后不可恢复',
+      okText: '删除',
+      okButtonProps: { type: 'danger' },
+      onOk() {
+        dispatch({
+          type: 'inspection/deleteInstance',
+          payload: record.uuid,
+        });
+      },
+      onCancel() {},
+    });
+  }
 
   return (
     <div className={styles.container}>
