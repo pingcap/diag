@@ -1,10 +1,9 @@
-import React, { useEffect, useMemo } from 'react';
+import React, { useEffect } from 'react';
 import { Table, Button, Tooltip, Icon, Divider } from 'antd';
 import { connect } from 'dva';
-import moment from 'moment';
 import { Link } from 'umi';
 import { ConnectState, ConnectProps, InspectionModelState, Dispatch } from '@/models/connect';
-import { IInstance } from '@/models/inspection';
+import { IFormatInstance } from '@/models/inspection';
 
 const styles = require('./InstanceList.less');
 
@@ -72,27 +71,10 @@ interface InstanceListProps extends ConnectProps {
   dispatch: Dispatch;
 }
 
-interface IFormatInstance extends IInstance {
-  user: string;
-  key: string;
-  format_create_time: string;
-}
-
-function convertInstances(instances: IInstance[]): IFormatInstance[] {
-  return instances.map(item => ({
-    ...item,
-    user: 'default',
-    key: item.uuid,
-    format_create_time: moment(item.create_time).format('YYYY-MM-DD hh:mm'),
-  }));
-}
-
 function InstanceList({ inspection, dispatch }: InstanceListProps) {
   useEffect(() => {
     dispatch({ type: 'inspection/fetchInstances' });
   }, []);
-
-  const dataSource = useMemo(() => convertInstances(inspection.instances), [inspection.instances]);
 
   return (
     <div className={styles.container}>
@@ -100,7 +82,7 @@ function InstanceList({ inspection, dispatch }: InstanceListProps) {
         <h2>集群实例列表</h2>
         <Button type="primary">+添加实例</Button>
       </div>
-      <Table dataSource={dataSource} columns={columns} pagination={false} />
+      <Table dataSource={inspection.instances} columns={columns} pagination={false} />
     </div>
   );
 }

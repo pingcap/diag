@@ -1,5 +1,6 @@
 import { Effect } from 'dva';
 import { Reducer } from 'redux';
+import moment from 'moment';
 
 import { queryInstances } from '@/services/inspection';
 
@@ -12,8 +13,23 @@ export interface IInstance {
   message: string;
 }
 
+export interface IFormatInstance extends IInstance {
+  user: string;
+  key: string;
+  format_create_time: string;
+}
+
 export interface InspectionModelState {
-  instances: IInstance[];
+  instances: IFormatInstance[];
+}
+
+function convertInstances(instances: IInstance[]): IFormatInstance[] {
+  return instances.map(item => ({
+    ...item,
+    user: 'default',
+    key: item.uuid,
+    format_create_time: moment(item.create_time).format('YYYY-MM-DD hh:mm'),
+  }));
 }
 
 export interface InspectionModelType {
@@ -36,10 +52,10 @@ const InspectionModel: InspectionModelType = {
 
   effects: {
     *fetchInstances(_, { call, put }) {
-      const response = yield call(queryInstances);
+      const response: IInstance[] = yield call(queryInstances);
       yield put({
         type: 'saveInstances',
-        payload: response,
+        payload: convertInstances(response),
       });
     },
   },
