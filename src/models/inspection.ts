@@ -28,13 +28,17 @@ const initialState: InspectionModelState = {
   instances: [],
 };
 
-function convertInstances(instances: IInstance[]): IFormatInstance[] {
-  return instances.map(item => ({
-    ...item,
+function convertInstance(instance: IInstance): IFormatInstance {
+  return {
+    ...instance,
     user: 'default',
-    key: item.uuid,
-    format_create_time: moment(item.create_time).format('YYYY-MM-DD hh:mm'),
-  }));
+    key: `${instance.uuid}-${Math.floor(Math.random() * 1000)}`,
+    format_create_time: moment(instance.create_time).format('YYYY-MM-DD hh:mm'),
+  };
+}
+
+function convertInstances(instances: IInstance[]): IFormatInstance[] {
+  return instances.map(convertInstance);
 }
 
 export interface InspectionModelType {
@@ -46,6 +50,7 @@ export interface InspectionModelType {
   };
   reducers: {
     saveInstances: Reducer<InspectionModelState>;
+    saveInstance: Reducer<InspectionModelState>;
     removeInstance: Reducer<InspectionModelState>;
   };
 }
@@ -81,6 +86,13 @@ const InspectionModel: InspectionModelType = {
       return {
         ...state,
         instances: action.payload || [],
+      };
+    },
+    saveInstance(state = initialState, action) {
+      const instance = action.payload as IInstance;
+      return {
+        ...state,
+        instances: state.instances.concat(convertInstance(instance)),
       };
     },
     removeInstance(state = initialState, action) {

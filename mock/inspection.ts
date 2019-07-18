@@ -49,4 +49,12 @@ export default {
       message: '',
     },
   ],
+  'POST /api/v1/instances': {
+    uuid: 'new-instances-123',
+    name: `test-cluster-${Date.now()}`,
+    pd: '100.0.0.0:1000, 100.0.0.1:1001, 100.0.0.2:1002',
+    create_time: new Date().toISOString(),
+    status: 'running',
+    message: '',
+  },
 };

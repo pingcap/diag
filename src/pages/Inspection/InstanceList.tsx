@@ -1,9 +1,10 @@
-import React, { useEffect, useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Table, Button, Tooltip, Icon, Divider, Modal } from 'antd';
 import { connect } from 'dva';
 import { Link } from 'umi';
 import { ConnectState, ConnectProps, InspectionModelState, Dispatch } from '@/models/connect';
-import { IFormatInstance } from '@/models/inspection';
+import { IFormatInstance, IInstance } from '@/models/inspection';
+import AddInstanceModal from '@/components/AddInstanceModal';
 
 const styles = require('./InstanceList.less');
 
@@ -72,6 +73,7 @@ interface InstanceListProps extends ConnectProps {
 }
 
 function InstanceList({ inspection, dispatch }: InstanceListProps) {
+  const [modalVisible, setModalVisible] = useState(false);
   useEffect(() => {
     dispatch({ type: 'inspection/fetchInstances' });
   }, []);
@@ -94,13 +96,32 @@ function InstanceList({ inspection, dispatch }: InstanceListProps) {
     });
   }
 
+  function onAdd() {
+    setModalVisible(true);
+  }
+
+  function addInstance(instance: IInstance) {
+    // sync action
+    dispatch({
+      type: 'inspection/saveInstance',
+      payload: instance,
+    });
+  }
+
   return (
     <div className={styles.container}>
       <div className={styles.list_header}>
         <h2>集群实例列表</h2>
-        <Button type="primary">+添加实例</Button>
+        <Button type="primary" onClick={onAdd}>
+          +添加实例
+        </Button>
       </div>
       <Table dataSource={inspection.instances} columns={columns} pagination={false} />
+      <AddInstanceModal
+        visible={modalVisible}
+        onClose={() => setModalVisible(false)}
+        onData={addInstance}
+      />
     </div>
   );
 }
