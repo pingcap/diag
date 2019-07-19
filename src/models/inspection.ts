@@ -5,6 +5,8 @@ import moment from 'moment';
 import { message } from 'antd';
 import { queryInstances, deleteInstance } from '@/services/inspection';
 
+// /////
+
 export interface IInstance {
   uuid: string;
   name: string;
@@ -20,6 +22,24 @@ export interface IFormatInstance extends IInstance {
   format_create_time: string;
 }
 
+export interface IInstanceConfig {
+  instance_uuid: string;
+  collect_hardware_info: boolean; // 硬件信息
+  collect_software_info: boolean; // 软件信息
+
+  collect_log: boolean; // 应用日志信息
+  collect_log_duration: number; // 应用日志信息时长
+
+  collect_metric_duration: number; // 性能监控信息时长
+
+  collect_demsg: boolean; // 机器 demsg 信息
+
+  auto_sched_start: string; // 开始时间
+  report_keep_duration: number; // 保存时长
+}
+
+// //////
+
 export interface InspectionModelState {
   instances: IFormatInstance[];
 }
@@ -32,7 +52,7 @@ function convertInstance(instance: IInstance): IFormatInstance {
   return {
     ...instance,
     user: 'default',
-    key: `${instance.uuid}-${Math.floor(Math.random() * 1000)}`,
+    key: instance.uuid,
     format_create_time: moment(instance.create_time).format('YYYY-MM-DD hh:mm'),
   };
 }

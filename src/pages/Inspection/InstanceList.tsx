@@ -5,10 +5,11 @@ import { Link } from 'umi';
 import { ConnectState, ConnectProps, InspectionModelState, Dispatch } from '@/models/connect';
 import { IFormatInstance, IInstance } from '@/models/inspection';
 import AddInstanceModal from '@/components/AddInstanceModal';
+import ConfigInstanceModal from '@/components/ConfigInstanceModal';
 
 const styles = require('./InstanceList.less');
 
-const tableColumns = (onDelete: any) => [
+const tableColumns = (onDelete: any, onConfig: any) => [
   {
     title: '用户名',
     dataIndex: 'user',
@@ -57,7 +58,7 @@ const tableColumns = (onDelete: any) => [
       <span>
         <Link to={`/inspection/instances/${record.uuid}/reports`}>查看</Link>
         <Divider type="vertical" />
-        <a href="#">设置</a>
+        <a onClick={() => onConfig(record)}>设置</a>
         <Divider type="vertical" />
         <a style={{ color: 'red' }} onClick={() => onDelete(record)}>
           删除
@@ -73,14 +74,17 @@ interface InstanceListProps extends ConnectProps {
 }
 
 function InstanceList({ inspection, dispatch }: InstanceListProps) {
-  const [modalVisible, setModalVisible] = useState(false);
+  const [addModalVisible, setAddModalVisible] = useState(false);
+  const [configModalVisible, setConfigModalVisible] = useState(false);
+  const [curInstance, setCurInstance] = useState<IInstance | null>(null);
+
   useEffect(() => {
     dispatch({ type: 'inspection/fetchInstances' });
   }, []);
 
-  const columns = useMemo(() => tableColumns(onDelete), []);
+  const columns = useMemo(() => tableColumns(deleteInstance, configInstance), []);
 
-  function onDelete(record: IFormatInstance) {
+  function deleteInstance(record: IFormatInstance) {
     Modal.confirm({
       title: '删除实例？',
       content: '你确定要删除这个实例吗？删除后不可恢复',
@@ -96,8 +100,13 @@ function InstanceList({ inspection, dispatch }: InstanceListProps) {
     });
   }
 
+  function configInstance(record: IFormatInstance) {
+    setConfigModalVisible(true);
+    setCurInstance(record);
+  }
+
   function onAdd() {
-    setModalVisible(true);
+    setAddModalVisible(true);
   }
 
   function addInstance(instance: IInstance) {
@@ -106,6 +115,11 @@ function InstanceList({ inspection, dispatch }: InstanceListProps) {
       type: 'inspection/saveInstance',
       payload: instance,
     });
+  }
+
+  function closeConfigModal() {
+    setConfigModalVisible(false);
+    setCurInstance(null);
   }
 
   return (
@@ -118,9 +132,14 @@ function InstanceList({ inspection, dispatch }: InstanceListProps) {
       </div>
       <Table dataSource={inspection.instances} columns={columns} pagination={false} />
       <AddInstanceModal
-        visible={modalVisible}
-        onClose={() => setModalVisible(false)}
+        visible={addModalVisible}
+        onClose={() => setAddModalVisible(false)}
         onData={addInstance}
+      />
+      <ConfigInstanceModal
+        visible={configModalVisible}
+        onClose={closeConfigModal}
+        instanceId={curInstance ? curInstance.uuid : ''}
       />
     </div>
   );
