@@ -1,8 +1,8 @@
 package syncer
 
-// 默认会匹配所有以组件名开头的组件
-// 比如 tikv 组件会默认匹配到 tikv*.log 的日志文件
-// 下面列出的是特殊情况，包含不止一个文件名开头不同的日志文件
+// componentPattern is a list of special cases for the log file naming pattern of a component,
+// By default, all components that begin with the component name will be matched.
+// For example, the tikv component will match the log file of tikv*.log by default.
 var componentPattern = map[string][]string{
 	"prometheus": {"alertmanager"},
 }

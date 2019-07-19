@@ -14,14 +14,17 @@ type Watcher struct {
 	targetDir string
 }
 
-func (w *Watcher) watch(taskManager TaskManager) error {
+// Watch watch the topoDir, resolve all tasks, and pass them to taskManager
+func (w *Watcher) Watch(taskManager TaskManager) error {
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
 		return err
 	}
+	defer watcher.Close()
 	go func() {
 		for {
 			select {
+			// TODO: If there are more than one events, only the latest one will be taken out.
 			case event, ok := <-watcher.Events:
 				if !ok {
 					log.Error("Watcher events channel closed")
@@ -31,7 +34,7 @@ func (w *Watcher) watch(taskManager TaskManager) error {
 					continue
 				}
 				log.Println("topology file modified:", event.Name)
-				// 其中一个文件发生修改，整个目录重新扫描一遍
+				// If one of the files is modified, the entire directory will be rescanned.
 				tasks, err := w.LoadTasks()
 				if err != nil {
 					log.Errorf("failed to load tasks: %s", err)
@@ -45,9 +48,14 @@ func (w *Watcher) watch(taskManager TaskManager) error {
 			}
 		}
 	}()
+	err = watcher.Add(w.targetDir)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
+// LoadTask return all SyncTasks in current topology folder
 func (w *Watcher) LoadTasks() ([]SyncTask, error) {
 	var allTasks []SyncTask
 	dir, err := ioutil.ReadDir(w.topoDir)
@@ -69,7 +77,6 @@ func (w *Watcher) LoadTasks() ([]SyncTask, error) {
 		if err != nil {
 			return nil, err
 		}
-		// 获取需要同步的机器（和路径）和对应的 deploy 目录
 		tasks := cluster.LoadTasks(w.targetDir, uuid)
 		allTasks = append(allTasks, tasks...)
 	}
