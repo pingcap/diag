@@ -99,9 +99,9 @@ function ReportList({ inspection, dispatch, match, loading }: ReportListProps) {
     });
   }
 
-  const columns = useMemo(() => tableColumns(deleteInstance, copyInsepction), []);
+  const columns = useMemo(() => tableColumns(deleteInspection, copyInsepction), []);
 
-  function deleteInstance(record: IFormatInspection) {
+  function deleteInspection(record: IFormatInspection) {
     Modal.confirm({
       title: '删除报告？',
       content: '你确定要删除这个报告吗？删除后不可恢复',

@@ -29,3 +29,7 @@ export async function queryInstanceInspections(instanceId: string, page: number 
 export async function queryAllInspections(page: number = 1) {
   return request(`/api/v1/inspections?page=${page}`);
 }
+
+export async function deleteInspection(inspectionId: string) {
+  return request.delete(`/api/v1/inspections/${inspectionId}`);
+}

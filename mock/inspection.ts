@@ -61,6 +61,9 @@ export default {
       message: '',
     });
   },
+  'DELETE /api/v1/instances/:id': (req: any, res: any) => {
+    res.status(204).send();
+  },
   'GET /api/v1/instances/:id/config': (req: any, res: any) => {
     setTimeout(() => {
       res.send({
@@ -107,5 +110,8 @@ export default {
         }),
       );
     }, 1000);
+  },
+  'DELETE /api/v1/inspections/:id': (req: any, res: any) => {
+    res.status(204).send();
   },
 };

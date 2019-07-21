@@ -3,7 +3,12 @@ import { Reducer } from 'redux';
 import moment from 'moment';
 
 import { message } from 'antd';
-import { queryInstances, deleteInstance, queryInstanceInspections } from '@/services/inspection';
+import {
+  queryInstances,
+  deleteInstance,
+  queryInstanceInspections,
+  deleteInspection,
+} from '@/services/inspection';
 
 // /////
 
@@ -116,6 +121,7 @@ export interface InspectionModelType {
     deleteInstance: Effect;
 
     fetchInspections: Effect;
+    deleteInspection: Effect;
   };
   reducers: {
     saveInstances: Reducer<InspectionModelState>;
@@ -124,6 +130,7 @@ export interface InspectionModelType {
 
     changePage: Reducer<InspectionModelState>;
     saveInspections: Reducer<InspectionModelState>;
+    removeInspection: Reducer<InspectionModelState>;
   };
 }
 
@@ -165,6 +172,15 @@ const InspectionModel: InspectionModelType = {
         payload: res,
       });
     },
+    *deleteInspection({ payload }, { call, put }) {
+      const inspectionId = payload;
+      yield call(deleteInspection, inspectionId);
+      yield put({
+        type: 'removeInspection',
+        payload,
+      });
+      message.success(`诊断报告 ${inspectionId} 已删除！`);
+    },
   },
 
   // reducers verbs: save (multiple or singal), remove, modify
@@ -203,6 +219,14 @@ const InspectionModel: InspectionModelType = {
 
         total_inspections: total,
         inspections: convertInspections(data),
+      };
+    },
+    removeInspection(state = initialState, { payload }) {
+      const inspectionId = payload;
+      return {
+        ...state,
+
+        inspections: state.inspections.filter(i => i.uuid !== inspectionId),
       };
     },
   },
