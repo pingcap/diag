@@ -1,3 +1,5 @@
+const Mock = require('mockjs');
+
 export default {
   'GET /api/v1/instances': [
     {
@@ -82,6 +84,28 @@ export default {
   'POST /api/v1/instances/:id/config': (req: any, res: any) => {
     setTimeout(() => {
       res.status(204).send();
+    }, 1000);
+  },
+  // ////////////////
+  'GET /api/v1/instances/:id/inspections': (req: any, res: any) => {
+    setTimeout(() => {
+      res.send(
+        Mock.mock({
+          'total|100-200': 10,
+          'data|10': [
+            {
+              uuid: /\w{12}/,
+              instance_id: /\w{12}/,
+              'status|1': ['running', 'finish'],
+              'type|1': ['manual', 'auto'],
+              create_time: '@datetime',
+              finish_time: '@datetime',
+              report_path: '@url',
+              instance_name: '@name',
+            },
+          ],
+        }),
+      );
     }, 1000);
   },
 };

@@ -3,7 +3,7 @@ import { Reducer } from 'redux';
 import moment from 'moment';
 
 import { message } from 'antd';
-import { queryInstances, deleteInstance } from '@/services/inspection';
+import { queryInstances, deleteInstance, queryInstanceInspections } from '@/services/inspection';
 
 // /////
 
@@ -23,7 +23,7 @@ export interface IFormatInstance extends IInstance {
 }
 
 export interface IInstanceConfig {
-  instance_uuid: string;
+  instance_id: string;
   collect_hardware_info: boolean; // 硬件信息
   collect_software_info: boolean; // 软件信息
 
@@ -38,15 +38,30 @@ export interface IInstanceConfig {
   report_keep_duration: number; // 保存时长
 }
 
-// //////
-
-export interface InspectionModelState {
-  instances: IFormatInstance[];
+export interface IInspection {
+  uuid: string;
+  instance_id: string;
+  status: 'running' | 'finish';
+  type: 'manual' | 'auto';
+  create_time: string;
+  finish_time: string;
+  report_path: string;
+  instance_name: string;
 }
 
-const initialState: InspectionModelState = {
-  instances: [],
-};
+export interface IFormatInspection extends IInspection {
+  user: string;
+  key: string;
+  format_create_time: string;
+  format_finish_time: string;
+}
+
+export interface IInspectionsRes {
+  total: number;
+  data: IInspection[];
+}
+
+// //////
 
 function convertInstance(instance: IInstance): IFormatInstance {
   return {
@@ -61,19 +76,58 @@ function convertInstances(instances: IInstance[]): IFormatInstance[] {
   return instances.map(convertInstance);
 }
 
+function convertInspection(inspection: IInspection): IFormatInspection {
+  return {
+    ...inspection,
+    user: 'default',
+    key: inspection.uuid,
+    format_create_time: moment(inspection.create_time).format('YYYY-MM-DD hh:mm'),
+    format_finish_time: moment(inspection.finish_time).format('YYYY-MM-DD hh:mm'),
+  };
+}
+
+function convertInspections(inspections: IInspection[]) {
+  return inspections.map(convertInspection);
+}
+
+// //////
+
+export interface InspectionModelState {
+  instances: IFormatInstance[];
+
+  inspections: IFormatInspection[];
+  total_inspections: number;
+  cur_inspections_page: number;
+}
+
+const initialState: InspectionModelState = {
+  instances: [],
+
+  inspections: [],
+  total_inspections: 0,
+  cur_inspections_page: 1,
+};
+
 export interface InspectionModelType {
   namespace: 'inspection';
   state: InspectionModelState;
   effects: {
     fetchInstances: Effect;
     deleteInstance: Effect;
+
+    fetchInspections: Effect;
   };
   reducers: {
     saveInstances: Reducer<InspectionModelState>;
     saveInstance: Reducer<InspectionModelState>;
     removeInstance: Reducer<InspectionModelState>;
+
+    changePage: Reducer<InspectionModelState>;
+    saveInspections: Reducer<InspectionModelState>;
   };
 }
+
+// //////
 
 const InspectionModel: InspectionModelType = {
   namespace: 'inspection',
@@ -83,10 +137,10 @@ const InspectionModel: InspectionModelType = {
   // effects verbs: fetch, add, delete, update
   effects: {
     *fetchInstances(_, { call, put }) {
-      const response: IInstance[] = yield call(queryInstances);
+      const res: IInstance[] = yield call(queryInstances);
       yield put({
         type: 'saveInstances',
-        payload: convertInstances(response),
+        payload: res,
       });
     },
     *deleteInstance({ payload }, { call, put }) {
@@ -98,14 +152,27 @@ const InspectionModel: InspectionModelType = {
       });
       message.success(`实例 ${instanceId} 已删除！`);
     },
+
+    *fetchInspections({ payload }, { call, put }) {
+      const { instanceId, page } = payload;
+      yield put({
+        type: 'changePage',
+        payload: page,
+      });
+      const res: IInspectionsRes = yield call(queryInstanceInspections, instanceId, page);
+      yield put({
+        type: 'saveInspections',
+        payload: res,
+      });
+    },
   },
 
   // reducers verbs: save (multiple or singal), remove, modify
   reducers: {
-    saveInstances(state, action) {
+    saveInstances(state = initialState, { payload }) {
       return {
         ...state,
-        instances: action.payload || [],
+        instances: convertInstances(payload as IInstance[]),
       };
     },
     saveInstance(state = initialState, action) {
@@ -119,6 +186,23 @@ const InspectionModel: InspectionModelType = {
       return {
         ...state,
         instances: state.instances.filter(item => item.uuid !== action.payload),
+      };
+    },
+
+    changePage(state = initialState, { payload }) {
+      const page = payload;
+      return {
+        ...state,
+        cur_inspections_page: page,
+      };
+    },
+    saveInspections(state = initialState, { payload }) {
+      const { total, data } = payload as IInspectionsRes;
+      return {
+        ...state,
+
+        total_inspections: total,
+        inspections: convertInspections(data),
       };
     },
   },

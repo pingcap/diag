@@ -19,3 +19,13 @@ export async function updateInstanceConfig(
 ): Promise<any> {
   return request.post(`/api/v1/instances/${instanceId}/config`, { data: config });
 }
+
+// /////////////
+
+export async function queryInstanceInspections(instanceId: string, page: number = 1) {
+  return request(`/api/v1/instances/${instanceId}/inspections?page=${page}`);
+}
+
+export async function queryAllInspections(page: number = 1) {
+  return request(`/api/v1/inspections?page=${page}`);
+}

@@ -7,7 +7,7 @@ import { IFormatInstance, IInstance } from '@/models/inspection';
 import AddInstanceModal from '@/components/AddInstanceModal';
 import ConfigInstanceModal from '@/components/ConfigInstanceModal';
 
-const styles = require('./InstanceList.less');
+const styles = require('./style.less');
 
 const tableColumns = (onDelete: any, onConfig: any) => [
   {
