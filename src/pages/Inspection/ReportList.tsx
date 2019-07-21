@@ -1,14 +1,14 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { Table, Button, Divider, Modal } from 'antd';
 import { connect } from 'dva';
 import { Link } from 'umi';
 import { PaginationConfig } from 'antd/lib/table';
 import { ConnectState, ConnectProps, InspectionModelState, Dispatch } from '@/models/connect';
-import { IInspection, IFormatInspection } from '@/models/inspection';
+import { IFormatInspection } from '@/models/inspection';
 
 const styles = require('./style.less');
 
-const tableColumns = (onDelete: any, onCopy: any) => [
+const tableColumns = (onDelete: any) => [
   {
     title: '诊断报告 ID',
     dataIndex: 'uuid',
@@ -57,7 +57,9 @@ const tableColumns = (onDelete: any, onCopy: any) => [
       <span>
         <Link to={`/inspection/reports/${record.uuid}`}>查看</Link>
         <Divider type="vertical" />
-        <a onClick={() => onCopy(record)}>拷贝</a>
+        <a download href={`/inspections/${record.uuid}.tar.gz`}>
+          拷贝
+        </a>
         <Divider type="vertical" />
         <a style={{ color: 'red' }} onClick={() => onDelete(record)}>
           删除
@@ -74,8 +76,6 @@ interface ReportListProps extends ConnectProps {
 }
 
 function ReportList({ inspection, dispatch, match, loading }: ReportListProps) {
-  const [curInspection, setCurInspection] = useState<IInspection | null>(null);
-
   const pagination: PaginationConfig = useMemo(
     () => ({
       total: inspection.total_inspections,
@@ -99,7 +99,7 @@ function ReportList({ inspection, dispatch, match, loading }: ReportListProps) {
     });
   }
 
-  const columns = useMemo(() => tableColumns(deleteInspection, copyInsepction), []);
+  const columns = useMemo(() => tableColumns(deleteInspection), []);
 
   function deleteInspection(record: IFormatInspection) {
     Modal.confirm({
@@ -115,10 +115,6 @@ function ReportList({ inspection, dispatch, match, loading }: ReportListProps) {
       },
       onCancel() {},
     });
-  }
-
-  function copyInsepction(record: IFormatInspection) {
-    setCurInspection(record);
   }
 
   function manuallyInspect() {
