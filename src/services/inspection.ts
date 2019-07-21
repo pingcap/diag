@@ -33,3 +33,7 @@ export async function queryAllInspections(page: number = 1) {
 export async function deleteInspection(inspectionId: string) {
   return request.delete(`/api/v1/inspections/${inspectionId}`);
 }
+
+export async function addInspection() {
+  return request.post('/api/v1/inspections');
+}

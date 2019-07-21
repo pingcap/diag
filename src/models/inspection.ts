@@ -8,6 +8,7 @@ import {
   deleteInstance,
   queryInstanceInspections,
   deleteInspection,
+  addInspection,
 } from '@/services/inspection';
 
 // /////
@@ -122,6 +123,7 @@ export interface InspectionModelType {
 
     fetchInspections: Effect;
     deleteInspection: Effect;
+    addInspection: Effect;
   };
   reducers: {
     saveInstances: Reducer<InspectionModelState>;
@@ -130,6 +132,7 @@ export interface InspectionModelType {
 
     changePage: Reducer<InspectionModelState>;
     saveInspections: Reducer<InspectionModelState>;
+    saveInspection: Reducer<InspectionModelState>;
     removeInspection: Reducer<InspectionModelState>;
   };
 }
@@ -181,6 +184,14 @@ const InspectionModel: InspectionModelType = {
       });
       message.success(`诊断报告 ${inspectionId} 已删除！`);
     },
+    *addInspection({ _ }, { call, put }) {
+      const res = yield call(addInspection);
+      yield put({
+        type: 'saveInspection',
+        payload: res as IInspection,
+      });
+      message.success(`诊断 ${res.uuid} 已经进行中！`);
+    },
   },
 
   // reducers verbs: save (multiple or singal), remove, modify
@@ -191,11 +202,10 @@ const InspectionModel: InspectionModelType = {
         instances: convertInstances(payload as IInstance[]),
       };
     },
-    saveInstance(state = initialState, action) {
-      const instance = action.payload as IInstance;
+    saveInstance(state = initialState, { payload }) {
       return {
         ...state,
-        instances: state.instances.concat(convertInstance(instance)),
+        instances: [convertInstance(payload as IInstance)].concat(state.instances),
       };
     },
     removeInstance(state = initialState, action) {
@@ -219,6 +229,15 @@ const InspectionModel: InspectionModelType = {
 
         total_inspections: total,
         inspections: convertInspections(data),
+      };
+    },
+    saveInspection(state = initialState, { payload }) {
+      return {
+        ...state,
+
+        inspections: [convertInspection(payload as IInspection)]
+          .concat(state.inspections)
+          .slice(0, 10),
       };
     },
     removeInspection(state = initialState, { payload }) {

@@ -73,9 +73,10 @@ interface ReportListProps extends ConnectProps {
   inspection: InspectionModelState;
   dispatch: Dispatch;
   loading: boolean;
+  inspecting: boolean;
 }
 
-function ReportList({ inspection, dispatch, match, loading }: ReportListProps) {
+function ReportList({ inspection, dispatch, match, loading, inspecting }: ReportListProps) {
   const pagination: PaginationConfig = useMemo(
     () => ({
       total: inspection.total_inspections,
@@ -113,13 +114,20 @@ function ReportList({ inspection, dispatch, match, loading }: ReportListProps) {
           payload: record.uuid,
         });
       },
-      onCancel() {},
     });
   }
 
   function manuallyInspect() {
-    // TODO:
-    // post inspections
+    Modal.confirm({
+      title: '手动诊断？',
+      content: '你确定要发起一次手动诊断吗？',
+      okText: '诊断',
+      onOk() {
+        dispatch({
+          type: 'inspection/addInspection',
+        });
+      },
+    });
   }
 
   function handleTableChange(curPagination: PaginationConfig) {
@@ -130,7 +138,7 @@ function ReportList({ inspection, dispatch, match, loading }: ReportListProps) {
     <div className={styles.container}>
       <div className={styles.list_header}>
         <h2>诊断报告列表</h2>
-        <Button type="primary" onClick={manuallyInspect}>
+        <Button type="primary" onClick={manuallyInspect} loading={inspecting}>
           手动一键诊断
         </Button>
       </div>
@@ -148,4 +156,5 @@ function ReportList({ inspection, dispatch, match, loading }: ReportListProps) {
 export default connect(({ inspection, loading }: ConnectState) => ({
   inspection,
   loading: loading.effects['inspection/fetchInspections'],
+  inspecting: loading.effects['inspection/addInspection'],
 }))(ReportList);

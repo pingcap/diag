@@ -114,4 +114,20 @@ export default {
   'DELETE /api/v1/inspections/:id': (req: any, res: any) => {
     res.status(204).send();
   },
+  'POST /api/v1/inspections': (req: any, res: any) => {
+    setTimeout(() => {
+      res.send(
+        Mock.mock({
+          uuid: /\w{12}/,
+          instance_id: /\w{12}/,
+          status: 'running',
+          'type|1': 'manual',
+          create_time: '@datetime',
+          finish_time: '@datetime',
+          report_path: '@url',
+          instance_name: '@name',
+        }),
+      );
+    }, 1000);
+  },
 };
