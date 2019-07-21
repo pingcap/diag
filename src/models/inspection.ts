@@ -148,6 +148,11 @@ const InspectionModel: InspectionModelType = {
   effects: {
     *fetchInstances(_, { call, put }) {
       const res: IInstance[] = yield call(queryInstances);
+      // reset inspections list page
+      yield put({
+        type: 'changePage',
+        payload: 1,
+      });
       yield put({
         type: 'saveInstances',
         payload: res,
@@ -183,6 +188,7 @@ const InspectionModel: InspectionModelType = {
         payload,
       });
       message.success(`诊断报告 ${inspectionId} 已删除！`);
+      return true;
     },
     *addInspection({ _ }, { call, put }) {
       const res = yield call(addInspection);
