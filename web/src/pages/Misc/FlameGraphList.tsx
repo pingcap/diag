@@ -4,7 +4,6 @@ import { connect } from 'dva';
 import { Link } from 'umi';
 import { PaginationConfig } from 'antd/lib/table';
 import { ConnectState, ConnectProps, Dispatch } from '@/models/connect';
-import { IFormatInspection } from '@/models/inspection';
 import { IFlameGraphInfo, IFlameGraph } from '@/models/misc';
 
 const styles = require('../style.less');
@@ -94,17 +93,17 @@ function FlameGraphList({ flamegraph, dispatch, loading, collecting }: FlameGrap
     });
   }
 
-  const columns = useMemo(() => tableColumns(deleteInspection), []);
+  const columns = useMemo(() => tableColumns(deleteFlamegraph), []);
 
-  function deleteInspection(record: IFormatInspection) {
+  function deleteFlamegraph(record: IFlameGraph) {
     Modal.confirm({
-      title: '删除报告？',
-      content: '你确定要删除这个报告吗？删除后不可恢复',
+      title: '删除火焰图报告？',
+      content: '你确定要删除这个火焰图报告吗？删除后不可恢复',
       okText: '删除',
       okButtonProps: { type: 'danger' },
       onOk() {
         dispatch({
-          type: 'mics/deleteFlamegraph',
+          type: 'misc/deleteFlamegraph',
           payload: record.uuid,
         });
       },

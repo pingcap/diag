@@ -21,4 +21,9 @@ export default {
       );
     }, 1000);
   },
+  'DELETE /api/v1/flamegraphs/:id': (req: any, res: any) => {
+    setTimeout(() => {
+      res.status(204).send();
+    }, 1000);
+  },
 };

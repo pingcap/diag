@@ -1,7 +1,8 @@
 import { Effect } from 'dva';
 import { Reducer } from 'redux';
 import moment from 'moment';
-import { queryFlamegraphs } from '@/services/misc';
+import { message } from 'antd';
+import { queryFlamegraphs, deleteFlamegraph } from '@/services/misc';
 
 // /////
 
@@ -16,6 +17,7 @@ export interface IFlameGraph {
 }
 
 export interface IFormatFlameGraph extends IFlameGraph {
+  key: string;
   format_create_time: string;
   format_finish_time: string;
 }
@@ -26,6 +28,7 @@ export type IFormatPerfProfile = IFormatFlameGraph;
 function convertItem(item: IFlameGraph): IFormatFlameGraph {
   return {
     ...item,
+    key: item.uuid,
     format_create_time: moment(item.create_time).format('YYYY-MM-DD hh:mm'),
     format_finish_time: moment(item.finish_time).format('YYYY-MM-DD hh:mm'),
   };
@@ -67,7 +70,7 @@ export interface MiscModelType {
   effects: {
     fetchFlamegraphs: Effect;
     // addFlamegraph: Effect;
-    // deleteFlamegraph: Effect;
+    deleteFlamegraph: Effect;
     // fetchPerfProfiles: Effect;
     // addPerfProfile: Effect;
     // deletePerfProfile: Effect;
@@ -75,7 +78,7 @@ export interface MiscModelType {
   reducers: {
     saveFlamegraphs: Reducer<MiscModelState>;
     // saveFlamegraph: Reducer<MiscModelState>;
-    // removeFlamegraph: Reducer<MiscModelState>;
+    removeFlamegraph: Reducer<MiscModelState>;
 
     // savePerfProfiles: Reducer<MiscModelState>;
     // savePerfProfile: Reducer<MiscModelState>;
@@ -99,6 +102,16 @@ const MiscModel: MiscModelType = {
         payload: { page, res },
       });
     },
+    *deleteFlamegraph({ payload }, { call, put }) {
+      const uuid = payload;
+      yield call(deleteFlamegraph, uuid);
+      yield put({
+        type: 'removeFlamegraph',
+        payload,
+      });
+      message.success(`火焰图报告 ${uuid} 已删除！`);
+      return true;
+    },
   },
   reducers: {
     saveFlamegraphs(state = initialState, { payload }) {
@@ -113,6 +126,16 @@ const MiscModel: MiscModelType = {
           total,
           cur_page: page,
           list: (data as IFlameGraph[]).map(convertItem),
+        },
+      };
+    },
+    removeFlamegraph(state = initialState, { payload }) {
+      const uuid = payload;
+      return {
+        ...state,
+        flamegraph: {
+          ...state.flamegraph,
+          list: state.flamegraph.list.filter(item => item.uuid !== uuid),
         },
       };
     },
