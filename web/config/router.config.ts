@@ -61,6 +61,12 @@ export default [
             name: 'perf_profile',
             component: './Misc/PerfProfileList',
           },
+          {
+            path: '/misc/perfprofiles/:id',
+            name: 'perf_profile_detail',
+            component: './Misc/PerfProfileDetail',
+            hideInMenu: true,
+          },
         ],
       },
       {
