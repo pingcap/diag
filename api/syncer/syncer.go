@@ -20,7 +20,7 @@ import (
 * the synchronization interval is specified by interval,
 * and the bandwidth limit for synchronization is specified by bwlimit
 * (the rsync command line parameter supports bwlimit.)
-*/
+ */
 
 func Sync(topoDir string, targetDir string, interval time.Duration, bwlimit int) error {
 	watcher := Watcher{

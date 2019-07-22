@@ -20,7 +20,7 @@ type Log struct {
 	File      string    `json:"file"`
 	Time      time.Time `json:"time"`
 	Component string    `json:"component"`
-	Level	  string	`json:"level"`
+	Level     string    `json:"level"`
 	Content   string    `json:"content"`
 }
 
@@ -157,7 +157,7 @@ func (m *Mock) Next() (*Log, error) {
 		File:      "test.log",
 		Time:      time.Now(),
 		Component: "tikv",
-		Level: 	   "INFO",
+		Level:     "INFO",
 		Content:   fmt.Sprintf("在%s目录搜素%s的第%d条结果", m.dir, m.text, m.count),
 	}, nil
 }

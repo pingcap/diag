@@ -25,7 +25,7 @@ func (s *taskManagerTestSuit) TestRunTasks(c *C) {
 			Args: []string{"-avz", fmt.Sprintf("--bwlimit=%d", 1000)},
 		},
 		TodoTaskCh: make(chan syncer.SyncTask, 1),
-		StopCh: make(chan struct{}),
+		StopCh:     make(chan struct{}),
 	}
 	task := syncer.SyncTask{
 		Key:     "tikv_1",
