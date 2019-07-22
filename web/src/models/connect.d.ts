@@ -6,8 +6,15 @@ import { GlobalModelState } from './global';
 import { DefaultSettings as SettingModelState } from '../../config/defaultSettings';
 import { UserModelState } from './user';
 import { InspectionModelState } from './inspection';
+import { MiscModelState } from './misc';
 
-export { GlobalModelState, SettingModelState, UserModelState, InspectionModelState };
+export {
+  GlobalModelState,
+  SettingModelState,
+  UserModelState,
+  InspectionModelState,
+  MiscModelState,
+};
 
 export interface Loading {
   global: boolean;
@@ -26,6 +33,7 @@ export interface ConnectState {
   settings: SettingModelState;
   user: UserModelState;
   inspection: InspectionModelState;
+  misc: MiscModelState;
 }
 
 export type Effect = (

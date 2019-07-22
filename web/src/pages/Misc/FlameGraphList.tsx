@@ -3,14 +3,15 @@ import { Table, Button, Divider, Modal } from 'antd';
 import { connect } from 'dva';
 import { Link } from 'umi';
 import { PaginationConfig } from 'antd/lib/table';
-import { ConnectState, ConnectProps, InspectionModelState, Dispatch } from '@/models/connect';
+import { ConnectState, ConnectProps, Dispatch } from '@/models/connect';
 import { IFormatInspection } from '@/models/inspection';
+import { IFlameGraphInfo, IFlameGraph } from '@/models/misc';
 
 const styles = require('../style.less');
 
 const tableColumns = (onDelete: any) => [
   {
-    title: '诊断报告 ID',
+    title: '火焰图报告 ID',
     dataIndex: 'uuid',
     key: 'uuid',
   },
@@ -20,14 +21,9 @@ const tableColumns = (onDelete: any) => [
     key: 'user',
   },
   {
-    title: '实例名称',
-    dataIndex: 'instance_name',
-    key: 'instance_name',
-  },
-  {
-    title: '诊断方式',
-    dataIndex: 'type',
-    key: 'type',
+    title: 'IP : 端口',
+    dataIndex: 'machine',
+    key: 'machine',
   },
   {
     title: '开始时间',
@@ -38,7 +34,7 @@ const tableColumns = (onDelete: any) => [
     title: '完成时间',
     dataIndex: 'format_finish_time',
     key: 'format_finish_time',
-    render: (text: any, record: IFormatInspection) => {
+    render: (text: any, record: IFlameGraph) => {
       if (record.status === 'running') {
         return <span>running...</span>;
       }
@@ -53,11 +49,11 @@ const tableColumns = (onDelete: any) => [
   {
     title: '操作',
     key: 'action',
-    render: (text: any, record: IFormatInspection) => (
+    render: (text: any, record: IFlameGraph) => (
       <span>
-        <Link to={`/inspection/reports/${record.uuid}`}>查看</Link>
+        <Link to={`/misc/flamegraphs/${record.uuid}`}>查看</Link>
         <Divider type="vertical" />
-        <a download href={`/api/v1/inspections/${record.uuid}.tar.gz`}>
+        <a download href={`/api/v1/flamegraphs/${record.uuid}.tar.gz`}>
           拷贝
         </a>
         <Divider type="vertical" />
@@ -69,33 +65,31 @@ const tableColumns = (onDelete: any) => [
   },
 ];
 
-interface ReportListProps extends ConnectProps {
-  inspection: InspectionModelState;
+interface FlameGraphListProps extends ConnectProps {
+  flamegraph: IFlameGraphInfo;
   dispatch: Dispatch;
   loading: boolean;
-  inspecting: boolean;
+  collecting: boolean;
 }
 
-function ReportList({ inspection, dispatch, match, loading, inspecting }: ReportListProps) {
+function FlameGraphList({ flamegraph, dispatch, loading, collecting }: FlameGraphListProps) {
   const pagination: PaginationConfig = useMemo(
     () => ({
-      total: inspection.total_inspections,
-      current: inspection.cur_inspections_page,
+      total: flamegraph.total,
+      current: flamegraph.cur_page,
     }),
-    [inspection.cur_inspections_page, inspection.total_inspections],
+    [flamegraph.total, flamegraph.cur_page],
   );
 
   useEffect(() => {
-    fetchInspections(inspection.cur_inspections_page);
+    fetchFlamegraphs(flamegraph.cur_page);
   }, []);
 
-  function fetchInspections(page: number) {
-    const instanceId: string | undefined = match && match.params && (match.params as any).id;
+  function fetchFlamegraphs(page: number) {
     dispatch({
-      type: 'inspection/fetchInspections',
+      type: 'misc/fetchFlamegraphs',
       payload: {
         page,
-        instanceId,
       },
     });
   }
@@ -110,41 +104,41 @@ function ReportList({ inspection, dispatch, match, loading, inspecting }: Report
       okButtonProps: { type: 'danger' },
       onOk() {
         dispatch({
-          type: 'inspection/deleteInspection',
+          type: 'mics/deleteFlamegraph',
           payload: record.uuid,
         });
       },
     });
   }
 
-  function manuallyInspect() {
+  function generateFlamegraph() {
     Modal.confirm({
-      title: '手动诊断？',
-      content: '你确定要发起一次手动诊断吗？',
-      okText: '诊断',
+      title: '收集火焰图？',
+      content: '你确定要收集火焰图吗？',
+      okText: '收集',
       onOk() {
         dispatch({
-          type: 'inspection/addInspection',
+          type: 'misc/addFlamegraph',
         });
       },
     });
   }
 
   function handleTableChange(curPagination: PaginationConfig) {
-    fetchInspections(curPagination.current as number);
+    fetchFlamegraphs(curPagination.current as number);
   }
 
   return (
     <div className={styles.container}>
       <div className={styles.list_header}>
-        <h2>诊断报告列表</h2>
-        <Button type="primary" onClick={manuallyInspect} loading={inspecting}>
-          手动一键诊断
+        <h2>火焰图报告列表</h2>
+        <Button type="primary" onClick={generateFlamegraph} loading={collecting}>
+          + 获取
         </Button>
       </div>
       <Table
         loading={loading}
-        dataSource={inspection.inspections}
+        dataSource={flamegraph.list}
         columns={columns}
         onChange={handleTableChange}
         pagination={pagination}
@@ -153,8 +147,8 @@ function ReportList({ inspection, dispatch, match, loading, inspecting }: Report
   );
 }
 
-export default connect(({ inspection, loading }: ConnectState) => ({
-  inspection,
-  loading: loading.effects['inspection/fetchInspections'],
-  inspecting: loading.effects['inspection/addInspection'],
-}))(ReportList);
+export default connect(({ misc, loading }: ConnectState) => ({
+  flamegraph: misc.flamegraph,
+  loading: loading.effects['misc/fetchFlamegraphs'],
+  collecting: loading.effects['misc/addFlamegraph'],
+}))(FlameGraphList);

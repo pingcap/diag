@@ -48,12 +48,12 @@ export default [
           {
             path: '/misc/flamegraphs',
             name: 'flame_graph',
-            component: './Misc/FlameGraph',
+            component: './Misc/FlameGraphList',
           },
           {
             path: '/misc/perfprofiles',
             name: 'perf_profile',
-            component: './Misc/PerfProfile',
+            component: './Misc/PerfProfileList',
           },
         ],
       },

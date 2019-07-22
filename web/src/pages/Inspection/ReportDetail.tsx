@@ -4,7 +4,7 @@ import { router } from 'umi';
 import { connect } from 'dva';
 import { ConnectProps, Dispatch } from '@/models/connect';
 
-const styles = require('./style.less');
+const styles = require('../style.less');
 
 interface ReportDetailProps extends ConnectProps {
   dispatch: Dispatch;
@@ -34,7 +34,7 @@ function ReportDetail({ dispatch, match }: ReportDetailProps) {
         <h3>报告：{reportId}</h3>
         <div className={styles.space}></div>
         <Button type="primary" style={{ marginRight: 20 }}>
-          <a download href={`/inspections/${reportId}.tar.gz`}>
+          <a download href={`/api/v1/inspections/${reportId}.tar.gz`}>
             拷贝
           </a>
         </Button>
