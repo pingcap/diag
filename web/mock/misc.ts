@@ -21,6 +21,22 @@ export default {
       );
     }, 1000);
   },
+  'POST /api/v1/flamegraphs': (req: any, res: any) => {
+    // console.log(req.body); // {machine: 123}
+    setTimeout(() => {
+      res.send(
+        Mock.mock({
+          uuid: /\w{12}/,
+          machine: req.body.machine, // not req.params
+          user: '@name',
+          status: 'running',
+          create_time: '@datetime',
+          finish_time: '@datetime',
+          report_path: '@url',
+        }),
+      );
+    }, 1000);
+  },
   'DELETE /api/v1/flamegraphs/:id': (req: any, res: any) => {
     setTimeout(() => {
       res.status(204).send();

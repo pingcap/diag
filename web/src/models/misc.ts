@@ -2,7 +2,7 @@ import { Effect } from 'dva';
 import { Reducer } from 'redux';
 import moment from 'moment';
 import { message } from 'antd';
-import { queryFlamegraphs, deleteFlamegraph } from '@/services/misc';
+import { queryFlamegraphs, deleteFlamegraph, addFlamegraph } from '@/services/misc';
 
 // /////
 
@@ -69,7 +69,7 @@ export interface MiscModelType {
   state: MiscModelState;
   effects: {
     fetchFlamegraphs: Effect;
-    // addFlamegraph: Effect;
+    addFlamegraph: Effect;
     deleteFlamegraph: Effect;
     // fetchPerfProfiles: Effect;
     // addPerfProfile: Effect;
@@ -77,7 +77,7 @@ export interface MiscModelType {
   };
   reducers: {
     saveFlamegraphs: Reducer<MiscModelState>;
-    // saveFlamegraph: Reducer<MiscModelState>;
+    saveFlamegraph: Reducer<MiscModelState>;
     removeFlamegraph: Reducer<MiscModelState>;
 
     // savePerfProfiles: Reducer<MiscModelState>;
@@ -101,6 +101,15 @@ const MiscModel: MiscModelType = {
         type: 'saveFlamegraphs',
         payload: { page, res },
       });
+    },
+    *addFlamegraph({ payload }, { call, put }) {
+      const machine = payload;
+      const res = yield call(addFlamegraph, machine);
+      yield put({
+        type: 'saveFlamegraph',
+        payload: res,
+      });
+      return true;
     },
     *deleteFlamegraph({ payload }, { call, put }) {
       const uuid = payload;
@@ -126,6 +135,15 @@ const MiscModel: MiscModelType = {
           total,
           cur_page: page,
           list: (data as IFlameGraph[]).map(convertItem),
+        },
+      };
+    },
+    saveFlamegraph(state = initialState, { payload }) {
+      return {
+        ...state,
+        flamegraph: {
+          ...state.flamegraph,
+          list: [convertItem(payload as IFlameGraph)].concat(state.flamegraph.list).slice(0, 9),
         },
       };
     },

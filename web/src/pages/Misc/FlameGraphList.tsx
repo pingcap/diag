@@ -1,10 +1,11 @@
-import React, { useEffect, useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Table, Button, Divider, Modal } from 'antd';
 import { connect } from 'dva';
 import { Link } from 'umi';
 import { PaginationConfig } from 'antd/lib/table';
 import { ConnectState, ConnectProps, Dispatch } from '@/models/connect';
 import { IFlameGraphInfo, IFlameGraph } from '@/models/misc';
+import AddMiscReportModal from '@/components/AddMiscReportModal';
 
 const styles = require('../style.less');
 
@@ -68,10 +69,10 @@ interface FlameGraphListProps extends ConnectProps {
   flamegraph: IFlameGraphInfo;
   dispatch: Dispatch;
   loading: boolean;
-  collecting: boolean;
 }
 
-function FlameGraphList({ flamegraph, dispatch, loading, collecting }: FlameGraphListProps) {
+function FlameGraphList({ flamegraph, dispatch, loading }: FlameGraphListProps) {
+  const [modalVisble, setModalVisible] = useState(false);
   const pagination: PaginationConfig = useMemo(
     () => ({
       total: flamegraph.total,
@@ -110,16 +111,12 @@ function FlameGraphList({ flamegraph, dispatch, loading, collecting }: FlameGrap
     });
   }
 
-  function generateFlamegraph() {
-    Modal.confirm({
-      title: '收集火焰图？',
-      content: '你确定要收集火焰图吗？',
-      okText: '收集',
-      onOk() {
-        dispatch({
-          type: 'misc/addFlamegraph',
-        });
-      },
+  function handleAddFlamegraph(machine: string): Promise<any> {
+    return new Promise((resolve, reject) => {
+      dispatch({
+        type: 'misc/addFlamegraph',
+        payload: machine,
+      }).then((val: any) => resolve());
     });
   }
 
@@ -131,7 +128,7 @@ function FlameGraphList({ flamegraph, dispatch, loading, collecting }: FlameGrap
     <div className={styles.container}>
       <div className={styles.list_header}>
         <h2>火焰图报告列表</h2>
-        <Button type="primary" onClick={generateFlamegraph} loading={collecting}>
+        <Button type="primary" onClick={() => setModalVisible(true)}>
           + 获取
         </Button>
       </div>
@@ -142,6 +139,11 @@ function FlameGraphList({ flamegraph, dispatch, loading, collecting }: FlameGrap
         onChange={handleTableChange}
         pagination={pagination}
       />
+      <AddMiscReportModal
+        visible={modalVisble}
+        onClose={() => setModalVisible(false)}
+        onData={handleAddFlamegraph}
+      />
     </div>
   );
 }
@@ -149,5 +151,4 @@ function FlameGraphList({ flamegraph, dispatch, loading, collecting }: FlameGrap
 export default connect(({ misc, loading }: ConnectState) => ({
   flamegraph: misc.flamegraph,
   loading: loading.effects['misc/fetchFlamegraphs'],
-  collecting: loading.effects['misc/addFlamegraph'],
 }))(FlameGraphList);

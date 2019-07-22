@@ -4,8 +4,8 @@ export async function queryFlamegraphs(page: number) {
   return request(`/api/v1/flamegraphs?page=${page}`);
 }
 
-export async function addFlamegraph() {
-  return request.post('/api/v1/flamegraphs');
+export async function addFlamegraph(machine: string) {
+  return request.post('/api/v1/flamegraphs', { data: { machine } });
 }
 
 export async function deleteFlamegraph(uuid: string) {
@@ -16,8 +16,8 @@ export async function queryPerfProfiles(page: number) {
   return request('/api/v1/perfprofiles');
 }
 
-export async function addPerfProfile() {
-  return request.post('/api/v1/perfprofiles');
+export async function addPerfProfile(machine: string) {
+  return request.post('/api/v1/perfprofiles', { data: { machine } });
 }
 
 export async function deletePerfProfile(uuid: string) {
