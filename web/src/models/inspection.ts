@@ -130,7 +130,6 @@ export interface InspectionModelType {
     saveInstance: Reducer<InspectionModelState>;
     removeInstance: Reducer<InspectionModelState>;
 
-    changePage: Reducer<InspectionModelState>;
     saveInspections: Reducer<InspectionModelState>;
     saveInspection: Reducer<InspectionModelState>;
     removeInspection: Reducer<InspectionModelState>;
@@ -148,11 +147,6 @@ const InspectionModel: InspectionModelType = {
   effects: {
     *fetchInstances(_, { call, put }) {
       const res: IInstance[] = yield call(queryInstances);
-      // reset inspections list page
-      yield put({
-        type: 'changePage',
-        payload: 1,
-      });
       yield put({
         type: 'saveInstances',
         payload: res,
@@ -170,14 +164,13 @@ const InspectionModel: InspectionModelType = {
 
     *fetchInspections({ payload }, { call, put }) {
       const { instanceId, page } = payload;
-      yield put({
-        type: 'changePage',
-        payload: page,
-      });
       const res: IInspectionsRes = yield call(queryInstanceInspections, instanceId, page);
       yield put({
         type: 'saveInspections',
-        payload: res,
+        payload: {
+          res,
+          page,
+        },
       });
     },
     *deleteInspection({ payload }, { call, put }) {
@@ -205,6 +198,9 @@ const InspectionModel: InspectionModelType = {
     saveInstances(state = initialState, { payload }) {
       return {
         ...state,
+
+        // reset page
+        cur_inspections_page: 1,
         instances: convertInstances(payload as IInstance[]),
       };
     },
@@ -221,19 +217,16 @@ const InspectionModel: InspectionModelType = {
       };
     },
 
-    changePage(state = initialState, { payload }) {
-      const page = payload;
-      return {
-        ...state,
-        cur_inspections_page: page,
-      };
-    },
     saveInspections(state = initialState, { payload }) {
-      const { total, data } = payload as IInspectionsRes;
+      const {
+        page,
+        res: { total, data },
+      } = payload;
       return {
         ...state,
 
         total_inspections: total,
+        cur_inspections_page: page,
         inspections: convertInspections(data),
       };
     },
