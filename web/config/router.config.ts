@@ -37,6 +37,27 @@ export default [
         ],
       },
       {
+        path: '/misc',
+        name: 'misc',
+        icon: 'dashboard',
+        routes: [
+          {
+            path: '/misc',
+            redirect: '/misc/flamegraphs',
+          },
+          {
+            path: '/misc/flamegraphs',
+            name: 'flame_graph',
+            component: './Misc/FlameGraph',
+          },
+          {
+            path: '/misc/perfprofiles',
+            name: 'perf_profile',
+            component: './Misc/PerfProfile',
+          },
+        ],
+      },
+      {
         component: './404',
       },
     ],

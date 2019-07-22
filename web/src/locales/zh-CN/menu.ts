@@ -52,4 +52,8 @@ export default {
   'menu.inspection.instance_list': '集群实例列表',
   'menu.inspection.report_list': '诊断报告列表',
   'menu.inspection.report_detail': '诊断报告详情',
+
+  'menu.misc': '其它管理',
+  'menu.misc.flame_graph': '火焰图',
+  'menu.misc.perf_profile': 'Perf Proflie',
 };
