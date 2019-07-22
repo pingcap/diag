@@ -1,0 +1,78 @@
+#!/usr/bin/env python
+# coding:utf8
+
+import argparse
+import json
+import multiprocessing
+from ansible.parsing.dataloader import DataLoader
+from ansible.inventory.manager import InventoryManager
+
+from groups import OpGroup, setup_op_groups
+
+
+def ping():
+    loader = DataLoader()
+    inventory = InventoryManager(loader=loader, sources='localhost,')
+
+
+def do(op):
+    op.do()
+
+
+def collect(group):
+    p = multiprocessing.Pool(multiprocessing.cpu_count())
+    p.map(do, group)
+
+
+def collect_software():
+    print "software"
+
+
+def collect_hardware():
+    print "hardware"
+
+
+def collect_dbinfo():
+    print "dbinfo"
+
+
+def collect_resource():
+    print "resource"
+
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--inspection-id", type=str,
+                        required=True, help="inspection identity")
+    parser.add_argument("--data-dir", type=str,
+                        required=True, help="data directory")
+    parser.add_argument("--inventory", type=str,
+                        required=True, help="inventory file")
+    parser.add_argument("--topology", type=str,
+                        required=True, help="topology.json")
+    parser.add_argument("--collect", type=str,
+                        required=True, help="items to collect")
+
+    args = parser.parse_args()
+
+    topology = json.load(open(args.topology))
+    groups = setup_op_groups(topology, args.data_dir,
+                             args.inspection_id, args.collect)
+
+    collect(groups['global'])
+    items = map(lambda x: x.split(':'), args.collect.split(','))
+    for item in items:
+        if item[0] == "basic":
+            collect(groups['basic'])
+        elif item[0] == "pprof":
+            collect(groups['pprof'])
+        elif item[0] == "software":
+            collect_software()
+        elif item[0] == "hardware":
+            collect_hardware()
+        elif item[0] == "metric":
+            collect(groups['metric'])
+
+
+if __name__ == "__main__":
+    main()
