@@ -18,7 +18,7 @@ export interface IInstance {
   name: string;
   pd: string;
   create_time: string;
-  status: string;
+  status: 'running' | 'exception';
   message: string;
 }
 
