@@ -56,4 +56,5 @@ export default {
   'menu.misc': '其它管理',
   'menu.misc.flame_graph': '火焰图',
   'menu.misc.perf_profile': 'Perf Proflie',
+  'menu.misc.flame_graph_detail': '火焰图详情',
 };

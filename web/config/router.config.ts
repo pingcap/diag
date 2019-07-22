@@ -51,6 +51,12 @@ export default [
             component: './Misc/FlameGraphList',
           },
           {
+            path: '/misc/flamegraphs/:id',
+            name: 'flame_graph_detail',
+            component: './Misc/FlameGraphDetail',
+            hideInMenu: true,
+          },
+          {
             path: '/misc/perfprofiles',
             name: 'perf_profile',
             component: './Misc/PerfProfileList',
