@@ -1,9 +1,9 @@
 package server
 
 import (
+	"github.com/pingcap/tidb-foresight/bootstrap"
 	"net/http"
 	"testing"
-	"github.com/pingcap/tidb-foresight/bootstrap"
 )
 
 func TestLogin(t *testing.T) {

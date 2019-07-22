@@ -24,14 +24,23 @@ password = "foresight"
 name = "admin"
 password = "admin"
 
+[aws]
+region = ""
+bucket = ""
+aws_access_key_id = ""
+aws_secret_access_key = ""
+
 [log]
 interval = 600		# 5min
 bwlimit = 10		# KB/s
 `
 
 type ForesightConfig struct {
-	Home    string
-	Address string
+	Home      string
+	Address   string
+	Pioneer   string
+	Collector string
+	Analyzer  string
 
 	Sched struct {
 		Auto     bool   `toml:"auto"`
@@ -51,6 +60,13 @@ type ForesightConfig struct {
 		Name string `toml:"name"`
 		Pass string `toml:"password"`
 	} `toml:"admin"`
+
+	Aws struct {
+		Region       string `toml:"region"`
+		Bucket       string `toml:"bucket"`
+		AccessKey    string `toml:"aws_access_key_id"`
+		AccessSecret string `toml:"aws_secret_access_key"`
+	}
 
 	Log struct {
 		Interval int `toml:"interval`

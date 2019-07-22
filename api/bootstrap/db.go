@@ -8,18 +8,11 @@ import (
 )
 
 const INIT = `
-CREATE TABLE IF NOT EXISTS items (
-	name VARCHAR(32),
-	collect INT2,
-	duration VARCHAR(32),
-	PRIMARY KEY (name)
-);
-
 CREATE TABLE IF NOT EXISTS instances (
 	id VARCHAR(64) NOT NULL,
 	name VARCHAR(32) NOT NULL,
 	status VARCHAR(32) NOT NULL,
-	user VARCHAR(32) NOT NULL DEFAULT "",
+	message VARCHAR(256) NOT NULL DEFAULT "",
 	tidb VARCHAR(256) NOT NULL DEFAULT "",
 	tikv VARCHAR(256) NOT NULL DEFAULT "",
 	pd VARCHAR(256) NOT NULL DEFAULT "",
@@ -28,28 +21,68 @@ CREATE TABLE IF NOT EXISTS instances (
 	create_t DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE TABLE IF NOT EXISTS inspections (
-	id VARCHAR(64),
+CREATE TABLE IF NOT EXISTS configs (
 	instance VARCHAR(64),
-	status VARCHAR(32),
-	type VARCHAR(16),
-	tidb VARCHAR(256),
-	tikv VARCHAR(256),
-	pd VARCHAR(256),
-	grafana VARCHAR(256),
-	prometheus VARCHAR(256),
+	c_hardw INT2,
+	c_softw INT2,
+	c_log INT2,
+	c_log_d INT64,
+	c_metric_d INT64,
+	c_demsg INT2,
+	s_cron VARCHAR(32),
+	r_duration INT64,
+	PRIMARY KEY (instance)
+);
+
+CREATE TABLE IF NOT EXISTS inspections (
+	id VARCHAR(64) NOT NULL,
+	instance VARCHAR(64) NOT NULL,
+	status VARCHAR(32) NOT NULL,
+	type VARCHAR(16) NOT NULL,
+	tidb VARCHAR(256) NOT NULL DEFAULT "",
+	tikv VARCHAR(256) NOT NULL DEFAULT "",
+	pd VARCHAR(256) NOT NULL DEFAULT "",
+	grafana VARCHAR(256) NOT NULL DEFAULT "",
+	prometheus VARCHAR(256) NOT NULL DEFAULT "",
 	create_t DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS inspection_items (
+	inspection VARCHAR(64) NOT NULL,
+	name VARCHAR(32) NOT NULL,
+	status VARCHAR(32) NOT NULL,
+	message VARCHAR(1024) NOT NULL DEFAULT "",
+	PRIMARY KEY (inspection, name)
+);
+
+CREATE TABLE IF NOT EXISTS inspection_basic_info (
+	inspection VARCHAR(64),
+	cluster_name VARCHAR(64),
+	cluster_create_t  DATETIME DEFAULT CURRENT_TIMESTAMP,
+	inspect_t DATETIME DEFAULT CURRENT_TIMESTAMP,
+	tidb_count INT,
+	tikv_count INT,
+	pd_count INT,
+	PRIMARY KEY (inspection)
+);
+
+CREATE TABLE IF NOT EXISTS inspection_db_info (
+	inspection VARCHAR(64) NOT NULL,
+	db VARCHAR(64) NOT NULL,
+	tb VARCHAR(64) NOT NULL,
+	idx int NOT NULL DEFAULT 0,
+	PRIMARY KEY (inspection, db, tb)
 );
 `
 
 func initDB(dbpath string) *sql.DB {
 	db, err := sql.Open("sqlite3", dbpath)
 	if err != nil {
-		log.Panic("open database failed:", dbpath)
+		log.Panicf("open database(%s) failed: %s", dbpath, err)
 	}
 
 	if _, err = db.Exec(INIT); err != nil {
-		log.Panic("execute initial statement failed")
+		log.Panic("execute initial statement failed: ", err)
 	}
 
 	return db

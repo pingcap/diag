@@ -1,50 +1,41 @@
 package server
 
 import (
-	"encoding/json"
 	"net/http"
 
+	"github.com/gorilla/mux"
+	"github.com/pingcap/tidb-foresight/model"
+	"github.com/pingcap/tidb-foresight/utils"
 	log "github.com/sirupsen/logrus"
 )
 
-type Config struct {
-	AutoRun struct {
-		Enable   bool   `json:"enable"`
-		Duration string `json:"duration"`
-	} `json:"auto_run"`
-	Items struct {
-		Topology  bool `json:"topology"`
-		BasicInfo bool `json:"basic_info"`
-		DBInfo    bool `json:"db_info"`
-		SlowLog   struct {
-			Enable   bool   `json:"enable"`
-			Duration string `json:"duration"`
-		} `json:"slow_log"`
-		Alert           bool `json:"alert"`
-		SoftwareVersion bool `json:"software_version"`
-		SoftwareConfig  bool `json:"swftware_config"`
-		Ntp             bool `json:"ntp"`
-		Resource        bool `json:"resource"`
-		Hardware        bool `json:"hardware"`
-		Network         bool `json:"network"`
-	} `json:"items"`
+func (s *Server) getInstanceConfig(r *http.Request) (*model.Config, error) {
+	instanceId := mux.Vars(r)["id"]
+
+	config, err := s.model.GetInstanceConfig(instanceId)
+	if err == nil {
+		if config == nil {
+			return nil, utils.NewForesightError(http.StatusNotFound, "NOT_FOUND", "target instance config not found")
+		} else {
+			return config, nil
+		}
+	} else {
+		log.Error("get instance config: ", err)
+		return nil, utils.NewForesightError(http.StatusInternalServerError, "DB_QUERY_ERROR", "error on query db")
+	}
 }
 
-func (s *Server) inspectionConfig(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "text/json")
-
-	config := Config{}
-	config.AutoRun.Enable = s.config.Sched.Auto
-	config.AutoRun.Duration = s.config.Sched.Duration
-
-	jsonContent, err := json.Marshal(config)
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		w.Write([]byte(`{"status": "MARSHAL_JSON_ERROR", "message": "序列化json时发生错误"}`))
-		log.Error("序列化json时发生错误", err)
-		return
+func (s *Server) updateInstanceConfig(c *model.Config, r *http.Request) (*utils.SimpleResponse, error) {
+	instanceId := mux.Vars(r)["id"]
+	if instanceId != c.InstanceId {
+		return nil, utils.NewForesightError(http.StatusBadRequest, "BAD_REQUEST", "instance id mismatch")
 	}
 
-	w.WriteHeader(http.StatusOK)
-	w.Write(jsonContent)
+	err := s.model.SetInstanceConfig(c)
+	if err != nil {
+		log.Error("update instance config: ", err)
+		return nil, utils.NewForesightError(http.StatusInternalServerError, "DB_UPDATE_ERROR", "error on update database")
+	}
+
+	return nil, nil
 }

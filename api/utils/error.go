@@ -7,15 +7,15 @@ type StatusError interface {
 }
 
 type ForesightError struct {
-	code int
-	status string
+	code    int
+	status  string
 	message string
 }
 
 func NewForesightError(code int, status, message string) StatusError {
 	return &ForesightError{
-		code: code,
-		status: status,
+		code:    code,
+		status:  status,
 		message: message,
 	}
 }

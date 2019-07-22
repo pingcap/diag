@@ -51,20 +51,41 @@ func (s *Server) CreateRouter() http.Handler {
 	r := mux.NewRouter()
 	AttachProfiler(r)
 
-	fn.Plugin(s.auth)
-
-	// instance
-	r.Handle("/instances", fn.Wrap(s.listInstance)).Methods("GET")
-	r.Handle("/instances", fn.Wrap(s.createInstance)).Methods("POST")
-	r.Handle("/instances/{id}", fn.Wrap(s.deleteInstance)).Methods("DELETE")
+	//fn.Plugin(s.auth)
 
 	// auth
-	r.HandleFunc("/login", s.login).Methods("GET")
-	r.Handle("/me", fn.Wrap(s.me)).Methods("GET")
-	r.HandleFunc("/logout", s.logout).Methods("GET")
-	r.HandleFunc("/ping", s.ping).Methods("GET")
-	r.HandleFunc("/upload", s.upload)
-	r.HandleFunc("/config", s.inspectionConfig)
+	r.HandleFunc("/api/v1/login", s.login).Methods("POST")
+	r.Handle("/api/v1/me", fn.Wrap(s.me)).Methods("GET")
+	r.HandleFunc("/api/v1/logout", s.logout).Methods("GET")
+
+	// instance
+	r.Handle("/api/v1/instances", fn.Wrap(s.listInstance)).Methods("GET")
+	r.Handle("/api/v1/instances", fn.Wrap(s.createInstance)).Methods("POST")
+	r.Handle("/api/v1/instances/{id}", fn.Wrap(s.getInstance)).Methods("GET")
+	r.Handle("/api/v1/instances/{id}", fn.Wrap(s.deleteInstance)).Methods("DELETE")
+	r.Handle("/api/v1/instances/{id}/config", fn.Wrap(s.getInstanceConfig)).Methods("GET")
+	r.Handle("/api/v1/instances/{id}/config", fn.Wrap(s.updateInstanceConfig)).Methods("PUT")
+	r.Handle("/api/v1/instances/{id}/inspections", fn.Wrap(s.listInspections)).Methods("GET")
+	r.Handle("/api/v1/instances/{id}/inspections", fn.Wrap(s.createInspection)).Methods("POST")
+	r.Handle("/api/v1/instances/{id}/profiles", fn.Wrap(s.listProfiles)).Methods("GET")
+	r.Handle("/api/v1/instances/{id}/profiles", fn.Wrap(s.createProfile)).Methods("POST")
+
+	// logs
+	r.Handle("/api/v1/logs", fn.Wrap(s.listLogs)).Methods("GET")
+	r.Handle("/api/v1/logs/{id}", fn.Wrap(s.searchLog)).Methods("GET")
+
+	// metric
+	r.PathPrefix("/api/v1/metric/").HandlerFunc(s.metric)
+
+	// inspection
+	r.Handle("/api/v1/inspections", fn.Wrap(s.listAllInspections)).Methods("GET")
+	r.HandleFunc("/api/v1/inspections/{id}.tar.gz", s.exportInspection).Methods("GET")
+	r.Handle("/api/v1/inspections", fn.Wrap(s.importInspection)).Methods("POST")
+	r.Handle("/api/v1/inspections/{id}", fn.Wrap(s.uploadInspection)).Methods("PUT")
+	r.Handle("/api/v1/inspections/{id}", fn.Wrap(s.deleteInspection)).Methods("DELETE")
+
+	// other
+	r.Handle("/ping", fn.Wrap(s.ping)).Methods("GET")
 	r.Handle("/static/", s.static("/static/", path.Join(s.config.Home, "static")))
 
 	return httpRequestMiddleware(r)

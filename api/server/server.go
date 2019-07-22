@@ -8,14 +8,16 @@ import (
 	"github.com/pingcap/fn"
 	"github.com/pingcap/tidb-foresight/bootstrap"
 	"github.com/pingcap/tidb-foresight/model"
+	"github.com/pingcap/tidb-foresight/searcher"
 	"github.com/pingcap/tidb-foresight/utils"
 	log "github.com/sirupsen/logrus"
 )
 
 type Server struct {
-	config *bootstrap.ForesightConfig
-	model  *model.Model
-	Router http.Handler
+	config   *bootstrap.ForesightConfig
+	model    *model.Model
+	Router   http.Handler
+	searcher *searcher.Searcher
 }
 
 type ErrorMessage struct {
@@ -25,8 +27,9 @@ type ErrorMessage struct {
 
 func NewServer(config *bootstrap.ForesightConfig, db *sql.DB) *Server {
 	s := &Server{
-		config: config,
-		model:  model.NewModel(db),
+		config:   config,
+		model:    model.NewModel(db),
+		searcher: searcher.NewSearcher(),
 	}
 
 	fn.SetErrorEncoder(func(ctx context.Context, err error) interface{} {

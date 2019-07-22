@@ -4,9 +4,8 @@ import (
 	"net/http"
 )
 
-func (s *Server) ping(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "text/plain")
-	w.WriteHeader(http.StatusOK)
+type T struct{}
 
-	w.Write([]byte("pong"))
+func (s *Server) ping(r *http.Request) (*T, error) {
+	return nil, nil
 }
