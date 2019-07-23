@@ -296,6 +296,7 @@ def hostinfo(inv):
                     'spark_slaves': 'spark_slave',
                     'lightning_server': 'lightning',
                     'importer_server': 'importer',
+                    'kafka_exporter_servers': 'kafka_exporter',
                     'grafana_servers': 'grafana'}
 
     cluster_info = {}
@@ -352,7 +353,8 @@ def hostinfo(inv):
                             else:
                                 _dict1['port'] = _info[0]
                             _dict1['deploy_dir'] = _deploy_dir
-                        hosts[_index_id]['components'].append(_dict1)
+                        if _dict1:
+                            hosts[_index_id]['components'].append(_dict1)
                     else:
                         for _indexid in range(2):
                             _dict2 = {}
