@@ -1,14 +1,15 @@
-import React, { useEffect, useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Table, Button, Divider, Modal } from 'antd';
 import { connect } from 'dva';
 import { Link } from 'umi';
 import { PaginationConfig } from 'antd/lib/table';
 import { ConnectState, ConnectProps, InspectionModelState, Dispatch } from '@/models/connect';
 import { IFormatInspection } from '@/models/inspection';
+import UploadReportModal from '@/components/UploadReportModal';
 
 const styles = require('../style.less');
 
-const tableColumns = (onDelete: any) => [
+const tableColumns = (onDelete: any, onUpload: any) => [
   {
     title: '诊断报告 ID',
     dataIndex: 'uuid',
@@ -55,11 +56,21 @@ const tableColumns = (onDelete: any) => [
     key: 'action',
     render: (text: any, record: IFormatInspection) => (
       <span>
-        <Link to={`/inspection/reports/${record.uuid}`}>查看</Link>
+        {record.status === 'running' ? (
+          <span>查看</span>
+        ) : (
+          <Link to={`/inspection/reports/${record.uuid}`}>查看</Link>
+        )}
         <Divider type="vertical" />
-        <a download href={`/api/v1/inspections/${record.uuid}.tar.gz`}>
-          拷贝
-        </a>
+        {record.status === 'running' ? (
+          <span>下载</span>
+        ) : (
+          <a download href={`/api/v1/inspections/${record.uuid}.tar.gz`}>
+            下载
+          </a>
+        )}
+        <Divider type="vertical" />
+        {record.status === 'running' ? <span>上传</span> : <a onClick={onUpload}>上传</a>}
         <Divider type="vertical" />
         <a style={{ color: 'red' }} onClick={() => onDelete(record)}>
           删除
@@ -77,6 +88,9 @@ interface ReportListProps extends ConnectProps {
 }
 
 function ReportList({ inspection, dispatch, match, loading, inspecting }: ReportListProps) {
+  const [modalVisible, setModalVisible] = useState(false);
+  const [uploadUrl, setUploadUrl] = useState('');
+
   const pagination: PaginationConfig = useMemo(
     () => ({
       total: inspection.total_inspections,
@@ -100,7 +114,7 @@ function ReportList({ inspection, dispatch, match, loading, inspecting }: Report
     });
   }
 
-  const columns = useMemo(() => tableColumns(deleteInspection), []);
+  const columns = useMemo(() => tableColumns(deleteInspection, uploadInspection), []);
 
   function deleteInspection(record: IFormatInspection) {
     Modal.confirm({
@@ -115,6 +129,11 @@ function ReportList({ inspection, dispatch, match, loading, inspecting }: Report
         });
       },
     });
+  }
+
+  function uploadInspection(record: IFormatInspection) {
+    setModalVisible(true);
+    setUploadUrl(`/api/v1/inspections/${record.uuid}`);
   }
 
   function manuallyInspect() {
@@ -148,6 +167,11 @@ function ReportList({ inspection, dispatch, match, loading, inspecting }: Report
         columns={columns}
         onChange={handleTableChange}
         pagination={pagination}
+      />
+      <UploadReportModal
+        visible={modalVisible}
+        onClose={() => setModalVisible(false)}
+        uploadUrl={uploadUrl}
       />
     </div>
   );

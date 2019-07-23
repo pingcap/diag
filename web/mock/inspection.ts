@@ -82,6 +82,11 @@ export default {
   'DELETE /api/v1/inspections/:id': (req: any, res: any) => {
     res.status(204).send();
   },
+  'PUT /api/v1/inspections/:id': (req: any, res: any) => {
+    setTimeout(() => {
+      res.status(204).send();
+    }, 2000);
+  },
   'POST /api/v1/inspections': (req: any, res: any) => {
     setTimeout(() => {
       res.send(
