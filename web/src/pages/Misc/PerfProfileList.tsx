@@ -52,13 +52,21 @@ const tableColumns = (onDelete: any, onUpload: any) => [
     key: 'action',
     render: (text: any, record: IPerfProfile) => (
       <span>
-        <Link to={`/misc/perfprofiles/${record.uuid}`}>查看</Link>
+        {record.status === 'running' ? (
+          <span>查看</span>
+        ) : (
+          <Link to={`/misc/perfprofiles/${record.uuid}`}>查看</Link>
+        )}
         <Divider type="vertical" />
-        <a download href={`/api/v1/perfprofiles/${record.uuid}.tar.gz`}>
-          下载
-        </a>
+        {record.status === 'running' ? (
+          <span>下载</span>
+        ) : (
+          <a download href={`/api/v1/perfprofiles/${record.uuid}.tar.gz`}>
+            下载
+          </a>
+        )}
         <Divider type="vertical" />
-        <a onClick={onUpload}>上传</a>
+        {record.status === 'running' ? <span>上传</span> : <a onClick={onUpload}>上传</a>}
         <Divider type="vertical" />
         <a style={{ color: 'red' }} onClick={() => onDelete(record)}>
           删除
