@@ -119,6 +119,7 @@ def setup_op_groups(topology, datadir, inspection_id, target):
                                                 'profile', addr, 'tikv'),
                                    deploydir))
             if name == 'pd':
+                addr = "%s:%s" % (ip, svc['port'])
                 groups['config'].add_ops(
                     setup_conf_ops(ip,
                                    os.path.join(
