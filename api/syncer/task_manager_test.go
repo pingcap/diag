@@ -8,7 +8,7 @@ import (
 	"time"
 
 	. "github.com/pingcap/check"
-	"github.com/pingcap/tidb-foresight/api/syncer"
+	"github.com/pingcap/tidb-foresight/syncer"
 )
 
 type taskManagerTestSuit struct{}

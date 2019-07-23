@@ -39,7 +39,7 @@ func MustInit(homepath string) (*ForesightConfig, *sql.DB) {
 	}
 
 	logDir := path.Join(homepath, "remote-log")
-	if err := os.MkdirAll(packageDir, os.ModePerm); err != nil {
+	if err := os.MkdirAll(logDir, os.ModePerm); err != nil {
 		log.Panic("can't access log dir: ", logDir)
 	}
 

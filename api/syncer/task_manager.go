@@ -3,6 +3,7 @@ package syncer
 import (
 	"context"
 	"fmt"
+	"os"
 	"os/exec"
 	"sync"
 	"time"
@@ -40,7 +41,9 @@ func (t *TaskManager) RunTasks(tasks []SyncTask) {
 	t.CancelAllTask()
 	for _, task := range tasks {
 		log.Infof("start a new sync task. key=%s", task.Key)
-		t.TodoTaskCh <- task
+		go func(task SyncTask) {
+			t.TodoTaskCh <- task
+		}(task)
 	}
 }
 
@@ -50,11 +53,7 @@ func (t *TaskManager) Start() {
 	for {
 		select {
 		case task := <-t.TodoTaskCh:
-			cmd, ctx, cancel := buildCmdWithCancel(task, t.Cfg)
-			task.CancelFunc = cancel
-			task.Ctx = ctx
-			t.Tasks.Store(task.Key, task)
-			go execCommand(cmd, task, t.Interval, t.TodoTaskCh)
+			go t.execCommand(task)
 		case <-ticker.C:
 			// Prevent deadlock when syncTasks is empty
 			continue
@@ -73,15 +72,25 @@ func (t *TaskManager) Stop() {
 func buildCmdWithCancel(task SyncTask, cfg RsyncConfig) (*exec.Cmd, context.Context, context.CancelFunc) {
 	ctx, cancel := context.WithCancel(context.Background())
 	for _, pattern := range task.Filters {
-		cfg.Args = append(cfg.Args, fmt.Sprintf("--include=\"%s\"", pattern))
+		cfg.Args = append(cfg.Args, fmt.Sprintf(`--include=%s`, pattern))
 	}
+	cfg.Args = append(cfg.Args, `--exclude=*`)
 	args := append(cfg.Args, task.From, task.To)
 	cmd := exec.CommandContext(ctx, "rsync", args...)
 	return cmd, ctx, cancel
 }
 
-func execCommand(cmd *exec.Cmd, task SyncTask, interval time.Duration, todoTaskCh chan SyncTask) {
-	err := cmd.Start()
+func (t *TaskManager) execCommand(task SyncTask) {
+	cmd, ctx, cancel := buildCmdWithCancel(task, t.Cfg)
+	task.CancelFunc = cancel
+	task.Ctx = ctx
+	t.Tasks.Store(task.Key, task)
+	err := os.MkdirAll(task.To, os.ModePerm)
+	if err != nil {
+		log.Errorf("failed to create folder %s ", task.To)
+		return
+	}
+	err = cmd.Start()
 	if err != nil {
 		log.Errorf("failed to start command %s ", task.Key)
 		return
@@ -100,7 +109,7 @@ func execCommand(cmd *exec.Cmd, task SyncTask, interval time.Duration, todoTaskC
 			done <- true
 			return
 		}
-		time.Sleep(interval)
+		time.Sleep(t.Interval)
 		done <- false
 	}()
 	select {
@@ -124,9 +133,8 @@ func execCommand(cmd *exec.Cmd, task SyncTask, interval time.Duration, todoTaskC
 		return
 	// If the rsync process has completed, restart a new synchronization task
 	case finished, ok := <-done:
-		fmt.Printf("get finished=%v\n", finished)
 		if ok && !finished {
-			todoTaskCh <- task
+			t.TodoTaskCh <- task
 		}
 	}
 }

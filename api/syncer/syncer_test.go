@@ -7,7 +7,7 @@ import (
 	"testing"
 
 	. "github.com/pingcap/check"
-	"github.com/pingcap/tidb-foresight/api/syncer"
+	"github.com/pingcap/tidb-foresight/syncer"
 )
 
 func TestSyncer(t *testing.T) { TestingT(t) }

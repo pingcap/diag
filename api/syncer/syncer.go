@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/prometheus/common/log"
 	"io/ioutil"
 	"os"
 	"path"
@@ -28,22 +29,29 @@ func Sync(topoDir string, targetDir string, interval time.Duration, bwlimit int)
 		targetDir,
 	}
 	manager := TaskManager{
-		Interval: interval,
+		Interval:   interval,
+		TodoTaskCh: make(chan SyncTask, 1),
+		StopCh:     make(chan struct{}),
 		Cfg: RsyncConfig{
-			Args: []string{"-avz", fmt.Sprintf("--bwlimit=%d", bwlimit)},
+			Args: []string{
+				"-avz",
+				fmt.Sprintf("--bwlimit=%d", bwlimit),
+			},
 		},
+	}
+	tasks, err := watcher.LoadTasks()
+	if err != nil {
+		log.Errorf("failed to load tasks: %s", err)
 	}
 	// Watch specifies the directory,
 	// rescans all files when changes occur,
 	// build a new rsync task list,
 	// and passes it to the TaskManager.runTasks()
-	err := watcher.Watch(manager)
-	if err != nil {
-		return err
-	}
+	go watcher.Watch(manager)
 	// Receive the new task list,
 	// cancel all the old task,
 	// and run the newly added task
+	manager.RunTasks(tasks)
 	manager.Start()
 	return nil
 }
