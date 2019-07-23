@@ -81,8 +81,9 @@ def setup_op_groups(topology, datadir, inspection_id, target):
         if name in ('tidb', 'pd'):
             port = option[2]
             addr = "%s:%s" % (ip, port)
-            groups['profile'].add_ops(setup_pprof_ops(addr,
-                                                      os.path.join(datadir, inspection_id, name, addr)))
+            groups['profile'].add_ops(
+                setup_pprof_ops(addr,
+                                os.path.join(datadir, inspection_id, 'profile', name, addr)))
         has_profiled = True
     for host in hosts:
         status = host['status']
@@ -139,9 +140,9 @@ def setup_op_groups(topology, datadir, inspection_id, target):
                 if not has_profiled:
                     groups['profile'].add_ops(
                         setup_perf_ops(ip,
-                                    os.path.join(datadir, inspection_id,
+                                       os.path.join(datadir, inspection_id,
                                                     'profile', 'tikv', addr),
-                                    deploydir))
+                                       deploydir))
             if name == 'pd':
                 addr = "%s:%s" % (ip, svc['port'])
                 groups['config'].add_ops(
