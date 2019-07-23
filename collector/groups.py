@@ -30,11 +30,12 @@ class OpGroup:
 def setup_op_groups(topology, datadir, inspection_id, target):
     items = map(lambda x: x.split(':'), target.split(','))
     groups = {
-        'basic': OpGroup('basic'),
-        'pprof': OpGroup('pprof'),
-        'hardware': OpGroup('hardware'),
-        'metric': OpGroup('metric'),
         'global': OpGroup('global'),
+        'basic': OpGroup('basic'),
+        'profile': OpGroup('profile'),
+        'metric': OpGroup('metric'),
+        'config': OpGroup('config'),
+        'dbinfo': OpGroup('dbinfo'),
     }
     groups['global'].add_ops([
         Op(VarCollector(var_name='collect', var_value=target),
@@ -70,13 +71,14 @@ def setup_op_groups(topology, datadir, inspection_id, target):
 
         groups['basic'].add_ops(setup_os_ops(ip,
                                              os.path.join(datadir, inspection_id)))
-        groups['basic'].add_ops(setup_deploy_ops(ip,
-                                                 os.path.join(datadir,
-                                                              inspection_id),
-                                                 deploydir[ip]))
+        groups['basic'].add_ops(setup_insight_ops(ip,
+                                                  os.path.join(datadir,
+                                                               inspection_id),
+                                                  deploydir[ip]))
         for svc in services:
             status = svc['status']
             name = svc['name']
+            deploydir = svc['deploy_dir']
             if status != 'success':
                 logging.warn('skip host:%s service:%s status:%s',
                              ip, name, status)
@@ -88,19 +90,44 @@ def setup_op_groups(topology, datadir, inspection_id, target):
 
                 # pprof collectors
                 basedir = os.path.join(
-                    datadir, inspection_id, 'pprof', addr, 'tidb')
-                groups['pprof'].add_ops(
+                    datadir, inspection_id, 'profile', addr, 'tidb')
+                groups['profile'].add_ops(
                     setup_pprof_ops(addr, basedir))
+
+                # config collectors
+                groups['config'].add_ops(
+                    setup_conf_ops(ip,
+                                   os.path.join(
+                                       datadir, inspection_id, 'config'),
+                                   deploydir, 'tidb'))
 
                 # db collectors
                 if not db_collected:
                     basedir = os.path.join(datadir, inspection_id, 'dbinfo')
-                    groups['basic'].add_ops(setup_db_ops(addr, basedir))
+                    groups['dbinfo'].add_ops(setup_db_ops(addr, basedir))
                     db_collected = True
             if name == 'tikv':
-                pass
+                addr = "%s:%s" % (ip, svc['port'])
+                groups['config'].add_ops(
+                    setup_conf_ops(ip,
+                                   os.path.join(
+                                       datadir, inspection_id, 'config'),
+                                   deploydir, 'tikv'))
+                groups['profile'].add_ops(
+                    setup_perf_ops(addr,
+                                   os.path.join(datadir, inspection_id,
+                                                'profile', addr, 'tikv'),
+                                   deploydir))
             if name == 'pd':
-                pass
+                groups['config'].add_ops(
+                    setup_conf_ops(ip,
+                                   os.path.join(
+                                       datadir, inspection_id, 'config'),
+                                   deploydir, 'pd'))
+                basedir = os.path.join(
+                    datadir, inspection_id, 'profile', addr, 'pd')
+                groups['profile'].add_ops(
+                    setup_pprof_ops(addr, basedir))
             if name == 'prometheus':
                 port = svc['port']
                 addr = "%s:%s" % (ip, port)
@@ -212,25 +239,66 @@ def setup_os_ops(addr='127.0.0.1', basedir=''):
     ops = [
         Op(CommandCollector(addr=addr, command='dmesg'),
            FileOutput(join(basedir, addr, 'os', 'dmesg'))),
-        Op(CommandCollector(addr=addr, command='/sbin/ntpdate -q 1.cn.pool.ntp.org'),
-           FileOutput(join(basedir, addr, 'os', 'ntpdate'))),
-        Op(CommandCollector(addr=addr, command='uname -r'),
-           FileOutput(join(basedir, addr, 'os', 'os_version'))),
         Op(CommandCollector(addr=addr, command='netstat -s'),
-           FileOutput(join(basedir, addr, 'net', 'netstat'))),
-        Op(CommandCollector(addr=addr, command='/sbin/lshw'),
-           FileOutput(join(basedir, addr, 'hardware', 'lshw'))),
+           FileOutput(join(basedir, addr, 'os', 'netstat'))),
+        Op(CommandCollector(addr=addr, command='iostat 1 60'),
+           FileOutput(join(basedir, addr, 'os', 'iostat_1_60'))),
+        Op(CommandCollector(addr=addr, command='mpstat -P ALL 1 60'),
+           FileOutput(join(basedir, addr, 'os', 'mpstat_1_60'))),
+        Op(CommandCollector(addr=addr, command='vmstat 1 60'),
+           FileOutput(join(basedir, addr, 'os', 'vmstat_1_60'))),
+        Op(CommandCollector(addr=addr, command='pidstat -u -p ALL 1 60'),
+           FileOutput(join(basedir, addr, 'os', 'pidstat_1_60'))),
     ]
     return ops
 
 
-def setup_deploy_ops(addr='127.0.0.1', basedir='insight',
-                     deploydir='/home/tidb'):
+def setup_insight_ops(addr='127.0.0.1', basedir='insight',
+                      deploydir='/home/tidb/deploy'):
     join = os.path.join
     ops = [
-        Op(CommandCollector(addr=addr,
-                            command=join(deploydir,
-                                         'scripts/tidb-insight/bin/collector')),
+        Op(CommandCollector(addr=addr, command=join(deploydir,
+                                                    'scripts/tidb-insight/bin/collector')),
             FileOutput(join(basedir, 'insight', addr, 'collector.json'))),
+    ]
+    return ops
+
+
+def setup_conf_ops(addr='127.0.0.1', basedir='conf',
+                   deploydir='/home/tidb/deploy', service='tidb'):
+    join = os.path.join
+    filename = join(deploydir, 'conf', service+'.toml')
+    cat = 'cat %s' % filename
+    ops = [
+        Op(CommandCollector(addr=addr, command=cat),
+           FileOutput(join(basedir, addr, filename))),
+    ]
+    return ops
+
+
+def setup_perf_ops(addr='127.0.0.1:20060', basedir='profile',
+                   deploydir='/home/tidb/deploy'):
+    join = os.path.join
+    # only support tikv now
+    pidfile = join(deploydir, 'status/tikv.pid')
+    perf = 'perf record -F 99 -p $(<%s) -g -o /dev/stdout sleep 60' % (pidfile)
+    ops = [
+        Op(CommandCollector(addr=addr, command=perf),
+           FileOutput(join(basedir, addr, 'tikv.perf')))
+    ]
+    return ops
+
+
+def setup_meta_ops(cluster_name, basedir, create, start, end):
+    meta = {
+        'cluster_name': cluster_name,
+        'create_time': create,
+        'inpect_time': start,
+        'end_time': end
+    }
+    join = os.path.join
+    ops = [
+        Op(VarCollector(var_name='meta', var_value=meta),
+           FileOutput(join(basedir, 'meta.json')))
     ]
     return ops

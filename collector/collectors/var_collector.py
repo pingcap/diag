@@ -10,5 +10,7 @@ class VarCollector(Collector):
         self.var_value = var_value
 
     def collect(self):
+        if type(self.var_value) is dict:
+            return json.dumps(self.var_value)
         d = {self.var_name: self.var_value}
         return json.dumps(d)

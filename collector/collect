@@ -24,22 +24,6 @@ def collect(group):
     p.map(do, group)
 
 
-def collect_software():
-    print "software"
-
-
-def collect_hardware():
-    print "hardware"
-
-
-def collect_dbinfo():
-    print "dbinfo"
-
-
-def collect_resource():
-    print "resource"
-
-
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--inspection-id", type=str,
@@ -64,14 +48,14 @@ def main():
     for item in items:
         if item[0] == "basic":
             collect(groups['basic'])
-        elif item[0] == "pprof":
-            collect(groups['pprof'])
-        elif item[0] == "software":
-            collect_software()
-        elif item[0] == "hardware":
-            collect_hardware()
+        elif item[0] == "profile":
+            collect(groups['profile'])
+        elif item[0] == "dbinfo":
+            collect(groups['dbinfo'])
         elif item[0] == "metric":
             collect(groups['metric'])
+        elif item[0] == "config":
+            collect(groups['config'])
 
 
 if __name__ == "__main__":
