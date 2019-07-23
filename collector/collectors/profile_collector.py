@@ -1,7 +1,7 @@
 # coding: utf8
 from collector import Collector, HTTPCollector
 from output import FileOutput
-import urllib2
+import urllib
 import socket
 
 
@@ -19,7 +19,7 @@ class PProfHTTPCollector(HTTPCollector):
         if seconds != None:
             timeout = float(seconds) + 10
             socket.setdefaulttimeout(timeout)
-        f = urllib2.urlopen(self._url())
+        f = urllib.urlopen(self._url())
         return f.read()
 
 
@@ -69,9 +69,6 @@ class TraceProfileCollector(PProfHTTPCollector):
     def __init__(self, name='traceprofile', addr='127.0.0.1:6060',
                  path='/debug/pprof/trace', params={}):
         PProfHTTPCollector.__init__(self, name, addr, path, params)
-
-
-
 
 
 if __name__ == "__main__":
