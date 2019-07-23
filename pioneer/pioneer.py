@@ -352,11 +352,6 @@ def hostinfo(inv):
                             else:
                                 _dict1['port'] = _info[0]
                             _dict1['deploy_dir'] = _deploy_dir
-                        else:
-                            _dict1['name'] = _info
-                            _dict1['status'] = 'exception'
-                            _dict1['message'] = 'Not support'
-                            _dict1['deploy_dir'] = _deploy_dir
                         hosts[_index_id]['components'].append(_dict1)
                     else:
                         for _indexid in range(2):
@@ -397,6 +392,5 @@ def hostinfo(inv):
 if __name__ == '__main__':
     inventory = sys.argv[1]
     result = hostinfo(inventory)
-    with open('topology.json', 'w') as f:
-        f.write(json.dumps(result, indent=4))
+    print json.dumps(result, indent=4)
 
