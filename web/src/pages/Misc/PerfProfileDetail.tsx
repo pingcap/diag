@@ -10,10 +10,10 @@ interface ReportDetailProps extends ConnectProps {
   dispatch: Dispatch;
 }
 
-function ReportDetail({ dispatch, match }: ReportDetailProps) {
+function PerfProfileDetail({ dispatch, match }: ReportDetailProps) {
   const reportId: string | undefined = match && match.params && (match.params as any).id;
 
-  function deleteInspection() {
+  function deleteFlamegraph() {
     Modal.confirm({
       title: '删除报告？',
       content: '你确定要删除这个报告吗？删除后不可恢复',
@@ -21,7 +21,7 @@ function ReportDetail({ dispatch, match }: ReportDetailProps) {
       okButtonProps: { type: 'danger' },
       onOk() {
         dispatch({
-          type: 'inspection/deleteInspection',
+          type: 'misc/deleteFlamegraph',
           payload: reportId,
         }).then(() => router.goBack());
       },
@@ -34,11 +34,11 @@ function ReportDetail({ dispatch, match }: ReportDetailProps) {
         <h3>报告：{reportId}</h3>
         <div className={styles.space}></div>
         <Button type="primary" style={{ marginRight: 20 }}>
-          <a download href={`/api/v1/inspections/${reportId}.tar.gz`}>
+          <a download href={`/api/v1/flamegraphs/${reportId}.tar.gz`}>
             拷贝
           </a>
         </Button>
-        <Button type="danger" onClick={deleteInspection}>
+        <Button type="danger" onClick={deleteFlamegraph}>
           删除
         </Button>
       </div>
@@ -55,4 +55,4 @@ function ReportDetail({ dispatch, match }: ReportDetailProps) {
   );
 }
 
-export default connect()(ReportDetail);
+export default connect()(PerfProfileDetail);

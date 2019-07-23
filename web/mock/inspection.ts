@@ -1,56 +1,24 @@
 const Mock = require('mockjs');
 
 export default {
-  'GET /api/v1/instances': [
-    {
-      uuid: '111',
-      name: 'test-cluster',
-      pd: '100.0.0.0:1000, 100.0.0.1:1001, 100.0.0.2:1002',
-      create_time: '2019-07-15T06:24:51Z',
-      status: 'exception',
-      message: 'Failed to connect to the host via ssh',
-    },
-    {
-      uuid: '222',
-      name: 'test-cluster',
-      pd: '100.0.0.0:1000, 100.0.0.1:1001, 100.0.0.2:1002',
-      create_time: '2019-07-15T06:24:51Z',
-      status: 'exception',
-      message: 'Failed to connect to the host via ssh',
-    },
-    {
-      uuid: '333',
-      name: 'test-cluster',
-      pd: '100.0.0.0:1000, 100.0.0.1:1001, 100.0.0.2:1002',
-      create_time: '2019-07-15T06:24:51Z',
-      status: 'exception',
-      message: 'Failed to connect to the host via ssh',
-    },
-    {
-      uuid: '444',
-      name: 'test-cluster',
-      pd: '100.0.0.0:1000, 100.0.0.1:1001, 100.0.0.2:1002',
-      create_time: '2019-07-15T06:24:51Z',
-      status: 'running',
-      message: '',
-    },
-    {
-      uuid: '555',
-      name: 'test-cluster',
-      pd: '100.0.0.0:1000, 100.0.0.1:1001, 100.0.0.2:1002',
-      create_time: '2019-07-15T06:24:51Z',
-      status: 'running',
-      message: '',
-    },
-    {
-      uuid: '666',
-      name: 'test-cluster',
-      pd: '100.0.0.0:1000, 100.0.0.1:1001, 100.0.0.2:1002',
-      create_time: '2019-07-15T06:24:51Z',
-      status: 'running',
-      message: '',
-    },
-  ],
+  'GET /api/v1/instances': (req: any, res: any) => {
+    setTimeout(() => {
+      res.send(
+        Mock.mock({
+          'data|10': [
+            {
+              uuid: /\w{12}/,
+              name: '@name',
+              pd: '100.0.0.0:1000, 100.0.0.1:1001, 100.0.0.2:1002',
+              create_time: '@datetime',
+              'status|1': ['running', 'exception'],
+              message: '@title',
+            },
+          ],
+        }).data,
+      );
+    }, 1000);
+  },
   'POST /api/v1/instances': (req: any, res: any) => {
     res.send({
       uuid: `new-instances-${Date.now()}`,

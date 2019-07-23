@@ -7,7 +7,7 @@ import { IFormatInstance, IInstance } from '@/models/inspection';
 import AddInstanceModal from '@/components/AddInstanceModal';
 import ConfigInstanceModal from '@/components/ConfigInstanceModal';
 
-const styles = require('./style.less');
+const styles = require('../style.less');
 
 const tableColumns = (onDelete: any, onConfig: any) => [
   {
@@ -38,7 +38,7 @@ const tableColumns = (onDelete: any, onConfig: any) => [
     dataIndex: 'status',
     key: 'status',
     render: (text: any, record: IFormatInstance) => {
-      if (record.message) {
+      if (record.status === 'exception') {
         return (
           <div className={styles.instance_status}>
             <span style={{ color: 'red' }}>{text}</span>
@@ -71,9 +71,10 @@ const tableColumns = (onDelete: any, onConfig: any) => [
 interface InstanceListProps extends ConnectProps {
   inspection: InspectionModelState;
   dispatch: Dispatch;
+  loading: boolean;
 }
 
-function InstanceList({ inspection, dispatch }: InstanceListProps) {
+function InstanceList({ inspection, dispatch, loading }: InstanceListProps) {
   const [addModalVisible, setAddModalVisible] = useState(false);
   const [configModalVisible, setConfigModalVisible] = useState(false);
   const [curInstance, setCurInstance] = useState<IInstance | null>(null);
@@ -130,7 +131,12 @@ function InstanceList({ inspection, dispatch }: InstanceListProps) {
           +添加实例
         </Button>
       </div>
-      <Table dataSource={inspection.instances} columns={columns} pagination={false} />
+      <Table
+        dataSource={inspection.instances}
+        columns={columns}
+        pagination={false}
+        loading={loading}
+      />
       <AddInstanceModal
         visible={addModalVisible}
         onClose={() => setAddModalVisible(false)}
@@ -145,4 +151,7 @@ function InstanceList({ inspection, dispatch }: InstanceListProps) {
   );
 }
 
-export default connect(({ inspection }: ConnectState) => ({ inspection }))(InstanceList);
+export default connect(({ inspection, loading }: ConnectState) => ({
+  inspection,
+  loading: loading.effects['inspection/fetchInstances'],
+}))(InstanceList);

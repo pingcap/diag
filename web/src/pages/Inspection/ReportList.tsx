@@ -6,7 +6,7 @@ import { PaginationConfig } from 'antd/lib/table';
 import { ConnectState, ConnectProps, InspectionModelState, Dispatch } from '@/models/connect';
 import { IFormatInspection } from '@/models/inspection';
 
-const styles = require('./style.less');
+const styles = require('../style.less');
 
 const tableColumns = (onDelete: any) => [
   {
@@ -57,7 +57,7 @@ const tableColumns = (onDelete: any) => [
       <span>
         <Link to={`/inspection/reports/${record.uuid}`}>查看</Link>
         <Divider type="vertical" />
-        <a download href={`/inspections/${record.uuid}.tar.gz`}>
+        <a download href={`/api/v1/inspections/${record.uuid}.tar.gz`}>
           拷贝
         </a>
         <Divider type="vertical" />
