@@ -239,17 +239,17 @@ def setup_os_ops(addr='127.0.0.1', basedir=''):
     join = os.path.join
     ops = [
         Op(CommandCollector(addr=addr, command='dmesg'),
-           FileOutput(join(basedir, addr, 'os', 'dmesg'))),
+           FileOutput(join(basedir, 'dmesg', addr, 'dmesg'))),
         Op(CommandCollector(addr=addr, command='netstat -s'),
-           FileOutput(join(basedir, addr, 'os', 'netstat'))),
+           FileOutput(join(basedir, 'net', addr, 'netstat'))),
         Op(CommandCollector(addr=addr, command='iostat 1 60'),
-           FileOutput(join(basedir, addr, 'os', 'iostat_1_60'))),
+           FileOutput(join(basedir, 'proc', addr, 'iostat_1_60'))),
         Op(CommandCollector(addr=addr, command='mpstat -P ALL 1 60'),
-           FileOutput(join(basedir, addr, 'os', 'mpstat_1_60'))),
+           FileOutput(join(basedir, 'proc', addr, 'mpstat_1_60'))),
         Op(CommandCollector(addr=addr, command='vmstat 1 60'),
-           FileOutput(join(basedir, addr, 'os', 'vmstat_1_60'))),
+           FileOutput(join(basedir, 'proc', addr, 'vmstat_1_60'))),
         Op(CommandCollector(addr=addr, command='pidstat -u -p ALL 1 60'),
-           FileOutput(join(basedir, addr, 'os', 'pidstat_1_60'))),
+           FileOutput(join(basedir, 'proc', addr, 'pidstat_1_60'))),
     ]
     return ops
 
@@ -272,7 +272,7 @@ def setup_conf_ops(addr='127.0.0.1', basedir='conf',
     cat = 'cat %s' % filename
     ops = [
         Op(CommandCollector(addr=addr, command=cat),
-           FileOutput(join(basedir, addr, filename))),
+           FileOutput(join(basedir, addr, os.path.basename(filename)))),
     ]
     return ops
 
