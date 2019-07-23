@@ -28,6 +28,8 @@ class OpGroup:
 
 
 def setup_op_groups(topology, datadir, inspection_id, target):
+    # TODO this function is too complex to understand, design a phase
+    # engine to string all things together.
     items = map(lambda x: x.split(':'), target.split(','))
     groups = {
         '_setup': OpGroup('_setup'),
@@ -46,6 +48,8 @@ def setup_op_groups(topology, datadir, inspection_id, target):
         if groups.has_key(item[0]):
             if len(item) == 2:
                 options[item[0]] = item[1]
+            if len(item) > 2:  # Ex. profile:tidb:ip:port
+                options[item[0]] = item[1:]
         else:
             raise Exception("unsupported target: "+item[0])
 
@@ -69,6 +73,17 @@ def setup_op_groups(topology, datadir, inspection_id, target):
     for i in range(len(ips)):
         deploydir[ips[i]] = hosts[i]['components'][0]['deploy_dir']
 
+    has_profiled = False
+    if options.has_key('profile'):
+        # profile a single service
+        option = options['profile']
+        name, ip = option[0], option[1]
+        if name in ('tidb', 'pd'):
+            port = option[2]
+            addr = "%s:%s" % (ip, port)
+            groups['profile'].add_ops(setup_pprof_ops(addr,
+                                                      os.path.join(datadir, inspection_id, name, addr)))
+        has_profiled = True
     for host in hosts:
         status = host['status']
         ip = host['ip']
@@ -96,10 +111,11 @@ def setup_op_groups(topology, datadir, inspection_id, target):
                 addr = "%s:%s" % (ip, status_port)
 
                 # pprof collectors
-                basedir = os.path.join(
-                    datadir, inspection_id, 'profile', 'tidb', addr)
-                groups['profile'].add_ops(
-                    setup_pprof_ops(addr, basedir))
+                if not has_profiled:
+                    basedir = os.path.join(
+                        datadir, inspection_id, 'profile', 'tidb', addr)
+                    groups['profile'].add_ops(
+                        setup_pprof_ops(addr, basedir))
 
                 # config collectors
                 groups['config'].add_ops(
@@ -120,11 +136,12 @@ def setup_op_groups(topology, datadir, inspection_id, target):
                                    os.path.join(
                                        datadir, inspection_id, 'config/tikv', addr),
                                    deploydir, 'tikv'))
-                groups['profile'].add_ops(
-                    setup_perf_ops(ip,
-                                   os.path.join(datadir, inspection_id,
-                                                'profile', 'tikv', addr),
-                                   deploydir))
+                if not has_profiled:
+                    groups['profile'].add_ops(
+                        setup_perf_ops(ip,
+                                    os.path.join(datadir, inspection_id,
+                                                    'profile', 'tikv', addr),
+                                    deploydir))
             if name == 'pd':
                 addr = "%s:%s" % (ip, svc['port'])
                 groups['config'].add_ops(
@@ -132,10 +149,11 @@ def setup_op_groups(topology, datadir, inspection_id, target):
                                    os.path.join(
                                        datadir, inspection_id, 'config/pd', addr),
                                    deploydir, 'pd'))
-                basedir = os.path.join(
-                    datadir, inspection_id, 'profile', 'pd', addr)
-                groups['profile'].add_ops(
-                    setup_pprof_ops(addr, basedir))
+                if not has_profiled:
+                    basedir = os.path.join(
+                        datadir, inspection_id, 'profile', 'pd', addr)
+                    groups['profile'].add_ops(
+                        setup_pprof_ops(addr, basedir))
             if name == 'prometheus':
                 port = svc['port']
                 addr = "%s:%s" % (ip, port)
