@@ -1,35 +1,29 @@
 import { Effect } from 'dva';
 import { Reducer } from 'redux';
 
-import { queryCurrent, query as queryUsers } from '@/services/user';
+import { routerRedux } from 'dva/router';
+import { queryCurrent, accountLogin, accountLogout } from '@/services/user';
 
 export interface CurrentUser {
-  avatar?: string;
-  name?: string;
-  title?: string;
-  group?: string;
-  signature?: string;
-  tags?: {
-    key: string;
-    label: string;
-  }[];
-  unreadCount?: number;
+  username?: string;
+  role?: 'admin' | 'dba';
+  ka?: boolean;
 }
 
 export interface UserModelState {
-  currentUser?: CurrentUser;
+  currentUser: CurrentUser;
 }
 
 export interface UserModelType {
   namespace: 'user';
   state: UserModelState;
   effects: {
-    fetch: Effect;
+    login: Effect;
+    logout: Effect;
     fetchCurrent: Effect;
   };
   reducers: {
     saveCurrentUser: Reducer<UserModelState>;
-    changeNotifyCount: Reducer<UserModelState>;
   };
 }
 
@@ -41,14 +35,39 @@ const UserModel: UserModelType = {
   },
 
   effects: {
-    *fetch(_, { call, put }) {
-      const response = yield call(queryUsers);
+    *login({ payload }, { call, put }) {
+      const loginInfo = payload;
+      const res = yield call(accountLogin, loginInfo);
+      if (res) {
+        yield put({
+          type: 'saveCurrentUser',
+          payload: res,
+        });
+        yield put(
+          routerRedux.replace({
+            pathname: '/',
+          }),
+        );
+      }
+    },
+    *logout(_, { call, put }) {
+      yield call(accountLogout);
+      yield put(
+        routerRedux.replace({
+          pathname: '/user/login',
+        }),
+      );
       yield put({
-        type: 'save',
-        payload: response,
+        type: 'saveCurrentUser',
+        res: {},
       });
     },
-    *fetchCurrent(_, { call, put }) {
+    *fetchCurrent(_, { call, put, select }) {
+      const user = yield select((state: any) => state.user.currentUser);
+      if (user.username) {
+        return;
+      }
+
       const response = yield call(queryCurrent);
       yield put({
         type: 'saveCurrentUser',
@@ -62,21 +81,6 @@ const UserModel: UserModelType = {
       return {
         ...state,
         currentUser: action.payload || {},
-      };
-    },
-    changeNotifyCount(
-      state = {
-        currentUser: {},
-      },
-      action,
-    ) {
-      return {
-        ...state,
-        currentUser: {
-          ...state.currentUser,
-          notifyCount: action.payload.totalCount,
-          unreadCount: action.payload.unreadCount,
-        },
       };
     },
   },
