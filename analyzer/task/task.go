@@ -5,11 +5,12 @@ import (
 )
 
 type TaskData struct {
-	collect map[string]bool
+	collect  map[string]bool
 	topology Topology
-	status ItemStatus
-	meta Meta
-	dbinfo DBInfo
+	status   ItemStatus
+	meta     Meta
+	dbinfo   DBInfo
+	matrix   Matrix
 }
 
 type Task interface {
@@ -18,7 +19,7 @@ type Task interface {
 
 type BaseTask struct {
 	inspectionId string
-	src string
-	data *TaskData
-	db *sql.DB
+	src          string
+	data         *TaskData
+	db           *sql.DB
 }
