@@ -4,15 +4,8 @@
 import argparse
 import json
 import multiprocessing
-from ansible.parsing.dataloader import DataLoader
-from ansible.inventory.manager import InventoryManager
 
-from groups import OpGroup, setup_op_groups
-
-
-def ping():
-    loader = DataLoader()
-    inventory = InventoryManager(loader=loader, sources='localhost,')
+from groups import OpGroup, Op, setup_op_groups
 
 
 def do(op):
@@ -44,20 +37,27 @@ def main():
     groups = setup_op_groups(topology, args.data_dir,
                              args.inspection_id, args.collect)
 
+    status = {}
     map(do, groups['_setup'])
     items = map(lambda x: x.split(':'), args.collect.split(','))
     for item in items:
-        if item[0] == "basic":
-            collect(groups['basic'])
-        elif item[0] == "profile":
-            collect(groups['profile'])
-        elif item[0] == "dbinfo":
-            collect(groups['dbinfo'])
-        elif item[0] == "metric":
-            collect(groups['metric'])
-        elif item[0] == "config":
-            collect(groups['config'])
+        try:
+            if item[0] == "basic":
+                collect(groups['basic'])
+            elif item[0] == "profile":
+                collect(groups['profile'])
+            elif item[0] == "dbinfo":
+                collect(groups['dbinfo'])
+            elif item[0] == "metric":
+                collect(groups['metric'])
+            elif item[0] == "config":
+                collect(groups['config'])
+            status[item[0]] = {"status": "success"}
+        except Exception as e:
+            status[item[0]] = {"status": "error", "message": e}
     map(do, groups['_teardown'])
+    with open(args.data_dir+'/status.json', "w") as f:
+        json.dump(status, f)
 
 
 if __name__ == "__main__":
