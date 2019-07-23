@@ -54,7 +54,7 @@ def main():
                 collect(groups['config'])
             status[item[0]] = {"status": "success"}
         except Exception as e:
-            status[item[0]] = {"status": "error", "message": e}
+            status[item[0]] = {"status": "error", "message": str(e)}
     map(do, groups['_teardown'])
     with open(args.data_dir+'/status.json', "w") as f:
         json.dump(status, f)
