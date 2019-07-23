@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # coding:utf8
 
+import os
 import argparse
 import json
 import multiprocessing
@@ -56,7 +57,9 @@ def main():
         except Exception as e:
             status[item[0]] = {"status": "error", "message": str(e)}
     map(do, groups['_teardown'])
-    with open(args.data_dir+'/status.json', "w") as f:
+    with open(os.path.join(args.data_dir,
+                           args.inspection_id,
+                           'status.json'), "w") as f:
         json.dump(status, f)
 
 
