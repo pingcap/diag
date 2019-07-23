@@ -105,7 +105,7 @@ def setup_op_groups(topology, datadir, inspection_id, target):
                 groups['config'].add_ops(
                     setup_conf_ops(ip,
                                    os.path.join(
-                                       datadir, inspection_id, 'config'),
+                                       datadir, inspection_id, 'config/tidb', addr),
                                    deploydir, 'tidb'))
 
                 # db collectors
@@ -118,7 +118,7 @@ def setup_op_groups(topology, datadir, inspection_id, target):
                 groups['config'].add_ops(
                     setup_conf_ops(ip,
                                    os.path.join(
-                                       datadir, inspection_id, 'config'),
+                                       datadir, inspection_id, 'config/tikv', addr),
                                    deploydir, 'tikv'))
                 groups['profile'].add_ops(
                     setup_perf_ops(ip,
@@ -130,7 +130,7 @@ def setup_op_groups(topology, datadir, inspection_id, target):
                 groups['config'].add_ops(
                     setup_conf_ops(ip,
                                    os.path.join(
-                                       datadir, inspection_id, 'config'),
+                                       datadir, inspection_id, 'config/pd', addr),
                                    deploydir, 'pd'))
                 basedir = os.path.join(
                     datadir, inspection_id, 'profile', 'pd', addr)
@@ -279,7 +279,7 @@ def setup_conf_ops(addr='127.0.0.1', basedir='conf',
     cat = 'cat %s' % filename
     ops = [
         Op(CommandCollector(addr=addr, command=cat),
-           FileOutput(join(basedir, addr, os.path.basename(filename)))),
+           FileOutput(join(basedir, os.path.basename(filename)))),
     ]
     return ops
 
