@@ -30,16 +30,14 @@ class OpGroup:
 def setup_op_groups(topology, datadir, inspection_id, target):
     items = map(lambda x: x.split(':'), target.split(','))
     groups = {
-        'global': OpGroup('global'),
+        '_setup': OpGroup('_setup'),
         'basic': OpGroup('basic'),
         'profile': OpGroup('profile'),
         'metric': OpGroup('metric'),
         'config': OpGroup('config'),
         'dbinfo': OpGroup('dbinfo'),
+        '_teardown': OpGroup('_teardown'),
     }
-    groups['global'].add_ops([
-        Op(VarCollector(var_name='collect', var_value=target),
-           FileOutput(os.path.join(datadir, inspection_id, 'collect.json')))])
 
     # for some targets, they come along with an option
     # Ex. metric:1h, slowlog:1h
@@ -55,6 +53,15 @@ def setup_op_groups(topology, datadir, inspection_id, target):
     status = topology['status']
     hosts = topology['hosts']
     logging.info("cluster:%s status:%s", cluster, status)
+
+    groups['_setup'].add_ops([
+        Op(VarCollector(var_name='collect', var_value=target),
+           FileOutput(os.path.join(datadir, inspection_id, 'collect.json'))),
+        Op(VarCollector(var_name='topology', var_value=topology),
+           FileOutput(os.path.join(datadir, inspection_id, "topology.json")))])
+    create = start = time.time()
+    groups['_teardown'].add_ops(setup_meta_ops(
+        cluster, os.path.join(datadir, inspection_id), create, start))
 
     db_collected = False
     deploydir = {}
@@ -291,12 +298,12 @@ def setup_perf_ops(addr='127.0.0.1', basedir='profile',
     return ops
 
 
-def setup_meta_ops(cluster_name, basedir, create, start, end):
+def setup_meta_ops(cluster_name, basedir, create, start):
     meta = {
         'cluster_name': cluster_name,
         'create_time': create,
         'inpect_time': start,
-        'end_time': end
+        'end_time': time.time()
     }
     join = os.path.join
     ops = [

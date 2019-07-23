@@ -22,6 +22,7 @@ def do(op):
 def collect(group):
     p = multiprocessing.Pool(multiprocessing.cpu_count())
     p.map(do, group)
+    p.close()
 
 
 def main():
@@ -43,7 +44,10 @@ def main():
     groups = setup_op_groups(topology, args.data_dir,
                              args.inspection_id, args.collect)
 
+    map(do, groups['setup'])
     collect(groups['global'])
+    map(do, groups['teardown'])
+
     items = map(lambda x: x.split(':'), args.collect.split(','))
     for item in items:
         if item[0] == "basic":
