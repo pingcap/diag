@@ -90,7 +90,7 @@ def setup_op_groups(topology, datadir, inspection_id, target):
 
                 # pprof collectors
                 basedir = os.path.join(
-                    datadir, inspection_id, 'profile', addr, 'tidb')
+                    datadir, inspection_id, 'profile', 'tidb', addr)
                 groups['profile'].add_ops(
                     setup_pprof_ops(addr, basedir))
 
@@ -126,7 +126,7 @@ def setup_op_groups(topology, datadir, inspection_id, target):
                                        datadir, inspection_id, 'config'),
                                    deploydir, 'pd'))
                 basedir = os.path.join(
-                    datadir, inspection_id, 'profile', addr, 'pd')
+                    datadir, inspection_id, 'profile', 'pd', addr)
                 groups['profile'].add_ops(
                     setup_pprof_ops(addr, basedir))
             if name == 'prometheus':
