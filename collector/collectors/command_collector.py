@@ -13,7 +13,8 @@ class CommandCollector(Collector):
     def collect(self):
         command = self.command
         if self.addr:
-            command = "ssh tidb@%s %s" % (self.addr, self.command)
+            command = "ssh tidb@%s 'bash -c \"%s\"'" % (
+                self.addr, self.command)
         with os.popen(command) as f:
             return f.read()
 

@@ -114,9 +114,9 @@ def setup_op_groups(topology, datadir, inspection_id, target):
                                        datadir, inspection_id, 'config'),
                                    deploydir, 'tikv'))
                 groups['profile'].add_ops(
-                    setup_perf_ops(addr,
+                    setup_perf_ops(ip,
                                    os.path.join(datadir, inspection_id,
-                                                'profile', addr, 'tikv'),
+                                                'profile', 'tikv', addr),
                                    deploydir))
             if name == 'pd':
                 addr = "%s:%s" % (ip, svc['port'])
@@ -277,15 +277,16 @@ def setup_conf_ops(addr='127.0.0.1', basedir='conf',
     return ops
 
 
-def setup_perf_ops(addr='127.0.0.1:20060', basedir='profile',
+def setup_perf_ops(addr='127.0.0.1', basedir='profile',
                    deploydir='/home/tidb/deploy'):
     join = os.path.join
     # only support tikv now
     pidfile = join(deploydir, 'status/tikv.pid')
-    perf = 'perf record -F 99 -p $(<%s) -g -o /dev/stdout sleep 60' % (pidfile)
+    perf = 'sudo perf record -F 99 -p `cat %s` -g -o /dev/stdout sleep 60' % (
+        pidfile)
     ops = [
         Op(CommandCollector(addr=addr, command=perf),
-           FileOutput(join(basedir, addr, 'tikv.perf')))
+           FileOutput(join(basedir, 'perf.data')))
     ]
     return ops
 
