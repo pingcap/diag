@@ -6,10 +6,11 @@ import { PaginationConfig } from 'antd/lib/table';
 import { ConnectState, ConnectProps, Dispatch } from '@/models/connect';
 import { IPerfProfileInfo, IPerfProfile } from '@/models/misc';
 import AddMiscReportModal from '@/components/AddMiscReportModal';
+import UploadReportModal from '@/components/UploadReportModal';
 
 const styles = require('../style.less');
 
-const tableColumns = (onDelete: any) => [
+const tableColumns = (onDelete: any, onUpload: any) => [
   {
     title: 'Profile 报告 ID',
     dataIndex: 'uuid',
@@ -54,8 +55,10 @@ const tableColumns = (onDelete: any) => [
         <Link to={`/misc/perfprofiles/${record.uuid}`}>查看</Link>
         <Divider type="vertical" />
         <a download href={`/api/v1/perfprofiles/${record.uuid}.tar.gz`}>
-          拷贝
+          下载
         </a>
+        <Divider type="vertical" />
+        <a onClick={onUpload}>上传</a>
         <Divider type="vertical" />
         <a style={{ color: 'red' }} onClick={() => onDelete(record)}>
           删除
@@ -73,6 +76,11 @@ interface PerfProfileListProps extends ConnectProps {
 
 function PerfProfileList({ perfprofile, dispatch, loading }: PerfProfileListProps) {
   const [modalVisble, setModalVisible] = useState(false);
+
+  // upload
+  const [uploadModalVisible, setUploadModalVisible] = useState(false);
+  const [uploadUrl, setUploadUrl] = useState('');
+
   const pagination: PaginationConfig = useMemo(
     () => ({
       total: perfprofile.total,
@@ -94,7 +102,7 @@ function PerfProfileList({ perfprofile, dispatch, loading }: PerfProfileListProp
     });
   }
 
-  const columns = useMemo(() => tableColumns(deletePerfProfile), []);
+  const columns = useMemo(() => tableColumns(deletePerfProfile, uploadPerfProfile), []);
 
   function deletePerfProfile(record: IPerfProfile) {
     Modal.confirm({
@@ -109,6 +117,11 @@ function PerfProfileList({ perfprofile, dispatch, loading }: PerfProfileListProp
         });
       },
     });
+  }
+
+  function uploadPerfProfile(record: IPerfProfile) {
+    setUploadModalVisible(true);
+    setUploadUrl(`/api/v1/flamegraphs/${record.uuid}`);
   }
 
   function handleAddPerfProfile(machine: string): Promise<any> {
@@ -143,6 +156,11 @@ function PerfProfileList({ perfprofile, dispatch, loading }: PerfProfileListProp
         visible={modalVisble}
         onClose={() => setModalVisible(false)}
         onData={handleAddPerfProfile}
+      />
+      <UploadReportModal
+        visible={uploadModalVisible}
+        onClose={() => setUploadModalVisible(false)}
+        uploadUrl={uploadUrl}
       />
     </div>
   );

@@ -42,6 +42,11 @@ export default {
       res.status(204).send();
     }, 1000);
   },
+  'PUT /api/v1/flamegraphs/:id': (req: any, res: any) => {
+    setTimeout(() => {
+      res.status(204).send();
+    }, 2000);
+  },
   // ////////////////////////////
   'GET /api/v1/perfprofiles': (req: any, res: any) => {
     setTimeout(() => {
@@ -83,5 +88,10 @@ export default {
     setTimeout(() => {
       res.status(204).send();
     }, 1000);
+  },
+  'PUT /api/v1/perfprofiles/:id': (req: any, res: any) => {
+    setTimeout(() => {
+      res.status(204).send();
+    }, 2000);
   },
 };

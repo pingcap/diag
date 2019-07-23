@@ -6,10 +6,11 @@ import { PaginationConfig } from 'antd/lib/table';
 import { ConnectState, ConnectProps, Dispatch } from '@/models/connect';
 import { IFlameGraphInfo, IFlameGraph } from '@/models/misc';
 import AddMiscReportModal from '@/components/AddMiscReportModal';
+import UploadReportModal from '@/components/UploadReportModal';
 
 const styles = require('../style.less');
 
-const tableColumns = (onDelete: any) => [
+const tableColumns = (onDelete: any, onUpload: any) => [
   {
     title: '火焰图报告 ID',
     dataIndex: 'uuid',
@@ -54,8 +55,10 @@ const tableColumns = (onDelete: any) => [
         <Link to={`/misc/flamegraphs/${record.uuid}`}>查看</Link>
         <Divider type="vertical" />
         <a download href={`/api/v1/flamegraphs/${record.uuid}.tar.gz`}>
-          拷贝
+          下载
         </a>
+        <Divider type="vertical" />
+        <a onClick={onUpload}>上传</a>
         <Divider type="vertical" />
         <a style={{ color: 'red' }} onClick={() => onDelete(record)}>
           删除
@@ -73,6 +76,11 @@ interface FlameGraphListProps extends ConnectProps {
 
 function FlameGraphList({ flamegraph, dispatch, loading }: FlameGraphListProps) {
   const [modalVisble, setModalVisible] = useState(false);
+
+  // upload
+  const [uploadModalVisible, setUploadModalVisible] = useState(false);
+  const [uploadUrl, setUploadUrl] = useState('');
+
   const pagination: PaginationConfig = useMemo(
     () => ({
       total: flamegraph.total,
@@ -94,7 +102,7 @@ function FlameGraphList({ flamegraph, dispatch, loading }: FlameGraphListProps) 
     });
   }
 
-  const columns = useMemo(() => tableColumns(deleteFlamegraph), []);
+  const columns = useMemo(() => tableColumns(deleteFlamegraph, uploadFlamegraph), []);
 
   function deleteFlamegraph(record: IFlameGraph) {
     Modal.confirm({
@@ -109,6 +117,11 @@ function FlameGraphList({ flamegraph, dispatch, loading }: FlameGraphListProps) 
         });
       },
     });
+  }
+
+  function uploadFlamegraph(record: IFlameGraph) {
+    setUploadModalVisible(true);
+    setUploadUrl(`/api/v1/flamegraphs/${record.uuid}`);
   }
 
   function handleAddFlamegraph(machine: string): Promise<any> {
@@ -143,6 +156,11 @@ function FlameGraphList({ flamegraph, dispatch, loading }: FlameGraphListProps) 
         visible={modalVisble}
         onClose={() => setModalVisible(false)}
         onData={handleAddFlamegraph}
+      />
+      <UploadReportModal
+        visible={uploadModalVisible}
+        onClose={() => setUploadModalVisible(false)}
+        uploadUrl={uploadUrl}
       />
     </div>
   );
