@@ -13,7 +13,7 @@ import (
 
 type LogResult struct {
 	Token string          `json:"token"`
-	Logs  []*searcher.Log `json:"logs"`
+	Logs  []*searcher.Item `json:"logs"`
 }
 
 func (s *Server) listLogs() ([]string, error) {
@@ -47,7 +47,7 @@ func (s *Server) searchLog(r *http.Request) (*LogResult, error) {
 		return nil, utils.NewForesightError(http.StatusNotFound, "NOT_FOUND", "token not found")
 	}
 
-	logs := []*searcher.Log{}
+	logs := []*searcher.Item{}
 	for i := 0; i < int(limit); i++ {
 		if l, err := iter.Next(); err != nil {
 			log.Error("search log: ", err)

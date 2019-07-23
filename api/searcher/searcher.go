@@ -2,11 +2,10 @@ package searcher
 
 import (
 	"errors"
-	"fmt"
-	"github.com/google/uuid"
-	log "github.com/sirupsen/logrus"
 	"sync"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 type Searcher struct {
@@ -14,18 +13,18 @@ type Searcher struct {
 	l sync.Mutex
 }
 
-type Log struct {
-	Ip        string    `json:"ip"`
-	Port      string    `json:"port"`
-	File      string    `json:"file"`
-	Time      time.Time `json:"time"`
-	Component string    `json:"component"`
-	Level     string    `json:"level"`
-	Content   string    `json:"content"`
-}
+//type Log struct {
+//	Ip        string    `json:"ip"`
+//	Port      string    `json:"port"`
+//	File      string    `json:"file"`
+//	Time      time.Time `json:"time"`
+//	Component string    `json:"component"`
+//	Level     string    `json:"level"`
+//	Content   string    `json:"content"`
+//}
 
 type LogIter interface {
-	Next() (*Log, error)
+	Next() (*Item, error)
 	Close() error
 }
 
@@ -42,7 +41,7 @@ func NewIter(iter LogIter) *IterWithAccessTime {
 	}
 }
 
-func (i *IterWithAccessTime) Next() (*Log, error) {
+func (i *IterWithAccessTime) Next() (*Item, error) {
 	i.l.Lock()
 	defer i.l.Unlock()
 	i.access = time.Now()
@@ -128,49 +127,7 @@ func (s *Searcher) Search(dir string, text string, token string) (LogIter, strin
 	}
 }
 
-// below is mock
-type Mock struct {
-	dir   string
-	text  string
-	size  int
-	count int
-}
 
-func NewMock(dir string, text string) *Mock {
-	return &Mock{
-		dir:  dir,
-		text: text,
-		size: 100,
-	}
-}
-
-func (m *Mock) Next() (*Log, error) {
-	log.Info("count: ", m.count, " size: ", m.size)
-	if m.count == m.size {
-		return nil, nil
-	}
-	m.count++
-
-	return &Log{
-		Ip:        "1.1.1.1",
-		Port:      "1024",
-		File:      "test.log",
-		Time:      time.Now(),
-		Component: "tikv",
-		Level:     "INFO",
-		Content:   fmt.Sprintf("在%s目录搜素%s的第%d条结果", m.dir, m.text, m.count),
-	}, nil
-}
-
-func (*Mock) Close() error {
-	log.Info("mock close")
-	return nil
-}
-
-func SearchLog(dir string, text string) (LogIter, error) {
-	return NewMock(dir, text), nil
-}
-
-func GetIterFromToken(token string) LogIter {
-	return &Mock{}
-}
+//func GetIterFromToken(token string) LogIter {
+//	return &Mock{}
+//}
