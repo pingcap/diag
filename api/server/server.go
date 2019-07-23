@@ -4,11 +4,14 @@ import (
 	"context"
 	"database/sql"
 	"net/http"
+	"path"
+	"time"
 
 	"github.com/pingcap/fn"
 	"github.com/pingcap/tidb-foresight/bootstrap"
 	"github.com/pingcap/tidb-foresight/model"
 	"github.com/pingcap/tidb-foresight/searcher"
+	"github.com/pingcap/tidb-foresight/syncer"
 	"github.com/pingcap/tidb-foresight/utils"
 	log "github.com/sirupsen/logrus"
 )
@@ -53,6 +56,8 @@ func NewServer(config *bootstrap.ForesightConfig, db *sql.DB) *Server {
 
 func (s *Server) Run() error {
 	log.Info("start listen on ", s.config.Address)
+
+	go syncer.Sync(path.Join(s.config.Home, "topology"), path.Join(s.config.Home, "remote-log"), 5*time.Minute, 10)
 
 	return http.ListenAndServe(s.config.Address, s.Router)
 }
