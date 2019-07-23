@@ -44,10 +44,7 @@ def main():
     groups = setup_op_groups(topology, args.data_dir,
                              args.inspection_id, args.collect)
 
-    map(do, groups['setup'])
-    collect(groups['global'])
-    map(do, groups['teardown'])
-
+    map(do, groups['_setup'])
     items = map(lambda x: x.split(':'), args.collect.split(','))
     for item in items:
         if item[0] == "basic":
@@ -60,6 +57,7 @@ def main():
             collect(groups['metric'])
         elif item[0] == "config":
             collect(groups['config'])
+    map(do, groups['_teardown'])
 
 
 if __name__ == "__main__":
