@@ -48,7 +48,7 @@ func (s *Server) collect(instanceId, inspectionId string) error {
 		fmt.Sprintf("--inspection-id=%s", inspectionId),
 		fmt.Sprintf("--inventory=%s", path.Join(s.config.Home, "inventory", instanceId+".ini")),
 		fmt.Sprintf("--topology=%s", path.Join(s.config.Home, "topology", instanceId+".json")),
-		fmt.Sprintf("--dest=%s", path.Join(s.config.Home, "inspection", inspectionId)),
+		fmt.Sprintf("--data-dir=%s", path.Join(s.config.Home, "inspection")),
 		fmt.Sprintf("--collect=%s", strings.Join(items, ",")),
 	)
 	log.Info(cmd)
