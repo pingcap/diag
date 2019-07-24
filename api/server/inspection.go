@@ -27,7 +27,7 @@ func (s *Server) collect(instanceId, inspectionId string) error {
 		log.Error("get instance config: ", err)
 		return err
 	}
-	items := []string{"config", "network", "ntp", "slow_log", "metric", "alert"}
+	items := []string{"metric"}
 	if config != nil {
 		if config.CollectHardwareInfo {
 			items = append(items, "hardware")
