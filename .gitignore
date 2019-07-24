@@ -1,4 +1,11 @@
+# spliter
 spliter/spliter
+
+# api
+api/tidb-foresight
+
+# analyzer
+analyzer/analyzer
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
