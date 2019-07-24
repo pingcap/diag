@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"io/ioutil"
+	"math"
 	"os"
 	"path"
 	"strconv"
@@ -151,6 +152,11 @@ func (t *SaveMetricTask) Run() error {
 			tags["inspectionid"] = t.inspectionId
 
 			for _, point := range series.Points {
+				if math.IsNaN(point.V) ||
+					math.IsInf(point.V, -1) ||
+					math.IsInf(point.V, 1) {
+					continue
+				}
 				fields := map[string]interface{}{
 					"value": point.V,
 				}
