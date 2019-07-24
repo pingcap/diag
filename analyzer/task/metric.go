@@ -152,9 +152,7 @@ func (t *SaveMetricTask) Run() error {
 			tags["inspectionid"] = t.inspectionId
 
 			for _, point := range series.Points {
-				if math.IsNaN(point.V) ||
-					math.IsInf(point.V, -1) ||
-					math.IsInf(point.V, 1) {
+				if math.IsNaN(point.V) || math.IsInf(point.V, 0) {
 					continue
 				}
 				fields := map[string]interface{}{
