@@ -51,6 +51,7 @@ func (s *Server) collect(instanceId, inspectionId string) error {
 		fmt.Sprintf("--dest=%s", path.Join(s.config.Home, "inspection", inspectionId)),
 		fmt.Sprintf("--collect=%s", strings.Join(items, ",")),
 	)
+	log.Info(cmd)
 	err = cmd.Run()
 	if err != nil {
 		log.Error("run ", s.config.Collector, ": ", err)
@@ -65,6 +66,7 @@ func (s *Server) analyze(inspectionId string) error {
 		fmt.Sprintf("--db=%s", path.Join(s.config.Home, "sqlite.db")),
 		fmt.Sprintf("--src=%s", path.Join(s.config.Home, "inspection", inspectionId)),
 	)
+	log.Info(cmd)
 	err := cmd.Run()
 	if err != nil {
 		log.Error("run ", s.config.Analyzer, ": ", err)
@@ -82,6 +84,7 @@ func (s *Server) pack(inspectionId string) error {
 		path.Join(s.config.Home, "inspection"),
 		inspectionId,
 	)
+	log.Info(cmd)
 	err := cmd.Run()
 	if err != nil {
 		log.Error("run tar: ", err)
@@ -98,6 +101,7 @@ func (s *Server) uppack(inspectionId string) error {
 		"-C",
 		path.Join(s.config.Home, "inspection"),
 	)
+	log.Info(cmd)
 	err := cmd.Run()
 	if err != nil {
 		log.Error("run tar: ", err)
