@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"crypto/sha1"
 	"encoding/base64"
 	"encoding/json"
@@ -8,6 +9,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/pingcap/tidb-foresight/utils"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -18,19 +20,30 @@ type AuthInfo struct {
 	Signature string `json:"signature"`
 }
 
-func (s *Server) authFunc(next func(http.ResponseWriter, *http.Request)) http.Handler {
+func (s *Server) auth(ctx context.Context, r *http.Request) (context.Context, error) {
+	cookie, err := r.Cookie("tidb-foresight-auth")
+	if err != nil {
+		log.Error("parse cookie in self identity: ", err)
+		return ctx, utils.NewForesightError(http.StatusForbidden, "COOKIE_MISSING", "access denied since no cookie")
+	}
 
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		log.Info("enter auth")
-		next(w, r)
-	})
-}
+	decoded, err := base64.StdEncoding.DecodeString(cookie.Value)
+	if err != nil {
+		log.Error("decode cookie failed: ", err)
+		return ctx, utils.NewForesightError(http.StatusBadRequest, "DECODE_B64_ERROR", "invalid cookie")
+	}
 
-func (s *Server) auth(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		log.Info("enter auth")
-		next.ServeHTTP(w, r)
-	})
+	authInfo := AuthInfo{}
+	err = json.Unmarshal(decoded, &authInfo)
+	if err != nil {
+		log.Error("unmarshal json failed: ", err)
+		return ctx, utils.NewForesightError(http.StatusBadRequest, "DECODE_JSON_ERROR", "invalid cookie")
+	}
+
+	ctx = context.WithValue(ctx, "user_name", authInfo.UserName)
+	ctx = context.WithValue(ctx, "user_role", authInfo.Role)
+
+	return ctx, nil
 }
 
 func setAuthCookie(w http.ResponseWriter, user, role, token string) {
@@ -48,8 +61,8 @@ func setAuthCookie(w http.ResponseWriter, user, role, token string) {
 	})
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		w.Write([]byte(`{"status": "MARSHAL_JSON_ERROR", "message": "序列化json时发生错误"}`))
-		log.Error("序列化json时发生错误", err)
+		w.Write([]byte(`{"status": "MARSHAL_JSON_ERROR", "message": "when marshal json"}`))
+		log.Error("marshal json:", err)
 		return
 	}
 	http.SetCookie(w, &http.Cookie{
@@ -58,59 +71,49 @@ func setAuthCookie(w http.ResponseWriter, user, role, token string) {
 		MaxAge: 60 * 60 * 24 * 7,
 	})
 	log.Info(role, " login successfully")
-	w.WriteHeader(http.StatusOK)
+	w.WriteHeader(http.StatusNoContent)
 }
-
-/*
-func checkAuthCookie(r *http.Request) bool {
-
-}
-*/
 
 func (s *Server) login(w http.ResponseWriter, r *http.Request) {
-	usernames, ok := r.URL.Query()["username"]
-	if !ok || len(usernames) == 0 {
-		log.Info("user login failed since without username")
+	auth := struct {
+		User string `json:"username"`
+		Pass string `json:"password"`
+	}{}
+	decoder := json.NewDecoder(r.Body)
+	err := decoder.Decode(&auth)
+	if err != nil {
+		log.Info("decode json: ", err)
 		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte(`{"status": "USERNAME_MISSING", "message": "用户名缺失"}`))
-		return
-	}
-	username := usernames[0]
-
-	passwords, ok := r.URL.Query()["password"]
-	if !ok || len(passwords) == 0 {
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte(`{"status": "PASSWORD_MISSING", "message": "密码缺失"}`))
-		return
-	}
-	password := passwords[0]
-
-	if username == s.config.User.Name && password == s.config.User.Pass {
-		setAuthCookie(w, username, "user", s.config.Auth.Token)
-	} else if username == s.config.Admin.Name && password == s.config.Admin.Pass {
-		setAuthCookie(w, username, "admin", s.config.Auth.Token)
+		w.Write([]byte(`{"status": "BAD_REQUEST", "message": "json body is invalid"}`))
+	} else if auth.User == s.config.User.Name && auth.Pass == s.config.User.Pass {
+		setAuthCookie(w, auth.User, "user", s.config.Auth.Token)
+	} else if auth.User == s.config.Admin.Name && auth.Pass == s.config.Admin.Pass {
+		setAuthCookie(w, auth.User, "admin", s.config.Auth.Token)
 	} else {
+		log.Info(auth, s.config.Admin)
 		log.Info("user login failed since username and password mismatch")
 		w.WriteHeader(http.StatusUnauthorized)
-		w.Write([]byte(`{"status": "AUTH_MISMATCH", "message": "用户名和密码不匹配"}`))
+		w.Write([]byte(`{"status": "AUTH_MISMATCH", "message": "mismatch username or password"}`))
 	}
 }
 
-func (s *Server) me(w http.ResponseWriter, r *http.Request) {
-	cookie, err := r.Cookie("tidb-foresight-auth")
-	if err != nil {
-		log.Error("parse cookie in self identity: ", err)
-	}
+func (s *Server) me(ctx context.Context) (map[string]interface{}, error) {
+	aws := s.config.Aws
+	ka := aws.Region != "" && aws.Bucket != "" && aws.AccessKey != "" && aws.AccessSecret != ""
 
-	decoded, err := base64.StdEncoding.DecodeString(cookie.Value)
-	if err != nil {
-		log.Error("decode cookie failed: ", err)
-		w.WriteHeader(http.StatusInternalServerError)
-		w.Write([]byte(`{"status": "UKNOWN_ERROR", "message": "获取用户信息时发生未知错误"}`))
-		return
-	}
-	log.Info(string(decoded))
+	return map[string]interface{}{
+		"user": ctx.Value("user_name"),
+		"role": ctx.Value("user_role"),
+		"ka":   ka,
+	}, nil
 }
 
-func (s *Server) logout(http.ResponseWriter, *http.Request) {
+func (s *Server) logout(w http.ResponseWriter, r *http.Request) {
+	http.SetCookie(w, &http.Cookie{
+		Name:   "tidb-foresight-auth",
+		Value:  "",
+		MaxAge: 0,
+	})
+
+	w.WriteHeader(http.StatusNoContent)
 }

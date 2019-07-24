@@ -1,9 +1,9 @@
 package bootstrap
 
 import (
+	"io/ioutil"
 	"os"
 	"testing"
-	"io/ioutil"
 )
 
 const customConfig = `[sched]
