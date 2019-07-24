@@ -16,7 +16,7 @@ export default [
     routes: [
       {
         path: '/',
-        redirect: '/inspection/instances',
+        redirect: '/inspection',
       },
       {
         path: '/inspection',
@@ -26,7 +26,8 @@ export default [
         routes: [
           {
             path: '/inspection',
-            redirect: '/inspection/instances',
+            name: 'inspection',
+            component: './Inspection/InspectionHome',
           },
           {
             path: '/inspection/instances',
@@ -42,6 +43,11 @@ export default [
             path: '/inspection/reports/:id',
             name: 'report_detail',
             component: './Inspection/ReportDetail',
+          },
+          {
+            path: '/inspection/reports',
+            name: 'report_list',
+            component: './Inspection/ReportList',
           },
         ],
       },

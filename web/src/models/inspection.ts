@@ -9,6 +9,7 @@ import {
   queryInstanceInspections,
   deleteInspection,
   addInspection,
+  queryAllInspections,
 } from '@/services/inspection';
 
 // /////
@@ -164,7 +165,12 @@ const InspectionModel: InspectionModelType = {
 
     *fetchInspections({ payload }, { call, put }) {
       const { instanceId, page } = payload;
-      const res: IInspectionsRes = yield call(queryInstanceInspections, instanceId, page);
+      let res: IInspectionsRes;
+      if (instanceId) {
+        res = yield call(queryInstanceInspections, instanceId, page);
+      } else {
+        res = yield call(queryAllInspections, page);
+      }
       yield put({
         type: 'saveInspections',
         payload: {

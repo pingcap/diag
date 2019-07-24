@@ -79,6 +79,27 @@ export default {
       );
     }, 1000);
   },
+  'GET /api/v1/inspections': (req: any, res: any) => {
+    setTimeout(() => {
+      res.send(
+        Mock.mock({
+          'total|100-200': 10,
+          'data|10': [
+            {
+              uuid: /\w{12}/,
+              instance_id: /\w{12}/,
+              'status|1': ['running', 'finish'],
+              'type|1': ['manual', 'auto'],
+              create_time: '@datetime',
+              finish_time: '@datetime',
+              report_path: '@url',
+              instance_name: '@name',
+            },
+          ],
+        }),
+      );
+    }, 1000);
+  },
   'DELETE /api/v1/inspections/:id': (req: any, res: any) => {
     res.status(204).send();
   },
