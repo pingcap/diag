@@ -61,7 +61,6 @@ func (p *BaseParser) Next() (string, error) {
 	var line []byte
 	var err error
 	for {
-		// Note: Only the first 4094 byte of this row can be read out
 		line, _, err = p.Reader.ReadLine()
 		if err != nil {
 			return "", err
@@ -102,7 +101,7 @@ func NewParser(cluster, host, folder, filename, searchStr string) (Parser, error
 	if err != nil {
 		return nil, err
 	}
-	reader := bufio.NewReader(f)
+	reader := bufio.NewReaderSize(f, 64*1024)
 	base := BaseParser{
 		Filename:    filename,
 		Host:        host,
@@ -125,7 +124,7 @@ func NewParser(cluster, host, folder, filename, searchStr string) (Parser, error
 	case "pd":
 		parser = &PDLogParser{base}
 	default:
-		return nil, errors.New("newParser: unsupported component type")
+		return nil, nil
 	}
 	err = parser.Next()
 	if err != nil {
