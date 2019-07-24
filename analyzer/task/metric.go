@@ -148,6 +148,7 @@ func (t *SaveMetricTask) Run() error {
 			if !ok {
 				continue
 			}
+			tags["inspectionid"] = t.inspectionId
 
 			for _, point := range series.Points {
 				fields := map[string]interface{}{
