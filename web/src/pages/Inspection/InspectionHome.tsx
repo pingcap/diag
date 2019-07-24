@@ -1,6 +1,7 @@
 import React from 'react';
 import { connect } from 'dva';
 import { Redirect } from 'umi';
+import { Spin } from 'antd';
 import { ConnectState } from '@/models/connect';
 import { CurrentUser } from '@/models/user';
 
@@ -15,7 +16,7 @@ function InspectionHome({ curUser }: InspectionHomeProps) {
   if (curUser.role === 'dba') {
     return <Redirect to="/inspection/reports" />;
   }
-  return <p>Loading...</p>;
+  return <Spin size="small" style={{ marginLeft: 8, marginRight: 8 }} />;
 }
 
 export default connect(({ user }: ConnectState) => ({

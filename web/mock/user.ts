@@ -5,10 +5,8 @@ export default {
     setTimeout(() => {
       res.send(
         Mock.mock({
-          name: 'Serati Ma',
-          avatar: 'https://gw.alipayobjects.com/zos/antfincdn/XAosXuNZyF/BiazfanxmamNRoxxVxka.png',
           'username|1': ['admin', 'dba'],
-          'role|1': ['admin', 'dba'],
+          role: '@username',
           ka: true,
         }),
       );
@@ -19,8 +17,6 @@ export default {
     if (password === 'tidb' && (username === 'admin' || username === 'dba')) {
       setTimeout(() => {
         res.send({
-          name: 'Serati Ma',
-          avatar: 'https://gw.alipayobjects.com/zos/antfincdn/XAosXuNZyF/BiazfanxmamNRoxxVxka.png',
           username: req.body.username,
           role: req.body.username,
           ka: true,
