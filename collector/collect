@@ -21,6 +21,8 @@ def collect(group):
 
 def main():
     parser = argparse.ArgumentParser()
+    parser.add_argument("--instance-id", type=str,
+                        required=True, help="instance identity")
     parser.add_argument("--inspection-id", type=str,
                         required=True, help="inspection identity")
     parser.add_argument("--data-dir", type=str,
