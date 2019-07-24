@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Modal, Form, Checkbox, Divider, Select, message } from 'antd';
+import { Modal, Form, Checkbox, Divider, Select, message, Spin } from 'antd';
 import { queryInstanceConfig, updateInstanceConfig } from '@/services/inspection';
 import { IInstanceConfig } from '@/models/inspection';
 import moment from 'moment';
@@ -113,7 +113,7 @@ function ConfigInstanceModal({ visible, onClose, instanceId }: Props) {
       confirmLoading={submitting}
       okButtonProps={{ disabled: loading }}
     >
-      {loading && <span>loading...</span>}
+      {loading && <Spin size="small" style={{ marginLeft: 8, marginRight: 8 }} />}
       {!loading && config && (
         <Form labelAlign="left" {...formItemLayout} className={styles.config_form}>
           <Form.Item label="信息收集项">

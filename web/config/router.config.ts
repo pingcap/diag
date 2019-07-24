@@ -1,13 +1,22 @@
 export default [
   {
+    path: '/user',
+    component: '../layouts/UserLayout',
+    routes: [
+      { path: '/user', redirect: '/user/login' },
+      { path: '/user/login', name: 'login', component: './User/Login' },
+      {
+        component: '404',
+      },
+    ],
+  },
+  {
     path: '/',
     component: '../layouts/BasicLayout',
-    Routes: ['src/pages/Authorized'],
-    authority: ['admin', 'user'],
     routes: [
       {
         path: '/',
-        redirect: '/inspection/instances',
+        redirect: '/inspection',
       },
       {
         path: '/inspection',
@@ -17,7 +26,8 @@ export default [
         routes: [
           {
             path: '/inspection',
-            redirect: '/inspection/instances',
+            name: 'inspection',
+            component: './Inspection/InspectionHome',
           },
           {
             path: '/inspection/instances',
@@ -33,6 +43,11 @@ export default [
             path: '/inspection/reports/:id',
             name: 'report_detail',
             component: './Inspection/ReportDetail',
+          },
+          {
+            path: '/inspection/reports',
+            name: 'report_list',
+            component: './Inspection/ReportList',
           },
         ],
       },

@@ -4,6 +4,7 @@
  */
 import { extend } from 'umi-request';
 import { notification } from 'antd';
+import { router } from 'umi';
 
 const codeMessage = {
   200: '服务器成功返回请求的数据。',
@@ -26,16 +27,21 @@ const codeMessage = {
 /**
  * 异常处理程序
  */
-const errorHandler = (error: { response: Response }): void => {
-  const { response } = error;
+const errorHandler = (error: any): void => {
+  const { response, data } = error;
+
   if (response && response.status) {
-    const errorText = codeMessage[response.status] || response.statusText;
+    const errorText = data.message || codeMessage[response.status] || response.statusText;
     const { status, url } = response;
 
     notification.error({
       message: `请求错误 ${status}: ${url}`,
       description: errorText,
     });
+
+    if (response.status === 401) {
+      router.replace('/user/login');
+    }
   }
 };
 

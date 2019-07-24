@@ -1,100 +1,38 @@
-// 代码中会兼容本地 service mock 以及部署站点的静态数据
+const Mock = require('mockjs');
+
 export default {
-  // 支持值为 Object 和 Array
-  'GET /api/currentUser': {
-    name: 'Serati Ma',
-    avatar: 'https://gw.alipayobjects.com/zos/antfincdn/XAosXuNZyF/BiazfanxmamNRoxxVxka.png',
-    userid: '00000001',
-    email: 'antdesign@alipay.com',
-    signature: '海纳百川，有容乃大',
-    title: '交互专家',
-    group: '蚂蚁金服－某某某事业群－某某平台部－某某技术部－UED',
-    tags: [
-      {
-        key: '0',
-        label: '很有想法的',
-      },
-      {
-        key: '1',
-        label: '专注设计',
-      },
-      {
-        key: '2',
-        label: '辣~',
-      },
-      {
-        key: '3',
-        label: '大长腿',
-      },
-      {
-        key: '4',
-        label: '川妹子',
-      },
-      {
-        key: '5',
-        label: '海纳百川',
-      },
-    ],
-    notifyCount: 12,
-    unreadCount: 11,
-    country: 'China',
-    geographic: {
-      province: {
-        label: '浙江省',
-        key: '330000',
-      },
-      city: {
-        label: '杭州市',
-        key: '330100',
-      },
-    },
-    address: '西湖区工专路 77 号',
-    phone: '0752-268888888',
+  'GET /api/v1/me': (req: any, res: any) => {
+    setTimeout(() => {
+      res.send(
+        Mock.mock({
+          'username|1': ['admin', 'dba'],
+          role: '@username',
+          ka: true,
+        }),
+      );
+    }, 1000);
   },
-  // GET POST 可省略
-  'GET /api/users': [
-    {
-      key: '1',
-      name: 'John Brown',
-      age: 32,
-      address: 'New York No. 1 Lake Park',
-    },
-    {
-      key: '2',
-      name: 'Jim Green',
-      age: 42,
-      address: 'London No. 1 Lake Park',
-    },
-    {
-      key: '3',
-      name: 'Joe Black',
-      age: 32,
-      address: 'Sidney No. 1 Lake Park',
-    },
-  ],
-  'POST /api/login/account': (req, res) => {
-    const { password, userName, type } = req.body;
-    if (password === 'ant.design' && userName === 'admin') {
-      res.send({
-        status: 'ok',
-        type,
-        currentAuthority: 'admin',
-      });
+  'POST /api/v1/login': (req: any, res: any) => {
+    const { password, username } = req.body;
+    if (password === 'tidb' && (username === 'admin' || username === 'dba')) {
+      setTimeout(() => {
+        res.send({
+          username: req.body.username,
+          role: req.body.username,
+          ka: true,
+        });
+      }, 1000);
       return;
     }
-    if (password === 'ant.design' && userName === 'user') {
-      res.send({
-        status: 'ok',
-        type,
-        currentAuthority: 'user',
+    setTimeout(() => {
+      res.status(401).send({
+        status: 'login failed',
+        message: "username or password doesn't match",
       });
-      return;
-    }
-    res.send({
-      status: 'error',
-      type,
-      currentAuthority: 'guest',
-    });
+    }, 1000);
+  },
+  'POST /api/v1/logout': (req: any, res: any) => {
+    res.status(204).send();
   },
   'POST /api/register': (req, res) => {
     res.send({ status: 'ok', currentAuthority: 'user' });
