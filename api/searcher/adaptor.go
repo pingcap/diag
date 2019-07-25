@@ -1,11 +1,14 @@
 package searcher
 
 import (
+	"bytes"
 	"errors"
-	"io"
+	"fmt"
 	"regexp"
 	"strings"
 	"time"
+
+	log "github.com/sirupsen/logrus"
 )
 
 type ItemType int16
@@ -34,8 +37,8 @@ const (
 
 var (
 	TiDBLogRE = regexp.MustCompile(`^\[([^\[\]]*)\]\s\[([^\[\]]*)\]`)
-	TiKVLogRE = regexp.MustCompile(`^([^\s]*\s[^\s]*)\s([^\s]*)`)
-	PDLogRE   = regexp.MustCompile(`^([^\s]*\s[^\s]*)\s[^\s]*\s\[([^\[\]]*)\]`)
+	TiKVLogRE = regexp.MustCompile(`^([0-9]{4}/[0-9]{2}/[0-9]{2} [0-9]{2}:[0-9]{2}:[0-9]{2}\.[0-9]{3})\s([^\s]*)`)
+	PDLogRE   = regexp.MustCompile(`^([0-9]{4}/[0-9]{2}/[0-9]{2} [0-9]{2}:[0-9]{2}:[0-9]{2}\.[0-9]{3})\s[^\s]*\s\[([^\[\]]*)\]`)
 )
 
 type TidbLogParser struct {
@@ -66,9 +69,9 @@ func (p *TidbLogParser) Next() (err error) {
 	if err != nil {
 		return err
 	}
-	log := p.NewLogItem(line, ts, level)
-	log.Type = TypeTiDB
-	p.current = log
+	l := p.NewLogItem(line, ts, level)
+	l.Type = TypeTiDB
+	p.current = l
 	return nil
 }
 
@@ -82,6 +85,7 @@ func (p *TikvLogParser) Next() (err error) {
 			p.current = nil
 		}
 	}()
+
 	line, err := p.BaseParser.Next()
 	if err != nil {
 		return err
@@ -89,19 +93,21 @@ func (p *TikvLogParser) Next() (err error) {
 	// TODO: TiKV version >= 2.1.15 or >= 3.0.0, using former log format
 	matches := TiKVLogRE.FindStringSubmatch(line)
 	if len(matches) < 3 {
-		return errors.New("failed to parser tidb log:" + line)
+		log.Warnf("skip parse unsupported line:" + line)
+		return p.Next()
 	}
 	ts, err := parseFormerTimeStamp(matches[1])
 	if err != nil {
+		fmt.Println(line)
 		return err
 	}
 	level, err := parseLogLevel(matches[2])
 	if err != nil {
 		return err
 	}
-	log := p.NewLogItem(line, ts, level)
-	log.Type = TypeTiKV
-	p.current = log
+	l := p.NewLogItem(line, ts, level)
+	l.Type = TypeTiKV
+	p.current = l
 	return nil
 }
 
@@ -115,6 +121,7 @@ func (p *PDLogParser) Next() (err error) {
 			p.current = nil
 		}
 	}()
+
 	line, err := p.BaseParser.Next()
 	if err != nil {
 		return err
@@ -123,19 +130,21 @@ func (p *PDLogParser) Next() (err error) {
 	// PD has not implemented unified log format at present (2019/07/19).
 	matches := PDLogRE.FindStringSubmatch(line)
 	if len(matches) < 3 {
-		return errors.New("failed to parser tidb log:" + line)
+		log.Warnf("skip parse unsupported line:" + line)
+		return p.Next()
 	}
 	ts, err := parseFormerTimeStamp(matches[1])
 	if err != nil {
+		fmt.Println(line)
 		return err
 	}
 	level, err := parseLogLevel(matches[2])
 	if err != nil {
 		return err
 	}
-	log := p.NewLogItem(line, ts, level)
-	log.Type = TypePD
-	p.current = log
+	l := p.NewLogItem(line, ts, level)
+	l.Type = TypePD
+	p.current = l
 	return nil
 }
 
@@ -143,9 +152,48 @@ type TidbSlogQueryParser struct {
 	BaseParser
 }
 
-// TODO: implement TiDB slog query parser
-func (p *TidbSlogQueryParser) Next() error {
-	return io.EOF
+func (p *TidbSlogQueryParser) Next() (err error) {
+	defer func() {
+		if err != nil {
+			p.current = nil
+		}
+	}()
+	var ts *time.Time
+	var content string
+	for {
+		byts, _, err := p.Reader.ReadLine()
+		if err != nil {
+			return err
+		}
+		line := string(byts)
+		//log.Infof("tidb slow query line:%s\n", line)
+		if !strings.HasPrefix(line, "#") &&
+			bytes.Contains(byts, p.SearchBytes) {
+			content = line
+			break
+		}
+		t := p.parseTime(line)
+		if t != nil {
+			ts = t
+		}
+	}
+	l := p.NewLogItem(content, ts, -1)
+	l.Type = TypeTiDBSlowQuery
+	p.current = l
+	return nil
+}
+
+func (p *TidbSlogQueryParser) parseTime(line string) *time.Time {
+	re := regexp.MustCompile("^# Time: (.*)$")
+	if !re.MatchString(line) {
+		return nil
+	}
+	m := re.FindStringSubmatch(line)
+	t, e := time.Parse(time.RFC3339, m[1])
+	if e != nil {
+		return nil
+	}
+	return &t
 }
 
 // TiDB / TiKV / PD unified log format
@@ -182,6 +230,15 @@ var LevelTypeMap = map[string]LevelType{
 
 func parseLogLevel(s string) (LevelType, error) {
 	s = strings.ToUpper(s)
+	if s == "ERRO" {
+		return LevelERROR, nil
+	}
+	if s == "CRITICAL" {
+		return LevelFATAL, nil
+	}
+	if s == "WARNING" {
+		return LevelWARN, nil
+	}
 	if level, ok := LevelTypeMap[s]; ok {
 		return level, nil
 	} else {

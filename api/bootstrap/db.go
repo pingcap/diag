@@ -73,6 +73,20 @@ CREATE TABLE IF NOT EXISTS inspection_db_info (
 	idx int NOT NULL DEFAULT 0,
 	PRIMARY KEY (inspection, db, tb)
 );
+
+CREATE TABLE IF NOT EXISTS inspection_slow_log (
+	inspection VARCHAR(64) NOT NULL,
+	instance VARCHAR(64) NOT NULL,
+	time DATETIME NOT NULL,
+	txn_start_ts INT64 NOT NULL,
+	user VARCHAR(64) NOT NULL,
+	conn_id INT64 UNSIGNED NOT NULL,
+	query_time DOUBLE NOT NULL,
+	db VARCHAR(64) NOT NULL,
+	digest VARCHAR(64) NOT NULL,
+	query TEXT NOT NULL,
+	node_ip VARCHAR(64) NOT NULL
+);
 `
 
 func initDB(dbpath string) *sql.DB {

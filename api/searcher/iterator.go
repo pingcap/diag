@@ -55,7 +55,9 @@ func NewIterator(cluster string, searchStr string) (*Iterator, error) {
 					}
 					return nil, err
 				}
-				logIterator.AddParser(parser)
+				if parser != nil {
+					logIterator.AddParser(parser)
+				}
 			}
 		}
 	}
@@ -72,13 +74,16 @@ func parseFolder(name string) (string, string, error) {
 
 func (l *Iterator) Next() (*Item, error) {
 	if len(l.parsers) == 0 {
-		return nil, errors.New("empty log dir")
+		return nil, nil
 	}
 	var res *Item
 	currentTs := int64(math.MaxInt64)
 	for _, parser := range l.parsers {
 		// choose the log with earlier timestamp
 		log := parser.GetCurrentLog()
+		if log == nil {
+			continue
+		}
 		ts := parser.GetTs()
 		if ts < currentTs {
 			res = log

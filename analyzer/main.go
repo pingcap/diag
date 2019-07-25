@@ -42,29 +42,27 @@ func (a *Analyzer) runTasks(tasks ...func(inspectionId string, src string, data 
 
 func (a *Analyzer) Run() error {
     return a.runTasks(
-        task.Clear,
+       task.Clear,
 
-        // parse stage
-        task.ParseCollect,
-        task.ParseStatus,
-        task.ParseTopology,
-        task.ParseMetric,
-        //task.SaveMetric,      // the matric should be save since bellow parse depend on it
-        task.ParseMeta,
-        task.ParseDBInfo,
-        task.ParseResource,
+       // parse stage
+       task.ParseCollect,
+       task.ParseStatus,
+       task.ParseTopology,
+       task.ParseMetric,
+       task.SaveMetric,      // the matric should be save since bellow parse depend on it
+       task.ParseMeta,
+       task.ParseDBInfo,
 
-        // save stage
-        task.SaveItems,
-        task.SaveInspection,
-        task.SaveBasicInfo,
-        task.SaveDBInfo,
+       // save stage
+       task.SaveItems,
+       task.SaveInspection,
+       task.SaveBasicInfo,
+       task.SaveDBInfo,
+       task.SaveSlowLogInfo,
 
-        // analyze stage
-        //task.Analyze,
+       // analyze stage
+       task.Analyze,
     )
-
-    return nil
 }
 
 func main() {

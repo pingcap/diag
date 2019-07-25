@@ -13,16 +13,6 @@ type Searcher struct {
 	l sync.Mutex
 }
 
-//type Log struct {
-//	Ip        string    `json:"ip"`
-//	Port      string    `json:"port"`
-//	File      string    `json:"file"`
-//	Time      time.Time `json:"time"`
-//	Component string    `json:"component"`
-//	Level     string    `json:"level"`
-//	Content   string    `json:"content"`
-//}
-
 type LogIter interface {
 	Next() (*Item, error)
 	Close() error
@@ -128,6 +118,3 @@ func (s *Searcher) Search(dir string, text string, token string) (LogIter, strin
 }
 
 
-//func GetIterFromToken(token string) LogIter {
-//	return &Mock{}
-//}
