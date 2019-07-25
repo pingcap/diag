@@ -7,7 +7,7 @@ export default {
         Mock.mock({
           'username|1': ['admin', 'dba'],
           role: '@username',
-          ka: true,
+          'ka|1-2': true,
         }),
       );
     }, 1000);

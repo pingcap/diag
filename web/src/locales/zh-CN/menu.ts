@@ -58,4 +58,5 @@ export default {
   'menu.misc.perf_profile': 'Perf Profile',
   'menu.misc.flame_graph_detail': '火焰图详情',
   'menu.misc.perf_profile_detail': 'Perf Profile 详情',
+  'menu.logs': '日志管理',
 };

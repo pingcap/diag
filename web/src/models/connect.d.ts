@@ -7,6 +7,7 @@ import { DefaultSettings as SettingModelState } from '../../config/defaultSettin
 import { UserModelState } from './user';
 import { InspectionModelState } from './inspection';
 import { MiscModelState } from './misc';
+import { LogModelState } from './log';
 
 export {
   GlobalModelState,
@@ -34,6 +35,7 @@ export interface ConnectState {
   user: UserModelState;
   inspection: InspectionModelState;
   misc: MiscModelState;
+  log: LogModelState;
 }
 
 export type Effect = (
