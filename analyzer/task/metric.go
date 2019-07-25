@@ -15,7 +15,7 @@ import (
 )
 
 /*
-* The concept and definion of Matrix, Series, and Point comes frome prometheus
+ * The concept and definion of Matrix, Series, and Point comes frome prometheus
  */
 
 // Matrix is a slice of Seriess that implements sort.Interface and
@@ -71,6 +71,10 @@ type ParseMetricTask struct {
 // Run the task which parses all the metric files collected
 // by a metric collector
 func (t *ParseMetricTask) Run() error {
+	if !t.data.collect[ITEM_METRIC] || t.data.status[ITEM_METRIC].Status != "success" {
+		return nil
+	}
+
 	metricDir := path.Join(t.src, "metric")
 	files, err := ioutil.ReadDir(metricDir)
 	if err != nil {
@@ -113,9 +117,13 @@ type SaveMetricTask struct {
 
 // Run a task to save metrics into influxdb
 func (t *SaveMetricTask) Run() error {
+	if !t.data.collect[ITEM_METRIC] || t.data.status[ITEM_METRIC].Status != "success" {
+		return nil
+	}
+
 	database := "inspection"
 	cli, err := influxdb.NewHTTPClient(influxdb.HTTPConfig{
-		Addr:     "http://localhost:8086",
+		Addr:     "http://172.16.5.7:8086",
 		Username: os.Getenv("INFLUX_USER"),
 		Password: os.Getenv("INFLUX_PWD"),
 	})

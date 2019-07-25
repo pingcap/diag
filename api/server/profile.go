@@ -22,6 +22,7 @@ func (s *Server) profileSingleProcess(instanceId, inspectionId, ip, port string)
 		fmt.Sprintf("--dest=%s", path.Join(s.config.Home, "inspection", inspectionId)),
 		fmt.Sprintf("--collect=profile:%s:%s", ip, port),
 	)
+	log.Info(cmd)
 	err := cmd.Run()
 	if err != nil {
 		log.Error("run ", s.config.Collector, ": ", err)
@@ -40,6 +41,7 @@ func (s *Server) profileAllProcess(instanceId, inspectionId string) error {
 		fmt.Sprintf("--dest=%s", path.Join(s.config.Home, "inspection", inspectionId)),
 		"--collect=profile",
 	)
+	log.Info(cmd)
 	err := cmd.Run()
 	if err != nil {
 		log.Error("run ", s.config.Collector, ": ", err)

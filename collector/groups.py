@@ -321,7 +321,7 @@ def setup_meta_ops(cluster_name, basedir, create, start):
     meta = {
         'cluster_name': cluster_name,
         'create_time': create,
-        'inpect_time': start,
+        'inspect_time': start,
         'end_time': time.time()
     }
     join = os.path.join

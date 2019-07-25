@@ -9,6 +9,7 @@ type TaskData struct {
 	topology Topology
 	status   ItemStatus
 	meta     Meta
+	resource Resource
 	dbinfo   DBInfo
 	matrix   Matrix
 }

@@ -77,6 +77,7 @@ func buildCmdWithCancel(task SyncTask, cfg RsyncConfig) (*exec.Cmd, context.Cont
 	cfg.Args = append(cfg.Args, `--exclude=*`)
 	args := append(cfg.Args, task.From, task.To)
 	cmd := exec.CommandContext(ctx, "rsync", args...)
+	log.Info(cmd)
 	return cmd, ctx, cancel
 }
 
