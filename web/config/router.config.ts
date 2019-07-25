@@ -85,6 +85,12 @@ export default [
         ],
       },
       {
+        path: '/logs',
+        name: 'logs',
+        icon: 'dashboard',
+        component: './Log/LogList',
+      },
+      {
         component: './404',
       },
     ],
