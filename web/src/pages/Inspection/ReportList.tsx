@@ -6,10 +6,11 @@ import { PaginationConfig } from 'antd/lib/table';
 import { ConnectState, ConnectProps, InspectionModelState, Dispatch } from '@/models/connect';
 import { IFormatInspection } from '@/models/inspection';
 import UploadReportModal from '@/components/UploadReportModal';
+import { CurrentUser } from '@/models/user';
 
 const styles = require('../style.less');
 
-const tableColumns = (onDelete: any, onUpload: any) => [
+const tableColumns = (curUser: CurrentUser, onDelete: any, onUpload: any) => [
   {
     title: '诊断报告 ID',
     dataIndex: 'uuid',
@@ -56,21 +57,30 @@ const tableColumns = (onDelete: any, onUpload: any) => [
     key: 'action',
     render: (text: any, record: IFormatInspection) => (
       <span>
-        {record.status === 'running' ? (
-          <span>查看</span>
-        ) : (
-          <Link to={`/inspection/reports/${record.uuid}`}>查看</Link>
+        {curUser.role === 'dba' && <Link to={`/inspection/reports/${record.uuid}`}>详情</Link>}
+        {curUser.role === 'admin' && (
+          <React.Fragment>
+            {record.status === 'running' ? (
+              <span>详情</span>
+            ) : (
+              <Link to={`/inspection/reports/${record.uuid}`}>详情</Link>
+            )}
+            <Divider type="vertical" />
+            {record.status === 'running' ? (
+              <span>下载</span>
+            ) : (
+              <a download href={`/api/v1/inspections/${record.uuid}.tar.gz`}>
+                下载
+              </a>
+            )}
+            {curUser.ka && (
+              <React.Fragment>
+                <Divider type="vertical" />
+                {record.status === 'running' ? <span>上传</span> : <a onClick={onUpload}>上传</a>}
+              </React.Fragment>
+            )}
+          </React.Fragment>
         )}
-        <Divider type="vertical" />
-        {record.status === 'running' ? (
-          <span>下载</span>
-        ) : (
-          <a download href={`/api/v1/inspections/${record.uuid}.tar.gz`}>
-            下载
-          </a>
-        )}
-        <Divider type="vertical" />
-        {record.status === 'running' ? <span>上传</span> : <a onClick={onUpload}>上传</a>}
         <Divider type="vertical" />
         <a style={{ color: 'red' }} onClick={() => onDelete(record)}>
           删除
@@ -81,13 +91,22 @@ const tableColumns = (onDelete: any, onUpload: any) => [
 ];
 
 interface ReportListProps extends ConnectProps {
-  inspection: InspectionModelState;
   dispatch: Dispatch;
+
+  curUser: CurrentUser;
+  inspection: InspectionModelState;
   loading: boolean;
   inspecting: boolean;
 }
 
-function ReportList({ inspection, dispatch, match, loading, inspecting }: ReportListProps) {
+function ReportList({
+  dispatch,
+  curUser,
+  inspection,
+  match,
+  loading,
+  inspecting,
+}: ReportListProps) {
   const [modalVisible, setModalVisible] = useState(false);
   const [uploadUrl, setUploadUrl] = useState('');
 
@@ -114,7 +133,9 @@ function ReportList({ inspection, dispatch, match, loading, inspecting }: Report
     });
   }
 
-  const columns = useMemo(() => tableColumns(deleteInspection, uploadInspection), []);
+  const columns = useMemo(() => tableColumns(curUser, deleteInspection, uploadInspection), [
+    curUser,
+  ]);
 
   function deleteInspection(record: IFormatInspection) {
     Modal.confirm({
@@ -177,7 +198,8 @@ function ReportList({ inspection, dispatch, match, loading, inspecting }: Report
   );
 }
 
-export default connect(({ inspection, loading }: ConnectState) => ({
+export default connect(({ user, inspection, loading }: ConnectState) => ({
+  curUser: user.currentUser,
   inspection,
   loading: loading.effects['inspection/fetchInspections'],
   inspecting: loading.effects['inspection/addInspection'],

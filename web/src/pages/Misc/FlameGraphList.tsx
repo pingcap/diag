@@ -7,10 +7,11 @@ import { ConnectState, ConnectProps, Dispatch } from '@/models/connect';
 import { IFlameGraphInfo, IFlameGraph } from '@/models/misc';
 import AddMiscReportModal from '@/components/AddMiscReportModal';
 import UploadReportModal from '@/components/UploadReportModal';
+import { CurrentUser } from '@/models/user';
 
 const styles = require('../style.less');
 
-const tableColumns = (onDelete: any, onUpload: any) => [
+const tableColumns = (curUser: CurrentUser, onDelete: any, onUpload: any) => [
   {
     title: '火焰图报告 ID',
     dataIndex: 'uuid',
@@ -52,21 +53,30 @@ const tableColumns = (onDelete: any, onUpload: any) => [
     key: 'action',
     render: (text: any, record: IFlameGraph) => (
       <span>
-        {record.status === 'running' ? (
-          <span>查看</span>
-        ) : (
-          <Link to={`/misc/flamegraphs/${record.uuid}`}>查看</Link>
+        {curUser.role === 'dba' && <Link to={`/misc/flamegraphs/${record.uuid}`}>详情</Link>}
+        {curUser.role === 'admin' && (
+          <React.Fragment>
+            {record.status === 'running' ? (
+              <span>详情</span>
+            ) : (
+              <Link to={`/misc/flamegraphs/${record.uuid}`}>详情</Link>
+            )}
+            <Divider type="vertical" />
+            {record.status === 'running' ? (
+              <span>下载</span>
+            ) : (
+              <a download href={`/api/v1/flamegraphs/${record.uuid}.tar.gz`}>
+                下载
+              </a>
+            )}
+            {curUser.ka && (
+              <React.Fragment>
+                <Divider type="vertical" />
+                {record.status === 'running' ? <span>上传</span> : <a onClick={onUpload}>上传</a>}
+              </React.Fragment>
+            )}
+          </React.Fragment>
         )}
-        <Divider type="vertical" />
-        {record.status === 'running' ? (
-          <span>下载</span>
-        ) : (
-          <a download href={`/api/v1/flamegraphs/${record.uuid}.tar.gz`}>
-            下载
-          </a>
-        )}
-        <Divider type="vertical" />
-        {record.status === 'running' ? <span>上传</span> : <a onClick={onUpload}>上传</a>}
         <Divider type="vertical" />
         <a style={{ color: 'red' }} onClick={() => onDelete(record)}>
           删除
@@ -77,12 +87,14 @@ const tableColumns = (onDelete: any, onUpload: any) => [
 ];
 
 interface FlameGraphListProps extends ConnectProps {
-  flamegraph: IFlameGraphInfo;
   dispatch: Dispatch;
+
+  curUser: CurrentUser;
+  flamegraph: IFlameGraphInfo;
   loading: boolean;
 }
 
-function FlameGraphList({ flamegraph, dispatch, loading }: FlameGraphListProps) {
+function FlameGraphList({ dispatch, curUser, flamegraph, loading }: FlameGraphListProps) {
   const [modalVisble, setModalVisible] = useState(false);
 
   // upload
@@ -110,7 +122,9 @@ function FlameGraphList({ flamegraph, dispatch, loading }: FlameGraphListProps) 
     });
   }
 
-  const columns = useMemo(() => tableColumns(deleteFlamegraph, uploadFlamegraph), []);
+  const columns = useMemo(() => tableColumns(curUser, deleteFlamegraph, uploadFlamegraph), [
+    curUser,
+  ]);
 
   function deleteFlamegraph(record: IFlameGraph) {
     Modal.confirm({
@@ -174,7 +188,8 @@ function FlameGraphList({ flamegraph, dispatch, loading }: FlameGraphListProps) 
   );
 }
 
-export default connect(({ misc, loading }: ConnectState) => ({
+export default connect(({ user, misc, loading }: ConnectState) => ({
+  curUser: user.currentUser,
   flamegraph: misc.flamegraph,
   loading: loading.effects['misc/fetchFlamegraphs'],
 }))(FlameGraphList);
