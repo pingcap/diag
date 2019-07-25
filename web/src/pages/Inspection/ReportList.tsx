@@ -4,9 +4,10 @@ import { connect } from 'dva';
 import { Link } from 'umi';
 import { PaginationConfig } from 'antd/lib/table';
 import { ConnectState, ConnectProps, InspectionModelState, Dispatch } from '@/models/connect';
-import { IFormatInspection } from '@/models/inspection';
-import UploadReportModal from '@/components/UploadReportModal';
+import { IFormatInspection, IInspection } from '@/models/inspection';
+import UploadRemoteReportModal from '@/components/UploadRemoteReportModal';
 import { CurrentUser } from '@/models/user';
+import UploadLocalReportModal from '@/components/UploadLocalReportModal';
 
 const styles = require('../style.less');
 
@@ -110,6 +111,8 @@ function ReportList({
   const [modalVisible, setModalVisible] = useState(false);
   const [uploadUrl, setUploadUrl] = useState('');
 
+  const [uploadLocalModalVisible, setUploadLocalModalVisible] = useState(false);
+
   const pagination: PaginationConfig = useMemo(
     () => ({
       total: inspection.total_inspections,
@@ -174,13 +177,27 @@ function ReportList({
     fetchInspections(curPagination.current as number);
   }
 
+  function handleLocalFileUploaded(res: IInspection) {
+    dispatch({
+      type: 'inspection/saveInspection',
+      payload: res,
+    });
+  }
+
   return (
     <div className={styles.container}>
       <div className={styles.list_header}>
         <h2>诊断报告列表</h2>
-        <Button type="primary" onClick={manuallyInspect} loading={inspecting}>
-          手动一键诊断
-        </Button>
+        {curUser.role === 'admin' && (
+          <Button type="primary" onClick={manuallyInspect} loading={inspecting}>
+            手动一键诊断
+          </Button>
+        )}
+        {curUser.role === 'dba' && (
+          <Button type="primary" onClick={() => setUploadLocalModalVisible(true)}>
+            + 上传本地报告
+          </Button>
+        )}
       </div>
       <Table
         loading={loading}
@@ -189,10 +206,16 @@ function ReportList({
         onChange={handleTableChange}
         pagination={pagination}
       />
-      <UploadReportModal
+      <UploadRemoteReportModal
         visible={modalVisible}
         onClose={() => setModalVisible(false)}
         uploadUrl={uploadUrl}
+      />
+      <UploadLocalReportModal
+        visible={uploadLocalModalVisible}
+        onClose={() => setUploadLocalModalVisible(false)}
+        actionUrl="/api/v1/inspections"
+        onData={handleLocalFileUploaded}
       />
     </div>
   );

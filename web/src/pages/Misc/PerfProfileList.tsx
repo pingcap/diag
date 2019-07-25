@@ -6,8 +6,9 @@ import { PaginationConfig } from 'antd/lib/table';
 import { ConnectState, ConnectProps, Dispatch } from '@/models/connect';
 import { IPerfProfileInfo, IPerfProfile } from '@/models/misc';
 import AddMiscReportModal from '@/components/AddMiscReportModal';
-import UploadReportModal from '@/components/UploadReportModal';
+import UploadRemoteReportModal from '@/components/UploadRemoteReportModal';
 import { CurrentUser } from '@/models/user';
+import UploadLocalReportModal from '@/components/UploadLocalReportModal';
 
 const styles = require('../style.less');
 
@@ -101,6 +102,8 @@ function PerfProfileList({ dispatch, curUser, perfprofile, loading }: PerfProfil
   const [uploadModalVisible, setUploadModalVisible] = useState(false);
   const [uploadUrl, setUploadUrl] = useState('');
 
+  const [uploadLocalModalVisible, setUploadLocalModalVisible] = useState(false);
+
   const pagination: PaginationConfig = useMemo(
     () => ({
       total: perfprofile.total,
@@ -159,13 +162,27 @@ function PerfProfileList({ dispatch, curUser, perfprofile, loading }: PerfProfil
     fetchPerfProfiles(curPagination.current as number);
   }
 
+  function handleLocalFileUploaded(res: IPerfProfile) {
+    dispatch({
+      type: 'misc/savePerfProfile',
+      payload: res,
+    });
+  }
+
   return (
     <div className={styles.container}>
       <div className={styles.list_header}>
         <h2>Perf Profile 报告列表</h2>
-        <Button type="primary" onClick={() => setModalVisible(true)}>
-          + 获取
-        </Button>
+        {curUser.role === 'admin' && (
+          <Button type="primary" onClick={() => setModalVisible(true)}>
+            + 获取
+          </Button>
+        )}
+        {curUser.role === 'dba' && (
+          <Button type="primary" onClick={() => setUploadLocalModalVisible(true)}>
+            + 上传本地报告
+          </Button>
+        )}
       </div>
       <Table
         loading={loading}
@@ -179,10 +196,16 @@ function PerfProfileList({ dispatch, curUser, perfprofile, loading }: PerfProfil
         onClose={() => setModalVisible(false)}
         onData={handleAddPerfProfile}
       />
-      <UploadReportModal
+      <UploadRemoteReportModal
         visible={uploadModalVisible}
         onClose={() => setUploadModalVisible(false)}
         uploadUrl={uploadUrl}
+      />
+      <UploadLocalReportModal
+        visible={uploadLocalModalVisible}
+        onClose={() => setUploadLocalModalVisible(false)}
+        actionUrl="/api/v1/perfprofiles"
+        onData={handleLocalFileUploaded}
       />
     </div>
   );
