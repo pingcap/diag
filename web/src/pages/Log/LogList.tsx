@@ -48,6 +48,7 @@ function ReportList({
 
   useEffect(() => {
     dispatch({ type: 'log/fetchLogInstances' });
+    dispatch({ type: 'log/resetLogs' });
   }, []);
 
   function handleSelectChange(value: string | undefined) {
