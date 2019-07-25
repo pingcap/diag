@@ -2,19 +2,17 @@ package task
 
 import (
 	"database/sql"
+	
 	log "github.com/sirupsen/logrus"
 )
 
 const (
 	ITEM_BASIC = "basic"
 	ITEM_DBINFO = "dbinfo"
-	ITEM_SLOWLOG = "slowlog"
 	ITEM_METRIC = "metric"
+	ITEM_CONFIG = "config"
 	ITEM_PROFILE = "profile"
-	ITEM_RESOURCE = "resource"
-	ITEM_ALERT = "alert"
-	ITEM_INSIGHT = "insight"
-	ITEM_DMESG = "dmesg"
+	ITEM_LOG = "log"
 )
 
 type SaveItemsTask struct {
@@ -27,8 +25,7 @@ func SaveItems(inspectionId string, src string, data *TaskData, db *sql.DB) Task
 
 func (t *SaveItemsTask) Run() error {
 	items := []string{
-		ITEM_BASIC, ITEM_DBINFO, ITEM_SLOWLOG, ITEM_METRIC, ITEM_PROFILE, 
-		ITEM_RESOURCE, ITEM_ALERT, ITEM_INSIGHT, ITEM_DMESG,
+		ITEM_BASIC, ITEM_DBINFO, ITEM_METRIC, ITEM_CONFIG, ITEM_PROFILE, ITEM_LOG,
 	}
 	for _, item := range items {
 		status := "none"

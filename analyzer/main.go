@@ -48,8 +48,11 @@ func (a *Analyzer) Run() error {
         task.ParseCollect,
         task.ParseStatus,
         task.ParseTopology,
+        task.ParseMetric,
+        //task.SaveMetric,      // the matric should be save since bellow parse depend on it
         task.ParseMeta,
         task.ParseDBInfo,
+        task.ParseResource,
 
         // save stage
         task.SaveItems,
@@ -58,7 +61,7 @@ func (a *Analyzer) Run() error {
         task.SaveDBInfo,
 
         // analyze stage
-        task.Analyze,
+        //task.Analyze,
     )
 
     return nil
