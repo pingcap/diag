@@ -6,11 +6,13 @@ import { PaginationConfig } from 'antd/lib/table';
 import { ConnectState, ConnectProps, Dispatch } from '@/models/connect';
 import { IPerfProfileInfo, IPerfProfile } from '@/models/misc';
 import AddMiscReportModal from '@/components/AddMiscReportModal';
-import UploadReportModal from '@/components/UploadReportModal';
+import UploadRemoteReportModal from '@/components/UploadRemoteReportModal';
+import { CurrentUser } from '@/models/user';
+import UploadLocalReportModal from '@/components/UploadLocalReportModal';
 
 const styles = require('../style.less');
 
-const tableColumns = (onDelete: any, onUpload: any) => [
+const tableColumns = (curUser: CurrentUser, onDelete: any, onUpload: any) => [
   {
     title: 'Profile 报告 ID',
     dataIndex: 'uuid',
@@ -52,21 +54,30 @@ const tableColumns = (onDelete: any, onUpload: any) => [
     key: 'action',
     render: (text: any, record: IPerfProfile) => (
       <span>
-        {record.status === 'running' ? (
-          <span>查看</span>
-        ) : (
-          <Link to={`/misc/perfprofiles/${record.uuid}`}>查看</Link>
+        {curUser.role === 'dba' && <Link to={`/misc/perfprofiles/${record.uuid}`}>详情</Link>}
+        {curUser.role === 'admin' && (
+          <React.Fragment>
+            {record.status === 'running' ? (
+              <span>详情</span>
+            ) : (
+              <Link to={`/misc/perfprofiles/${record.uuid}`}>详情</Link>
+            )}
+            <Divider type="vertical" />
+            {record.status === 'running' ? (
+              <span>下载</span>
+            ) : (
+              <a download href={`/api/v1/perfprofiles/${record.uuid}.tar.gz`}>
+                下载
+              </a>
+            )}
+            {curUser.ka && (
+              <React.Fragment>
+                <Divider type="vertical" />
+                {record.status === 'running' ? <span>上传</span> : <a onClick={onUpload}>上传</a>}
+              </React.Fragment>
+            )}
+          </React.Fragment>
         )}
-        <Divider type="vertical" />
-        {record.status === 'running' ? (
-          <span>下载</span>
-        ) : (
-          <a download href={`/api/v1/perfprofiles/${record.uuid}.tar.gz`}>
-            下载
-          </a>
-        )}
-        <Divider type="vertical" />
-        {record.status === 'running' ? <span>上传</span> : <a onClick={onUpload}>上传</a>}
         <Divider type="vertical" />
         <a style={{ color: 'red' }} onClick={() => onDelete(record)}>
           删除
@@ -77,17 +88,21 @@ const tableColumns = (onDelete: any, onUpload: any) => [
 ];
 
 interface PerfProfileListProps extends ConnectProps {
-  perfprofile: IPerfProfileInfo;
   dispatch: Dispatch;
+
+  curUser: CurrentUser;
+  perfprofile: IPerfProfileInfo;
   loading: boolean;
 }
 
-function PerfProfileList({ perfprofile, dispatch, loading }: PerfProfileListProps) {
+function PerfProfileList({ dispatch, curUser, perfprofile, loading }: PerfProfileListProps) {
   const [modalVisble, setModalVisible] = useState(false);
 
   // upload
   const [uploadModalVisible, setUploadModalVisible] = useState(false);
   const [uploadUrl, setUploadUrl] = useState('');
+
+  const [uploadLocalModalVisible, setUploadLocalModalVisible] = useState(false);
 
   const pagination: PaginationConfig = useMemo(
     () => ({
@@ -110,7 +125,9 @@ function PerfProfileList({ perfprofile, dispatch, loading }: PerfProfileListProp
     });
   }
 
-  const columns = useMemo(() => tableColumns(deletePerfProfile, uploadPerfProfile), []);
+  const columns = useMemo(() => tableColumns(curUser, deletePerfProfile, uploadPerfProfile), [
+    curUser,
+  ]);
 
   function deletePerfProfile(record: IPerfProfile) {
     Modal.confirm({
@@ -145,13 +162,27 @@ function PerfProfileList({ perfprofile, dispatch, loading }: PerfProfileListProp
     fetchPerfProfiles(curPagination.current as number);
   }
 
+  function handleLocalFileUploaded(res: IPerfProfile) {
+    dispatch({
+      type: 'misc/savePerfProfile',
+      payload: res,
+    });
+  }
+
   return (
     <div className={styles.container}>
       <div className={styles.list_header}>
         <h2>Perf Profile 报告列表</h2>
-        <Button type="primary" onClick={() => setModalVisible(true)}>
-          + 获取
-        </Button>
+        {curUser.role === 'admin' && (
+          <Button type="primary" onClick={() => setModalVisible(true)}>
+            + 获取
+          </Button>
+        )}
+        {curUser.role === 'dba' && (
+          <Button type="primary" onClick={() => setUploadLocalModalVisible(true)}>
+            + 上传本地报告
+          </Button>
+        )}
       </div>
       <Table
         loading={loading}
@@ -165,16 +196,23 @@ function PerfProfileList({ perfprofile, dispatch, loading }: PerfProfileListProp
         onClose={() => setModalVisible(false)}
         onData={handleAddPerfProfile}
       />
-      <UploadReportModal
+      <UploadRemoteReportModal
         visible={uploadModalVisible}
         onClose={() => setUploadModalVisible(false)}
         uploadUrl={uploadUrl}
+      />
+      <UploadLocalReportModal
+        visible={uploadLocalModalVisible}
+        onClose={() => setUploadLocalModalVisible(false)}
+        actionUrl="/api/v1/perfprofiles"
+        onData={handleLocalFileUploaded}
       />
     </div>
   );
 }
 
-export default connect(({ misc, loading }: ConnectState) => ({
+export default connect(({ user, misc, loading }: ConnectState) => ({
+  curUser: user.currentUser,
   perfprofile: misc.perfprofile,
   loading: loading.effects['misc/fetchPerfProfiles'],
 }))(PerfProfileList);

@@ -6,11 +6,13 @@ import { PaginationConfig } from 'antd/lib/table';
 import { ConnectState, ConnectProps, Dispatch } from '@/models/connect';
 import { IFlameGraphInfo, IFlameGraph } from '@/models/misc';
 import AddMiscReportModal from '@/components/AddMiscReportModal';
-import UploadReportModal from '@/components/UploadReportModal';
+import UploadRemoteReportModal from '@/components/UploadRemoteReportModal';
+import { CurrentUser } from '@/models/user';
+import UploadLocalReportModal from '@/components/UploadLocalReportModal';
 
 const styles = require('../style.less');
 
-const tableColumns = (onDelete: any, onUpload: any) => [
+const tableColumns = (curUser: CurrentUser, onDelete: any, onUpload: any) => [
   {
     title: '火焰图报告 ID',
     dataIndex: 'uuid',
@@ -52,21 +54,30 @@ const tableColumns = (onDelete: any, onUpload: any) => [
     key: 'action',
     render: (text: any, record: IFlameGraph) => (
       <span>
-        {record.status === 'running' ? (
-          <span>查看</span>
-        ) : (
-          <Link to={`/misc/flamegraphs/${record.uuid}`}>查看</Link>
+        {curUser.role === 'dba' && <Link to={`/misc/flamegraphs/${record.uuid}`}>详情</Link>}
+        {curUser.role === 'admin' && (
+          <React.Fragment>
+            {record.status === 'running' ? (
+              <span>详情</span>
+            ) : (
+              <Link to={`/misc/flamegraphs/${record.uuid}`}>详情</Link>
+            )}
+            <Divider type="vertical" />
+            {record.status === 'running' ? (
+              <span>下载</span>
+            ) : (
+              <a download href={`/api/v1/flamegraphs/${record.uuid}.tar.gz`}>
+                下载
+              </a>
+            )}
+            {curUser.ka && (
+              <React.Fragment>
+                <Divider type="vertical" />
+                {record.status === 'running' ? <span>上传</span> : <a onClick={onUpload}>上传</a>}
+              </React.Fragment>
+            )}
+          </React.Fragment>
         )}
-        <Divider type="vertical" />
-        {record.status === 'running' ? (
-          <span>下载</span>
-        ) : (
-          <a download href={`/api/v1/flamegraphs/${record.uuid}.tar.gz`}>
-            下载
-          </a>
-        )}
-        <Divider type="vertical" />
-        {record.status === 'running' ? <span>上传</span> : <a onClick={onUpload}>上传</a>}
         <Divider type="vertical" />
         <a style={{ color: 'red' }} onClick={() => onDelete(record)}>
           删除
@@ -77,17 +88,21 @@ const tableColumns = (onDelete: any, onUpload: any) => [
 ];
 
 interface FlameGraphListProps extends ConnectProps {
-  flamegraph: IFlameGraphInfo;
   dispatch: Dispatch;
+
+  curUser: CurrentUser;
+  flamegraph: IFlameGraphInfo;
   loading: boolean;
 }
 
-function FlameGraphList({ flamegraph, dispatch, loading }: FlameGraphListProps) {
+function FlameGraphList({ dispatch, curUser, flamegraph, loading }: FlameGraphListProps) {
   const [modalVisble, setModalVisible] = useState(false);
 
   // upload
   const [uploadModalVisible, setUploadModalVisible] = useState(false);
   const [uploadUrl, setUploadUrl] = useState('');
+
+  const [uploadLocalModalVisible, setUploadLocalModalVisible] = useState(false);
 
   const pagination: PaginationConfig = useMemo(
     () => ({
@@ -110,7 +125,9 @@ function FlameGraphList({ flamegraph, dispatch, loading }: FlameGraphListProps) 
     });
   }
 
-  const columns = useMemo(() => tableColumns(deleteFlamegraph, uploadFlamegraph), []);
+  const columns = useMemo(() => tableColumns(curUser, deleteFlamegraph, uploadFlamegraph), [
+    curUser,
+  ]);
 
   function deleteFlamegraph(record: IFlameGraph) {
     Modal.confirm({
@@ -145,13 +162,27 @@ function FlameGraphList({ flamegraph, dispatch, loading }: FlameGraphListProps) 
     fetchFlamegraphs(curPagination.current as number);
   }
 
+  function handleLocalFileUploaded(res: IFlameGraph) {
+    dispatch({
+      type: 'misc/saveFlamegraph',
+      payload: res,
+    });
+  }
+
   return (
     <div className={styles.container}>
       <div className={styles.list_header}>
         <h2>火焰图报告列表</h2>
-        <Button type="primary" onClick={() => setModalVisible(true)}>
-          + 获取
-        </Button>
+        {curUser.role === 'admin' && (
+          <Button type="primary" onClick={() => setModalVisible(true)}>
+            + 获取
+          </Button>
+        )}
+        {curUser.role === 'dba' && (
+          <Button type="primary" onClick={() => setUploadLocalModalVisible(true)}>
+            + 上传本地报告
+          </Button>
+        )}
       </div>
       <Table
         loading={loading}
@@ -165,16 +196,23 @@ function FlameGraphList({ flamegraph, dispatch, loading }: FlameGraphListProps) 
         onClose={() => setModalVisible(false)}
         onData={handleAddFlamegraph}
       />
-      <UploadReportModal
+      <UploadRemoteReportModal
         visible={uploadModalVisible}
         onClose={() => setUploadModalVisible(false)}
         uploadUrl={uploadUrl}
+      />
+      <UploadLocalReportModal
+        visible={uploadLocalModalVisible}
+        onClose={() => setUploadLocalModalVisible(false)}
+        actionUrl="/api/v1/flamegraphs"
+        onData={handleLocalFileUploaded}
       />
     </div>
   );
 }
 
-export default connect(({ misc, loading }: ConnectState) => ({
+export default connect(({ user, misc, loading }: ConnectState) => ({
+  curUser: user.currentUser,
   flamegraph: misc.flamegraph,
   loading: loading.effects['misc/fetchFlamegraphs'],
 }))(FlameGraphList);

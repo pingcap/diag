@@ -9,7 +9,7 @@ interface Props {
   uploadUrl: string;
 }
 
-function UploadReportModal({ visible, onClose, uploadUrl }: Props) {
+function UploadRemoteReportModal({ visible, onClose, uploadUrl }: Props) {
   const [submitting, setSubmitting] = useState(false);
 
   async function submit() {
@@ -38,4 +38,4 @@ function UploadReportModal({ visible, onClose, uploadUrl }: Props) {
   );
 }
 
-export default UploadReportModal;
+export default UploadRemoteReportModal;
