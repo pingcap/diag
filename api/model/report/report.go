@@ -8,8 +8,10 @@ type Report struct {
 	db           *sql.DB
 	inspectionId string
 	Items        interface{} `json:"items,omitempty"`
+	Symptoms	 interface{} `json:"symptoms,omitempty"`
 	BasicInfo    interface{} `json:"basic,omitempty"`
 	DBInfo       interface{} `json:"dbinfo,omitempty"`
+	AlertInfo	 interface{} `json:"alert,omitempty"`
 }
 
 func NewReport(db *sql.DB, inspectionId string) *Report {
@@ -32,7 +34,9 @@ func (r *Report) Load() error {
 	// TODO: add more info
 	return runAll(
 		r.loadItems,
+		r.loadSymptoms,
 		r.loadBasicInfo,
 		r.loadDBInfo,
+		r.loadAlertInfo,
 	)
 }

@@ -17,7 +17,7 @@ func (r *Report) loadItems() error {
 
 	rows, err := r.db.Query("SELECT name,status,message FROM inspection_items WHERE inspection = ?", r.inspectionId)
 	if err != nil {
-		log.Error("failed to call db.Query:", err)
+		log.Error("db.Query:", err)
 		return err
 	}
 	defer rows.Close()
@@ -27,7 +27,7 @@ func (r *Report) loadItems() error {
 		item := Item{Messages: []string{}}
 		err = rows.Scan(&item.Name, &item.Status, &message)
 		if err != nil {
-			log.Error("failed to call db.Query:", err)
+			log.Error("db.Query:", err)
 			return err
 		}
 		if message != "" {

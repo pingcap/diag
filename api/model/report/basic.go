@@ -1,6 +1,8 @@
 package report
 
 import (
+	"strings"
+
 	log "github.com/sirupsen/logrus"
 )
 
@@ -8,6 +10,9 @@ type BasicInfo struct {
 	ClusterName       string `json:"cluster_name"`
 	ClusterCreateTime string `json:"cluster_create_time"`
 	InspectTime       string `json:"inspect_time"`
+	TidbAlive         int    `json:"alive_count"`
+	TikvAlive         int    `json:"alive_count"`
+	PdAlive           int    `json:"alive_count"`
 	TidbCount         int    `json:"tidb_count"`
 	TikvCount         int    `json:"tikv_count"`
 	PdCount           int    `json:"pd_count"`
@@ -20,16 +25,28 @@ func (r *Report) loadBasicInfo() error {
 
 	basic := &BasicInfo{}
 
-	row := r.db.QueryRow(
+	err := r.db.QueryRow(
 		`SELECT cluster_name, cluster_create_t, inspect_t, tidb_count, tikv_count, pd_count FROM inspection_basic_info WHERE inspection = ?`,
 		r.inspectionId,
-	)
-
-	err := row.Scan(&basic.ClusterName, &basic.ClusterCreateTime, &basic.InspectTime, &basic.TidbCount, &basic.TikvCount, &basic.PdCount)
+	).Scan(&basic.ClusterName, &basic.ClusterCreateTime, &basic.InspectTime, &basic.TidbAlive, &basic.TikvAlive, &basic.PdAlive)
 	if err != nil {
 		log.Error("db.QueryRow: ", err)
 		return err
 	}
+
+	var tidbs, tikvs, pds string
+	err = r.db.QueryRow(
+		`SELECT tidbs, tikvs, pds FROM inspections WHERE inspection = ?`,
+		r.inspectionId,
+	).Scan(&tidbs, &tikvs, &pds)
+	if err != nil {
+		log.Error("db.QueryRow: ", err)
+		return err
+	}
+
+	basic.TidbCount = len(strings.Split(tidbs, ","))
+	basic.TikvCount = len(strings.Split(tikvs, ","))
+	basic.PdCount = len(strings.Split(pds, ","))
 
 	r.BasicInfo = basic
 	return nil

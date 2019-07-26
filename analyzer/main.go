@@ -52,6 +52,8 @@ func (a *Analyzer) Run() error {
        task.SaveMetric,      // the matric should be save since bellow parse depend on it
        task.ParseMeta,
        task.ParseDBInfo,
+       task.ParseAlert,
+       task.ParseInsight,
 
        // save stage
        task.SaveItems,
@@ -59,6 +61,9 @@ func (a *Analyzer) Run() error {
        task.SaveBasicInfo,
        task.SaveDBInfo,
        task.SaveSlowLogInfo,
+       task.SaveAlert,
+       task.SaveHardwareInfo,
+       task.SaveDmesg,
 
        // analyze stage
        task.Analyze,

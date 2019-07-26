@@ -30,7 +30,12 @@ func (t *ClearTask) Run() error {
 	}
 
 	if _, err := t.db.Exec("DELETE FROM inspection_slow_log WHERE inspection = ?", t.inspectionId); err != nil {
-		log.Error("delete inspection_basic_info: ", err)
+		log.Error("inspection_slow_log: ", err)
+		return err
+	}
+
+	if _, err := t.db.Exec("DELETE FROM inspection_hardware WHERE inspection = ?", t.inspectionId); err != nil {
+		log.Error("inspection_hardware: ", err)
 		return err
 	}
 

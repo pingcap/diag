@@ -131,6 +131,10 @@ func SaveSlowLogInfo(inspectionId string, src string, data *TaskData, db *sql.DB
 }
 
 func (t *SaveSlowLogTask) Run() error {
+	if !t.data.collect[ITEM_LOG] || t.data.status[ITEM_LOG].Status != "success" {
+		return nil
+	}
+
 	logDir := filepath.Join(t.src, "remote-log")
 
 	files, err := LoadSlowQueryLogFiles(logDir)

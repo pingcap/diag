@@ -6,7 +6,6 @@ import (
 	"database/sql"
 
 	"github.com/pingcap/tidb-foresight/analyzer/utils"
-	log "github.com/sirupsen/logrus"
 )
 
 type Resource struct {
@@ -55,7 +54,7 @@ func (t *ParseResourceTask) Run() error {
 	)
 	t.data.resource.AvgDisk = disk.Avg()
 	t.data.resource.MaxDisk = disk.Max()
-	
+
 	return nil
 }
 

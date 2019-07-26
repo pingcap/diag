@@ -1,7 +1,9 @@
 package task
 
 import (
+	"os"
 	"path"
+	"strings"
 	"io/ioutil"
 	"encoding/json"
 	"database/sql"
@@ -55,13 +57,17 @@ func (t *ParseDBInfoTask) Run() error {
 	}
 
 	for _, db := range dbs {
+		// skip invalid file and special db
+		if !strings.HasSuffix(db.Name(), ".json") || strings.HasSuffix(db.Name(), "_schema.json") {
+			continue
+		}
 		tbs, err := parseTables(path.Join(t.src, "dbinfo", db.Name()))
 		if err != nil {
 			log.Error("parse tables: ", err)
 			return err
 		}
 		dbinfo = append(dbinfo, &Database{
-			Name: db.Name(),
+			Name: strings.TrimSuffix(db.Name(), ".json"),
 			Tables: tbs,
 		})
 	}
@@ -71,42 +77,22 @@ func (t *ParseDBInfoTask) Run() error {
 	return nil
 }
 
-func parseTables(dir string) ([]*Table, error) {
+func parseTables(file string) ([]*Table, error) {
 	tables := []*Table{}
 
-	tbs, err := ioutil.ReadDir(dir)
+	f, err := os.Open(file)
 	if err != nil {
-		log.Error("read dir: ", err)
-		return tables, err
+		log.Error("open file: ", err)
+		return nil, err
 	}
+	defer f.Close()
 
-	for _, tb := range tbs {
-		tb, err := parseTable(path.Join(dir, tb.Name()))
-		if err != nil {
-			log.Error("parse table: ", err)
-			return tables, err
-		}
-		tables = append(tables, tb)
+	if err = json.NewDecoder(f).Decode(&tables); err != nil {
+		log.Error("decode: ", err)
+		return nil, err
 	}
 
 	return tables, nil
-}
-
-func parseTable(file string) (*Table, error) {
-	table := Table{}
-
-	content, err := ioutil.ReadFile(file)
-	if err != nil {
-		log.Error("read file: ", err)
-		return nil, err
-	}
-
-	if err = json.Unmarshal(content, &table); err != nil {
-		log.Error("unmarshal: ", err)
-		return nil, err
-	}
-
-	return &table, nil
 }
 
 func (t *SaveDBInfoTask) Run() error {
