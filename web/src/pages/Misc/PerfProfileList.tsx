@@ -54,14 +54,13 @@ const tableColumns = (curUser: CurrentUser, onDelete: any, onUpload: any) => [
     key: 'action',
     render: (text: any, record: IPerfProfile) => (
       <span>
-        {curUser.role === 'dba' && <Link to={`/misc/perfprofiles/${record.uuid}`}>详情</Link>}
+        {record.status === 'running' ? (
+          <span>详情</span>
+        ) : (
+          <Link to={`/misc/perfprofiles/${record.uuid}`}>详情</Link>
+        )}
         {curUser.role === 'admin' && (
           <React.Fragment>
-            {record.status === 'running' ? (
-              <span>详情</span>
-            ) : (
-              <Link to={`/misc/perfprofiles/${record.uuid}`}>详情</Link>
-            )}
             <Divider type="vertical" />
             {record.status === 'running' ? (
               <span>下载</span>

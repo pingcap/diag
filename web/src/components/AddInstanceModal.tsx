@@ -16,7 +16,7 @@ function AddInstanceModal({ visible, onClose, onData }: Props) {
     name: 'file',
     accept: '.ini',
     action: '/api/v1/instances',
-    showUploadList: false,
+    showUploadList: true,
     onChange(info: UploadChangeParam) {
       const { status } = info.file;
       if (status === 'done') {
