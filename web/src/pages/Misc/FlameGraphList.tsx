@@ -9,6 +9,7 @@ import AddMiscReportModal from '@/components/AddMiscReportModal';
 import UploadRemoteReportModal from '@/components/UploadRemoteReportModal';
 import { CurrentUser } from '@/models/user';
 import UploadLocalReportModal from '@/components/UploadLocalReportModal';
+import { IFormatInstance } from '@/models/inspection';
 
 const styles = require('../style.less');
 
@@ -86,10 +87,17 @@ interface FlameGraphListProps extends ConnectProps {
 
   curUser: CurrentUser;
   flamegraph: IFlameGraphInfo;
+  instances: IFormatInstance[];
   loading: boolean;
 }
 
-function FlameGraphList({ dispatch, curUser, flamegraph, loading }: FlameGraphListProps) {
+function FlameGraphList({
+  dispatch,
+  curUser,
+  flamegraph,
+  instances,
+  loading,
+}: FlameGraphListProps) {
   const [addReportModalVisible, setAddReportModalVisible] = useState(false);
 
   const [uploadRemoteModalVisible, setUploadRemoteModalVisible] = useState(false);
@@ -142,11 +150,11 @@ function FlameGraphList({ dispatch, curUser, flamegraph, loading }: FlameGraphLi
     setUploadRemoteUrl(`/api/v1/flamegraphs/${record.uuid}`);
   }
 
-  function handleAddFlamegraph(machine: string): Promise<any> {
+  function handleAddFlamegraph(instanceId: string): Promise<any> {
     return new Promise((resolve, reject) => {
       dispatch({
         type: 'misc/addFlamegraph',
-        payload: machine,
+        payload: instanceId,
       }).then((val: any) => resolve());
     });
   }
@@ -162,12 +170,21 @@ function FlameGraphList({ dispatch, curUser, flamegraph, loading }: FlameGraphLi
     });
   }
 
+  function showAddReportModal() {
+    setAddReportModalVisible(true);
+    if (instances.length === 0) {
+      dispatch({
+        type: 'inspection/fetchInstances',
+      });
+    }
+  }
+
   return (
     <div className={styles.container}>
       <div className={styles.list_header}>
         <h2>火焰图报告列表</h2>
         {curUser.role === 'admin' && (
-          <Button type="primary" onClick={() => setAddReportModalVisible(true)}>
+          <Button type="primary" onClick={showAddReportModal}>
             + 获取
           </Button>
         )}
@@ -185,6 +202,7 @@ function FlameGraphList({ dispatch, curUser, flamegraph, loading }: FlameGraphLi
         pagination={pagination}
       />
       <AddMiscReportModal
+        instances={instances}
         visible={addReportModalVisible}
         onClose={() => setAddReportModalVisible(false)}
         onData={handleAddFlamegraph}
@@ -204,8 +222,9 @@ function FlameGraphList({ dispatch, curUser, flamegraph, loading }: FlameGraphLi
   );
 }
 
-export default connect(({ user, misc, loading }: ConnectState) => ({
+export default connect(({ user, misc, inspection, loading }: ConnectState) => ({
   curUser: user.currentUser,
   flamegraph: misc.flamegraph,
+  instances: inspection.instances,
   loading: loading.effects['misc/fetchFlamegraphs'],
 }))(FlameGraphList);

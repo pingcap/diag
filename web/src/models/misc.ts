@@ -115,8 +115,8 @@ const MiscModel: MiscModelType = {
       });
     },
     *addFlamegraph({ payload }, { call, put }) {
-      const machine = payload;
-      const res = yield call(addFlamegraph, machine);
+      const instanceId = payload;
+      const res = yield call(addFlamegraph, instanceId);
       yield put({
         type: 'saveFlamegraph',
         payload: res,
@@ -143,8 +143,8 @@ const MiscModel: MiscModelType = {
       });
     },
     *addPerfProfile({ payload }, { call, put }) {
-      const machine = payload;
-      const res = yield call(addPerfProfile, machine);
+      const instanceId = payload;
+      const res = yield call(addPerfProfile, instanceId);
       yield put({
         type: 'savePerfProfile',
         payload: res,

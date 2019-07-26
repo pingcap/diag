@@ -9,6 +9,7 @@ import AddMiscReportModal from '@/components/AddMiscReportModal';
 import UploadRemoteReportModal from '@/components/UploadRemoteReportModal';
 import { CurrentUser } from '@/models/user';
 import UploadLocalReportModal from '@/components/UploadLocalReportModal';
+import { IFormatInstance } from '@/models/inspection';
 
 const styles = require('../style.less');
 
@@ -82,10 +83,17 @@ interface PerfProfileListProps extends ConnectProps {
 
   curUser: CurrentUser;
   perfprofile: IPerfProfileInfo;
+  instances: IFormatInstance[];
   loading: boolean;
 }
 
-function PerfProfileList({ dispatch, curUser, perfprofile, loading }: PerfProfileListProps) {
+function PerfProfileList({
+  dispatch,
+  curUser,
+  perfprofile,
+  instances,
+  loading,
+}: PerfProfileListProps) {
   const [addReportModalVisble, setAddReportModalVisible] = useState(false);
 
   const [uploadRemoteModalVisible, setUploadRemoteModalVisible] = useState(false);
@@ -138,11 +146,11 @@ function PerfProfileList({ dispatch, curUser, perfprofile, loading }: PerfProfil
     setUploadRemoteUrl(`/api/v1/flamegraphs/${record.uuid}`);
   }
 
-  function handleAddPerfProfile(machine: string): Promise<any> {
+  function handleAddPerfProfile(instanceId: string): Promise<any> {
     return new Promise((resolve, reject) => {
       dispatch({
         type: 'misc/addPerfProfile',
-        payload: machine,
+        payload: instanceId,
       }).then((val: any) => resolve());
     });
   }
@@ -158,12 +166,21 @@ function PerfProfileList({ dispatch, curUser, perfprofile, loading }: PerfProfil
     });
   }
 
+  function showAddReportModal() {
+    setAddReportModalVisible(true);
+    if (instances.length === 0) {
+      dispatch({
+        type: 'inspection/fetchInstances',
+      });
+    }
+  }
+
   return (
     <div className={styles.container}>
       <div className={styles.list_header}>
         <h2>Perf Profile 报告列表</h2>
         {curUser.role === 'admin' && (
-          <Button type="primary" onClick={() => setAddReportModalVisible(true)}>
+          <Button type="primary" onClick={showAddReportModal}>
             + 获取
           </Button>
         )}
@@ -181,6 +198,7 @@ function PerfProfileList({ dispatch, curUser, perfprofile, loading }: PerfProfil
         pagination={pagination}
       />
       <AddMiscReportModal
+        instances={instances}
         visible={addReportModalVisble}
         onClose={() => setAddReportModalVisible(false)}
         onData={handleAddPerfProfile}
@@ -200,8 +218,9 @@ function PerfProfileList({ dispatch, curUser, perfprofile, loading }: PerfProfil
   );
 }
 
-export default connect(({ user, misc, loading }: ConnectState) => ({
+export default connect(({ user, misc, inspection, loading }: ConnectState) => ({
   curUser: user.currentUser,
   perfprofile: misc.perfprofile,
+  instances: inspection.instances,
   loading: loading.effects['misc/fetchPerfProfiles'],
 }))(PerfProfileList);

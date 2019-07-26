@@ -27,14 +27,8 @@ export default {
     }, 1000);
   },
   'POST /api/v1/flamegraphs': (req: any, res: any) => {
-    // console.log(req.body); // {machine: 123}
     setTimeout(() => {
-      res.send(
-        Mock.mock({
-          ...mockedFlamegraph,
-          machine: req.body.machine, // not req.params
-        }),
-      );
+      res.send(Mock.mock(mockedFlamegraph));
     }, 1000);
   },
   'GET /api/v1/flamegraphs/:id': (req: any, res: any) => {
@@ -70,14 +64,8 @@ export default {
     }, 1000);
   },
   'POST /api/v1/perfprofiles': (req: any, res: any) => {
-    // console.log(req.body); // {machine: 123}
     setTimeout(() => {
-      res.send(
-        Mock.mock({
-          ...mockedPerfProfile,
-          machine: req.body.machine, // not req.params
-        }),
-      );
+      res.send(Mock.mock(mockedPerfProfile));
     }, 1000);
   },
   'DELETE /api/v1/perfprofiles/:id': (req: any, res: any) => {
