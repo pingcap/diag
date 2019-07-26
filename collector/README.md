@@ -1,60 +1,80 @@
 # 诊断收集器
+
 ## 用法
-```
-python collector.py 
-    --inspection-id={uuid} 
-    --data-dir=/dir/to/store 
+
+```sh
+./collect
+    --inspection-id={uuid}
+    --data-dir=/dir/to/store
     --inventory=inventory.ini
-    --topology=topology.json 
+    --topology=topology.json
     --collect=basic,profile,dbinfo,slowlog:1h,metric:1h
 ```
-## 元信息目录
-```
-+{inspection_id}
-|-- collect.txt	                // --collect参数内容
-|-- topology.json               // --topology参数指定的文件拷贝到这里
-|--+ basic				        // 基础信息
-|  |-- meta.json			    // 集群名称，创建时间，诊断时间
-|  |-- {pd, tidb, tikv}.json	// active 进程信息 (来源prometheus)
-|--+ insight				    // tidb-insight collector收集的机器信息
-|  |--+ {ip}
-|     |-- collector.json
-|--+ profile
-|  |--+ {ip}
-|     |-- tikv_{cpu, heap}.data	// 在目标机执行perf record tikv收集到的数据
-|     |-- {pd, tidb}_{heap, cpu}// 通过http接口下载到的golang的pprof数据
-|--+ dbinfo				        // 数据库信息，通过tidb的http接口获得
-|  |-- schema.json
-|  |-- {db}.json
-|  |--+ {db}
-|     |-- {table}.json
-|--+ resource				    // 集群资源信息，prometheus返回的结果
-|  |-- {vcore, mem_total, mem_avail, cpu, load, network_inbound, network_outbound}.json
-|  |-- {tcp_retrans_syn, tcp_retrans_slow_start, tcp_retrans_forward, io}.json
-|-- alert.json				    // 当前的告警信息
-|--+ slow_log
-|  |--+ {ip}
-|     |-- log
-|--+ config				        // 集群组件配置
-|  |--+ {ip}
-|       |-- {tidb, tikv, pd}.toml
-|--+ network				    // 网络质量
-|  |--+ {ip}
-|     |-- ping_{ip}			// ping其他机器的结果
-|     |-- netstat
-|     |-- ss
-|--+ metric				        // 监控数据，来源prometheuse
-|  |-- http_requests_total_1561445611_to_1561452811_15.0s.json
-|  |-- ...
-|--+ vars				        // TiDB运行时变量
-|  |-- global.json			    // 全局变量
-|  |-- {ip}.json				// 局部变量
-|--+ demsg				        // demsg信息
-|  |--+ {ip}
-|     |-- log·
-|--+ proc				        // proc目录下相关信息
-   |-- {iostat, mpstat, vmstat, pidstat}
 
+## 元信息目录
+
+```sh
+data/                                                       // 收集信息存储目录
+└── {UUID}                                                  // inspection id 代表依次诊断
+    ├── alert.json                                          // 集群报警信息，从 prometheus 采集
+    ├── collect.json                                        // --collect 参数内容
+    ├── config                                              // 配置文件
+    │   ├── pd
+    │   │   ├── {IP}:{PORT}
+    │   │   │   └── pd.toml
+    │   ├── tidb
+    │   │   └── {IP}:{PORT}
+    │   │       └── tidb.toml
+    │   └── tikv
+    │       ├── {IP}:{PORT}
+    │       │   └── tikv.toml
+    ├── dbinfo                                              // 数据库相关信息
+    │   ├── information_schema.json
+    │   ├── mysql.json
+    │   ├── performance_schema.json
+    │   └── test.json
+    ├── dmesg                                               // dmesg 运行结果
+    │   └── {IP}
+    │       └── dmesg
+    ├── insight                                             // tidb-insight collector 运行结果
+    │   └── {IP}
+    │       └── collector.json
+    ├── meta.json                                           // 元信息，包括诊断的集群名称，开始时间，结束时间等
+    ├── metric                                              // metric 信息，从 prometheus 采集
+    │   ├── ALERTS_FOR_STATE_1563872437_to_1563876037_60s.json
+    │   ├── etcd_cluster_version_1563872437_to_1563876037_60s.json
+    │   ├── ...
+    │   └── up_1563872437_to_1563876037_60s.json
+    ├── net                                                 // 网络相关数据，目前只有 netstat -s 的运行结果
+    │   └── {IP}
+    │       └── netstat
+    ├── proc                                                // iostat, mpstat, pidstat, vmstat 运行结果
+    │   └── {IP}
+    │       ├── iostat_1_60
+    │       ├── mpstat_1_60
+    │       ├── pidstat_1_60
+    │       └── vmstat_1_60
+    ├── profile                                             // go pprof 和 perf record 运行结果
+    │   ├── pd
+    │   │   ├── {IP}:{PORT}
+    │   │   │   ├── allocs.pb.gz
+    │   │   │   ├── block.pb.gz
+    │   │   │   ├── cpu.pb.gz
+    │   │   │   ├── mem.pb.gz
+    │   │   │   ├── mutex.pb.gz
+    │   │   │   ├── threadcreate.pb.gz
+    │   │   │   └── trace.pb.gz
+    │   ├── tidb
+    │   │   └── {IP}:{PORT}
+    │   │       └── ...
+    │   └── tikv
+    │       ├── {IP}:{PORT}
+    │       │   └── perf.data
+    └── topology.json                                        // 集群拓扑信息
 ```
+
 ## 文件格式
-待定
+
+* HTTP 接口返回结果，按源格式写入文件
+* 命令执行结果，按命令输出写入文件
+* collect 程序生成数据，输出为 json 格式
