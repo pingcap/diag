@@ -101,7 +101,7 @@ export default {
       res.status(204).send();
     }, 1000);
   },
-  'POST /api/v1/inspections': (req: any, res: any) => {
+  'POST /api/v1/instances/:id/inspections': (req: any, res: any) => {
     setTimeout(() => {
       res.send(Mock.mock(mockedInspection));
     }, 1000);

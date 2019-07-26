@@ -30,7 +30,6 @@ export interface IFormatInstance extends IInstance {
 }
 
 export interface IInstanceConfig {
-  instance_id: string;
   collect_hardware_info: boolean; // 硬件信息
   collect_software_info: boolean; // 软件信息
 
@@ -48,12 +47,12 @@ export interface IInstanceConfig {
 export interface IInspection {
   uuid: string;
   instance_id: string;
+  instance_name: string;
   user: string;
   status: 'running' | 'finish';
   type: 'manual' | 'auto';
   create_time: string;
   finish_time: string;
-  instance_name: string;
 }
 
 export interface IFormatInspection extends IInspection {

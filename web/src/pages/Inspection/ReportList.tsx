@@ -8,6 +8,7 @@ import { IFormatInspection, IInspection } from '@/models/inspection';
 import UploadRemoteReportModal from '@/components/UploadRemoteReportModal';
 import { CurrentUser } from '@/models/user';
 import UploadLocalReportModal from '@/components/UploadLocalReportModal';
+import ConfigInstanceModal from '@/components/ConfigInstanceModal';
 
 const styles = require('../style.less');
 
@@ -91,17 +92,13 @@ interface ReportListProps extends ConnectProps {
   curUser: CurrentUser;
   inspection: InspectionModelState;
   loading: boolean;
-  inspecting: boolean;
 }
 
-function ReportList({
-  dispatch,
-  curUser,
-  inspection,
-  match,
-  loading,
-  inspecting,
-}: ReportListProps) {
+function ReportList({ dispatch, curUser, inspection, match, loading }: ReportListProps) {
+  const instanceId: string | undefined = match && match.params && (match.params as any).id;
+
+  const [configModalVisible, setConfigModalVisible] = useState(false);
+
   const [uploadRemoteModalVisible, setUploadRemoteModalVisible] = useState(false);
   const [remoteUploadUrl, setRemoteUploadUrl] = useState('');
 
@@ -120,7 +117,6 @@ function ReportList({
   }, []);
 
   function fetchInspections(page: number) {
-    const instanceId: string | undefined = match && match.params && (match.params as any).id;
     dispatch({
       type: 'inspection/fetchInspections',
       payload: {
@@ -154,19 +150,6 @@ function ReportList({
     setRemoteUploadUrl(`/api/v1/inspections/${record.uuid}`);
   }
 
-  function manuallyInspect() {
-    Modal.confirm({
-      title: '手动诊断？',
-      content: '你确定要发起一次手动诊断吗？',
-      okText: '诊断',
-      onOk() {
-        dispatch({
-          type: 'inspection/addInspection',
-        });
-      },
-    });
-  }
-
   function handleTableChange(curPagination: PaginationConfig) {
     fetchInspections(curPagination.current as number);
   }
@@ -183,7 +166,7 @@ function ReportList({
       <div className={styles.list_header}>
         <h2>诊断报告列表</h2>
         {curUser.role === 'admin' && (
-          <Button type="primary" onClick={manuallyInspect} loading={inspecting}>
+          <Button type="primary" onClick={() => setConfigModalVisible(true)}>
             手动一键诊断
           </Button>
         )}
@@ -199,6 +182,12 @@ function ReportList({
         columns={columns}
         onChange={handleTableChange}
         pagination={pagination}
+      />
+      <ConfigInstanceModal
+        visible={configModalVisible}
+        onClose={() => setConfigModalVisible(false)}
+        manual
+        instanceId={instanceId || ''}
       />
       <UploadRemoteReportModal
         visible={uploadRemoteModalVisible}
@@ -219,5 +208,4 @@ export default connect(({ user, inspection, loading }: ConnectState) => ({
   curUser: user.currentUser,
   inspection,
   loading: loading.effects['inspection/fetchInspections'],
-  inspecting: loading.effects['inspection/addInspection'],
 }))(ReportList);

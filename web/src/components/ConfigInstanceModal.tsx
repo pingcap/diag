@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Modal, Form, Checkbox, Divider, Select, message, Spin } from 'antd';
 import moment from 'moment';
-import { queryInstanceConfig, updateInstanceConfig } from '@/services/inspection';
+import { queryInstanceConfig, updateInstanceConfig, addInspection } from '@/services/inspection';
 import { IInstanceConfig } from '@/models/inspection';
 
 const { Option } = Select;
@@ -11,6 +11,8 @@ const styles = require('./ConfigInstanceModal.less');
 interface Props {
   visible: boolean;
   onClose: () => void;
+
+  manual: boolean;
 
   instanceId: string;
 }
@@ -40,7 +42,7 @@ const oneDayTimes: string[] = Array(48)
       .format('HH:mm'),
   );
 
-function ConfigInstanceModal({ visible, onClose, instanceId }: Props) {
+function ConfigInstanceModal({ visible, onClose, manual, instanceId }: Props) {
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [config, setConfig] = useState<IInstanceConfig | null>(null);
@@ -95,9 +97,15 @@ function ConfigInstanceModal({ visible, onClose, instanceId }: Props) {
   async function submit() {
     setSubmitting(true);
     try {
-      await updateInstanceConfig(instanceId, config as IInstanceConfig);
-      onClose();
-      message.success(`${instanceId} 配置修改成功！`);
+      if (manual) {
+        await addInspection(instanceId, config as IInstanceConfig);
+        onClose();
+        message.success(`${instanceId} 手动诊断成功！`);
+      } else {
+        await updateInstanceConfig(instanceId, config as IInstanceConfig);
+        onClose();
+        message.success(`${instanceId} 自动诊断配置修改成功！`);
+      }
     } catch (err) {
       // TODO
     }
@@ -109,7 +117,7 @@ function ConfigInstanceModal({ visible, onClose, instanceId }: Props) {
       visible={visible}
       onCancel={onClose}
       onOk={submit}
-      title="设置"
+      title={manual ? '手动诊断设置' : '自动诊断设置'}
       confirmLoading={submitting}
       okButtonProps={{ disabled: loading }}
     >

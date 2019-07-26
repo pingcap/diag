@@ -26,14 +26,14 @@ export async function queryInstanceInspections(instanceId: string, page: number 
   return request(`/api/v1/instances/${instanceId}/inspections?page=${page}`);
 }
 
+export async function addInspection(instanceId: string, config: IInstanceConfig) {
+  return request.post(`/api/v1/instances/${instanceId}/inspections`, { data: config });
+}
+
 export async function queryAllInspections(page: number = 1) {
   return request(`/api/v1/inspections?page=${page}`);
 }
 
 export async function deleteInspection(inspectionId: string) {
   return request.delete(`/api/v1/inspections/${inspectionId}`);
-}
-
-export async function addInspection() {
-  return request.post('/api/v1/inspections');
 }

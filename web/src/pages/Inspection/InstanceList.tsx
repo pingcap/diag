@@ -145,6 +145,7 @@ function InstanceList({ inspection, dispatch, loading }: InstanceListProps) {
       <ConfigInstanceModal
         visible={configModalVisible}
         onClose={closeConfigModal}
+        manual={false}
         instanceId={curInstance ? curInstance.uuid : ''}
       />
     </div>
