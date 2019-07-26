@@ -1,5 +1,14 @@
 const Mock = require('mockjs');
 
+const mockedLog = {
+  time: '@datetime',
+  filename: '@word',
+  file() {
+    return `${this.filename}.log`;
+  },
+  content: '@sentence',
+};
+
 const getLogInstances = (req: any, res: any) => {
   setTimeout(() => {
     res.send(
@@ -16,22 +25,11 @@ const getLogInstances = (req: any, res: any) => {
 };
 
 const getLogs = (req: any, res: any) => {
-  console.log('====== get logs =======');
-
   setTimeout(() => {
     res.send(
       Mock.mock({
         token: '@guid',
-        'logs|15': [
-          {
-            time: '@datetime',
-            filename: '@word',
-            file() {
-              return `${this.filename}.log`;
-            },
-            content: '@sentence',
-          },
-        ],
+        'logs|15': [mockedLog],
       }),
     );
   }, 1000);

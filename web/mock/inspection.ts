@@ -1,36 +1,49 @@
 const Mock = require('mockjs');
 
+const mockedInstance = {
+  uuid: /\w{12}/,
+  name: '@name',
+  user: '@first',
+  ip: '@ip',
+  'port|1-65535': 1,
+  pd(): string {
+    return `${this.ip}:${this.port}`;
+  },
+  create_time: '@datetime',
+  'status|1': ['running', 'exception'],
+  message: '@title',
+};
+
+const mockedInspection = {
+  uuid: '@guid',
+  instance_id: '@guid',
+  instance_name: '@name',
+  user: '@first',
+  'status|1': ['running', 'finish'],
+  'type|1': ['manual', 'auto'],
+  create_time: '@datetime',
+  finish_time: '@datetime',
+};
+
 export default {
   'GET /api/v1/instances': (req: any, res: any) => {
     setTimeout(() => {
       res.send(
         Mock.mock({
-          'data|10': [
-            {
-              uuid: /\w{12}/,
-              name: '@name',
-              pd: '100.0.0.0:1000, 100.0.0.1:1001, 100.0.0.2:1002',
-              create_time: '@datetime',
-              'status|1': ['running', 'exception'],
-              message: '@title',
-            },
-          ],
+          'data|10': [mockedInstance],
         }).data,
       );
     }, 1000);
   },
   'POST /api/v1/instances': (req: any, res: any) => {
-    res.send({
-      uuid: `new-instances-${Date.now()}`,
-      name: `test-cluster-${Date.now()}`,
-      pd: '100.0.0.0:1000, 100.0.0.1:1001, 100.0.0.2:1002',
-      create_time: new Date().toISOString(),
-      status: 'running',
-      message: '',
-    });
+    setTimeout(() => {
+      res.send(Mock.mock(mockedInstance));
+    }, 1000);
   },
   'DELETE /api/v1/instances/:id': (req: any, res: any) => {
-    res.status(204).send();
+    setTimeout(() => {
+      res.status(204).send();
+    }, 1000);
   },
   'GET /api/v1/instances/:id/config': (req: any, res: any) => {
     setTimeout(() => {
@@ -63,17 +76,7 @@ export default {
       res.send(
         Mock.mock({
           'total|100-200': 10,
-          'data|10': [
-            {
-              uuid: /\w{12}/,
-              instance_id: /\w{12}/,
-              'status|1': ['running', 'finish'],
-              'type|1': ['manual', 'auto'],
-              create_time: '@datetime',
-              finish_time: '@datetime',
-              instance_name: '@name',
-            },
-          ],
+          'data|10': [mockedInspection],
         }),
       );
     }, 1000);
@@ -83,42 +86,24 @@ export default {
       res.send(
         Mock.mock({
           'total|100-200': 10,
-          'data|10': [
-            {
-              uuid: /\w{12}/,
-              instance_id: /\w{12}/,
-              'status|1': ['running', 'finish'],
-              'type|1': ['manual', 'auto'],
-              create_time: '@datetime',
-              finish_time: '@datetime',
-              instance_name: '@name',
-            },
-          ],
+          'data|10': [mockedInspection],
         }),
       );
     }, 1000);
   },
   'DELETE /api/v1/inspections/:id': (req: any, res: any) => {
-    res.status(204).send();
+    setTimeout(() => {
+      res.status(204).send();
+    }, 1000);
   },
   'PUT /api/v1/inspections/:id': (req: any, res: any) => {
     setTimeout(() => {
       res.status(204).send();
-    }, 2000);
+    }, 1000);
   },
   'POST /api/v1/inspections': (req: any, res: any) => {
     setTimeout(() => {
-      res.send(
-        Mock.mock({
-          uuid: /\w{12}/,
-          instance_id: /\w{12}/,
-          status: 'running',
-          'type|1': 'manual',
-          create_time: '@datetime',
-          finish_time: '@datetime',
-          instance_name: '@name',
-        }),
-      );
+      res.send(Mock.mock(mockedInspection));
     }, 1000);
   },
 };

@@ -1,21 +1,27 @@
 const Mock = require('mockjs');
 
+const mockedFlamegraph = {
+  uuid: '@guid',
+  ip: '@ip',
+  'port|1-65535': 1,
+  machine(): string {
+    return `${this.ip}:${this.port}`;
+  },
+  user: '@first',
+  'status|1': ['running', 'finish'],
+  create_time: '@datetime',
+  finish_time: '@datetime',
+};
+
+const mockedPerfProfile = mockedFlamegraph;
+
 export default {
   'GET /api/v1/flamegraphs': (req: any, res: any) => {
     setTimeout(() => {
       res.send(
         Mock.mock({
           'total|100-200': 10,
-          'data|10': [
-            {
-              uuid: /\w{12}/,
-              machine: /\d{3}\.\d{3}\.\d{3}\.\d{3}:\d{4}/,
-              user: '@name',
-              'status|1': ['running', 'finish'],
-              create_time: '@datetime',
-              finish_time: '@datetime',
-            },
-          ],
+          'data|10': [mockedFlamegraph],
         }),
       );
     }, 1000);
@@ -25,12 +31,8 @@ export default {
     setTimeout(() => {
       res.send(
         Mock.mock({
-          uuid: /\w{12}/,
+          ...mockedFlamegraph,
           machine: req.body.machine, // not req.params
-          user: '@name',
-          status: 'running',
-          create_time: '@datetime',
-          finish_time: '@datetime',
         }),
       );
     }, 1000);
@@ -51,16 +53,7 @@ export default {
       res.send(
         Mock.mock({
           'total|100-200': 10,
-          'data|10': [
-            {
-              uuid: /\w{12}/,
-              machine: /\d{3}\.\d{3}\.\d{3}\.\d{3}:\d{4}/,
-              user: '@name',
-              'status|1': ['running', 'finish'],
-              create_time: '@datetime',
-              finish_time: '@datetime',
-            },
-          ],
+          'data|10': [mockedPerfProfile],
         }),
       );
     }, 1000);
@@ -70,12 +63,8 @@ export default {
     setTimeout(() => {
       res.send(
         Mock.mock({
-          uuid: /\w{12}/,
+          ...mockedPerfProfile,
           machine: req.body.machine, // not req.params
-          user: '@name',
-          status: 'running',
-          create_time: '@datetime',
-          finish_time: '@datetime',
         }),
       );
     }, 1000);

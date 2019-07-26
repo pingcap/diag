@@ -17,6 +17,7 @@ import {
 export interface IInstance {
   uuid: string;
   name: string;
+  user: string;
   pd: string;
   create_time: string;
   status: 'running' | 'exception';
@@ -24,7 +25,6 @@ export interface IInstance {
 }
 
 export interface IFormatInstance extends IInstance {
-  user: string;
   key: string;
   format_create_time: string;
 }
@@ -48,6 +48,7 @@ export interface IInstanceConfig {
 export interface IInspection {
   uuid: string;
   instance_id: string;
+  user: string;
   status: 'running' | 'finish';
   type: 'manual' | 'auto';
   create_time: string;
@@ -56,7 +57,6 @@ export interface IInspection {
 }
 
 export interface IFormatInspection extends IInspection {
-  user: string;
   key: string;
   format_create_time: string;
   format_finish_time: string;
@@ -72,7 +72,6 @@ export interface IInspectionsRes {
 function convertInstance(instance: IInstance): IFormatInstance {
   return {
     ...instance,
-    user: 'default',
     key: instance.uuid,
     format_create_time: moment(instance.create_time).format('YYYY-MM-DD hh:mm'),
   };
@@ -85,7 +84,6 @@ function convertInstances(instances: IInstance[]): IFormatInstance[] {
 function convertInspection(inspection: IInspection): IFormatInspection {
   return {
     ...inspection,
-    user: 'default',
     key: inspection.uuid,
     format_create_time: moment(inspection.create_time).format('YYYY-MM-DD hh:mm'),
     format_finish_time: moment(inspection.finish_time).format('YYYY-MM-DD hh:mm'),
