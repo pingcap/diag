@@ -1,10 +1,12 @@
-import React, { useState } from 'react';
-import { Button, Modal } from 'antd';
+import React, { useState, useEffect } from 'react';
+import { Button, Modal, Spin } from 'antd';
 import { router } from 'umi';
 import { connect } from 'dva';
 import { ConnectProps, Dispatch, ConnectState } from '@/models/connect';
 import { CurrentUser } from '@/models/user';
 import UploadRemoteReportModal from '@/components/UploadRemoteReportModal';
+import { IFlameGraphDetail } from '@/models/misc';
+import { queryFlamegraph } from '@/services/misc';
 
 const styles = require('../style.less');
 
@@ -14,10 +16,34 @@ interface ReportDetailProps extends ConnectProps {
   curUser: CurrentUser;
 }
 
+function FlameGraph({ detail }: { detail: IFlameGraphDetail }) {
+  return (
+    <div>
+      <p>click to view in a new tab</p>
+      <a href={detail.svg_url} target="_blank" rel="noopener noreferrer">
+        <img alt="flamegraph" src={detail.image_url} style={{ maxWidth: '100%' }} />
+      </a>
+    </div>
+  );
+}
+
 function FlameGraphDetail({ dispatch, match, curUser }: ReportDetailProps) {
   const reportId: string | undefined = match && match.params && (match.params as any).id;
 
   const [uploadRemoteModalVisible, setUploadRemoteModalVisible] = useState(false);
+  const [detail, setDetail] = useState<IFlameGraphDetail | null>(null);
+
+  useEffect(() => {
+    async function fetchDetail() {
+      if (reportId) {
+        const res: IFlameGraphDetail | undefined = await queryFlamegraph(reportId);
+        if (res) {
+          setDetail(res);
+        }
+      }
+    }
+    fetchDetail();
+  }, []);
 
   function deleteFlamegraph() {
     Modal.confirm({
@@ -55,20 +81,17 @@ function FlameGraphDetail({ dispatch, match, curUser }: ReportDetailProps) {
             </Button>
           </React.Fragment>
         )}
-
         <Button type="danger" onClick={deleteFlamegraph}>
           删除
         </Button>
       </div>
-      <div>
-        <p></p>
-        <p>loprem loprem</p>
-        <p>loprem loprem</p>
-        <p>loprem loprem</p>
-        <p>loprem loprem</p>
-        <p>loprem loprem</p>
-        <p>loprem loprem</p>
-      </div>
+      <section className={styles.report_detail_body}>
+        {detail ? (
+          <FlameGraph detail={detail} />
+        ) : (
+          <Spin size="small" style={{ marginLeft: 8, marginRight: 8 }} />
+        )}
+      </section>
       <UploadRemoteReportModal
         visible={uploadRemoteModalVisible}
         onClose={() => setUploadRemoteModalVisible(false)}

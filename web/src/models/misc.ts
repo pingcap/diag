@@ -28,6 +28,11 @@ export interface IFormatFlameGraph extends IFlameGraph {
   format_finish_time: string;
 }
 
+export interface IFlameGraphDetail {
+  image_url: string;
+  svg_url: string;
+}
+
 export type IPerfProfile = IFlameGraph;
 export type IFormatPerfProfile = IFormatFlameGraph;
 

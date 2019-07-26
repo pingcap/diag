@@ -4,6 +4,10 @@ export async function queryFlamegraphs(page: number) {
   return request(`/api/v1/flamegraphs?page=${page}`);
 }
 
+export async function queryFlamegraph(uuid: string) {
+  return request(`/api/v1/flamegraphs/${uuid}`);
+}
+
 export async function addFlamegraph(machine: string) {
   return request.post('/api/v1/flamegraphs', { data: { machine } });
 }

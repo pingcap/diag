@@ -58,15 +58,9 @@ function PerfProfileDetail({ dispatch, match, curUser }: ReportDetailProps) {
           删除
         </Button>
       </div>
-      <div>
-        <p></p>
-        <p>loprem loprem</p>
-        <p>loprem loprem</p>
-        <p>loprem loprem</p>
-        <p>loprem loprem</p>
-        <p>loprem loprem</p>
-        <p>loprem loprem</p>
-      </div>
+      <section className={styles.report_detail_body}>
+        <p>如需分析请点击 &quot;下载&quot; 按钮将报告下载到本地分析。</p>
+      </section>
       <UploadRemoteReportModal
         visible={uploadRemoteModalVisible}
         onClose={() => setUploadRemoteModalVisible(false)}
