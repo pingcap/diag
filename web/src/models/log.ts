@@ -1,7 +1,7 @@
 import { Effect } from 'dva';
 import { Reducer } from 'redux';
-import moment from 'moment';
 import { queryLogInstances, queryLogs, ILogQueryParams } from '@/services/log';
+import { formatDatetime } from '@/utils/datetime-util';
 
 // /////
 
@@ -30,7 +30,7 @@ function convertItem(item: ILog, lineNum: number): IFormatLog {
   return {
     ...item,
     key: lineNum,
-    format_time: moment(item.time).format('YYYY-MM-DD hh:mm'),
+    format_time: formatDatetime(item.time),
   };
 }
 

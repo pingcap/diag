@@ -1,6 +1,5 @@
 import { Effect } from 'dva';
 import { Reducer } from 'redux';
-import moment from 'moment';
 import { message } from 'antd';
 import {
   queryFlamegraphs,
@@ -10,6 +9,7 @@ import {
   addPerfProfile,
   deletePerfProfile,
 } from '@/services/misc';
+import { formatDatetime } from '@/utils/datetime-util';
 
 // /////
 
@@ -35,8 +35,8 @@ function convertItem(item: IFlameGraph): IFormatFlameGraph {
   return {
     ...item,
     key: item.uuid,
-    format_create_time: moment(item.create_time).format('YYYY-MM-DD hh:mm'),
-    format_finish_time: moment(item.finish_time).format('YYYY-MM-DD hh:mm'),
+    format_create_time: formatDatetime(item.create_time),
+    format_finish_time: formatDatetime(item.finish_time),
   };
 }
 

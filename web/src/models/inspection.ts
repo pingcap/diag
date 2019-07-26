@@ -1,6 +1,5 @@
 import { Effect } from 'dva';
 import { Reducer } from 'redux';
-import moment from 'moment';
 
 import { message } from 'antd';
 import {
@@ -11,6 +10,7 @@ import {
   addInspection,
   queryAllInspections,
 } from '@/services/inspection';
+import { formatDatetime } from '@/utils/datetime-util';
 
 // /////
 
@@ -73,7 +73,7 @@ function convertInstance(instance: IInstance): IFormatInstance {
   return {
     ...instance,
     key: instance.uuid,
-    format_create_time: moment(instance.create_time).format('YYYY-MM-DD hh:mm'),
+    format_create_time: formatDatetime(instance.create_time),
   };
 }
 
@@ -85,8 +85,8 @@ function convertInspection(inspection: IInspection): IFormatInspection {
   return {
     ...inspection,
     key: inspection.uuid,
-    format_create_time: moment(inspection.create_time).format('YYYY-MM-DD hh:mm'),
-    format_finish_time: moment(inspection.finish_time).format('YYYY-MM-DD hh:mm'),
+    format_create_time: formatDatetime(inspection.create_time),
+    format_finish_time: formatDatetime(inspection.finish_time),
   };
 }
 
