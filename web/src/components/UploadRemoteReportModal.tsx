@@ -6,10 +6,12 @@ interface Props {
   visible: boolean;
   onClose: () => void;
 
+  content?: string;
+
   uploadUrl: string;
 }
 
-function UploadRemoteReportModal({ visible, onClose, uploadUrl }: Props) {
+function UploadRemoteReportModal({ visible, onClose, content, uploadUrl }: Props) {
   const [submitting, setSubmitting] = useState(false);
 
   async function submit() {
@@ -33,7 +35,7 @@ function UploadRemoteReportModal({ visible, onClose, uploadUrl }: Props) {
       title="上传报告"
       confirmLoading={submitting}
     >
-      <p>确定要上传这个报告吗？</p>
+      <p>{content || '确定要上传这个报告吗？'}</p>
     </Modal>
   );
 }

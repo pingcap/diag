@@ -88,12 +88,13 @@ const MiscModel: LogModelType = {
     *searchLogs({ payload }, { call, put }) {
       yield put({ type: 'resetLogs' });
 
-      const { logInstanceId, search, startTime, endTime } = payload;
+      const { logInstanceId, search, startTime, endTime, logLevel } = payload;
       const parms: ILogQueryParams = {
         search,
         start_time: startTime,
         end_time: endTime,
-        limit: 20,
+        level: logLevel,
+        limit: 10,
       };
       const res: ILogsRes | undefined = yield call(queryLogs, logInstanceId, parms);
       if (res) {

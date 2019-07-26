@@ -11,6 +11,7 @@ export interface ILogQueryParams {
   limit?: number;
   start_time?: string;
   end_time?: string;
+  level?: string;
 }
 
 export async function queryLogs(logInstanceId: string, queryParams: ILogQueryParams) {
