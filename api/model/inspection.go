@@ -26,7 +26,10 @@ type Inspection struct {
 func (m *Model) ListAllInspections(page, size int64) ([]*Inspection, int, error) {
 	inspections := []*Inspection{}
 
-	rows, err := m.db.Query("SELECT id,instance,status,type,create_t,tidb,tikv,pd,grafana,prometheus FROM inspections")
+	rows, err := m.db.Query(
+		"SELECT id,instance,status,type,create_t,tidb,tikv,pd,grafana,prometheus FROM inspections limit ?,?",
+		(page-1)*size, size,
+	)
 	if err != nil {
 		log.Error("failed to call db.Query:", err)
 		return nil, 0, err
