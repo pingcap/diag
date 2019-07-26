@@ -2,10 +2,12 @@ const Mock = require('mockjs');
 
 const mockedLog = {
   time: '@datetime',
-  filename: '@word',
-  file() {
-    return `${this.filename}.log`;
-  },
+  // filename: '@word',
+  // file() {
+  //   return `${this.filename}.log`;
+  // },
+  instance_name: '@name',
+  'level|1': ['DEBUG', 'INFO', 'WARNING', 'ERROR', 'OTHERS'],
   content: '@sentence',
 };
 

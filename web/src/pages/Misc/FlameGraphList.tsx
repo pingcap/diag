@@ -25,7 +25,7 @@ const tableColumns = (curUser: CurrentUser, onDelete: any, onUpload: any) => [
     key: 'user',
   },
   {
-    title: 'IP : 端口',
+    title: '实例名称',
     dataIndex: 'machine',
     key: 'machine',
   },

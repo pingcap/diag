@@ -12,7 +12,8 @@ export interface ILogInstance {
 
 export interface ILog {
   time: string;
-  file: string;
+  instance_name: string;
+  level: string;
   content: string;
 }
 

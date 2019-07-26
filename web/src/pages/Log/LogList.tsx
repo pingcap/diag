@@ -16,9 +16,14 @@ const tableColumns = [
     key: 'time',
   },
   {
-    title: '文件名',
-    dataIndex: 'file',
-    key: 'file',
+    title: '实例名称',
+    dataIndex: 'instance_name',
+    key: 'instance_name',
+  },
+  {
+    title: '日志级别',
+    dataIndex: 'level',
+    key: 'level',
   },
   {
     title: '内容',

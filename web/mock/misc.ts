@@ -2,11 +2,12 @@ const Mock = require('mockjs');
 
 const mockedFlamegraph = {
   uuid: '@guid',
-  ip: '@ip',
-  'port|1-65535': 1,
-  machine(): string {
-    return `${this.ip}:${this.port}`;
-  },
+  // ip: '@ip',
+  // 'port|1-65535': 1,
+  // machine(): string {
+  //   return `${this.ip}:${this.port}`;
+  // },
+  machine: '@name',
   user: '@first',
   'status|1': ['running', 'finish'],
   create_time: '@datetime',
