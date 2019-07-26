@@ -90,11 +90,10 @@ interface FlameGraphListProps extends ConnectProps {
 }
 
 function FlameGraphList({ dispatch, curUser, flamegraph, loading }: FlameGraphListProps) {
-  const [modalVisble, setModalVisible] = useState(false);
+  const [addReportModalVisible, setAddReportModalVisible] = useState(false);
 
-  // upload
-  const [uploadModalVisible, setUploadModalVisible] = useState(false);
-  const [uploadUrl, setUploadUrl] = useState('');
+  const [uploadRemoteModalVisible, setUploadRemoteModalVisible] = useState(false);
+  const [uploadRemoteUrl, setUploadRemoteUrl] = useState('');
 
   const [uploadLocalModalVisible, setUploadLocalModalVisible] = useState(false);
 
@@ -139,8 +138,8 @@ function FlameGraphList({ dispatch, curUser, flamegraph, loading }: FlameGraphLi
   }
 
   function uploadFlamegraph(record: IFlameGraph) {
-    setUploadModalVisible(true);
-    setUploadUrl(`/api/v1/flamegraphs/${record.uuid}`);
+    setUploadRemoteModalVisible(true);
+    setUploadRemoteUrl(`/api/v1/flamegraphs/${record.uuid}`);
   }
 
   function handleAddFlamegraph(machine: string): Promise<any> {
@@ -168,7 +167,7 @@ function FlameGraphList({ dispatch, curUser, flamegraph, loading }: FlameGraphLi
       <div className={styles.list_header}>
         <h2>火焰图报告列表</h2>
         {curUser.role === 'admin' && (
-          <Button type="primary" onClick={() => setModalVisible(true)}>
+          <Button type="primary" onClick={() => setAddReportModalVisible(true)}>
             + 获取
           </Button>
         )}
@@ -186,14 +185,14 @@ function FlameGraphList({ dispatch, curUser, flamegraph, loading }: FlameGraphLi
         pagination={pagination}
       />
       <AddMiscReportModal
-        visible={modalVisble}
-        onClose={() => setModalVisible(false)}
+        visible={addReportModalVisible}
+        onClose={() => setAddReportModalVisible(false)}
         onData={handleAddFlamegraph}
       />
       <UploadRemoteReportModal
-        visible={uploadModalVisible}
-        onClose={() => setUploadModalVisible(false)}
-        uploadUrl={uploadUrl}
+        visible={uploadRemoteModalVisible}
+        onClose={() => setUploadRemoteModalVisible(false)}
+        uploadUrl={uploadRemoteUrl}
       />
       <UploadLocalReportModal
         visible={uploadLocalModalVisible}

@@ -102,8 +102,8 @@ function ReportList({
   loading,
   inspecting,
 }: ReportListProps) {
-  const [modalVisible, setModalVisible] = useState(false);
-  const [uploadUrl, setUploadUrl] = useState('');
+  const [uploadRemoteModalVisible, setUploadRemoteModalVisible] = useState(false);
+  const [remoteUploadUrl, setRemoteUploadUrl] = useState('');
 
   const [uploadLocalModalVisible, setUploadLocalModalVisible] = useState(false);
 
@@ -150,8 +150,8 @@ function ReportList({
   }
 
   function uploadInspection(record: IFormatInspection) {
-    setModalVisible(true);
-    setUploadUrl(`/api/v1/inspections/${record.uuid}`);
+    setUploadRemoteModalVisible(true);
+    setRemoteUploadUrl(`/api/v1/inspections/${record.uuid}`);
   }
 
   function manuallyInspect() {
@@ -201,9 +201,9 @@ function ReportList({
         pagination={pagination}
       />
       <UploadRemoteReportModal
-        visible={modalVisible}
-        onClose={() => setModalVisible(false)}
-        uploadUrl={uploadUrl}
+        visible={uploadRemoteModalVisible}
+        onClose={() => setUploadRemoteModalVisible(false)}
+        uploadUrl={remoteUploadUrl}
       />
       <UploadLocalReportModal
         visible={uploadLocalModalVisible}

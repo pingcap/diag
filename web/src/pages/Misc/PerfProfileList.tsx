@@ -90,11 +90,10 @@ interface PerfProfileListProps extends ConnectProps {
 }
 
 function PerfProfileList({ dispatch, curUser, perfprofile, loading }: PerfProfileListProps) {
-  const [modalVisble, setModalVisible] = useState(false);
+  const [addReportModalVisble, setAddReportModalVisible] = useState(false);
 
-  // upload
-  const [uploadModalVisible, setUploadModalVisible] = useState(false);
-  const [uploadUrl, setUploadUrl] = useState('');
+  const [uploadRemoteModalVisible, setUploadRemoteModalVisible] = useState(false);
+  const [uploadRemoteUrl, setUploadRemoteUrl] = useState('');
 
   const [uploadLocalModalVisible, setUploadLocalModalVisible] = useState(false);
 
@@ -139,8 +138,8 @@ function PerfProfileList({ dispatch, curUser, perfprofile, loading }: PerfProfil
   }
 
   function uploadPerfProfile(record: IPerfProfile) {
-    setUploadModalVisible(true);
-    setUploadUrl(`/api/v1/flamegraphs/${record.uuid}`);
+    setUploadRemoteModalVisible(true);
+    setUploadRemoteUrl(`/api/v1/flamegraphs/${record.uuid}`);
   }
 
   function handleAddPerfProfile(machine: string): Promise<any> {
@@ -168,7 +167,7 @@ function PerfProfileList({ dispatch, curUser, perfprofile, loading }: PerfProfil
       <div className={styles.list_header}>
         <h2>Perf Profile 报告列表</h2>
         {curUser.role === 'admin' && (
-          <Button type="primary" onClick={() => setModalVisible(true)}>
+          <Button type="primary" onClick={() => setAddReportModalVisible(true)}>
             + 获取
           </Button>
         )}
@@ -186,14 +185,14 @@ function PerfProfileList({ dispatch, curUser, perfprofile, loading }: PerfProfil
         pagination={pagination}
       />
       <AddMiscReportModal
-        visible={modalVisble}
-        onClose={() => setModalVisible(false)}
+        visible={addReportModalVisble}
+        onClose={() => setAddReportModalVisible(false)}
         onData={handleAddPerfProfile}
       />
       <UploadRemoteReportModal
-        visible={uploadModalVisible}
-        onClose={() => setUploadModalVisible(false)}
-        uploadUrl={uploadUrl}
+        visible={uploadRemoteModalVisible}
+        onClose={() => setUploadRemoteModalVisible(false)}
+        uploadUrl={uploadRemoteUrl}
       />
       <UploadLocalReportModal
         visible={uploadLocalModalVisible}

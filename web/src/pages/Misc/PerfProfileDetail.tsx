@@ -1,17 +1,24 @@
-import React from 'react';
+import React, { useState } from 'react';
+
 import { Button, Modal } from 'antd';
 import { router } from 'umi';
 import { connect } from 'dva';
-import { ConnectProps, Dispatch } from '@/models/connect';
+import { ConnectProps, Dispatch, ConnectState } from '@/models/connect';
+import { CurrentUser } from '@/models/user';
+import UploadRemoteReportModal from '@/components/UploadRemoteReportModal';
 
 const styles = require('../style.less');
 
 interface ReportDetailProps extends ConnectProps {
   dispatch: Dispatch;
+
+  curUser: CurrentUser;
 }
 
-function PerfProfileDetail({ dispatch, match }: ReportDetailProps) {
+function PerfProfileDetail({ dispatch, match, curUser }: ReportDetailProps) {
   const reportId: string | undefined = match && match.params && (match.params as any).id;
+
+  const [uploadRemoteModalVisible, setUploadRemoteModalVisible] = useState(false);
 
   function deleteFlamegraph() {
     Modal.confirm({
@@ -33,9 +40,18 @@ function PerfProfileDetail({ dispatch, match }: ReportDetailProps) {
       <div className={styles.list_header}>
         <h3>报告：{reportId}</h3>
         <div className={styles.space}></div>
+        {curUser.role === 'admin' && (
+          <Button
+            type="primary"
+            style={{ marginRight: 20 }}
+            onClick={() => setUploadRemoteModalVisible(true)}
+          >
+            上传
+          </Button>
+        )}
         <Button type="primary" style={{ marginRight: 20 }}>
-          <a download href={`/api/v1/flamegraphs/${reportId}.tar.gz`}>
-            拷贝
+          <a download href={`/api/v1/perfprofiles/${reportId}.tar.gz`}>
+            下载
           </a>
         </Button>
         <Button type="danger" onClick={deleteFlamegraph}>
@@ -51,8 +67,15 @@ function PerfProfileDetail({ dispatch, match }: ReportDetailProps) {
         <p>loprem loprem</p>
         <p>loprem loprem</p>
       </div>
+      <UploadRemoteReportModal
+        visible={uploadRemoteModalVisible}
+        onClose={() => setUploadRemoteModalVisible(false)}
+        uploadUrl={`/api/v1/perfprofiles/${reportId}`}
+      />
     </div>
   );
 }
 
-export default connect()(PerfProfileDetail);
+export default connect(({ user }: ConnectState) => ({ curUser: user.currentUser }))(
+  PerfProfileDetail,
+);
