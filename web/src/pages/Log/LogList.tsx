@@ -67,9 +67,6 @@ function ReportList({
   }
 
   function handleSearch(value: string) {
-    if (value.length === 0) {
-      return;
-    }
     dispatch({
       type: 'log/searchLogs',
       payload: {
