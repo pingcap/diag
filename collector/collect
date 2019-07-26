@@ -33,12 +33,19 @@ def main():
                         required=True, help="topology.json")
     parser.add_argument("--collect", type=str,
                         required=True, help="items to collect")
+    parser.add_argument("--log-dir", type=str,
+                        required=False, help="location of the slow log")
+    parser.add_argument("--log-spliter", type=str,
+                        required=False, help="path of the log spliter")
+    parser.add_argument("--begin", type=str,
+                        required=False, help="begin time of the log range in RFC3339 format")
+    parser.add_argument("--end", type=str,
+                        required=False, help="end time of the log range in RFC3339 format")
 
     args = parser.parse_args()
 
     topology = json.load(open(args.topology))
-    groups = setup_op_groups(topology, args.data_dir,
-                             args.inspection_id, args.collect)
+    groups = setup_op_groups(topology, args)
 
     status = {}
     map(do, groups['_setup'])
@@ -55,6 +62,8 @@ def main():
                 collect(groups['metric'])
             elif item[0] == "config":
                 collect(groups['config'])
+            elif item[0] == "slowlog":
+                collect(groups['slowlog'])
             status[item[0]] = {"status": "success"}
         except Exception as e:
             status[item[0]] = {"status": "error", "message": str(e)}

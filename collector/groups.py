@@ -1,6 +1,7 @@
 # coding: utf8
 import logging
 import os
+import sys
 import time
 
 from collectors.profile_collector import *
@@ -27,10 +28,24 @@ class OpGroup:
         return iter(self.ops)
 
 
-def setup_op_groups(topology, datadir, inspection_id, target):
+def check_slowlog_args(args):
+    if args.log_dir is None:
+        print("--log-dir is requred when collecting slowlog")
+        sys.exit(1)
+    if args.log_spliter is None:
+        print("--log-spliter is requred when collecting slowlog")
+        sys.exit(1)
+    if args.log_begin is None:
+        print("--begin is requred when collecting slowlog")
+        sys.exit(1)
+    if args.log_end is None:
+        print("--end is requred when collecting slowlog")
+        sys.exit(1)
+
+
+def setup_op_groups(topology, args):
     # TODO this function is too complex to understand, design a phase
     # engine to string all things together.
-    items = map(lambda x: x.split(':'), target.split(','))
     groups = {
         '_setup': OpGroup('_setup'),
         'basic': OpGroup('basic'),
@@ -38,11 +53,17 @@ def setup_op_groups(topology, datadir, inspection_id, target):
         'metric': OpGroup('metric'),
         'config': OpGroup('config'),
         'dbinfo': OpGroup('dbinfo'),
+        'slowlog': OpGroup('slowlog'),
         '_teardown': OpGroup('_teardown'),
     }
 
+    datadir = args.data_dir
+    inspection_id = args.inspection_id
+    target = args.collect
+
     # for some targets, they come along with an option
     # Ex. metric:1h, slowlog:1h
+    items = map(lambda x: x.split(':'), target.split(','))
     options = {}
     for item in items:
         if groups.has_key(item[0]):
@@ -50,6 +71,11 @@ def setup_op_groups(topology, datadir, inspection_id, target):
                 options[item[0]] = item[1]
             if len(item) > 2:  # Ex. profile:tidb:ip:port
                 options[item[0]] = item[1:]
+        if item[0] == 'slowlog':
+            # slowlog does not obey the rule as metric:1h, it has seperate
+            # options
+            # TODO we should have an uniform design
+            check_slowlog_args(args)
         else:
             raise Exception("unsupported target: "+item[0])
 
@@ -66,6 +92,13 @@ def setup_op_groups(topology, datadir, inspection_id, target):
     create = start = time.time()
     groups['_teardown'].add_ops(setup_meta_ops(
         cluster, os.path.join(datadir, inspection_id), create, start))
+
+    groups['slowlog'].add_ops(setup_slowlog_ops(args.log_spliter,
+                                                args.log_dir,
+                                                os.path.join(
+                                                    datadir, inspection_id, 'slowlog'),
+                                                args.begin,
+                                                args.end))
 
     db_collected = False
     deploydir = {}
@@ -328,5 +361,14 @@ def setup_meta_ops(cluster_name, basedir, create, start):
     ops = [
         Op(VarCollector(var_name='meta', var_value=meta),
            FileOutput(join(basedir, 'meta.json')))
+    ]
+    return ops
+
+
+def setup_slowlog_ops(spliter, src, dst, begin, end):
+    cmd = '%s -src %s -dst %s -begin %s -end %s' % (
+        spliter, src, dst, begin, end)
+    ops = [
+        Op(CommandCollector(name='slowlog', command=cmd), NullOutput())
     ]
     return ops
