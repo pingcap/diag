@@ -12,25 +12,6 @@ import (
 	"path"
 )
 
-func (s *Server) profileSingleProcess(instanceId, inspectionId, ip, port string) error {
-	cmd := exec.Command(
-		s.config.Collector,
-		fmt.Sprintf("--instance-id=%s", inspectionId),
-		fmt.Sprintf("--inspection-id=%s", inspectionId),
-		fmt.Sprintf("--inventory=%s", path.Join(s.config.Home, "inventory", instanceId+".ini")),
-		fmt.Sprintf("--topology=%s", path.Join(s.config.Home, "topology", instanceId+".json")),
-		fmt.Sprintf("--dest=%s", path.Join(s.config.Home, "inspection", inspectionId)),
-		fmt.Sprintf("--collect=profile:%s:%s", ip, port),
-	)
-	log.Info(cmd)
-	err := cmd.Run()
-	if err != nil {
-		log.Error("run ", s.config.Collector, ": ", err)
-		return err
-	}
-	return nil
-}
-
 func (s *Server) profileAllProcess(instanceId, inspectionId string) error {
 	cmd := exec.Command(
 		s.config.Collector,
@@ -51,8 +32,6 @@ func (s *Server) profileAllProcess(instanceId, inspectionId string) error {
 }
 
 func (s *Server) createProfile(r *http.Request) (*model.Inspection, error) {
-	ip := r.URL.Query().Get("ip")
-	port := r.URL.Query().Get("port")
 	instanceId := mux.Vars(r)["id"]
 	inspectionId := uuid.New().String()
 
@@ -69,12 +48,7 @@ func (s *Server) createProfile(r *http.Request) (*model.Inspection, error) {
 	}
 
 	go func() {
-		var err error
-		if ip != "" && port != "" {
-			err = s.profileSingleProcess(instanceId, inspectionId, ip, port)
-		} else {
-			err = s.profileAllProcess(instanceId, inspectionId)
-		}
+		err := s.profileAllProcess(instanceId, inspectionId)
 		if err != nil {
 			log.Error("profile ", inspectionId, ": ", err)
 			return

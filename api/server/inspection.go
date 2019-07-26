@@ -192,6 +192,17 @@ func (s *Server) listInspections(r *http.Request) (*utils.PaginationResponse, er
 	return utils.NewPaginationResponse(total, inspections), nil
 }
 
+func (s *Server) getInspectionDetail(r *http.Request) (*model.Inspection, error) {
+	inspectionId := mux.Vars(r)["id"]
+
+	if inspection, err := s.model.GetInspectionDetail(inspectionId); err != nil {
+		log.Error("get inspection detail:", err)
+		return nil, utils.NewForesightError(http.StatusInternalServerError, "DB_SELECT_ERROR", "error on query database")
+	} else {
+		return inspection, nil
+	}
+}
+
 func (s *Server) createInspection(r *http.Request) (*model.Inspection, error) {
 	instanceId := mux.Vars(r)["id"]
 	inspectionId := uuid.New().String()

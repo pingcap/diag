@@ -128,6 +128,22 @@ func (m *Model) SetInspection(inspection *Inspection) error {
 	return nil
 }
 
+func (m *Model) GetInspectionDetail(inspectionId string) (*Inspection, error) {
+	inspection := Inspection{}
+	err := m.db.QueryRow(
+		"SELECT id,instance,status,type,create_t,tidb,tikv,pd,grafana,prometheus FROM inspections WHERE id = ?",
+		inspectionId,
+	).Scan(
+		&inspection.Uuid, &inspection.InstanceId, &inspection.Status, &inspection.Type, &inspection.CreateTime,
+		&inspection.Tidb, &inspection.Tikv, &inspection.Pd, &inspection.Grafana, &inspection.Prometheus,
+	)
+	if err != nil {
+		log.Error("Failed to call db.Query:", err)
+		return nil, err
+	}
+	return &inspection, nil
+}
+
 func (m *Model) DeleteInspection(inspectionId string) error {
 	_, err := m.db.Exec("DELETE FROM inspections WHERE id = ?", inspectionId)
 	if err != nil {
