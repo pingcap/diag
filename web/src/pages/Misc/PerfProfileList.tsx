@@ -54,22 +54,18 @@ const tableColumns = (curUser: CurrentUser, onDelete: any, onUpload: any) => [
         ) : (
           <Link to={`/misc/perfprofiles/${record.uuid}`}>详情</Link>
         )}
-        {curUser.role === 'admin' && (
+        <Divider type="vertical" />
+        {record.status === 'running' ? (
+          <span>下载</span>
+        ) : (
+          <a download href={`/api/v1/perfprofiles/${record.uuid}.tar.gz`}>
+            下载
+          </a>
+        )}
+        {curUser.role === 'admin' && curUser.ka && (
           <React.Fragment>
             <Divider type="vertical" />
-            {record.status === 'running' ? (
-              <span>下载</span>
-            ) : (
-              <a download href={`/api/v1/perfprofiles/${record.uuid}.tar.gz`}>
-                下载
-              </a>
-            )}
-            {curUser.ka && (
-              <React.Fragment>
-                <Divider type="vertical" />
-                {record.status === 'running' ? <span>上传</span> : <a onClick={onUpload}>上传</a>}
-              </React.Fragment>
-            )}
+            {record.status === 'running' ? <span>上传</span> : <a onClick={onUpload}>上传</a>}
           </React.Fragment>
         )}
         <Divider type="vertical" />
