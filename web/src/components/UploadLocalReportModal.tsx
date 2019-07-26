@@ -7,11 +7,12 @@ const { Dragger } = Upload;
 interface Props {
   visible: boolean;
   actionUrl: string;
+  title?: string;
   onClose: () => void;
   onData: (data: any) => void;
 }
 
-function UploadLocalReportModal({ visible, actionUrl, onClose, onData }: Props) {
+function UploadLocalReportModal({ visible, actionUrl, title, onClose, onData }: Props) {
   const uploadProps: UploadProps = {
     name: 'file',
     accept: '.gz',
@@ -31,7 +32,7 @@ function UploadLocalReportModal({ visible, actionUrl, onClose, onData }: Props) 
 
   return (
     <Modal
-      title="上传本地报告"
+      title={title || '上传本地报告'}
       visible={visible}
       onCancel={onClose}
       okButtonProps={{ hidden: true }}

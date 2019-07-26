@@ -37,7 +37,20 @@ const getLogs = (req: any, res: any) => {
   }, 1000);
 };
 
+const uploadLogs = (req: any, res: any) => {
+  setTimeout(() => {
+    res.send(
+      Mock.mock({
+        logId: '@guid',
+      }),
+    );
+  }, 1000);
+};
+
 export default {
   'GET /api/v1/loginstances': getLogInstances,
   'GET /api/v1/loginstances/:id/logs': getLogs,
+
+  'POST /api/v1/logs': uploadLogs,
+  'GET /api/v1/logs/:id': getLogs,
 };

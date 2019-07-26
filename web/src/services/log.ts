@@ -14,6 +14,12 @@ export interface ILogQueryParams {
   level?: string;
 }
 
+// for admin user
 export async function queryLogs(logInstanceId: string, queryParams: ILogQueryParams) {
   return request(`/api/v1/loginstances/${logInstanceId}/logs`, { params: queryParams });
+}
+
+// for dba user search
+export async function queryUploadedLogs(logId: string, queryParams: ILogQueryParams) {
+  return request(`/api/v1/logs/${logId}`, { params: queryParams });
 }

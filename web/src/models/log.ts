@@ -1,6 +1,6 @@
 import { Effect } from 'dva';
 import { Reducer } from 'redux';
-import { queryLogInstances, queryLogs, ILogQueryParams } from '@/services/log';
+import { queryLogInstances, queryLogs, ILogQueryParams, queryUploadedLogs } from '@/services/log';
 import { formatDatetime } from '@/utils/datetime-util';
 
 // /////
@@ -88,7 +88,7 @@ const MiscModel: LogModelType = {
     *searchLogs({ payload }, { call, put }) {
       yield put({ type: 'resetLogs' });
 
-      const { logInstanceId, search, startTime, endTime, logLevel } = payload;
+      const { logInstanceId, logId, search, startTime, endTime, logLevel } = payload;
       const parms: ILogQueryParams = {
         search,
         start_time: startTime,
@@ -96,7 +96,12 @@ const MiscModel: LogModelType = {
         level: logLevel,
         limit: 10,
       };
-      const res: ILogsRes | undefined = yield call(queryLogs, logInstanceId, parms);
+      let res: ILogsRes | undefined;
+      if (logInstanceId) {
+        res = yield call(queryLogs, logInstanceId, parms);
+      } else {
+        res = yield call(queryUploadedLogs, logId, parms);
+      }
       if (res) {
         yield put({
           type: 'saveLogs',
@@ -105,9 +110,14 @@ const MiscModel: LogModelType = {
       }
     },
     *loadMoreLogs({ payload }, { call, put, select }) {
-      const logInstanceId = payload;
+      const { logInstanceId, logId } = payload;
       const token = yield select((state: any) => state.log.token);
-      const res: ILogsRes | undefined = yield call(queryLogs, logInstanceId, { token });
+      let res: ILogsRes | undefined;
+      if (logInstanceId) {
+        res = yield call(queryLogs, logInstanceId, { token });
+      } else {
+        res = yield call(queryUploadedLogs, logId, { token });
+      }
       if (res) {
         yield put({
           type: 'saveLogs',
