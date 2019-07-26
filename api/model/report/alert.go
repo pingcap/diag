@@ -16,7 +16,7 @@ func (r *Report) loadAlertInfo() error {
 	}
 
 	rows, err := r.db.Query(
-		`SELECT name, value, time FROM inspection_alert_info WHERE inspection = ?`,
+		`SELECT name, value, time FROM inspection_alerts WHERE inspection = ?`,
 		r.inspectionId,
 	)
 	if err != nil {

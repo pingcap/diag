@@ -1,6 +1,7 @@
 package task
 
 import (
+	"time"
 	"strings"
 	"database/sql"
 	log "github.com/sirupsen/logrus"
@@ -30,7 +31,7 @@ func (t *SaveInspectionTask) Run() error {
 		  VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 		  t.inspectionId, instance, "not_implement_yet", "manual", strings.Join(components["tidb"], ","),
 		  strings.Join(components["tikv"], ","), strings.Join(components["pd"], ","),
-		  strings.Join(components["grafana"], ","), strings.Join(components["prometheus"], ","), createTime,
+		  strings.Join(components["grafana"], ","), strings.Join(components["prometheus"], ","), time.Unix(int64(createTime), 0),
 	); err != nil {
 		log.Error("db.Exec: ", err)
 		return err

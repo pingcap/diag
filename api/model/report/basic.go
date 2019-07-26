@@ -36,7 +36,7 @@ func (r *Report) loadBasicInfo() error {
 
 	var tidbs, tikvs, pds string
 	err = r.db.QueryRow(
-		`SELECT tidbs, tikvs, pds FROM inspections WHERE inspection = ?`,
+		`SELECT tidb, tikv, pd FROM inspections WHERE id = ?`,
 		r.inspectionId,
 	).Scan(&tidbs, &tikvs, &pds)
 	if err != nil {

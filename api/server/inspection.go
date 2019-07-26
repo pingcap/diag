@@ -27,7 +27,7 @@ func (s *Server) collect(instanceId, inspectionId string) error {
 		log.Error("get instance config: ", err)
 		return err
 	}
-	items := []string{"metric"}
+	items := []string{"metric","basic","dbinfo","config","profile"}
 	if config != nil {
 		if config.CollectHardwareInfo {
 			items = append(items, "hardware")
@@ -51,6 +51,8 @@ func (s *Server) collect(instanceId, inspectionId string) error {
 		fmt.Sprintf("--data-dir=%s", path.Join(s.config.Home, "inspection")),
 		fmt.Sprintf("--collect=%s", strings.Join(items, ",")),
 	)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
 	log.Info(cmd)
 	err = cmd.Run()
 	if err != nil {
@@ -66,6 +68,8 @@ func (s *Server) analyze(inspectionId string) error {
 		fmt.Sprintf("--db=%s", path.Join(s.config.Home, "sqlite.db")),
 		fmt.Sprintf("--src=%s", path.Join(s.config.Home, "inspection", inspectionId)),
 	)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
 	log.Info(cmd)
 	err := cmd.Run()
 	if err != nil {

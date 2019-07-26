@@ -38,7 +38,7 @@ func (t *ParseMetaTask) Run() error {
 	}
 
 	if err = json.Unmarshal(content, &t.data.meta); err != nil {
-		log.Error("unmarshal: ", err)
+		log.Error("unmarshal:", err)
 		return err
 	}
 
