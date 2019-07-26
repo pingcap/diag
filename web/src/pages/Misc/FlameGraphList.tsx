@@ -45,11 +45,6 @@ const tableColumns = (curUser: CurrentUser, onDelete: any, onUpload: any) => [
     },
   },
   {
-    title: '报告保存地址',
-    dataIndex: 'report_path',
-    key: 'report_path',
-  },
-  {
     title: '操作',
     key: 'action',
     render: (text: any, record: IFlameGraph) => (

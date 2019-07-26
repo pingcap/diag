@@ -20,7 +20,6 @@ export interface IFlameGraph {
   status: 'running' | 'finish';
   create_time: string;
   finish_time: string;
-  report_path: string;
 }
 
 export interface IFormatFlameGraph extends IFlameGraph {

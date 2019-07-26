@@ -52,7 +52,6 @@ export interface IInspection {
   type: 'manual' | 'auto';
   create_time: string;
   finish_time: string;
-  report_path: string;
   instance_name: string;
 }
 

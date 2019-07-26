@@ -14,7 +14,6 @@ export default {
               'status|1': ['running', 'finish'],
               create_time: '@datetime',
               finish_time: '@datetime',
-              report_path: '@url',
             },
           ],
         }),
@@ -32,7 +31,6 @@ export default {
           status: 'running',
           create_time: '@datetime',
           finish_time: '@datetime',
-          report_path: '@url',
         }),
       );
     }, 1000);
@@ -61,7 +59,6 @@ export default {
               'status|1': ['running', 'finish'],
               create_time: '@datetime',
               finish_time: '@datetime',
-              report_path: '@url',
             },
           ],
         }),
@@ -79,7 +76,6 @@ export default {
           status: 'running',
           create_time: '@datetime',
           finish_time: '@datetime',
-          report_path: '@url',
         }),
       );
     }, 1000);

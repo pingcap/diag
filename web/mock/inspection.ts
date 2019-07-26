@@ -71,7 +71,6 @@ export default {
               'type|1': ['manual', 'auto'],
               create_time: '@datetime',
               finish_time: '@datetime',
-              report_path: '@url',
               instance_name: '@name',
             },
           ],
@@ -92,7 +91,6 @@ export default {
               'type|1': ['manual', 'auto'],
               create_time: '@datetime',
               finish_time: '@datetime',
-              report_path: '@url',
               instance_name: '@name',
             },
           ],
@@ -118,7 +116,6 @@ export default {
           'type|1': 'manual',
           create_time: '@datetime',
           finish_time: '@datetime',
-          report_path: '@url',
           instance_name: '@name',
         }),
       );

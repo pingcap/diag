@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { Modal, Form, Checkbox, Divider, Select, message, Spin } from 'antd';
+import moment from 'moment';
 import { queryInstanceConfig, updateInstanceConfig } from '@/services/inspection';
 import { IInstanceConfig } from '@/models/inspection';
-import moment from 'moment';
 
 const { Option } = Select;
 
@@ -216,9 +216,6 @@ function ConfigInstanceModal({ visible, onClose, instanceId }: Props) {
           </Form.Item>
           <Form.Item label="报告保存时长">
             <span>30 天</span>
-          </Form.Item>
-          <Form.Item label="报告保存地址">
-            <span>//xxxx/diagnosis</span>
           </Form.Item>
         </Form>
       )}
