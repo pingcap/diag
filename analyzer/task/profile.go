@@ -9,6 +9,7 @@ import (
 	"path"
 	"io/ioutil"
 
+	"github.com/pingcap/tidb-foresight/analyzer/utils"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -149,7 +150,7 @@ func (t *SaveProfileTask) flameGo(src, dst string) error {
 	cmd.Stderr = os.Stderr
 	log.Info(cmd.Args)
 
-	if err = cmd.Start(); err != nil {
+	if err = cmd.Run(); err != nil {
 		log.Error("exec:", err)
 		return err
 	}
@@ -157,13 +158,6 @@ func (t *SaveProfileTask) flameGo(src, dst string) error {
 }
 
 func (t *SaveProfileTask) flameRust(src, dst string) error {
-	sf, err := os.Open(src)
-	if err != nil {
-		log.Error("read:", err)
-		return err
-	}
-	defer sf.Close()
-
 	df, err := os.Create(dst)
 	if err != nil {
 		fmt.Println("create:", err)
@@ -171,11 +165,10 @@ func (t *SaveProfileTask) flameRust(src, dst string) error {
 	}
 	defer df.Close()
 
-	script := exec.Command("perf", "script")
+	script := exec.Command("perf", "script", fmt.Sprintf("--input=%s", src))
 	collapse := exec.Command(path.Join(t.bin, "stackcollapse-perf.pl"))
 	flamegraph := exec.Command(path.Join(t.bin, "flamegraph.pl"))
 
-	script.Stdin = sf
 	script.Stderr = os.Stderr
 	if collapse.Stdin, err = script.StdoutPipe(); err != nil {
 		log.Error("pipe stdout:", err)
@@ -191,15 +184,11 @@ func (t *SaveProfileTask) flameRust(src, dst string) error {
 	flamegraph.Stderr = os.Stderr
 	flamegraph.Stdout = df
 
-	if err = script.Run(); err != nil {
+	if err = utils.StartCommands(script, collapse, flamegraph); err != nil {
 		log.Error("exec:", err)
 		return err
 	}
-	if err = collapse.Run(); err != nil {
-		log.Error("exec:", err)
-		return err
-	}
-	if err = flamegraph.Run(); err != nil {
+	if err = utils.WaitCommands(script, collapse, flamegraph); err != nil {
 		log.Error("exec:", err)
 		return err
 	}
