@@ -21,6 +21,8 @@ type Profile struct {
 type ProfileItem struct {
 	Component string `json:"component"`
 	Address string `json:"address"`
+	Flames	[]string `json:"flames"`
+	Metas []string `json:"metas"`
 }
 
 func (p *Profile) loadItems(dir string) error {
@@ -38,13 +40,39 @@ func (p *Profile) loadItems(dir string) error {
 			continue
 		}
 
+		ms, err := p.listFileNames(path.Join(dir, p.Uuid, f.Name(), "meta"))
+		if err != nil {
+			log.Error("list dir:", err)
+			return err
+		}
+
+		fs, err := p.listFileNames(path.Join(dir, p.Uuid, f.Name(), "flame"))
+		if err != nil {
+			log.Error("list dir:", err)
+			return err
+		}
+
 		p.Items = append(p.Items, ProfileItem{
 			Component: xs[0],
 			Address: xs[1],
+			Metas: ms,
+			Flames: fs,
 		})
 	}
 
 	return nil
+}
+
+func (p *Profile) listFileNames(dir string) ([]string, error) {
+	if files, err := ioutil.ReadDir(dir); err != nil {
+		return nil, err
+	} else {
+		names := []string{}
+		for _, f := range files {
+			names = append(names, f.Name())
+		}
+		return names, nil
+	}
 }
 
 func (m *Model) ListAllProfiles(page, size int64, profileDir string) ([]*Profile, int, error) {

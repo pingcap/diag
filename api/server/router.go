@@ -87,6 +87,7 @@ func (s *Server) CreateRouter() http.Handler {
 
 	// profiles
 	r.Handle("/api/v1/profiles", fn.Wrap(s.listAllProfiles)).Methods("GET")
+	r.HandleFunc("/api/v1/profiles/{id}/{component}/{address}/{type}/{file}", s.getProfile).Methods("GET")
 
 	// other
 	r.Handle("/ping", fn.Wrap(s.ping)).Methods("GET")
