@@ -1,6 +1,7 @@
 package task
 
 import (
+	"path"
 	"database/sql"
 
 	log "github.com/sirupsen/logrus"
@@ -25,9 +26,26 @@ type Task interface {
 
 type BaseTask struct {
 	inspectionId string
+	home		 string
+	bin			 string
 	src          string
+	logs   		 string
+	profile		 string
 	data         *TaskData
 	db           *sql.DB
+}
+
+func NewTask(inspectionId, home string, data *TaskData, db *sql.DB) BaseTask {
+	return BaseTask{
+		inspectionId, 
+		home, 
+		path.Join(home, "bin"), 
+		path.Join(home, "inspection", inspectionId), 
+		path.Join(home, "remote-log", inspectionId), 
+		path.Join(home, "profile", inspectionId), 
+		data, 
+		db,
+	}
 }
 
 func (t *BaseTask) InsertSymptom(status, message, description string) error {

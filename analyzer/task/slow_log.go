@@ -2,7 +2,6 @@ package task
 
 import (
 	"bufio"
-	"database/sql"
 	"fmt"
 	"io"
 	"os"
@@ -126,8 +125,8 @@ type SaveSlowLogTask struct {
 	BaseTask
 }
 
-func SaveSlowLogInfo(inspectionId string, src string, data *TaskData, db *sql.DB) Task {
-	return &SaveSlowLogTask{BaseTask{inspectionId, src, data, db}}
+func SaveSlowLogInfo(base BaseTask) Task {
+	return &SaveSlowLogTask{base}
 }
 
 func (t *SaveSlowLogTask) Run() error {

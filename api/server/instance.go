@@ -101,7 +101,7 @@ func (s *Server) deleteInstance(r *http.Request) (*utils.SimpleResponse, error) 
 
 func (s *Server) importInstance(pioneerPath, inventoryPath, instanceId string) error {
 	cmd := exec.Command(pioneerPath, inventoryPath)
-	log.Info(cmd)	
+	log.Info(cmd.Args)	
 
 	output, err := cmd.Output()
 	if err != nil {

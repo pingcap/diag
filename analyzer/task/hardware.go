@@ -3,7 +3,6 @@ package task
 import (
 	"fmt"
 	"strings"
-	"database/sql"
 
 	log "github.com/sirupsen/logrus"
 )
@@ -12,8 +11,8 @@ type SaveHardwareInfoTask struct {
 	BaseTask
 }
 
-func SaveHardwareInfo(inspectionId string, src string, data *TaskData, db *sql.DB) Task {
-	return &SaveHardwareInfoTask {BaseTask{inspectionId, src, data, db}}
+func SaveHardwareInfo(base BaseTask) Task {
+	return &SaveHardwareInfoTask {base}
 }
 
 func (t *SaveHardwareInfoTask) Run() error {

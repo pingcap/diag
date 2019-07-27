@@ -85,6 +85,9 @@ func (s *Server) CreateRouter() http.Handler {
 	r.Handle("/api/v1/inspections/{id}", fn.Wrap(s.uploadInspection)).Methods("PUT")
 	r.Handle("/api/v1/inspections/{id}", fn.Wrap(s.deleteInspection)).Methods("DELETE")
 
+	// profiles
+	r.Handle("/api/v1/profiles", fn.Wrap(s.listAllProfiles)).Methods("GET")
+
 	// other
 	r.Handle("/ping", fn.Wrap(s.ping)).Methods("GET")
 	r.Handle("/static/", s.static("/static/", path.Join(s.config.Home, "static")))

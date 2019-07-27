@@ -6,7 +6,7 @@ import (
 	"strings"
 	"io/ioutil"
 	"encoding/json"
-	"database/sql"
+
 	log "github.com/sirupsen/logrus"
 )
 
@@ -35,12 +35,12 @@ type SaveDBInfoTask struct {
 	BaseTask
 }
 
-func ParseDBInfo(inspectionId string, src string, data *TaskData, db *sql.DB) Task {
-	return &ParseDBInfoTask {BaseTask{inspectionId, src, data, db}}
+func ParseDBInfo(base BaseTask) Task {
+	return &ParseDBInfoTask {base}
 }
 
-func SaveDBInfo(inspectionId string, src string, data *TaskData, db *sql.DB) Task {
-	return &SaveDBInfoTask {BaseTask{inspectionId, src, data, db}}
+func SaveDBInfo(base BaseTask) Task {
+	return &SaveDBInfoTask {base}
 }
 
 func (t *ParseDBInfoTask) Run() error {

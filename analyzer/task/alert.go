@@ -4,7 +4,6 @@ import (
 	"os"
 	"path"
 	"time"
-	"database/sql"
 	"encoding/json"
 
 	log "github.com/sirupsen/logrus"
@@ -21,8 +20,8 @@ type ParseAlertTask struct {
 	BaseTask
 }
 
-func ParseAlert(inspectionId string, src string, data *TaskData, db *sql.DB) Task {
-	return &ParseAlertTask {BaseTask{inspectionId, src, data, db}}
+func ParseAlert(base BaseTask) Task {
+	return &ParseAlertTask {base}
 }
 
 func (t *ParseAlertTask) Run() error {
@@ -62,8 +61,8 @@ type SaveAlertTask struct {
 	BaseTask
 }
 
-func SaveAlert(inspectionId string, src string, data *TaskData, db *sql.DB) Task {
-	return &SaveAlertTask {BaseTask{inspectionId, src, data, db}}
+func SaveAlert(base BaseTask) Task {
+	return &SaveAlertTask {base}
 }
 
 func (t *SaveAlertTask) Run() error {

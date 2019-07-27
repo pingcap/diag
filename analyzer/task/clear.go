@@ -1,7 +1,6 @@
 package task
 
 import (
-	"database/sql"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -9,8 +8,8 @@ type ClearTask struct {
 	BaseTask
 }
 
-func Clear(inspectionId string, src string, data *TaskData, db *sql.DB) Task {
-	return &ClearTask {BaseTask{inspectionId, src, data, db}}
+func Clear(base BaseTask) Task {
+	return &ClearTask {base}
 }
 
 func (t *ClearTask) Run() error {

@@ -43,6 +43,11 @@ func MustInit(homepath string) (*ForesightConfig, *sql.DB) {
 		log.Panic("can't access log dir: ", logDir)
 	}
 
+	profileDir := path.Join(homepath, "profile")
+	if err := os.MkdirAll(profileDir, os.ModePerm); err != nil {
+		log.Panic("can't access profile dir: ", profileDir)
+	}
+
 	config := initConfig(path.Join(homepath, "tidb-foresight.toml"))
 
 	db := initDB(path.Join(homepath, "sqlite.db"))

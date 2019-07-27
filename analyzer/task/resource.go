@@ -3,7 +3,6 @@ package task
 import (
 	"fmt"
 	"time"
-	"database/sql"
 
 	"github.com/pingcap/tidb-foresight/analyzer/utils"
 )
@@ -23,8 +22,8 @@ type ParseResourceTask struct {
 	BaseTask
 }
 
-func ParseResource(inspectionId string, src string, data *TaskData, db *sql.DB) Task {
-	return &ParseResourceTask {BaseTask{inspectionId, src, data, db}}
+func ParseResource(base BaseTask) Task {
+	return &ParseResourceTask {base}
 }
 
 func (t *ParseResourceTask) Run() error {

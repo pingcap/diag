@@ -3,7 +3,6 @@ package task
 import (
 	"path"
 	"io/ioutil"
-	"database/sql"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -18,8 +17,8 @@ type ParseDmesgTask struct {
 	BaseTask
 }
 
-func ParseDmesg(inspectionId string, src string, data *TaskData, db *sql.DB) Task {
-	return &ParseDmesgTask {BaseTask{inspectionId, src, data, db}}
+func ParseDmesg(base BaseTask) Task {
+	return &ParseDmesgTask {base}
 }
 
 func (t *ParseDmesgTask) Run() error {
@@ -54,8 +53,8 @@ type SaveDmesgTask struct {
 	BaseTask
 }
 
-func SaveDmesg(inspectionId string, src string, data *TaskData, db *sql.DB) Task {
-	return &SaveDmesgTask {BaseTask{inspectionId, src, data, db}}
+func SaveDmesg(base BaseTask) Task {
+	return &SaveDmesgTask {base}
 }
 
 func (t *SaveDmesgTask) Run() error {

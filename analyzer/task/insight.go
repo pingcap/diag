@@ -5,7 +5,6 @@ import (
 	"path"
 	"io/ioutil"
 	"encoding/json"
-	"database/sql"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -66,8 +65,8 @@ type ParseInsightTask struct {
 	BaseTask
 }
 
-func ParseInsight(inspectionId string, src string, data *TaskData, db *sql.DB) Task {
-	return &ParseInsightTask {BaseTask{inspectionId, src, data, db}}
+func ParseInsight(base BaseTask) Task {
+	return &ParseInsightTask {base}
 }
 
 func (t *ParseInsightTask) Run() error {

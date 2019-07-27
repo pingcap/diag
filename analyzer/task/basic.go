@@ -1,7 +1,6 @@
 package task
 
 import (
-	"database/sql"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -9,8 +8,8 @@ type SaveBasicInfoTask struct {
 	BaseTask
 }
 
-func SaveBasicInfo(inspectionId string, src string, data *TaskData, db *sql.DB) Task {
-	return &SaveBasicInfoTask {BaseTask{inspectionId, src, data, db}}
+func SaveBasicInfo(base BaseTask) Task {
+	return &SaveBasicInfoTask {base}
 }
 
 func (t *SaveBasicInfoTask) Run() error {

@@ -53,7 +53,7 @@ func (s *Server) collect(instanceId, inspectionId string) error {
 	)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
-	log.Info(cmd)
+	log.Info(cmd.Args)
 	err = cmd.Run()
 	if err != nil {
 		log.Error("run ", s.config.Collector, ": ", err)
@@ -70,7 +70,7 @@ func (s *Server) analyze(inspectionId string) error {
 	)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
-	log.Info(cmd)
+	log.Info(cmd.Args)
 	err := cmd.Run()
 	if err != nil {
 		log.Error("run ", s.config.Analyzer, ": ", err)
@@ -88,7 +88,7 @@ func (s *Server) pack(inspectionId string) error {
 		path.Join(s.config.Home, "inspection"),
 		inspectionId,
 	)
-	log.Info(cmd)
+	log.Info(cmd.Args)
 	err := cmd.Run()
 	if err != nil {
 		log.Error("run tar: ", err)
@@ -105,7 +105,7 @@ func (s *Server) uppack(inspectionId string) error {
 		"-C",
 		path.Join(s.config.Home, "inspection"),
 	)
-	log.Info(cmd)
+	log.Info(cmd.Args)
 	err := cmd.Run()
 	if err != nil {
 		log.Error("run tar: ", err)
