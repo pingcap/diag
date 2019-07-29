@@ -143,7 +143,7 @@ function PerfProfileList({
 
   function uploadPerfProfile(record: IPerfProfile) {
     setUploadRemoteModalVisible(true);
-    setUploadRemoteUrl(`/api/v1/flamegraphs/${record.uuid}`);
+    setUploadRemoteUrl(`/perfprofiles/${record.uuid}`);
   }
 
   function handleAddPerfProfile(instanceId: string): Promise<any> {

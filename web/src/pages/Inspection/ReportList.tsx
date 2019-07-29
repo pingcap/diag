@@ -147,7 +147,7 @@ function ReportList({ dispatch, curUser, inspection, match, loading }: ReportLis
 
   function uploadInspection(record: IFormatInspection) {
     setUploadRemoteModalVisible(true);
-    setRemoteUploadUrl(`/api/v1/inspections/${record.uuid}`);
+    setRemoteUploadUrl(`/inspections/${record.uuid}`);
   }
 
   function handleTableChange(curPagination: PaginationConfig) {

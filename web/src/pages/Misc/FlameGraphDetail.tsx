@@ -95,7 +95,7 @@ function FlameGraphDetail({ dispatch, match, curUser }: ReportDetailProps) {
       <UploadRemoteReportModal
         visible={uploadRemoteModalVisible}
         onClose={() => setUploadRemoteModalVisible(false)}
-        uploadUrl={`/api/v1/flamegraphs/${reportId}`}
+        uploadUrl={`/flamegraphs/${reportId}`}
       />
     </div>
   );

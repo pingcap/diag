@@ -49,6 +49,7 @@ const errorHandler = (error: any): void => {
  * 配置request请求时的默认参数
  */
 const request = extend({
+  prefix: '/api/v1',
   errorHandler, // 默认错误处理
   credentials: 'include', // 默认请求是否带上cookie
 });

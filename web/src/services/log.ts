@@ -1,7 +1,7 @@
 import request from '@/utils/request';
 
 export async function queryLogInstances() {
-  return request('/api/v1/loginstances');
+  return request('/loginstances');
 }
 
 export interface ILogQueryParams {
@@ -16,10 +16,10 @@ export interface ILogQueryParams {
 
 // for admin user
 export async function queryLogs(logInstanceId: string, queryParams: ILogQueryParams) {
-  return request(`/api/v1/loginstances/${logInstanceId}/logs`, { params: queryParams });
+  return request(`/loginstances/${logInstanceId}/logs`, { params: queryParams });
 }
 
 // for dba user search
 export async function queryUploadedLogs(logId: string, queryParams: ILogQueryParams) {
-  return request(`/api/v1/logs/${logId}`, { params: queryParams });
+  return request(`/logs/${logId}`, { params: queryParams });
 }

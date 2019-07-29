@@ -147,7 +147,7 @@ function FlameGraphList({
 
   function uploadFlamegraph(record: IFlameGraph) {
     setUploadRemoteModalVisible(true);
-    setUploadRemoteUrl(`/api/v1/flamegraphs/${record.uuid}`);
+    setUploadRemoteUrl(`/flamegraphs/${record.uuid}`);
   }
 
   function handleAddFlamegraph(instanceId: string): Promise<any> {

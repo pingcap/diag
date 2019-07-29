@@ -227,7 +227,7 @@ function ReportList({
         content="确定要将此次搜索结果上传吗？"
         visible={uploadRemoteModalVisible}
         onClose={() => setUploadRemoteModalVisible(false)}
-        uploadUrl={`/api/v1/loginstances/${selectedInstanceId}/logs`}
+        uploadUrl={`/loginstances/${selectedInstanceId}/logs`}
       />
       <UploadLocalReportModal
         title="上传本地日志"

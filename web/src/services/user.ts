@@ -1,17 +1,17 @@
 import request from '@/utils/request';
 
 export async function accountLogin(loginInfo: { username: string; password: string }) {
-  return request.post('/api/v1/login', { data: loginInfo });
+  return request.post('/login', { data: loginInfo });
 }
 
 export async function accountLogout() {
-  return request.post('/api/v1/logout');
+  return request.post('/logout');
 }
 
 export async function queryCurrent(): Promise<any> {
-  return request('/api/v1/me');
+  return request('/me');
 }
 
 export async function queryNotices(): Promise<any> {
-  return request('/api/v1/notices');
+  return request('/notices');
 }

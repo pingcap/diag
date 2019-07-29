@@ -71,7 +71,7 @@ function ReportDetail({ dispatch, match, curUser }: ReportDetailProps) {
       <UploadRemoteReportModal
         visible={uploadRemoteModalVisible}
         onClose={() => setUploadRemoteModalVisible(false)}
-        uploadUrl={`/api/v1/inspections/${reportId}`}
+        uploadUrl={`/inspections/${reportId}`}
       />
     </div>
   );
