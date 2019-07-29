@@ -51,7 +51,7 @@ func (s *Server) CreateRouter() http.Handler {
 	r := mux.NewRouter()
 	AttachProfiler(r)
 
-	//fn.Plugin(s.auth)
+	fn.Plugin(s.auth)
 
 	// auth
 	r.HandleFunc("/api/v1/login", s.login).Methods("POST")
