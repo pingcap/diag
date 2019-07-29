@@ -52,6 +52,21 @@ def check_metric_args(args):
         sys.exit(1)
 
 
+def collect_args(args):
+    d = {}
+    for attr in dir(args):
+        # skip the private attrs
+        if attr[0] == '_':
+            continue
+        value = getattr(args, attr)
+
+        # skip the non-set args
+        if value == None:
+            continue
+        d[attr] = value
+    return d
+
+
 def setup_op_groups(topology, args):
     # TODO this function is too complex to understand, design a phase
     # engine to string all things together.
@@ -93,8 +108,8 @@ def setup_op_groups(topology, args):
     logging.info("cluster:%s status:%s", cluster, status)
 
     groups['_setup'].add_ops([
-        Op(VarCollector(var_name='collect', var_value=target),
-           FileOutput(os.path.join(datadir, inspection_id, 'collect.json'))),
+        Op(VarCollector(var_name='args', var_value=collect_args(args)),
+           FileOutput(os.path.join(datadir, inspection_id, 'args.json'))),
         Op(VarCollector(var_name='topology', var_value=topology),
            FileOutput(os.path.join(datadir, inspection_id, "topology.json")))])
     create = start = time.time()
