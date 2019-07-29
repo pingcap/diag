@@ -55,7 +55,7 @@ func (s *Server) collect(instanceId, inspectionId string) error {
 		fmt.Sprintf("--log-spliter=%s", s.config.Spliter),
 		// TODO: use time range in config
 		fmt.Sprintf("--begin=%s", time.Now().Add(time.Duration(-1) * time.Hour).Format(time.RFC3339)),
-		fmt.Sprintf("--begin=%s", time.Now().Format(time.RFC3339)),
+		fmt.Sprintf("--end=%s", time.Now().Format(time.RFC3339)),
 	)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
