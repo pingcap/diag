@@ -1,15 +1,15 @@
 package task
 
 import (
-	"path"
-	"io/ioutil"
 	log "github.com/sirupsen/logrus"
+	"io/ioutil"
+	"path"
 )
 
 type Dmesg []DmesgInfo
 
 type DmesgInfo struct {
-	Ip string
+	Ip  string
 	Log string
 }
 
@@ -18,7 +18,7 @@ type ParseDmesgTask struct {
 }
 
 func ParseDmesg(base BaseTask) Task {
-	return &ParseDmesgTask {base}
+	return &ParseDmesgTask{base}
 }
 
 func (t *ParseDmesgTask) Run() error {
@@ -39,7 +39,7 @@ func (t *ParseDmesgTask) Run() error {
 			log.Error("read dmesg:", err)
 		}
 		logs = append(logs, DmesgInfo{
-			Ip: ip.Name(),
+			Ip:  ip.Name(),
 			Log: string(content),
 		})
 	}
@@ -54,7 +54,7 @@ type SaveDmesgTask struct {
 }
 
 func SaveDmesg(base BaseTask) Task {
-	return &SaveDmesgTask {base}
+	return &SaveDmesgTask{base}
 }
 
 func (t *SaveDmesgTask) Run() error {
@@ -64,7 +64,7 @@ func (t *SaveDmesgTask) Run() error {
 
 	for _, dmesg := range t.data.dmesg {
 		if _, err := t.db.Exec(
-			`INSERT INTO inspection_dmesg(inspection, node_ip, dmesg) VALUES(?, ?, ?)`, 
+			`INSERT INTO inspection_dmesg(inspection, node_ip, dmesg) VALUES(?, ?, ?)`,
 			t.inspectionId, dmesg.Ip, dmesg.Log,
 		); err != nil {
 			log.Error("db.Exec: ", err)

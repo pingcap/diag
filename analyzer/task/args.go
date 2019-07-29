@@ -1,21 +1,21 @@
 package task
 
 import (
-	"time"
+	"encoding/json"
+	"io/ioutil"
 	"path"
 	"strings"
-	"io/ioutil"
-	"encoding/json"
+	"time"
 
 	log "github.com/sirupsen/logrus"
 )
 
 type Args struct {
-	InstanceId string `json:"instance_id"`
-	InspectionId string `json:"inspection_id"`
-	Collects string `json:"collect"`
-	BeginTime time.Time `json:"begin"`
-	EndTime time.Time `json:"end"`
+	InstanceId   string    `json:"instance_id"`
+	InspectionId string    `json:"inspection_id"`
+	Collects     string    `json:"collect"`
+	BeginTime    time.Time `json:"begin"`
+	EndTime      time.Time `json:"end"`
 }
 
 func (a *Args) Collect(iname string) bool {
@@ -33,7 +33,7 @@ type ParseArgsTask struct {
 }
 
 func ParseArgs(base BaseTask) Task {
-	return &ParseArgsTask {base}
+	return &ParseArgsTask{base}
 }
 
 func (t *ParseArgsTask) Run() error {
@@ -43,11 +43,12 @@ func (t *ParseArgsTask) Run() error {
 		return err
 	}
 
-	args := Args {}
+	args := Args{}
 	if err = json.Unmarshal(content, &args); err != nil {
 		log.Error("unmarshal: ", err)
 		return err
 	}
 
+	t.data.args = args
 	return nil
 }

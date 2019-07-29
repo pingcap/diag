@@ -9,7 +9,7 @@ type TikvLogSpliter struct {
 }
 
 func NewTikvLogSpliter() Spliter {
-	return &TikvLogSpliter{*NewLogSpliter(func (line string) *time.Time {
+	return &TikvLogSpliter{*NewLogSpliter(func(line string) *time.Time {
 		if len(line) < 23 {
 			return nil
 		}

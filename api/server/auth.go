@@ -23,7 +23,7 @@ type AuthInfo struct {
 func (s *Server) auth(ctx context.Context, r *http.Request) (context.Context, error) {
 	if r.URL.Query().Get("debug") == "true" {
 		ctx = context.WithValue(ctx, "user_name", r.URL.Query().Get("user"))
-        	ctx = context.WithValue(ctx, "user_role", r.URL.Query().Get("role"))
+		ctx = context.WithValue(ctx, "user_role", r.URL.Query().Get("role"))
 		return ctx, nil
 	}
 
@@ -86,8 +86,8 @@ func (s *Server) login(w http.ResponseWriter, r *http.Request) {
 		User string `json:"username"`
 		Pass string `json:"password"`
 	}{}
-        aws := s.config.Aws
-        ka := aws.Region != "" && aws.Bucket != "" && aws.AccessKey != "" && aws.AccessSecret != ""
+	aws := s.config.Aws
+	ka := aws.Region != "" && aws.Bucket != "" && aws.AccessKey != "" && aws.AccessSecret != ""
 	decoder := json.NewDecoder(r.Body)
 	err := decoder.Decode(&auth)
 	if err != nil {
@@ -116,8 +116,8 @@ func (s *Server) me(ctx context.Context) (map[string]interface{}, error) {
 
 	return map[string]interface{}{
 		"username": ctx.Value("user_name"),
-		"role": ctx.Value("user_role"),
-		"ka":   ka,
+		"role":     ctx.Value("user_role"),
+		"ka":       ka,
 	}, nil
 }
 

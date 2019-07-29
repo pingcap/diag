@@ -12,7 +12,7 @@ import (
 )
 
 type LogResult struct {
-	Token string          `json:"token"`
+	Token string           `json:"token"`
 	Logs  []*searcher.Item `json:"logs"`
 }
 

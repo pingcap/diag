@@ -41,7 +41,7 @@ type ForesightConfig struct {
 	Pioneer   string
 	Collector string
 	Analyzer  string
-	Spliter	  string
+	Spliter   string
 
 	Sched struct {
 		Auto     bool   `toml:"auto"`

@@ -1,8 +1,8 @@
 package main
 
 import (
-	"path"
 	"flag"
+	"path"
 
 	"github.com/pingcap/tidb-foresight/bootstrap"
 	"github.com/pingcap/tidb-foresight/server"

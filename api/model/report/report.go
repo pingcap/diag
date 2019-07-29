@@ -8,10 +8,10 @@ type Report struct {
 	db           *sql.DB
 	inspectionId string
 	Items        interface{} `json:"items,omitempty"`
-	Symptoms	 interface{} `json:"symptoms,omitempty"`
+	Symptoms     interface{} `json:"symptoms,omitempty"`
 	BasicInfo    interface{} `json:"basic,omitempty"`
 	DBInfo       interface{} `json:"dbinfo,omitempty"`
-	AlertInfo	 interface{} `json:"alert,omitempty"`
+	AlertInfo    interface{} `json:"alert,omitempty"`
 }
 
 func NewReport(db *sql.DB, inspectionId string) *Report {

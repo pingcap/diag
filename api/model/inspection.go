@@ -11,7 +11,7 @@ type Inspection struct {
 	Uuid       string      `json:"uuid"`
 	InstanceId string      `json:"instance_id"`
 	Status     string      `json:"status"`
-	Message	   string	   `json:"message"`
+	Message    string      `json:"message"`
 	Type       string      `json:"type"`
 	CreateTime *time.Time  `json:"create_time,omitempty"`
 	FinishTime *time.Time  `json:"finish_time,omitempty"`
@@ -40,7 +40,7 @@ func (m *Model) ListAllInspections(page, size int64) ([]*Inspection, int, error)
 	for rows.Next() {
 		inspection := Inspection{CreateTime: &time.Time{}, FinishTime: &time.Time{}}
 		err := rows.Scan(
-			&inspection.Uuid, &inspection.InstanceId, &inspection.Status, &inspection.Message, 
+			&inspection.Uuid, &inspection.InstanceId, &inspection.Status, &inspection.Message,
 			&inspection.Type, inspection.CreateTime, &inspection.Tidb, &inspection.Tikv, &inspection.Pd,
 			&inspection.Grafana, &inspection.Prometheus,
 		)
@@ -88,8 +88,8 @@ func (m *Model) ListInspections(instanceId string, page, size int64) ([]*Inspect
 	for rows.Next() {
 		inspection := Inspection{}
 		err := rows.Scan(
-			&inspection.Uuid, &inspection.InstanceId, &inspection.Status, &inspection.Message, 
-			&inspection.Type, &inspection.CreateTime, &inspection.Tidb, &inspection.Tikv, &inspection.Pd, 
+			&inspection.Uuid, &inspection.InstanceId, &inspection.Status, &inspection.Message,
+			&inspection.Type, &inspection.CreateTime, &inspection.Tidb, &inspection.Tikv, &inspection.Pd,
 			&inspection.Grafana, &inspection.Prometheus,
 		)
 		if err != nil {
@@ -140,8 +140,8 @@ func (m *Model) GetInspectionDetail(inspectionId string) (*Inspection, error) {
 		"SELECT id,instance,status,message,type,create_t,tidb,tikv,pd,grafana,prometheus FROM inspections WHERE id = ?",
 		inspectionId,
 	).Scan(
-		&inspection.Uuid, &inspection.InstanceId, &inspection.Status, &inspection.Message, 
-		&inspection.Type, &inspection.CreateTime, &inspection.Tidb, &inspection.Tikv, &inspection.Pd, 
+		&inspection.Uuid, &inspection.InstanceId, &inspection.Status, &inspection.Message,
+		&inspection.Type, &inspection.CreateTime, &inspection.Tidb, &inspection.Tikv, &inspection.Pd,
 		&inspection.Grafana, &inspection.Prometheus,
 	)
 	if err != nil {

@@ -116,5 +116,3 @@ func (s *Searcher) Search(dir string, text string, token string) (LogIter, strin
 		return s.GetIter(token), token, nil
 	}
 }
-
-

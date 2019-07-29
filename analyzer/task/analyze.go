@@ -4,13 +4,12 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-
 type AnalyzeTask struct {
 	BaseTask
 }
 
 func Analyze(base BaseTask) Task {
-	return &AnalyzeTask {base}
+	return &AnalyzeTask{base}
 }
 
 // TODO

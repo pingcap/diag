@@ -9,7 +9,7 @@ type ClearTask struct {
 }
 
 func Clear(base BaseTask) Task {
-	return &ClearTask {base}
+	return &ClearTask{base}
 }
 
 func (t *ClearTask) Run() error {

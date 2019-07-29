@@ -1,8 +1,8 @@
 package main
 
 import (
-	"time"
 	"regexp"
+	"time"
 )
 
 type TidbLogSpliter struct {
@@ -10,7 +10,7 @@ type TidbLogSpliter struct {
 }
 
 func NewTidbLogSpliter() Spliter {
-	return &TidbLogSpliter{*NewLogSpliter(func (line string) *time.Time {
+	return &TidbLogSpliter{*NewLogSpliter(func(line string) *time.Time {
 		re := regexp.MustCompile("^\\[([^\\]]+)\\]")
 		if !re.MatchString(line) {
 			return nil

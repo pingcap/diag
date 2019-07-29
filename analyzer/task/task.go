@@ -1,23 +1,23 @@
 package task
 
 import (
-	"path"
 	"database/sql"
+	"path"
 
 	log "github.com/sirupsen/logrus"
 )
 
 type TaskData struct {
-	args 	Args
+	args     Args
 	topology Topology
 	status   ItemStatus
 	meta     Meta
 	resource Resource
 	dbinfo   DBInfo
 	matrix   Matrix
-	alert	 AlertInfo
+	alert    AlertInfo
 	insight  Insight
-	dmesg	Dmesg
+	dmesg    Dmesg
 }
 
 type Task interface {
@@ -26,24 +26,24 @@ type Task interface {
 
 type BaseTask struct {
 	inspectionId string
-	home		 string
-	bin			 string
+	home         string
+	bin          string
 	src          string
-	logs   		 string
-	profile		 string
+	logs         string
+	profile      string
 	data         *TaskData
 	db           *sql.DB
 }
 
 func NewTask(inspectionId, home string, data *TaskData, db *sql.DB) BaseTask {
 	return BaseTask{
-		inspectionId, 
-		home, 
-		path.Join(home, "bin"), 
-		path.Join(home, "inspection", inspectionId), 
-		path.Join(home, "remote-log", inspectionId), 
-		path.Join(home, "profile", inspectionId), 
-		data, 
+		inspectionId,
+		home,
+		path.Join(home, "bin"),
+		path.Join(home, "inspection", inspectionId),
+		path.Join(home, "remote-log", inspectionId),
+		path.Join(home, "profile", inspectionId),
+		data,
 		db,
 	}
 }
@@ -60,8 +60,8 @@ func (t *BaseTask) InsertSymptom(status, message, description string) error {
 }
 
 func (t *BaseTask) SetStatus(item, status, message, description string) error {
-	t.data.status[item] = struct{
-		Status string `json:"status"`
+	t.data.status[item] = struct {
+		Status  string `json:"status"`
 		Message string `json:"message"`
 	}{status, message}
 

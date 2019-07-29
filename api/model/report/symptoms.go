@@ -5,9 +5,9 @@ import (
 )
 
 type Symptom struct {
-	Status		string	`json:"status"`
-	Message 	string  `json:"message"`
-	Description string  `json:"description"`
+	Status      string `json:"status"`
+	Message     string `json:"message"`
+	Description string `json:"description"`
 }
 
 func (r *Report) loadSymptoms() error {
