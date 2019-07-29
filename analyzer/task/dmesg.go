@@ -23,7 +23,7 @@ func ParseDmesg(base BaseTask) Task {
 
 func (t *ParseDmesgTask) Run() error {
 	logs := Dmesg{}
-	if !t.data.collect[ITEM_BASIC] || t.data.status[ITEM_BASIC].Status != "success" {
+	if !t.data.args.Collect(ITEM_BASIC) || t.data.status[ITEM_BASIC].Status != "success" {
 		return nil
 	}
 
@@ -58,7 +58,7 @@ func SaveDmesg(base BaseTask) Task {
 }
 
 func (t *SaveDmesgTask) Run() error {
-	if !t.data.collect[ITEM_BASIC] || t.data.status[ITEM_BASIC].Status != "success" {
+	if !t.data.args.Collect(ITEM_BASIC) || t.data.status[ITEM_BASIC].Status != "success" {
 		return nil
 	}
 

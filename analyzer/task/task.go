@@ -8,7 +8,7 @@ import (
 )
 
 type TaskData struct {
-	collect  map[string]bool
+	args 	Args
 	topology Topology
 	status   ItemStatus
 	meta     Meta

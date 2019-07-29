@@ -45,7 +45,7 @@ func (a *Analyzer) Run() error {
        task.Clear,
 
        // parse stage
-       task.ParseCollect,
+       task.ParseArgs,
        task.ParseStatus,
        task.ParseTopology,
        task.ParseMetric,

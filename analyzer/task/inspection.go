@@ -15,7 +15,7 @@ func SaveInspection(base BaseTask) Task {
 }
 
 func (t *SaveInspectionTask) Run() error {
-	instance := t.data.meta.InstanceId
+	instance := t.data.args.InstanceId
 	createTime := t.data.meta.CreateTime
 	components := map[string][]string{}
 

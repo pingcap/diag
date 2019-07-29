@@ -41,7 +41,7 @@ func (t *ParseMetaTask) Run() error {
 		return err
 	}
 
-	if !t.data.collect[ITEM_METRIC] || t.data.status[ITEM_METRIC].Status != "success" {
+	if !t.data.args.Collect(ITEM_METRIC) || t.data.status[ITEM_METRIC].Status != "success" {
 		return nil
 	}
 

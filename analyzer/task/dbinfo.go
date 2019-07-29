@@ -44,7 +44,7 @@ func SaveDBInfo(base BaseTask) Task {
 }
 
 func (t *ParseDBInfoTask) Run() error {
-	if !t.data.collect[ITEM_DBINFO] || t.data.status[ITEM_DBINFO].Status != "success" {
+	if !t.data.args.Collect(ITEM_DBINFO) || t.data.status[ITEM_DBINFO].Status != "success" {
 		return nil
 	}
 
@@ -96,7 +96,7 @@ func parseTables(file string) ([]*Table, error) {
 }
 
 func (t *SaveDBInfoTask) Run() error {
-	if !t.data.collect[ITEM_DBINFO] || t.data.status[ITEM_DBINFO].Status != "success" {
+	if !t.data.args.Collect(ITEM_DBINFO) || t.data.status[ITEM_DBINFO].Status != "success" {
 		return nil
 	}
 

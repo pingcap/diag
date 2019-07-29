@@ -28,7 +28,7 @@ func (t *SaveItemsTask) Run() error {
 	for _, item := range items {
 		status := "none"
 		message := ""
-		if t.data.collect[item] {
+		if t.data.args.Collect(item) {
 			if t.data.status[item].Status == "success" {
 					status = "pending"
 			} else {

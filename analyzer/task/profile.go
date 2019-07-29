@@ -22,7 +22,7 @@ func SaveProfile(base BaseTask) Task {
 }
 
 func (t *SaveProfileTask) Run() error {
-	if !t.data.collect[ITEM_PROFILE] || t.data.status[ITEM_PROFILE].Status != "success" {
+	if !t.data.args.Collect(ITEM_PROFILE) || t.data.status[ITEM_PROFILE].Status != "success" {
 		return nil
 	}
 

@@ -16,7 +16,7 @@ func SaveHardwareInfo(base BaseTask) Task {
 }
 
 func (t *SaveHardwareInfoTask) Run() error {
-	if !t.data.collect[ITEM_BASIC] || t.data.status[ITEM_BASIC].Status != "success" {
+	if !t.data.args.Collect(ITEM_BASIC) || t.data.status[ITEM_BASIC].Status != "success" {
 		return nil
 	}
 

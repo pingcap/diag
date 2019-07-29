@@ -70,7 +70,7 @@ type ParseMetricTask struct {
 // Run the task which parses all the metric files collected
 // by a metric collector
 func (t *ParseMetricTask) Run() error {
-	if !t.data.collect[ITEM_METRIC] || t.data.status[ITEM_METRIC].Status != "success" {
+	if !t.data.args.Collect(ITEM_METRIC) || t.data.status[ITEM_METRIC].Status != "success" {
 		return nil
 	}
 
@@ -115,7 +115,7 @@ type SaveMetricTask struct {
 
 // Run a task to save metrics into influxdb
 func (t *SaveMetricTask) Run() error {
-	if !t.data.collect[ITEM_METRIC] || t.data.status[ITEM_METRIC].Status != "success" {
+	if !t.data.args.Collect(ITEM_METRIC) || t.data.status[ITEM_METRIC].Status != "success" {
 		return nil
 	}
 
