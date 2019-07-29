@@ -66,16 +66,13 @@ def setup_op_groups(topology, args):
     items = map(lambda x: x.split(':'), target.split(','))
     options = {}
     for item in items:
+        if item[0] == 'slowlog':
+            check_slowlog_args(args)
         if groups.has_key(item[0]):
             if len(item) == 2:
                 options[item[0]] = item[1]
             if len(item) > 2:  # Ex. profile:tidb:ip:port
                 options[item[0]] = item[1:]
-        if item[0] == 'slowlog':
-            # slowlog does not obey the rule as metric:1h, it has seperate
-            # options
-            # TODO we should have an uniform design
-            check_slowlog_args(args)
         else:
             raise Exception("unsupported target: "+item[0])
 
