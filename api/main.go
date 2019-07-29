@@ -32,7 +32,7 @@ func main() {
 	config.Analyzer = *analyzer
 
 	if config.Pioneer == "" {
-		config.Pioneer = path.Join(config.Home, "bin", "pionner")
+		config.Pioneer = path.Join(config.Home, "bin", "pioneer")
 	}
 	if config.Collector == "" {
 		config.Collector = path.Join(config.Home, "bin", "collector")
