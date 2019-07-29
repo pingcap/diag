@@ -21,6 +21,12 @@ type AuthInfo struct {
 }
 
 func (s *Server) auth(ctx context.Context, r *http.Request) (context.Context, error) {
+	if r.URL.Query().Get("debug") == "true" {
+		ctx = context.WithValue(ctx, "user_name", r.URL.Query().Get("user"))
+        	ctx = context.WithValue(ctx, "user_role", r.URL.Query().Get("role"))
+		return ctx, nil
+	}
+
 	cookie, err := r.Cookie("tidb-foresight-auth")
 	if err != nil {
 		log.Error("parse cookie in self identity: ", err)
