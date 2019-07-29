@@ -35,10 +35,10 @@ def check_slowlog_args(args):
     if args.log_spliter is None:
         print("--log-spliter is requred when collecting slowlog")
         sys.exit(1)
-    if args.log_begin is None:
+    if args.begin is None:
         print("--begin is requred when collecting slowlog")
         sys.exit(1)
-    if args.log_end is None:
+    if args.end is None:
         print("--end is requred when collecting slowlog")
         sys.exit(1)
 
