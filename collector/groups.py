@@ -212,8 +212,7 @@ def setup_pprof_ops(addr='127.0.0.1:6060', basedir='pprof'):
         op(BlockProfileCollector, 'block.pb.gz'),
         op(AllocsProfileCollector, 'allocs.pb.gz'),
         op(MutexProfileCollector, 'mutex.pb.gz'),
-        op(ThreadCreateProfileCollector, 'threadcreate.pb.gz'),
-        op(TraceProfileCollector, 'trace.pb.gz')
+        op(ThreadCreateProfileCollector, 'threadcreate.pb.gz')
     ]
     return ops
 
