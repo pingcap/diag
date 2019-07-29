@@ -65,8 +65,8 @@ func (s *Server) collect(instanceId, inspectionId string) error {
 func (s *Server) analyze(inspectionId string) error {
 	cmd := exec.Command(
 		s.config.Analyzer,
-		fmt.Sprintf("--db=%s", path.Join(s.config.Home, "sqlite.db")),
-		fmt.Sprintf("--src=%s", path.Join(s.config.Home, "inspection", inspectionId)),
+		fmt.Sprintf("--home=%s", s.config.Home),
+		fmt.Sprintf("--inspection-id=%s", inspectionId),
 	)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
