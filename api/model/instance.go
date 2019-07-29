@@ -77,7 +77,6 @@ func (m *Model) CreateInstance(instance *Instance) error {
 }
 
 func (m *Model) UpdateInstance(instance *Instance) error {
-	log.Info(instance.Uuid, instance.Message)
 	_, err := m.db.Exec(
 		"UPDATE instances SET name=?,status=?,message=?,tidb=?,tikv=?,pd=?,grafana=?,prometheus=? WHERE id=?",
 		instance.Name, instance.Status, instance.Message, instance.Tidb, instance.Tikv,
