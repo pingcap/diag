@@ -223,11 +223,17 @@ func (s *Server) createInspection(r *http.Request) (*model.Inspection, error) {
 		err := s.collect(instanceId, inspectionId)
 		if err != nil {
 			log.Error("collect ", inspectionId, ": ", err)
+			inspection.Status = "exception"
+			inspection.Message = "collect failed"
+			s.model.SetInspection(inspection)
 			return
 		}
 		err = s.analyze(inspectionId)
 		if err != nil {
 			log.Error("analyze ", inspectionId, ": ", err)
+			inspection.Status = "exception"
+			inspection.Message = "analyze failed"
+			s.model.SetInspection(inspection)
 			return
 		}
 	}()
@@ -285,6 +291,9 @@ func (s *Server) importInspection(r *http.Request) (*model.Inspection, error) {
 		err = s.analyze(inspectionId)
 		if err != nil {
 			log.Error("analyze ", inspectionId, ": ", err)
+			inspection.Status = "exception"
+			inspection.Message = "analyze failed"
+			s.model.SetInspection(inspection)
 			return
 		}
 	}()
