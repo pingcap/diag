@@ -148,4 +148,9 @@ export default {
     },
   },
   */
+  proxy: {
+    '/api/v1': {
+      target: 'http://172.16.5.7:8888',
+    },
+  },
 } as IConfig;
