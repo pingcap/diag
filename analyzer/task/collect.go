@@ -4,7 +4,6 @@ import (
 	"path"
 	"strings"
 	"io/ioutil"
-	"database/sql"
 	"encoding/json"
 	log "github.com/sirupsen/logrus"
 )
@@ -13,8 +12,8 @@ type ParseCollectTask struct {
 	BaseTask
 }
 
-func ParseCollect(inspectionId string, src string, data *TaskData, db *sql.DB) Task {
-	return &ParseCollectTask {BaseTask{inspectionId, src, data, db}}
+func ParseCollect(base BaseTask) Task {
+	return &ParseCollectTask {base}
 }
 
 func (t *ParseCollectTask) Run() error {

@@ -3,7 +3,6 @@ package task
 import (
 	"path"
 	"io/ioutil"
-	"database/sql"
 	"encoding/json"
 	log "github.com/sirupsen/logrus"
 )
@@ -17,8 +16,8 @@ type ParseStatusTask struct {
 	BaseTask
 }
 
-func ParseStatus(inspectionId string, src string, data *TaskData, db *sql.DB) Task {
-	return &ParseStatusTask {BaseTask{inspectionId, src, data, db}}
+func ParseStatus(base BaseTask) Task {
+	return &ParseStatusTask {base}
 }
 
 func (t *ParseStatusTask) Run() error {

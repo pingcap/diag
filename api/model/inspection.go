@@ -26,7 +26,10 @@ type Inspection struct {
 func (m *Model) ListAllInspections(page, size int64) ([]*Inspection, int, error) {
 	inspections := []*Inspection{}
 
-	rows, err := m.db.Query("SELECT id,instance,status,type,create_t,tidb,tikv,pd,grafana,prometheus FROM inspections")
+	rows, err := m.db.Query(
+		"SELECT id,instance,status,type,create_t,tidb,tikv,pd,grafana,prometheus FROM inspections limit ?,?",
+		(page-1)*size, size,
+	)
 	if err != nil {
 		log.Error("failed to call db.Query:", err)
 		return nil, 0, err
@@ -126,6 +129,22 @@ func (m *Model) SetInspection(inspection *Inspection) error {
 	}
 
 	return nil
+}
+
+func (m *Model) GetInspectionDetail(inspectionId string) (*Inspection, error) {
+	inspection := Inspection{}
+	err := m.db.QueryRow(
+		"SELECT id,instance,status,type,create_t,tidb,tikv,pd,grafana,prometheus FROM inspections WHERE id = ?",
+		inspectionId,
+	).Scan(
+		&inspection.Uuid, &inspection.InstanceId, &inspection.Status, &inspection.Type, &inspection.CreateTime,
+		&inspection.Tidb, &inspection.Tikv, &inspection.Pd, &inspection.Grafana, &inspection.Prometheus,
+	)
+	if err != nil {
+		log.Error("Failed to call db.Query:", err)
+		return nil, err
+	}
+	return &inspection, nil
 }
 
 func (m *Model) DeleteInspection(inspectionId string) error {

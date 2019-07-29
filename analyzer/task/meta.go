@@ -6,7 +6,6 @@ import (
 	"path"
 	"io/ioutil"
 	"encoding/json"
-	"database/sql"
 
 	"github.com/pingcap/tidb-foresight/analyzer/utils"
 	log "github.com/sirupsen/logrus"
@@ -26,8 +25,8 @@ type ParseMetaTask struct {
 	BaseTask
 }
 
-func ParseMeta(inspectionId string, src string, data *TaskData, db *sql.DB) Task {
-	return &ParseMetaTask {BaseTask{inspectionId, src, data, db}}
+func ParseMeta(base BaseTask) Task {
+	return &ParseMetaTask {base}
 }
 
 func (t *ParseMetaTask) Run() error {
@@ -38,7 +37,7 @@ func (t *ParseMetaTask) Run() error {
 	}
 
 	if err = json.Unmarshal(content, &t.data.meta); err != nil {
-		log.Error("unmarshal: ", err)
+		log.Error("unmarshal:", err)
 		return err
 	}
 

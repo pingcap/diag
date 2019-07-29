@@ -55,6 +55,13 @@ CREATE TABLE IF NOT EXISTS inspection_items (
 	PRIMARY KEY (inspection, name)
 );
 
+CREATE TABLE IF NOT EXISTS inspection_symptoms (
+	inspection VARCHAR(64) NOT NULL,
+	type VARCHAR(16) NOT NULL,
+	description TEXT NOT NULL DEFAULT "",
+	suggestion TEXT NOT NULL DEFAULT ""
+);
+
 CREATE TABLE IF NOT EXISTS inspection_basic_info (
 	inspection VARCHAR(64),
 	cluster_name VARCHAR(64),
@@ -86,6 +93,30 @@ CREATE TABLE IF NOT EXISTS inspection_slow_log (
 	digest VARCHAR(64) NOT NULL,
 	query TEXT NOT NULL,
 	node_ip VARCHAR(64) NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS inspection_alerts (
+	inspection VARCHAR(64) NOT NULL,
+	name VARCHAR(64) NOT NULL,
+	value TEXT NOT NULL,
+	time DATETIME NOT NULL,
+	PRIMARY KEY (inspection, name)
+);
+
+CREATE TABLE IF NOT EXISTS inspection_hardware (
+	inspection VARCHAR(64) NOT NULL,
+	cpu VARCHAR(64) NOT NULL,
+	memory VARCHAR(64) NOT NULL,
+	disk VARCHAR(64) NOT NULL,
+	network VARCHAR(64) NOT NULL,
+	PRIMARY KEY (inspection)
+);
+
+CREATE TABLE IF NOT EXISTS inspection_dmesg (
+	inspection VARCHAR(64) NOT NULL,
+	node_ip VARCHAR(64) NOT NULL,
+	log TEXT NOT NULL,
+	PRIMARY KEY (inspection, node_ip)
 );
 `
 

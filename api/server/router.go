@@ -81,8 +81,13 @@ func (s *Server) CreateRouter() http.Handler {
 	r.Handle("/api/v1/inspections", fn.Wrap(s.listAllInspections)).Methods("GET")
 	r.HandleFunc("/api/v1/inspections/{id}.tar.gz", s.exportInspection).Methods("GET")
 	r.Handle("/api/v1/inspections", fn.Wrap(s.importInspection)).Methods("POST")
+	r.Handle("/api/v1/inspections/{id}", fn.Wrap(s.getInspectionDetail)).Methods("GET")
 	r.Handle("/api/v1/inspections/{id}", fn.Wrap(s.uploadInspection)).Methods("PUT")
 	r.Handle("/api/v1/inspections/{id}", fn.Wrap(s.deleteInspection)).Methods("DELETE")
+
+	// profiles
+	r.Handle("/api/v1/profiles", fn.Wrap(s.listAllProfiles)).Methods("GET")
+	r.HandleFunc("/api/v1/profiles/{id}/{component}/{address}/{type}/{file}", s.getProfile).Methods("GET")
 
 	// other
 	r.Handle("/ping", fn.Wrap(s.ping)).Methods("GET")

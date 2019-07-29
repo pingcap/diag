@@ -1,7 +1,10 @@
 package task
 
 import (
+	"path"
 	"database/sql"
+
+	log "github.com/sirupsen/logrus"
 )
 
 type TaskData struct {
@@ -12,6 +15,9 @@ type TaskData struct {
 	resource Resource
 	dbinfo   DBInfo
 	matrix   Matrix
+	alert	 AlertInfo
+	insight  Insight
+	dmesg	Dmesg
 }
 
 type Task interface {
@@ -20,7 +26,44 @@ type Task interface {
 
 type BaseTask struct {
 	inspectionId string
+	home		 string
+	bin			 string
 	src          string
+	logs   		 string
+	profile		 string
 	data         *TaskData
 	db           *sql.DB
+}
+
+func NewTask(inspectionId, home string, data *TaskData, db *sql.DB) BaseTask {
+	return BaseTask{
+		inspectionId, 
+		home, 
+		path.Join(home, "bin"), 
+		path.Join(home, "inspection", inspectionId), 
+		path.Join(home, "remote-log", inspectionId), 
+		path.Join(home, "profile", inspectionId), 
+		data, 
+		db,
+	}
+}
+
+func (t *BaseTask) InsertSymptom(status, message, description string) error {
+	if _, err := t.db.Exec(
+		"INSERT INTO inspection_symptoms(inspection, status, message, description) VALUES(?, ?, ?, ?)",
+		t.inspectionId, status, message, description,
+	); err != nil {
+		log.Error("insert symptom: ", err)
+		return err
+	}
+	return nil
+}
+
+func (t *BaseTask) SetStatus(item, status, message, description string) error {
+	t.data.status[item] = struct{
+		Status string `json:"status"`
+		Message string `json:"message"`
+	}{status, message}
+
+	return t.InsertSymptom(status, message, description)
 }

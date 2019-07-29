@@ -27,7 +27,7 @@ func (s *Server) collect(instanceId, inspectionId string) error {
 		log.Error("get instance config: ", err)
 		return err
 	}
-	items := []string{"metric"}
+	items := []string{"metric","basic","dbinfo","config","profile"}
 	if config != nil {
 		if config.CollectHardwareInfo {
 			items = append(items, "hardware")
@@ -51,7 +51,9 @@ func (s *Server) collect(instanceId, inspectionId string) error {
 		fmt.Sprintf("--data-dir=%s", path.Join(s.config.Home, "inspection")),
 		fmt.Sprintf("--collect=%s", strings.Join(items, ",")),
 	)
-	log.Info(cmd)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	log.Info(cmd.Args)
 	err = cmd.Run()
 	if err != nil {
 		log.Error("run ", s.config.Collector, ": ", err)
@@ -66,7 +68,9 @@ func (s *Server) analyze(inspectionId string) error {
 		fmt.Sprintf("--db=%s", path.Join(s.config.Home, "sqlite.db")),
 		fmt.Sprintf("--src=%s", path.Join(s.config.Home, "inspection", inspectionId)),
 	)
-	log.Info(cmd)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	log.Info(cmd.Args)
 	err := cmd.Run()
 	if err != nil {
 		log.Error("run ", s.config.Analyzer, ": ", err)
@@ -84,7 +88,7 @@ func (s *Server) pack(inspectionId string) error {
 		path.Join(s.config.Home, "inspection"),
 		inspectionId,
 	)
-	log.Info(cmd)
+	log.Info(cmd.Args)
 	err := cmd.Run()
 	if err != nil {
 		log.Error("run tar: ", err)
@@ -101,7 +105,7 @@ func (s *Server) uppack(inspectionId string) error {
 		"-C",
 		path.Join(s.config.Home, "inspection"),
 	)
-	log.Info(cmd)
+	log.Info(cmd.Args)
 	err := cmd.Run()
 	if err != nil {
 		log.Error("run tar: ", err)
@@ -186,6 +190,17 @@ func (s *Server) listInspections(r *http.Request) (*utils.PaginationResponse, er
 	}
 
 	return utils.NewPaginationResponse(total, inspections), nil
+}
+
+func (s *Server) getInspectionDetail(r *http.Request) (*model.Inspection, error) {
+	inspectionId := mux.Vars(r)["id"]
+
+	if inspection, err := s.model.GetInspectionDetail(inspectionId); err != nil {
+		log.Error("get inspection detail:", err)
+		return nil, utils.NewForesightError(http.StatusInternalServerError, "DB_SELECT_ERROR", "error on query database")
+	} else {
+		return inspection, nil
+	}
 }
 
 func (s *Server) createInspection(r *http.Request) (*model.Inspection, error) {

@@ -1,7 +1,6 @@
 package task
 
 import (
-	"database/sql"
 	"encoding/json"
 	"io/ioutil"
 	"math"
@@ -105,9 +104,8 @@ func (t *ParseMetricTask) Run() error {
 }
 
 // ParseMetric builds and return the ParseMetricTask
-func ParseMetric(inspectionId string, src string, data *TaskData,
-	db *sql.DB) Task {
-	return &ParseMetricTask{BaseTask{inspectionId, src, data, db}}
+func ParseMetric(base BaseTask) Task {
+	return &ParseMetricTask{base}
 }
 
 // SaveMetricTask saves the metrics into influxdb
@@ -182,7 +180,6 @@ func (t *SaveMetricTask) Run() error {
 }
 
 // SaveMetric returns an instance of SaveMetricTask
-func SaveMetric(inspectionId string, src string, data *TaskData,
-	db *sql.DB) Task {
-	return &SaveMetricTask{BaseTask{inspectionId, src, data, db}}
+func SaveMetric(base BaseTask) Task {
+	return &SaveMetricTask{base}
 }

@@ -1,7 +1,6 @@
 package task
 
 import (
-	"database/sql"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -10,8 +9,8 @@ type AnalyzeTask struct {
 	BaseTask
 }
 
-func Analyze(inspectionId string, src string, data *TaskData, db *sql.DB) Task {
-	return &AnalyzeTask {BaseTask{inspectionId, src, data, db}}
+func Analyze(base BaseTask) Task {
+	return &AnalyzeTask {base}
 }
 
 // TODO

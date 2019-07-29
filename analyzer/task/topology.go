@@ -4,7 +4,6 @@ import (
 	"path"
 	"encoding/json"
 	"io/ioutil"
-	"database/sql"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -23,8 +22,8 @@ type ParseTopologyTask struct {
 	BaseTask
 }
 
-func ParseTopology(inspectionId string, src string, data *TaskData, db *sql.DB) Task {
-	return &ParseTopologyTask {BaseTask{inspectionId, src, data, db}}
+func ParseTopology(base BaseTask) Task {
+	return &ParseTopologyTask {base}
 }
 
 func (t *ParseTopologyTask) Run() error {
