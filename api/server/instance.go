@@ -117,7 +117,7 @@ func (s *Server) importInstance(pioneerPath, inventoryPath, instanceId string) e
 			return err
 		}
 	}
-
+	
 	instance.Uuid = instanceId
 	return s.model.UpdateInstance(instance)
 }
