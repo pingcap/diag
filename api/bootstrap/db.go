@@ -59,9 +59,9 @@ CREATE TABLE IF NOT EXISTS inspection_items (
 
 CREATE TABLE IF NOT EXISTS inspection_symptoms (
 	inspection VARCHAR(64) NOT NULL,
-	type VARCHAR(16) NOT NULL,
-	description TEXT NOT NULL DEFAULT "",
-	suggestion TEXT NOT NULL DEFAULT ""
+	status VARCHAR(16) NOT NULL,
+	message TEXT NOT NULL DEFAULT "",
+	description TEXT NOT NULL DEFAULT ""
 );
 
 CREATE TABLE IF NOT EXISTS inspection_basic_info (
