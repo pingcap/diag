@@ -15,6 +15,7 @@ func main() {
 	pioneer := flag.String("pioneer", "", "tool to parse inventory.ini and get basic cluster info")
 	collector := flag.String("collector", "", "tool to collect cluster info")
 	analyzer := flag.String("analyzer", "", "tool to analyze cluster info")
+	spliter := flag.String("spliter", "", "tool to split logs")
 
 	flag.Parse()
 
@@ -30,6 +31,7 @@ func main() {
 	config.Pioneer = *pioneer
 	config.Collector = *collector
 	config.Analyzer = *analyzer
+	config.Spliter = *spliter
 
 	if config.Pioneer == "" {
 		config.Pioneer = path.Join(config.Home, "bin", "pioneer")
@@ -39,6 +41,9 @@ func main() {
 	}
 	if config.Analyzer == "" {
 		config.Analyzer = path.Join(config.Home, "bin", "analyzer")
+	}
+	if config.Spliter == "" {
+		config.Spliter = path.Join(config.Home, "bin", "spliter")
 	}
 
 	s := server.NewServer(config, db)

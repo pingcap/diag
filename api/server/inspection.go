@@ -3,14 +3,7 @@ package server
 import (
 	"context"
 	"fmt"
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/s3"
-	"github.com/google/uuid"
-	"github.com/gorilla/mux"
-	"github.com/pingcap/tidb-foresight/model"
-	"github.com/pingcap/tidb-foresight/utils"
-	log "github.com/sirupsen/logrus"
+	"time"
 	"io"
 	"net/http"
 	"os"
@@ -19,6 +12,15 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/s3"
+	"github.com/google/uuid"
+	"github.com/gorilla/mux"
+	"github.com/pingcap/tidb-foresight/model"
+	"github.com/pingcap/tidb-foresight/utils"
+	log "github.com/sirupsen/logrus"
 )
 
 func (s *Server) collect(instanceId, inspectionId string) error {
@@ -50,6 +52,10 @@ func (s *Server) collect(instanceId, inspectionId string) error {
 		fmt.Sprintf("--topology=%s", path.Join(s.config.Home, "topology", instanceId+".json")),
 		fmt.Sprintf("--data-dir=%s", path.Join(s.config.Home, "inspection")),
 		fmt.Sprintf("--collect=%s", strings.Join(items, ",")),
+		fmt.Sprintf("--log-spliter=%s", s.config.Spliter),
+		// TODO: use time range in config
+		fmt.Sprintf("--begin=%s", time.Now().Add(time.Duration(-1) * time.Hour).Format(time.RFC3339)),
+		fmt.Sprintf("--begin=%s", time.Now().Format(time.RFC3339)),
 	)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
