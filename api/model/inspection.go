@@ -11,6 +11,7 @@ type Inspection struct {
 	Uuid       string      `json:"uuid"`
 	InstanceId string      `json:"instance_id"`
 	Status     string      `json:"status"`
+	Message	   string	   `json:"message"`
 	Type       string      `json:"type"`
 	CreateTime *time.Time  `json:"create_time,omitempty"`
 	FinishTime *time.Time  `json:"finish_time,omitempty"`

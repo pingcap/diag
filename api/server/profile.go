@@ -55,11 +55,17 @@ func (s *Server) createProfile(r *http.Request) (*model.Inspection, error) {
 		err := s.profileAllProcess(instanceId, inspectionId)
 		if err != nil {
 			log.Error("profile ", inspectionId, ": ", err)
+			inspection.Status = "exception"
+			inspection.Message = "profile failed"
+			s.model.SetInspection(inspection)
 			return
 		}
 		err = s.analyze(inspectionId)
 		if err != nil {
 			log.Error("analyze ", inspectionId, ": ", err)
+			inspection.Status = "exception"
+			inspection.Message = "analyze failed"
+			s.model.SetInspection(inspection)
 			return
 		}
 	}()
