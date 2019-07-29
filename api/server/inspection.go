@@ -354,5 +354,5 @@ func (s *Server) deleteInspection(r *http.Request) (*utils.SimpleResponse, error
 		return nil, utils.NewForesightError(http.StatusInternalServerError, "DB_DELETE_ERROR", "error on delete data")
 	}
 
-	return utils.NewSimpleResponse("OK", "success"), nil
+	return nil, nil
 }
