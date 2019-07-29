@@ -127,7 +127,7 @@ func (m *Model) SetInspection(inspection *Inspection) error {
 		inspection.Tidb, inspection.Tikv, inspection.Pd, inspection.Grafana, inspection.Prometheus,
 	)
 	if err != nil {
-		log.Error("failed to call db.Exec:", err)
+		log.Error("db.Exec:", err)
 		return err
 	}
 
@@ -145,7 +145,7 @@ func (m *Model) GetInspectionDetail(inspectionId string) (*Inspection, error) {
 		&inspection.Grafana, &inspection.Prometheus,
 	)
 	if err != nil {
-		log.Error("Failed to call db.Query:", err)
+		log.Error("db.Query:", err)
 		return nil, err
 	}
 	return &inspection, nil
@@ -154,7 +154,7 @@ func (m *Model) GetInspectionDetail(inspectionId string) (*Inspection, error) {
 func (m *Model) DeleteInspection(inspectionId string) error {
 	_, err := m.db.Exec("DELETE FROM inspections WHERE id = ?", inspectionId)
 	if err != nil {
-		log.Error("failed to call db.Exec:", err)
+		log.Error("db.Exec:", err)
 		return err
 	}
 
