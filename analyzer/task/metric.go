@@ -121,7 +121,7 @@ func (t *SaveMetricTask) Run() error {
 
 	database := "inspection"
 	cli, err := influxdb.NewHTTPClient(influxdb.HTTPConfig{
-		Addr:     "http://172.16.5.7:8086",
+		Addr:     "http://127.0.0.1:8086",
 		Username: os.Getenv("INFLUX_USER"),
 		Password: os.Getenv("INFLUX_PWD"),
 	})
@@ -139,7 +139,7 @@ func (t *SaveMetricTask) Run() error {
 	}
 
 	// Use a batch method to improve the speed to import
-	step := 1000
+	step := 100
 	for idx := 0; idx < len(t.data.matrix); idx += step {
 		batch, err := influxdb.NewBatchPoints(influxdb.BatchPointsConfig{
 			Database:  database,
