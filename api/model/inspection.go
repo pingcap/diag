@@ -122,8 +122,8 @@ func (m *Model) ListInspections(instanceId string, page, size int64) ([]*Inspect
 
 func (m *Model) SetInspection(inspection *Inspection) error {
 	_, err := m.db.Exec(
-		"REPLACE INTO inspections(id,instance,status,type,tidb,tikv,pd,grafana,prometheus) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?)",
-		inspection.Uuid, inspection.InstanceId, inspection.Status, inspection.Type,
+		"REPLACE INTO inspections(id,instance,status,message,type,tidb,tikv,pd,grafana,prometheus) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+		inspection.Uuid, inspection.InstanceId, inspection.Status, inspection.Message, inspection.Type,
 		inspection.Tidb, inspection.Tikv, inspection.Pd, inspection.Grafana, inspection.Prometheus,
 	)
 	if err != nil {
@@ -137,11 +137,12 @@ func (m *Model) SetInspection(inspection *Inspection) error {
 func (m *Model) GetInspectionDetail(inspectionId string) (*Inspection, error) {
 	inspection := Inspection{}
 	err := m.db.QueryRow(
-		"SELECT id,instance,status,type,create_t,tidb,tikv,pd,grafana,prometheus FROM inspections WHERE id = ?",
+		"SELECT id,instance,status,message,type,create_t,tidb,tikv,pd,grafana,prometheus FROM inspections WHERE id = ?",
 		inspectionId,
 	).Scan(
-		&inspection.Uuid, &inspection.InstanceId, &inspection.Status, &inspection.Type, &inspection.CreateTime,
-		&inspection.Tidb, &inspection.Tikv, &inspection.Pd, &inspection.Grafana, &inspection.Prometheus,
+		&inspection.Uuid, &inspection.InstanceId, &inspection.Status, &inspection.Message, 
+		&inspection.Type, &inspection.CreateTime, &inspection.Tidb, &inspection.Tikv, &inspection.Pd, 
+		&inspection.Grafana, &inspection.Prometheus,
 	)
 	if err != nil {
 		log.Error("Failed to call db.Query:", err)
