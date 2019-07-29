@@ -43,6 +43,15 @@ def check_slowlog_args(args):
         sys.exit(1)
 
 
+def check_metric_args(args):
+    if args.begin is None:
+        print("--begin is requred when collecting metric")
+        sys.exit(1)
+    if args.end is None:
+        print("--end is requred when collecting metric")
+        sys.exit(1)
+
+
 def setup_op_groups(topology, args):
     # TODO this function is too complex to understand, design a phase
     # engine to string all things together.
@@ -62,12 +71,14 @@ def setup_op_groups(topology, args):
     target = args.collect
 
     # for some targets, they come along with an option
-    # Ex. metric:1h, slowlog:1h
+    # Ex. profile:tidb:ip:port
     items = map(lambda x: x.split(':'), target.split(','))
     options = {}
     for item in items:
         if item[0] == 'slowlog':
             check_slowlog_args(args)
+        if item[0] == 'metric':
+            check_metric_args(args)
         if groups.has_key(item[0]):
             if len(item) == 2:
                 options[item[0]] = item[1]
@@ -189,9 +200,8 @@ def setup_op_groups(topology, args):
                 port = svc['port']
                 addr = "%s:%s" % (ip, port)
                 basedir = os.path.join(datadir, inspection_id, 'metric')
-                duration = options.setdefault('metric', '1h')
                 groups['metric'].add_ops(
-                    setup_metric_ops(addr, basedir, duration))
+                    setup_metric_ops(addr, basedir, args.begin, args.end))
                 groups['metric'].add_ops(setup_alert_ops(addr,
                                                          os.path.join(datadir, inspection_id)))
             if name == 'alertmanager':
@@ -217,7 +227,7 @@ def setup_pprof_ops(addr='127.0.0.1:6060', basedir='pprof'):
     return ops
 
 
-def setup_metric_ops(addr='127.0.0.1:9090', basedir='metric', duration='1h'):
+def setup_metric_ops(addr, basedir, start, end):
     metrics = get_metrics(addr)
     if metrics['status'] != 'success':
         logging.error('get metrics failed, status:%s', metrics['status'])
@@ -227,15 +237,7 @@ def setup_metric_ops(addr='127.0.0.1:9090', basedir='metric', duration='1h'):
     join = os.path.join
 
     def op(metric):
-        end = int(time.time())
-        start = end - parse_duration(duration)
-
-        # fixed to get 60 points when the time range is large
-        step = (end - start)/60
-
-        # the value should not be too small
-        if step < 15:
-            step = 15
+        step = 30
 
         filename = join(basedir, "%s_%s_to_%s_%ss.json" %
                         (metric, start, end, step))
@@ -253,28 +255,6 @@ def setup_metric_ops(addr='127.0.0.1:9090', basedir='metric', duration='1h'):
 def setup_alert_ops(addr='127.0.0.1:9090', basedir='alert'):
     filename = os.path.join(basedir, 'alert.json')
     return [Op(AlertCollector(addr=addr), FileOutput(filename))]
-
-
-def parse_duration(duration):
-    seconds = 0
-    part = 0
-    for c in str(duration):
-        if '0' <= c <= '9':
-            part = part * 10 + (ord(c)-ord('0'))
-        elif c in ('h', 'H'):
-            seconds += part * 3600
-            part = 0
-        elif c in ('m', 'M'):
-            seconds += part * 60
-            part = 0
-        elif c == 's':
-            seconds += part
-            part = 0
-        else:
-            raise Exception("invalid format")
-    if part != 0:
-        seconds += part
-    return seconds
 
 
 def setup_db_ops(addr='127.0.0.1:10080', basedir='dbinfo'):
