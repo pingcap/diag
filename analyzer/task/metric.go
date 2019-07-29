@@ -121,7 +121,7 @@ func (t *SaveMetricTask) Run() error {
 
 	database := "inspection"
 	cli, err := influxdb.NewHTTPClient(influxdb.HTTPConfig{
-		Addr:     "http://172.16.5.7:8086",
+		Addr:     "http://127.0.0.1:8086",
 		Username: os.Getenv("INFLUX_USER"),
 		Password: os.Getenv("INFLUX_PWD"),
 	})
