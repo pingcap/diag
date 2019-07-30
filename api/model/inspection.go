@@ -76,7 +76,7 @@ func (m *Model) ListInspections(instanceId string, page, size int64) ([]*Inspect
 	inspections := []*Inspection{}
 
 	rows, err := m.db.Query(
-		"SELECT id,instance,status,message,type,create_t,tidb,tikv,pd,grafana,prometheus FROM inspections WHERE instance = ? limit ?,?",
+		"SELECT id,instance,status,message,type,create_t,tidb,tikv,pd,grafana,prometheus FROM inspections WHERE instance = ? ORDER BY create_t DESC LIMIT ?,?",
 		instanceId, (page-1)*size, size,
 	)
 	if err != nil {
