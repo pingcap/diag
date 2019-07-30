@@ -4,14 +4,11 @@ import (
 	"context"
 	"database/sql"
 	"net/http"
-	"path"
-	"time"
 
 	"github.com/pingcap/fn"
 	"github.com/pingcap/tidb-foresight/bootstrap"
 	"github.com/pingcap/tidb-foresight/model"
 	"github.com/pingcap/tidb-foresight/searcher"
-	"github.com/pingcap/tidb-foresight/syncer"
 	"github.com/pingcap/tidb-foresight/utils"
 	log "github.com/sirupsen/logrus"
 )
