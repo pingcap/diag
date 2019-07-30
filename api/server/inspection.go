@@ -32,16 +32,16 @@ func (s *Server) collect(instanceId, inspectionId string) error {
 	items := []string{"metric", "basic", "dbinfo", "config", "profile"}
 	if config != nil {
 		if config.CollectHardwareInfo {
-		//	items = append(items, "hardware")
+			//	items = append(items, "hardware")
 		}
 		if config.CollectSoftwareInfo {
-		//	items = append(items, "software")
+			//	items = append(items, "software")
 		}
 		if config.CollectLog {
-		//	items = append(items, "log")
+			//	items = append(items, "log")
 		}
 		if config.CollectDemsg {
-		//	items = append(items, "demsg")
+			//	items = append(items, "demsg")
 		}
 	}
 	cmd := exec.Command(
