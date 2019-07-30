@@ -29,10 +29,18 @@ func (s *Server) listInstance() ([]*model.Instance, error) {
 
 func (s *Server) createInstance(r *http.Request) (*model.Instance, error) {
 	uid := uuid.New().String()
-	defer r.Body.Close()
+
+        const MAX_FILE_SIZE = 32 * 1024 * 1024
+        r.ParseMultipartForm(MAX_FILE_SIZE)
+        file, _, err := r.FormFile("file")
+        if err != nil {
+                log.Error("retrieving file: ", err)
+                return nil, utils.NewForesightError(http.StatusBadRequest, "BAD_REQUEST", "error on retrieving file")
+        }
+        defer file.Close()
 
 	inventoryPath := path.Join(s.config.Home, "inventory", uid+".ini")
-	err := utils.SaveFile(r.Body, inventoryPath)
+	err = utils.SaveFile(file, inventoryPath)
 	if err != nil {
 		log.Error("save file: ", err)
 		return nil, utils.NewForesightError(http.StatusInternalServerError, "SERVER_FS_ERROR", "error on save file")
@@ -44,7 +52,7 @@ func (s *Server) createInstance(r *http.Request) (*model.Instance, error) {
 		return nil, utils.NewForesightError(http.StatusInternalServerError, "DB_INSERT_ERROR", "error on insert data")
 	}
 
-	instance := &model.Instance{Uuid: uid, CreateTime: time.Now(), Status: "running"}
+	instance := &model.Instance{Uuid: uid, CreateTime: time.Now(), Status: "pending"}
 	err = s.model.CreateInstance(instance)
 	if err != nil {
 		log.Error("create instance: ", err)
@@ -79,7 +87,8 @@ func (s *Server) deleteInstance(r *http.Request) (*utils.SimpleResponse, error) 
 
 	if err := os.Remove(path.Join(s.config.Home, "topology", uuid+".json")); err != nil {
 		log.Error("delete inventory failed: ", err)
-		e = utils.NewForesightError(http.StatusInternalServerError, "FS_DELETE_ERROR", "error on delete file")
+		// because topology.json may not exists since unsuccessful initial
+		// so do nothing here
 	}
 
 	if err := s.model.DeleteInstanceConfig(uuid); err != nil {

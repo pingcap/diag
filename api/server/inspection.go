@@ -32,21 +32,21 @@ func (s *Server) collect(instanceId, inspectionId string) error {
 	items := []string{"metric", "basic", "dbinfo", "config", "profile"}
 	if config != nil {
 		if config.CollectHardwareInfo {
-			items = append(items, "hardware")
+		//	items = append(items, "hardware")
 		}
 		if config.CollectSoftwareInfo {
-			items = append(items, "software")
+		//	items = append(items, "software")
 		}
 		if config.CollectLog {
-			items = append(items, "log")
+		//	items = append(items, "log")
 		}
 		if config.CollectDemsg {
-			items = append(items, "demsg")
+		//	items = append(items, "demsg")
 		}
 	}
 	cmd := exec.Command(
 		s.config.Collector,
-		fmt.Sprintf("--instance-id=%s", inspectionId),
+		fmt.Sprintf("--instance-id=%s", instanceId),
 		fmt.Sprintf("--inspection-id=%s", inspectionId),
 		fmt.Sprintf("--inventory=%s", path.Join(s.config.Home, "inventory", instanceId+".ini")),
 		fmt.Sprintf("--topology=%s", path.Join(s.config.Home, "topology", instanceId+".json")),

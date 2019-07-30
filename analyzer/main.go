@@ -3,6 +3,7 @@ package main
 import (
 	"database/sql"
 	"flag"
+	"fmt"
 	"path"
 	"reflect"
 	"runtime"
@@ -35,9 +36,16 @@ func NewAnalyzer(home, inspectionId string) (*Analyzer, error) {
 }
 
 func (a *Analyzer) runTasks(tasks ...func(task.BaseTask) task.Task) error {
+	base := task.NewTask(a.inspectionId, a.home, &a.data, a.db)
 	for _, t := range tasks {
-		if err := t(task.NewTask(a.inspectionId, a.home, &a.data, a.db)).Run(); err != nil {
-			log.Error("run task ", runtime.FuncForPC(reflect.ValueOf(t).Pointer()).Name(), " :", err)
+		if err := t(base).Run(); err != nil {
+			fname := runtime.FuncForPC(reflect.ValueOf(t).Pointer()).Name()
+			log.Error("run task ", fname, " :", err)
+			base.InsertSymptom(
+				"exception",
+				fmt.Sprintf("error on running analyze task: %s", fname),
+				"this error is not about the tidb cluster you are running, it's about tidb-foresight itself",
+			)
 			return err
 		}
 	}

@@ -30,7 +30,7 @@ CREATE TABLE IF NOT EXISTS configs (
 	c_metric_d INT64,
 	c_demsg INT2,
 	s_cron VARCHAR(32),
-	r_duration INT64,
+	r_duration VARCHAR(16),
 	PRIMARY KEY (instance)
 );
 

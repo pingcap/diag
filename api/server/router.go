@@ -56,7 +56,7 @@ func (s *Server) CreateRouter() http.Handler {
 	// auth
 	r.HandleFunc("/api/v1/login", s.login).Methods("POST")
 	r.Handle("/api/v1/me", fn.Wrap(s.me)).Methods("GET")
-	r.HandleFunc("/api/v1/logout", s.logout).Methods("GET")
+	r.HandleFunc("/api/v1/logout", s.logout).Methods("GET", "POST", "DELETE")
 
 	// instance
 	r.Handle("/api/v1/instances", fn.Wrap(s.listInstance)).Methods("GET")
