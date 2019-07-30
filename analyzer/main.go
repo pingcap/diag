@@ -46,13 +46,14 @@ func (a *Analyzer) runTasks(tasks ...func(task.BaseTask) task.Task) error {
 				fmt.Sprintf("error on running analyze task: %s", fname),
 				"this error is not about the tidb cluster you are running, it's about tidb-foresight itself",
 			)
+			return err
 		}
 	}
 	return nil
 }
 
 func (a *Analyzer) Run() error {
-	return a.runTasks(
+	err := a.runTasks(
 		task.Clear,
 
 		// parse stage
@@ -81,6 +82,22 @@ func (a *Analyzer) Run() error {
 		// analyze stage
 		task.Analyze,
 	)
+
+	if err == nil {
+		_, err = a.db.Exec(
+			"UPDATE inspections SET status = ? WHERE id = ?",
+			"success", a.inspectionId,
+		)
+		return err
+	} else {
+		_, err = a.db.Exec(
+			"UPDATE inspections SET status = ?, message = ? WHERE id = ?",
+			"exception", "error on running analyzer", a.inspectionId,
+		)
+		return err
+	}
+
+	return nil
 }
 
 func main() {

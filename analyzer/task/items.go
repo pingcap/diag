@@ -30,7 +30,7 @@ func (t *SaveItemsTask) Run() error {
 		message := ""
 		if t.data.args.Collect(item) {
 			if t.data.status[item].Status == "success" {
-				status = "pending"
+				status = "running"
 			} else {
 				status = "exception"
 				message = t.data.status[item].Message

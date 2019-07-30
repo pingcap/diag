@@ -124,23 +124,21 @@ func (t *SaveProfileTask) flame(src, dst string) error {
 			err = t.flameGo(path.Join(src, profile.Name()), path.Join(dst, profile.Name()+".svg"))
 			if err != nil {
 				log.Error("make flame:", err)
-				t.InsertSymptom(
+				return t.InsertSymptom(
 					"exception",
 					fmt.Sprintf("error on making flame for %s", profile.Name()),
 					"this error is not about the tidb cluster you are running, it's about tidb-foresight itself",
 				)
-				return nil
 			}
 		} else if profile.Name() == "perf.data" {
 			err = t.flameRust(path.Join(src, profile.Name()), path.Join(dst, profile.Name()+".svg"))
 			if err != nil {
 				log.Error("make flame:", err)
-				t.InsertSymptom(
+				return t.InsertSymptom(
 					"exception",
 					fmt.Sprintf("error on making flame for %s", profile.Name()),
 					"this error is not about the tidb cluster you are running, it's about tidb-foresight itself",
 				)
-				return nil
 			}
 		}
 	}
