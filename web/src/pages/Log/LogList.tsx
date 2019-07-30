@@ -3,7 +3,7 @@ import { Table, Button, DatePicker, Input, Select, Modal } from 'antd';
 import { connect } from 'dva';
 import { RangePickerValue } from 'antd/lib/date-picker/interface';
 import { ConnectState, ConnectProps, Dispatch } from '@/models/connect';
-import { LogModelState } from '@/models/log';
+import { LogModelState, ILogFile } from '@/models/log';
 import UploadRemoteReportModal from '@/components/UploadRemoteReportModal';
 import { CurrentUser } from '@/models/user';
 import UploadLocalReportModal from '@/components/UploadLocalReportModal';
@@ -35,7 +35,7 @@ const tableColumns = [
   },
 ];
 
-const logLevels = ['ALL', 'DEBUG', 'INFO', 'WARNING', 'ERROR', 'OTHERS'];
+const logLevels = ['DEBUG', 'INFO', 'WARNING', 'ERROR', 'OTHERS'];
 
 interface ReportListProps extends ConnectProps {
   dispatch: Dispatch;
@@ -45,6 +45,7 @@ interface ReportListProps extends ConnectProps {
   searchingLogs: boolean;
   loadingMoreLogs: boolean;
   loadingLogInstances: boolean;
+  loadingLogFiles: boolean;
 }
 
 function ReportList({
@@ -54,50 +55,52 @@ function ReportList({
   searchingLogs,
   loadingMoreLogs,
   loadingLogInstances,
+  loadingLogFiles,
 }: ReportListProps) {
-  const [logLevel, setLogLevel] = useState('');
-  const [selectedInstanceId, setSelectedInstanceId] = useState('');
+  // for admin
+  const [logInstanceId, setLogInstanceId] = useState<string | undefined>(undefined);
+  // for dba user
+  const [logFileId, setLogFileId] = useState<string | undefined>(undefined);
+
   const [timeRange, setTimeRange] = useState<[string, string]>(['', '']);
+  const [searchStr, setSearchStr] = useState('');
+  const [logLevel, setLogLevel] = useState('');
 
   const [uploadRemoteModalVisible, setUploadRemoteModalVisible] = useState(false);
   const [uploadLocalModalVisible, setUploadLocalModalVisible] = useState(false);
 
-  // for dba user
-  const [logId, setLogId] = useState('');
-
   useEffect(() => {
-    dispatch({ type: 'log/fetchLogInstances' });
+    if (curUser.role === 'admin') {
+      dispatch({ type: 'log/fetchLogInstances' });
+    }
+    if (curUser.role === 'dba') {
+      dispatch({ type: 'log/fetchLogFiles' });
+    }
     dispatch({ type: 'log/resetLogs' });
-  }, []);
+  }, [curUser]);
 
   function handleLogLevelChange(value: string | undefined) {
     setLogLevel(value || '');
   }
 
-  function handleInstanceChange(value: string | undefined) {
-    // 如果用户进行了 clear，value 为 undefined
-    setSelectedInstanceId(value || '');
-  }
-
   function handleRangeChange(dates: RangePickerValue, dateStrings: [string, string]) {
     // 如果用户进行了 clear，dates 为 [], dateStrings 为 ["", ""]
     if (dates[0] && dates[1]) {
-      // console.log(dates[0].format());
       setTimeRange([dates[0].format(), dates[1].format()]);
     } else {
       setTimeRange(['', '']);
     }
   }
 
-  function handleSearch(value: string) {
+  function handleSearch() {
     dispatch({
       type: 'log/searchLogs',
       payload: {
-        logInstanceId: selectedInstanceId,
-        logId,
+        logInstanceId,
+        logFileId,
         startTime: timeRange[0],
         endTime: timeRange[1],
-        search: value,
+        search: searchStr,
         logLevel,
       },
     });
@@ -111,24 +114,23 @@ function ReportList({
     dispatch({
       type: 'log/loadMoreLogs',
       payload: {
-        logInstanceId: selectedInstanceId,
-        logId,
+        logInstanceId,
+        logFileId,
       },
     });
   }
 
-  function handleLocalFileUploaded(res: any) {
-    // TODO
-    console.log(res.logId);
-    setLogId(res.logId);
+  function handleLocalFileUploaded(res: ILogFile) {
+    dispatch({ type: 'log/saveLogFile', payload: res });
+    setLogFileId(res.uuid);
   }
 
   function disableSearch(): boolean {
     if (curUser.role === 'admin') {
-      return logLevel === '' || selectedInstanceId === '' || timeRange[0] === '';
+      return logInstanceId === undefined || timeRange[0] === '';
     }
     if (curUser.role === 'dba') {
-      return logLevel === '' || logId === '';
+      return logFileId === undefined;
     }
     return false;
   }
@@ -149,7 +151,7 @@ function ReportList({
           </Button>
         )}
         {curUser.role === 'admin' && (
-          <Button type="primary" onClick={handleDownlaod} disabled={log.logs.length === 0}>
+          <Button type="primary" onClick={handleDownlaod} disabled={disableSearch()}>
             下载
           </Button>
         )}
@@ -160,17 +162,18 @@ function ReportList({
         )}
       </div>
       <div className={styles.list_header}>
-        {curUser.role === 'dba' && logId === '' && <span>请先上传本地日志文件</span>}
-        {(curUser.role === 'admin' || logId !== '') && (
+        {curUser.role === 'dba' && (
           <Select
+            value={logFileId}
+            loading={loadingLogFiles}
             allowClear
-            placeholder="选择日志级别"
-            style={{ width: 140, marginRight: 20 }}
-            onChange={handleLogLevelChange}
+            placeholder="选择历史 log 文件"
+            style={{ width: 200, marginRight: 12 }}
+            onChange={(val: any) => setLogFileId(val)}
           >
-            {logLevels.map(item => (
-              <Option value={item} key={item}>
-                {item}
+            {log.logFiles.map(item => (
+              <Option value={item.uuid} key={item.uuid}>
+                {item.filename}
               </Option>
             ))}
           </Select>
@@ -178,11 +181,12 @@ function ReportList({
         {curUser.role === 'admin' && (
           <React.Fragment>
             <Select
+              value={logInstanceId}
               loading={loadingLogInstances}
               allowClear
               placeholder="选择集群实例"
-              style={{ width: 140 }}
-              onChange={handleInstanceChange}
+              style={{ width: 200, marginRight: 12 }}
+              onChange={(val: any) => setLogInstanceId(val)}
             >
               {log.logInstances.map(item => (
                 <Option value={item.uuid} key={item.uuid}>
@@ -191,7 +195,7 @@ function ReportList({
               ))}
             </Select>
             <DatePicker.RangePicker
-              style={{ marginLeft: 12, marginRight: 12 }}
+              style={{ marginRight: 12 }}
               showTime={{ format: 'HH:mm' }}
               format="YYYY-MM-DD HH:mm"
               placeholder={['起始时间', '结束时间']}
@@ -199,16 +203,27 @@ function ReportList({
             />
           </React.Fragment>
         )}
-        {(curUser.role === 'admin' || logId !== '') && (
-          <Input.Search
-            allowClear
-            disabled={disableSearch()}
-            placeholder="search"
-            onSearch={handleSearch}
-            style={{ width: 200, height: 32 }}
-            size="small"
-          />
-        )}
+        <Select
+          allowClear
+          placeholder="选择日志级别"
+          style={{ width: 140, marginRight: 12 }}
+          onChange={handleLogLevelChange}
+        >
+          {logLevels.map(item => (
+            <Option value={item} key={item}>
+              {item}
+            </Option>
+          ))}
+        </Select>
+        <Input
+          allowClear
+          onChange={(e: any) => setSearchStr(e.target.value)}
+          placeholder="search"
+          style={{ width: 200, height: 32, marginRight: 12 }}
+        />
+        <Button type="primary" disabled={disableSearch()} onClick={handleSearch}>
+          搜索
+        </Button>
         <div className={styles.space} />
       </div>
       <br />
@@ -227,13 +242,13 @@ function ReportList({
         content="确定要将此次搜索结果上传吗？"
         visible={uploadRemoteModalVisible}
         onClose={() => setUploadRemoteModalVisible(false)}
-        uploadUrl={`/loginstances/${selectedInstanceId}/logs`}
+        uploadUrl={`/loginstances/${logInstanceId}/logs`}
       />
       <UploadLocalReportModal
         title="上传本地日志"
         visible={uploadLocalModalVisible}
         onClose={() => setUploadLocalModalVisible(false)}
-        actionUrl="/api/v1/logs"
+        actionUrl="/api/v1/logfiles"
         onData={handleLocalFileUploaded}
       />
     </div>
@@ -246,4 +261,5 @@ export default connect(({ user, log, loading }: ConnectState) => ({
   searchingLogs: loading.effects['log/searchLogs'],
   loadingMoreLogs: loading.effects['log/loadMoreLogs'],
   loadingLogInstances: loading.effects['log/fetchLogInstances'],
+  loadingLogFiles: loading.effects['log/fetchLogFiles'],
 }))(ReportList);

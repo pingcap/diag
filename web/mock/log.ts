@@ -2,10 +2,6 @@ const Mock = require('mockjs');
 
 const mockedLog = {
   time: '@datetime',
-  // filename: '@word',
-  // file() {
-  //   return `${this.filename}.log`;
-  // },
   instance_name: '@name',
   'level|1': ['DEBUG', 'INFO', 'WARNING', 'ERROR', 'OTHERS'],
   content: '@sentence',
@@ -26,7 +22,25 @@ const getLogInstances = (req: any, res: any) => {
   }, 1000);
 };
 
-const getLogs = (req: any, res: any) => {
+const getLogFiles = (req: any, res: any) => {
+  setTimeout(() => {
+    res.send(
+      Mock.mock({
+        'data|5-10': [
+          {
+            uuid: '@guid',
+            file: '@word',
+            filename() {
+              return `${this.file}.tar.gz`;
+            },
+          },
+        ],
+      }).data,
+    );
+  }, 1000);
+};
+
+const searchLogs = (req: any, res: any) => {
   setTimeout(() => {
     res.send(
       Mock.mock({
@@ -37,20 +51,27 @@ const getLogs = (req: any, res: any) => {
   }, 1000);
 };
 
-const uploadLogs = (req: any, res: any) => {
+const uploadLogFile = (req: any, res: any) => {
   setTimeout(() => {
     res.send(
       Mock.mock({
-        logId: '@guid',
+        uuid: '@guid',
+        file: '@word',
+        filename() {
+          return `${this.file}.tar.gz`;
+        },
       }),
     );
   }, 1000);
 };
 
 export default {
+  // for admin
   'GET /api/v1/loginstances': getLogInstances,
-  'GET /api/v1/loginstances/:id/logs': getLogs,
+  'GET /api/v1/loginstances/:id/logs': searchLogs,
 
-  'POST /api/v1/logs': uploadLogs,
-  'GET /api/v1/logs/:id': getLogs,
+  // for dba
+  'POST /api/v1/logfiles': uploadLogFile,
+  'GET /api/v1/logfiles': getLogFiles,
+  'GET /api/v1/logfiles/:id/logs': searchLogs,
 };

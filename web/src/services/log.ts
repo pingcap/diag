@@ -4,6 +4,12 @@ export async function queryLogInstances() {
   return request('/loginstances');
 }
 
+export async function queryLogFiles() {
+  return request('/logfiles');
+}
+
+// ////////////////
+
 export interface ILogQueryParams {
   token?: string;
 
@@ -15,11 +21,11 @@ export interface ILogQueryParams {
 }
 
 // for admin user
-export async function queryLogs(logInstanceId: string, queryParams: ILogQueryParams) {
+export async function queryInstanceLogs(logInstanceId: string, queryParams: ILogQueryParams) {
   return request(`/loginstances/${logInstanceId}/logs`, { params: queryParams });
 }
 
 // for dba user search
-export async function queryUploadedLogs(logId: string, queryParams: ILogQueryParams) {
-  return request(`/logs/${logId}`, { params: queryParams });
+export async function queryFileLogs(logFileId: string, queryParams: ILogQueryParams) {
+  return request(`/logfiles/${logFileId}/logs`, { params: queryParams });
 }

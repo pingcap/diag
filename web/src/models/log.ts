@@ -1,6 +1,12 @@
 import { Effect } from 'dva';
 import { Reducer } from 'redux';
-import { queryLogInstances, queryLogs, ILogQueryParams, queryUploadedLogs } from '@/services/log';
+import {
+  queryLogInstances,
+  queryInstanceLogs,
+  ILogQueryParams,
+  queryFileLogs,
+  queryLogFiles,
+} from '@/services/log';
 import { formatDatetime } from '@/utils/datetime-util';
 
 // /////
@@ -8,6 +14,11 @@ import { formatDatetime } from '@/utils/datetime-util';
 export interface ILogInstance {
   uuid: string;
   name: string;
+}
+
+export interface ILogFile {
+  uuid: string;
+  filename: string;
 }
 
 export interface ILog {
@@ -39,12 +50,16 @@ function convertItem(item: ILog, lineNum: number): IFormatLog {
 
 export interface LogModelState {
   logInstances: ILogInstance[];
+  logFiles: ILogFile[];
+
   logs: IFormatLog[];
   token: string;
 }
 
 const initialState: LogModelState = {
   logInstances: [],
+  logFiles: [],
+
   logs: [],
   token: '',
 };
@@ -56,12 +71,15 @@ export interface LogModelType {
   state: LogModelState;
   effects: {
     fetchLogInstances: Effect;
+    fetchLogFiles: Effect;
 
     searchLogs: Effect;
     loadMoreLogs: Effect;
   };
   reducers: {
     saveLogInstances: Reducer<LogModelState>;
+    saveLogFiles: Reducer<LogModelState>;
+    saveLogFile: Reducer<LogModelState>;
 
     resetLogs: Reducer<LogModelState>;
     saveLogs: Reducer<LogModelState>;
@@ -85,10 +103,20 @@ const MiscModel: LogModelType = {
         });
       }
     },
+    *fetchLogFiles({ _ }, { call, put }) {
+      const res: ILogFile[] | undefined = yield call(queryLogFiles);
+      if (res) {
+        yield put({
+          type: 'saveLogFiles',
+          payload: res,
+        });
+      }
+    },
+
     *searchLogs({ payload }, { call, put }) {
       yield put({ type: 'resetLogs' });
 
-      const { logInstanceId, logId, search, startTime, endTime, logLevel } = payload;
+      const { logInstanceId, logFileId, search, startTime, endTime, logLevel } = payload;
       const parms: ILogQueryParams = {
         search,
         start_time: startTime,
@@ -98,9 +126,9 @@ const MiscModel: LogModelType = {
       };
       let res: ILogsRes | undefined;
       if (logInstanceId) {
-        res = yield call(queryLogs, logInstanceId, parms);
+        res = yield call(queryInstanceLogs, logInstanceId, parms);
       } else {
-        res = yield call(queryUploadedLogs, logId, parms);
+        res = yield call(queryFileLogs, logFileId, parms);
       }
       if (res) {
         yield put({
@@ -110,13 +138,13 @@ const MiscModel: LogModelType = {
       }
     },
     *loadMoreLogs({ payload }, { call, put, select }) {
-      const { logInstanceId, logId } = payload;
+      const { logInstanceId, logFileId } = payload;
       const token = yield select((state: any) => state.log.token);
       let res: ILogsRes | undefined;
       if (logInstanceId) {
-        res = yield call(queryLogs, logInstanceId, { token });
+        res = yield call(queryInstanceLogs, logInstanceId, { token });
       } else {
-        res = yield call(queryUploadedLogs, logId, { token });
+        res = yield call(queryFileLogs, logFileId, { token });
       }
       if (res) {
         yield put({
@@ -131,6 +159,18 @@ const MiscModel: LogModelType = {
       return {
         ...state,
         logInstances: payload,
+      };
+    },
+    saveLogFiles(state = initialState, { payload }) {
+      return {
+        ...state,
+        logFiles: payload,
+      };
+    },
+    saveLogFile(state = initialState, { payload }) {
+      return {
+        ...state,
+        logFiles: [payload as ILogFile].concat(state.logFiles),
       };
     },
 
