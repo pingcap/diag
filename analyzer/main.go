@@ -46,7 +46,6 @@ func (a *Analyzer) runTasks(tasks ...func(task.BaseTask) task.Task) error {
 				fmt.Sprintf("error on running analyze task: %s", fname),
 				"this error is not about the tidb cluster you are running, it's about tidb-foresight itself",
 			)
-			return err
 		}
 	}
 	return nil
