@@ -67,16 +67,17 @@ func (a *Analyzer) Run() error {
 		task.ParseAlert,
 		task.ParseInsight,
 
-		// save stage
-		task.SaveItems,
-		task.SaveInspection,
-		task.SaveBasicInfo,
-		task.SaveDBInfo,
-		task.SaveSlowLogInfo,
-		task.SaveAlert,
-		task.SaveHardwareInfo,
-		task.SaveDmesg,
-		task.SaveProfile,
+    // save stage
+    task.SaveItems,
+    task.SaveInspection,
+    task.SaveBasicInfo,
+    task.SaveDBInfo,
+    task.SaveSlowLogInfo,
+    task.SaveNetwork,
+    task.SaveAlert,
+    task.SaveHardwareInfo,
+    task.SaveDmesg,
+    task.SaveProfile,
 
 		// analyze stage
 		task.Analyze,

@@ -1,4 +1,4 @@
-package syncer_test
+package main_test
 
 import (
 	"fmt"
@@ -8,7 +8,6 @@ import (
 	"time"
 
 	. "github.com/pingcap/check"
-	"github.com/pingcap/tidb-foresight/syncer"
 )
 
 type taskManagerTestSuit struct{}
@@ -19,34 +18,34 @@ func (s *taskManagerTestSuit) TestRunTasks(c *C) {
 	from, to := createTestTempDir("TestRunTasks", c)
 	createLogFiles(from, c)
 
-	manager := syncer.TaskManager{
+	manager := TaskManager{
 		Interval: 1 * time.Second,
-		Cfg: syncer.RsyncConfig{
+		Cfg: RsyncConfig{
 			Args: []string{"-avz", fmt.Sprintf("--bwlimit=%d", 1000)},
 		},
-		TodoTaskCh: make(chan syncer.SyncTask, 1),
+		TodoTaskCh: make(chan SyncTask, 1),
 		StopCh:     make(chan struct{}),
 	}
-	task := syncer.SyncTask{
+	task := SyncTask{
 		Key:     "tikv_1",
 		From:    from,
 		To:      to,
 		Filters: []string{"tikv*"},
 	}
-	manager.RunTasks([]syncer.SyncTask{task})
+	manager.RunTasks([]SyncTask{task})
 	go func() {
 		time.Sleep(2 * time.Second)
-		task := syncer.SyncTask{
+		task := SyncTask{
 			Key:     "tikv_2",
 			From:    from,
 			To:      to,
 			Filters: []string{"tikv*"},
 		}
-		manager.RunTasks([]syncer.SyncTask{task})
+		manager.RunTasks([]SyncTask{task})
 	}()
 	go func() {
 		time.Sleep(5 * time.Second)
-		manager.RunTasks([]syncer.SyncTask{})
+		manager.RunTasks([]SyncTask{})
 	}()
 	go func() {
 		time.Sleep(7 * time.Second)
