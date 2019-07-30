@@ -27,8 +27,6 @@ def main():
                         required=True, help="inspection identity")
     parser.add_argument("--data-dir", type=str,
                         required=True, help="data directory")
-    parser.add_argument("--inventory", type=str,
-                        required=True, help="inventory file")
     parser.add_argument("--topology", type=str,
                         required=True, help="topology.json")
     parser.add_argument("--collect", type=str,
