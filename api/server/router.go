@@ -51,12 +51,12 @@ func (s *Server) CreateRouter() http.Handler {
 	r := mux.NewRouter()
 	AttachProfiler(r)
 
-	//fn.Plugin(s.auth)
+	fn.Plugin(s.auth)
 
 	// auth
 	r.HandleFunc("/api/v1/login", s.login).Methods("POST")
 	r.Handle("/api/v1/me", fn.Wrap(s.me)).Methods("GET")
-	r.HandleFunc("/api/v1/logout", s.logout).Methods("GET")
+	r.HandleFunc("/api/v1/logout", s.logout).Methods("GET", "POST", "DELETE")
 
 	// instance
 	r.Handle("/api/v1/instances", fn.Wrap(s.listInstance)).Methods("GET")

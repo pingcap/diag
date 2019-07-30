@@ -1,16 +1,16 @@
 package task
 
 import (
-	"path"
 	"encoding/json"
-	"io/ioutil"
 	log "github.com/sirupsen/logrus"
+	"io/ioutil"
+	"path"
 )
 
 type Topology struct {
 	ClusterName string `json:"cluster_name"`
-	Hosts []struct {
-		Ip string `json:"ip"`
+	Hosts       []struct {
+		Ip         string `json:"ip"`
 		Components []struct {
 			Name string `json:"name"`
 			Port string `json:"port"`
@@ -23,7 +23,7 @@ type ParseTopologyTask struct {
 }
 
 func ParseTopology(base BaseTask) Task {
-	return &ParseTopologyTask {base}
+	return &ParseTopologyTask{base}
 }
 
 func (t *ParseTopologyTask) Run() error {

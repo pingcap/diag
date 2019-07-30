@@ -1,28 +1,28 @@
 package model
 
 import (
-	"path"
-	"time"
 	"io/ioutil"
+	"path"
 	"strings"
+	"time"
 
 	log "github.com/sirupsen/logrus"
 )
 
 type Profile struct {
-	Uuid string `json:"uuid"`
-	InstanceName string `json:"instance_name"`
-	Status string `json:"status"`
-	StartTime time.Time `json:"start_time"`
-	EndTime time.Time `json:"end_time"`
-	Items []ProfileItem `json:"items"`
+	Uuid         string        `json:"uuid"`
+	InstanceName string        `json:"instance_name"`
+	Status       string        `json:"status"`
+	StartTime    time.Time     `json:"start_time"`
+	EndTime      time.Time     `json:"end_time"`
+	Items        []ProfileItem `json:"items"`
 }
 
 type ProfileItem struct {
-	Component string `json:"component"`
-	Address string `json:"address"`
-	Flames	[]string `json:"flames"`
-	Metas []string `json:"metas"`
+	Component string   `json:"component"`
+	Address   string   `json:"address"`
+	Flames    []string `json:"flames"`
+	Metas     []string `json:"metas"`
 }
 
 func (p *Profile) loadItems(dir string) error {
@@ -54,9 +54,9 @@ func (p *Profile) loadItems(dir string) error {
 
 		p.Items = append(p.Items, ProfileItem{
 			Component: xs[0],
-			Address: xs[1],
-			Metas: ms,
-			Flames: fs,
+			Address:   xs[1],
+			Metas:     ms,
+			Flames:    fs,
 		})
 	}
 
@@ -128,7 +128,7 @@ func (m *Model) ListProfiles(instanceId string, page, size int64, profileDir str
 	}
 	defer rows.Close()
 
-	for rows.Next() { 
+	for rows.Next() {
 		profile := Profile{}
 		err := rows.Scan(&profile.Uuid, &profile.InstanceName, &profile.Status, &profile.StartTime, &profile.EndTime)
 		if err != nil {

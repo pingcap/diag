@@ -1,26 +1,26 @@
 package task
 
 import (
-	"os"
-	"path"
-	"io/ioutil"
 	"encoding/json"
 	log "github.com/sirupsen/logrus"
+	"io/ioutil"
+	"os"
+	"path"
 )
 
 type Insight []*InsightInfo
 
 type InsightInfo struct {
 	NodeIp string
-	Info struct {
+	Info   struct {
 		Meta struct {
-			Tidb []struct{
+			Tidb []struct {
 				Version string `json:"release_version"`
 			} `json:"tidb"`
-			Tikv []struct{
+			Tikv []struct {
 				Version string `json:"release_version"`
 			} `json:"tikv"`
-			Pd []struct{
+			Pd []struct {
 				Version string `json:"release_version"`
 			} `json:"pd"`
 		} `json:"meta"`
@@ -36,24 +36,24 @@ type InsightInfo struct {
 			Model string `json:"model"`
 		} `json:"cpu"`
 		Memory struct {
-			Type string `json:"type"`
-			Speed int `json:"speed"`
-			Size int `json:"size"`
+			Type  string `json:"type"`
+			Speed int    `json:"speed"`
+			Size  int    `json:"size"`
 		} `json:"memory"`
 		Storage []struct {
 			Name string `json:"name"`
 		} `json:"storage"`
 		Network []struct {
-			Name string `json:"name"`
-			Speed int `json:"speed"`
+			Name  string `json:"name"`
+			Speed int    `json:"speed"`
 		} `json:"network"`
 		Ntp struct {
-			Sync string `json:"sync"`
+			Sync   string  `json:"sync"`
 			Offset float64 `json:"offset"`
-			Status string `json:"status"`
+			Status string  `json:"status"`
 		} `json:"ntp"`
 		Partitions []struct {
-			Name string `json:"name"`
+			Name   string `json:"name"`
 			Subdev []struct {
 				Name string `json:"name"`
 			} `json:"subdev"`
@@ -66,13 +66,13 @@ type ParseInsightTask struct {
 }
 
 func ParseInsight(base BaseTask) Task {
-	return &ParseInsightTask {base}
+	return &ParseInsightTask{base}
 }
 
 func (t *ParseInsightTask) Run() error {
 	insight := Insight{}
 
-	if !t.data.collect[ITEM_BASIC] || t.data.status[ITEM_BASIC].Status != "success" {
+	if !t.data.args.Collect(ITEM_BASIC) || t.data.status[ITEM_BASIC].Status != "success" {
 		return nil
 	}
 

@@ -1,10 +1,10 @@
 package main
 
 import (
-	"io"
-	"time"
 	"bufio"
+	"io"
 	"regexp"
+	"time"
 )
 
 const (
@@ -60,7 +60,7 @@ func (s *SlowLogSpliter) Spit(r io.Reader, w io.Writer, begin, end time.Time) er
 		if s.isQuery(line) {
 			s.status = SEARCHING
 		}
-    }
+	}
 
 	return nil
 }

@@ -1,14 +1,14 @@
 package task
 
 import (
-	"path"
-	"io/ioutil"
 	"encoding/json"
 	log "github.com/sirupsen/logrus"
+	"io/ioutil"
+	"path"
 )
 
 type ItemStatus map[string]struct {
-	Status string `json:"status"`
+	Status  string `json:"status"`
 	Message string `json:"message"`
 }
 
@@ -17,7 +17,7 @@ type ParseStatusTask struct {
 }
 
 func ParseStatus(base BaseTask) Task {
-	return &ParseStatusTask {base}
+	return &ParseStatusTask{base}
 }
 
 func (t *ParseStatusTask) Run() error {

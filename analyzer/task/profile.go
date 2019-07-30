@@ -3,11 +3,11 @@ package task
 import (
 	"fmt"
 	"io"
-	"strings"
+	"io/ioutil"
 	"os"
 	"os/exec"
 	"path"
-	"io/ioutil"
+	"strings"
 
 	"github.com/pingcap/tidb-foresight/analyzer/utils"
 	log "github.com/sirupsen/logrus"
@@ -18,11 +18,11 @@ type SaveProfileTask struct {
 }
 
 func SaveProfile(base BaseTask) Task {
-	return &SaveProfileTask {base}
+	return &SaveProfileTask{base}
 }
 
 func (t *SaveProfileTask) Run() error {
-	if !t.data.collect[ITEM_PROFILE] || t.data.status[ITEM_PROFILE].Status != "success" {
+	if !t.data.args.Collect(ITEM_PROFILE) || t.data.status[ITEM_PROFILE].Status != "success" {
 		return nil
 	}
 
@@ -43,15 +43,15 @@ func (t *SaveProfileTask) Run() error {
 		for _, addr := range addrs {
 			if err = t.copy(
 				path.Join(t.src, "profile", comp.Name(), addr.Name()),
-				path.Join(t.profile, comp.Name() + "-" + addr.Name(), "meta"),
+				path.Join(t.profile, comp.Name()+"-"+addr.Name(), "meta"),
 			); err != nil {
 				log.Error("copy:", err)
 				return err
 			}
 
 			if err = t.flame(
-				path.Join(t.profile, comp.Name() + "-" + addr.Name(), "meta"),
-				path.Join(t.profile, comp.Name() + "-" + addr.Name(), "flame"),
+				path.Join(t.profile, comp.Name()+"-"+addr.Name(), "meta"),
+				path.Join(t.profile, comp.Name()+"-"+addr.Name(), "flame"),
 			); err != nil {
 				log.Error("make flame:", err)
 				return err
@@ -121,16 +121,26 @@ func (t *SaveProfileTask) flame(src, dst string) error {
 
 	for _, profile := range profiles {
 		if strings.HasSuffix(profile.Name(), ".pb.gz") {
-			err = t.flameGo(path.Join(src, profile.Name()), path.Join(dst, profile.Name() + ".svg"))
+			err = t.flameGo(path.Join(src, profile.Name()), path.Join(dst, profile.Name()+".svg"))
 			if err != nil {
 				log.Error("make flame:", err)
-				return err
+				t.InsertSymptom(
+					"exception",
+					fmt.Sprintf("error on making flame for %s", profile.Name()),
+					"this error is not about the tidb cluster you are running, it's about tidb-foresight itself",
+				)
+				return nil
 			}
 		} else if profile.Name() == "perf.data" {
-			err = t.flameRust(path.Join(src, profile.Name()), path.Join(dst, profile.Name() + ".svg"))
+			err = t.flameRust(path.Join(src, profile.Name()), path.Join(dst, profile.Name()+".svg"))
 			if err != nil {
 				log.Error("make flame:", err)
-				return err
+				t.InsertSymptom(
+					"exception",
+					fmt.Sprintf("error on making flame for %s", profile.Name()),
+					"this error is not about the tidb cluster you are running, it's about tidb-foresight itself",
+				)
+				return nil
 			}
 		}
 	}

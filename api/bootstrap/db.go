@@ -30,7 +30,7 @@ CREATE TABLE IF NOT EXISTS configs (
 	c_metric_d INT64,
 	c_demsg INT2,
 	s_cron VARCHAR(32),
-	r_duration INT64,
+	r_duration VARCHAR(16),
 	PRIMARY KEY (instance)
 );
 
@@ -38,13 +38,15 @@ CREATE TABLE IF NOT EXISTS inspections (
 	id VARCHAR(64) NOT NULL,
 	instance VARCHAR(64) NOT NULL,
 	status VARCHAR(32) NOT NULL,
+	message TEXT NOT NULL DEFAULT "",
 	type VARCHAR(16) NOT NULL,
 	tidb VARCHAR(256) NOT NULL DEFAULT "",
 	tikv VARCHAR(256) NOT NULL DEFAULT "",
 	pd VARCHAR(256) NOT NULL DEFAULT "",
 	grafana VARCHAR(256) NOT NULL DEFAULT "",
 	prometheus VARCHAR(256) NOT NULL DEFAULT "",
-	create_t DATETIME DEFAULT CURRENT_TIMESTAMP
+	create_t DATETIME DEFAULT CURRENT_TIMESTAMP,
+	PRIMARY KEY (id)
 );
 
 CREATE TABLE IF NOT EXISTS inspection_items (
@@ -57,9 +59,9 @@ CREATE TABLE IF NOT EXISTS inspection_items (
 
 CREATE TABLE IF NOT EXISTS inspection_symptoms (
 	inspection VARCHAR(64) NOT NULL,
-	type VARCHAR(16) NOT NULL,
-	description TEXT NOT NULL DEFAULT "",
-	suggestion TEXT NOT NULL DEFAULT ""
+	status VARCHAR(16) NOT NULL,
+	message TEXT NOT NULL DEFAULT "",
+	description TEXT NOT NULL DEFAULT ""
 );
 
 CREATE TABLE IF NOT EXISTS inspection_basic_info (

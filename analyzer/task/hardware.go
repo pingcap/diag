@@ -12,11 +12,11 @@ type SaveHardwareInfoTask struct {
 }
 
 func SaveHardwareInfo(base BaseTask) Task {
-	return &SaveHardwareInfoTask {base}
+	return &SaveHardwareInfoTask{base}
 }
 
 func (t *SaveHardwareInfoTask) Run() error {
-	if !t.data.collect[ITEM_BASIC] || t.data.status[ITEM_BASIC].Status != "success" {
+	if !t.data.args.Collect(ITEM_BASIC) || t.data.status[ITEM_BASIC].Status != "success" {
 		return nil
 	}
 
@@ -32,7 +32,7 @@ func (t *SaveHardwareInfoTask) Run() error {
 			networks = append(networks, fmt.Sprintf("%s:%d", network.Name, network.Speed))
 		}
 		if _, err := t.db.Exec(
-			`INSERT INTO inspection_hardware(inspection, cpu, memory, disk, network) VALUES(?, ?, ?, ?, ?)`, 
+			`INSERT INTO inspection_hardware(inspection, cpu, memory, disk, network) VALUES(?, ?, ?, ?, ?)`,
 			t.inspectionId, cpu, memory, strings.Join(disks, ","), strings.Join(networks, ","),
 		); err != nil {
 			log.Error("db.Exec: ", err)

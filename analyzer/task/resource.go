@@ -8,14 +8,14 @@ import (
 )
 
 type Resource struct {
-	AvgCPU float64
-	MaxCPU float64
-	AvgMem float64
-	MaxMem float64
+	AvgCPU    float64
+	MaxCPU    float64
+	AvgMem    float64
+	MaxMem    float64
 	AvgIoUtil float64
 	MaxIoUtil float64
-	AvgDisk float64
-	MaxDisk float64
+	AvgDisk   float64
+	MaxDisk   float64
 }
 
 type ParseResourceTask struct {
@@ -23,7 +23,7 @@ type ParseResourceTask struct {
 }
 
 func ParseResource(base BaseTask) Task {
-	return &ParseResourceTask {base}
+	return &ParseResourceTask{base}
 }
 
 func (t *ParseResourceTask) Run() error {
@@ -59,6 +59,6 @@ func (t *ParseResourceTask) Run() error {
 
 func (t *ParseResourceTask) ResourceUtil(query string) utils.FloatArray {
 	inspectTime := time.Unix(int64(t.data.meta.InspectTime), 0)
-	v, _ := utils.QueryPromRange(query, inspectTime.Add(-1 * time.Hour), inspectTime, time.Minute)
+	v, _ := utils.QueryPromRange(query, inspectTime.Add(-1*time.Hour), inspectTime, time.Minute)
 	return v
 }

@@ -1,14 +1,14 @@
 package utils
 
 import (
-	"time"
-	"errors"
 	"context"
+	"errors"
+	"time"
 
-	log "github.com/sirupsen/logrus"
 	"github.com/prometheus/client_golang/api"
 	prom "github.com/prometheus/client_golang/api/prometheus/v1"
 	pm "github.com/prometheus/common/model"
+	log "github.com/sirupsen/logrus"
 )
 
 func QueryProm(query string, t time.Time) (*float64, error) {

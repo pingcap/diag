@@ -130,7 +130,7 @@ func SaveSlowLogInfo(base BaseTask) Task {
 }
 
 func (t *SaveSlowLogTask) Run() error {
-	if !t.data.collect[ITEM_LOG] || t.data.status[ITEM_LOG].Status != "success" {
+	if !t.data.args.Collect(ITEM_LOG) || t.data.status[ITEM_LOG].Status != "success" {
 		return nil
 	}
 

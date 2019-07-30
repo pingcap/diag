@@ -1,10 +1,10 @@
 package task
 
 import (
+	"encoding/json"
 	"os"
 	"path"
 	"time"
-	"encoding/json"
 
 	log "github.com/sirupsen/logrus"
 )
@@ -21,21 +21,21 @@ type ParseAlertTask struct {
 }
 
 func ParseAlert(base BaseTask) Task {
-	return &ParseAlertTask {base}
+	return &ParseAlertTask{base}
 }
 
 func (t *ParseAlertTask) Run() error {
-	if !t.data.collect[ITEM_METRIC] || t.data.status[ITEM_METRIC].Status != "success" {
+	if !t.data.args.Collect(ITEM_METRIC) || t.data.status[ITEM_METRIC].Status != "success" {
 		return nil
 	}
 
 	r := struct {
 		Status string `json:"status"`
-		Data struct {
+		Data   struct {
 			Result AlertInfo `json:"result"`
 		} `json:"data"`
 	}{}
-	
+
 	f, err := os.Open(path.Join(t.src, "alert.json"))
 	if err != nil {
 		log.Error("open file: ", err)
@@ -62,11 +62,11 @@ type SaveAlertTask struct {
 }
 
 func SaveAlert(base BaseTask) Task {
-	return &SaveAlertTask {base}
+	return &SaveAlertTask{base}
 }
 
 func (t *SaveAlertTask) Run() error {
-	if !t.data.collect[ITEM_METRIC] || t.data.status[ITEM_METRIC].Status != "success" {
+	if !t.data.args.Collect(ITEM_METRIC) || t.data.status[ITEM_METRIC].Status != "success" {
 		return nil
 	}
 
@@ -85,7 +85,7 @@ func (t *SaveAlertTask) Run() error {
 			continue
 		}
 		if _, err := t.db.Exec(
-			`INSERT INTO inspection_alerts(inspection, name, value, time) VALUES(?, ?, ?, ?)`, 
+			`INSERT INTO inspection_alerts(inspection, name, value, time) VALUES(?, ?, ?, ?)`,
 			t.inspectionId, alert.Metric.Name, time.Unix(int64(ts), 0), v,
 		); err != nil {
 			log.Error("db.Exec: ", err)

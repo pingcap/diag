@@ -2,6 +2,8 @@ package model
 
 import (
 	"database/sql"
+	"strings"
+
 	log "github.com/sirupsen/logrus"
 )
 
@@ -15,7 +17,7 @@ type Config struct {
 	CollectDemsg          bool   `json:"collect_demsg"`
 	AutoSchedDuration     string `json:"auto_sched_duration"`
 	AutoSchedStart        string `json:"auto_sched_start"`
-	ReportKeepDuration    int    `json:"report_keep_duration"`
+	ReportKeepDuration    string `json:"report_keep_duration"`
 }
 
 func DefaultInstanceConfig(instanceId string) *Config {
@@ -37,11 +39,18 @@ func (m *Model) GetInstanceConfig(instanceId string) (*Config, error) {
 		&config.InstanceId, &cHardw, &cSoftw, &cLog, &config.CollectLogDuration,
 		&config.CollectMetricDuration, &cDemsg, &sCron, &config.ReportKeepDuration,
 	)
+	ss := strings.Split(sCron, "/")
 	if err == nil {
 		config.CollectHardwareInfo = cHardw != 0
 		config.CollectSoftwareInfo = cSoftw != 0
 		config.CollectLog = cLog != 0
 		config.CollectDemsg = cDemsg != 0
+		if len(ss) > 0 {
+			config.AutoSchedStart = ss[0]
+		}
+		if len(ss) > 1 {
+			config.AutoSchedDuration = ss[1]
+		}
 		return config, nil
 	} else if err == sql.ErrNoRows {
 		log.Error("no config for instance ", instanceId, ": ", err)
@@ -65,7 +74,7 @@ func (m *Model) SetInstanceConfig(config *Config) error {
 		VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 		config.InstanceId, toInt(config.CollectHardwareInfo), toInt(config.CollectSoftwareInfo),
 		toInt(config.CollectLog), config.CollectLogDuration, config.CollectMetricDuration, toInt(config.CollectDemsg),
-		"", config.ReportKeepDuration,
+		config.AutoSchedStart + "/" + config.AutoSchedDuration, config.ReportKeepDuration,
 	)
 
 	return err

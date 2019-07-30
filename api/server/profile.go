@@ -2,9 +2,9 @@ package server
 
 import (
 	"fmt"
-	"os"
 	"io"
 	"net/http"
+	"os"
 	"os/exec"
 	"path"
 	"strconv"
@@ -55,11 +55,17 @@ func (s *Server) createProfile(r *http.Request) (*model.Inspection, error) {
 		err := s.profileAllProcess(instanceId, inspectionId)
 		if err != nil {
 			log.Error("profile ", inspectionId, ": ", err)
+			inspection.Status = "exception"
+			inspection.Message = "profile failed"
+			s.model.SetInspection(inspection)
 			return
 		}
 		err = s.analyze(inspectionId)
 		if err != nil {
 			log.Error("analyze ", inspectionId, ": ", err)
+			inspection.Status = "exception"
+			inspection.Message = "analyze failed"
+			s.model.SetInspection(inspection)
 			return
 		}
 	}()
@@ -77,7 +83,7 @@ func (s *Server) listProfiles(r *http.Request) (*utils.PaginationResponse, error
 	if err != nil {
 		size = 10
 	}
-	
+
 	profiles, total, err := s.model.ListProfiles(instanceId, page, size, path.Join(s.config.Home, "profile"))
 	if err != nil {
 		log.Error("list inspections: ", err)
@@ -96,7 +102,7 @@ func (s *Server) listAllProfiles(r *http.Request) (*utils.PaginationResponse, er
 	if err != nil {
 		size = 10
 	}
-	
+
 	profiles, total, err := s.model.ListAllProfiles(page, size, path.Join(s.config.Home, "profile"))
 	if err != nil {
 		log.Error("list inspections: ", err)
@@ -111,7 +117,7 @@ func (s *Server) getProfile(w http.ResponseWriter, r *http.Request) {
 	addr := mux.Vars(r)["address"]
 	tp := mux.Vars(r)["type"]
 	file := mux.Vars(r)["file"]
-	fpath := path.Join(s.config.Home, "profile", uuid, comp + "-" + addr, tp, file)
+	fpath := path.Join(s.config.Home, "profile", uuid, comp+"-"+addr, tp, file)
 
 	if _, err := os.Stat(fpath); os.IsNotExist(err) {
 		log.Info("profile not found:", fpath)

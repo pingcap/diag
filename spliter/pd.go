@@ -9,7 +9,7 @@ type PdLogSpliter struct {
 }
 
 func NewPdLogSpliter() Spliter {
-	return &PdLogSpliter{*NewLogSpliter(func (line string) *time.Time {
+	return &PdLogSpliter{*NewLogSpliter(func(line string) *time.Time {
 		if len(line) < 23 {
 			return nil
 		}

@@ -5,16 +5,16 @@ import (
 )
 
 type Symptom struct {
-	Type		string	`json:"type"`
-	Description string  `json:"description"`
-	Suggestion  string  `json:"suggesion"`
+	Status      string `json:"status"`
+	Message     string `json:"message"`
+	Description string `json:"description"`
 }
 
 func (r *Report) loadSymptoms() error {
 	symptoms := []*Symptom{}
 
 	rows, err := r.db.Query(
-		`SELECT type, description, suggestion FROM inspection_symptoms WHERE inspection = ?`,
+		`SELECT status, message, description FROM inspection_symptoms WHERE inspection = ?`,
 		r.inspectionId,
 	)
 	if err != nil {
@@ -25,7 +25,7 @@ func (r *Report) loadSymptoms() error {
 
 	for rows.Next() {
 		symptom := Symptom{}
-		err = rows.Scan(&symptom.Type, &symptom.Description, &symptom.Suggestion)
+		err = rows.Scan(&symptom.Status, &symptom.Message, &symptom.Description)
 		if err != nil {
 			log.Error("db.Query:", err)
 			return err

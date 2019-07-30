@@ -1,11 +1,11 @@
 package task
 
 import (
+	"encoding/json"
+	"io/ioutil"
 	"os"
 	"path"
 	"strings"
-	"io/ioutil"
-	"encoding/json"
 
 	log "github.com/sirupsen/logrus"
 )
@@ -13,7 +13,7 @@ import (
 type DBInfo []*Database
 
 type Database struct {
-	Name string
+	Name   string
 	Tables []*Table
 }
 
@@ -30,21 +30,20 @@ type ParseDBInfoTask struct {
 	BaseTask
 }
 
-
 type SaveDBInfoTask struct {
 	BaseTask
 }
 
 func ParseDBInfo(base BaseTask) Task {
-	return &ParseDBInfoTask {base}
+	return &ParseDBInfoTask{base}
 }
 
 func SaveDBInfo(base BaseTask) Task {
-	return &SaveDBInfoTask {base}
+	return &SaveDBInfoTask{base}
 }
 
 func (t *ParseDBInfoTask) Run() error {
-	if !t.data.collect[ITEM_DBINFO] || t.data.status[ITEM_DBINFO].Status != "success" {
+	if !t.data.args.Collect(ITEM_DBINFO) || t.data.status[ITEM_DBINFO].Status != "success" {
 		return nil
 	}
 
@@ -67,7 +66,7 @@ func (t *ParseDBInfoTask) Run() error {
 			return err
 		}
 		dbinfo = append(dbinfo, &Database{
-			Name: strings.TrimSuffix(db.Name(), ".json"),
+			Name:   strings.TrimSuffix(db.Name(), ".json"),
 			Tables: tbs,
 		})
 	}
@@ -96,7 +95,7 @@ func parseTables(file string) ([]*Table, error) {
 }
 
 func (t *SaveDBInfoTask) Run() error {
-	if !t.data.collect[ITEM_DBINFO] || t.data.status[ITEM_DBINFO].Status != "success" {
+	if !t.data.args.Collect(ITEM_DBINFO) || t.data.status[ITEM_DBINFO].Status != "success" {
 		return nil
 	}
 

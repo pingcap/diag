@@ -1,16 +1,15 @@
 package main
 
 import (
-	"io"
-	"os"
-	"fmt"
-	"path"
-	"time"
 	"bufio"
-	"strings"
+	"fmt"
+	"io"
 	"io/ioutil"
+	"os"
+	"path"
+	"strings"
+	"time"
 )
-
 
 type Spliter interface {
 	Spit(io.Reader, io.Writer, time.Time, time.Time) error
@@ -75,7 +74,7 @@ func copy(src, dst string, begin, end time.Time) error {
 }
 
 type LogSpliter struct {
-	matched bool
+	matched    bool
 	timeParser func(string) *time.Time
 }
 
@@ -105,7 +104,7 @@ func (s *LogSpliter) Spit(r io.Reader, w io.Writer, begin, end time.Time) error 
 				w.Write([]byte(line + "\n"))
 			}
 		}
-    }
+	}
 
 	return nil
 }

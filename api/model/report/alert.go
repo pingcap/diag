@@ -5,9 +5,9 @@ import (
 )
 
 type AlertInfo struct {
-	Name       string `json:"name"`
-	Value 		string `json:"value"`
-	Time       string `json:"time"`
+	Name  string `json:"name"`
+	Value string `json:"value"`
+	Time  string `json:"time"`
 }
 
 func (r *Report) loadAlertInfo() error {

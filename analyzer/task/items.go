@@ -5,12 +5,12 @@ import (
 )
 
 const (
-	ITEM_BASIC = "basic"
-	ITEM_DBINFO = "dbinfo"
-	ITEM_METRIC = "metric"
-	ITEM_CONFIG = "config"
+	ITEM_BASIC   = "basic"
+	ITEM_DBINFO  = "dbinfo"
+	ITEM_METRIC  = "metric"
+	ITEM_CONFIG  = "config"
 	ITEM_PROFILE = "profile"
-	ITEM_LOG = "log"
+	ITEM_LOG     = "log"
 )
 
 type SaveItemsTask struct {
@@ -18,7 +18,7 @@ type SaveItemsTask struct {
 }
 
 func SaveItems(base BaseTask) Task {
-	return &SaveItemsTask {base}
+	return &SaveItemsTask{base}
 }
 
 func (t *SaveItemsTask) Run() error {
@@ -28,12 +28,12 @@ func (t *SaveItemsTask) Run() error {
 	for _, item := range items {
 		status := "none"
 		message := ""
-		if t.data.collect[item] {
+		if t.data.args.Collect(item) {
 			if t.data.status[item].Status == "success" {
-					status = "pending"
+				status = "pending"
 			} else {
-					status = "exception"
-					message = t.data.status[item].Message
+				status = "exception"
+				message = t.data.status[item].Message
 			}
 		}
 

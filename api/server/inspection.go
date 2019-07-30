@@ -3,14 +3,6 @@ package server
 import (
 	"context"
 	"fmt"
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/s3"
-	"github.com/google/uuid"
-	"github.com/gorilla/mux"
-	"github.com/pingcap/tidb-foresight/model"
-	"github.com/pingcap/tidb-foresight/utils"
-	log "github.com/sirupsen/logrus"
 	"io"
 	"net/http"
 	"os"
@@ -19,6 +11,16 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"time"
+
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/s3"
+	"github.com/google/uuid"
+	"github.com/gorilla/mux"
+	"github.com/pingcap/tidb-foresight/model"
+	"github.com/pingcap/tidb-foresight/utils"
+	log "github.com/sirupsen/logrus"
 )
 
 func (s *Server) collect(instanceId, inspectionId string) error {
@@ -27,29 +29,33 @@ func (s *Server) collect(instanceId, inspectionId string) error {
 		log.Error("get instance config: ", err)
 		return err
 	}
-	items := []string{"metric","basic","dbinfo","config","profile"}
+	items := []string{"metric", "basic", "dbinfo", "config", "profile"}
 	if config != nil {
 		if config.CollectHardwareInfo {
-			items = append(items, "hardware")
+		//	items = append(items, "hardware")
 		}
 		if config.CollectSoftwareInfo {
-			items = append(items, "software")
+		//	items = append(items, "software")
 		}
 		if config.CollectLog {
-			items = append(items, "log")
+		//	items = append(items, "log")
 		}
 		if config.CollectDemsg {
-			items = append(items, "demsg")
+		//	items = append(items, "demsg")
 		}
 	}
 	cmd := exec.Command(
 		s.config.Collector,
-		fmt.Sprintf("--instance-id=%s", inspectionId),
+		fmt.Sprintf("--instance-id=%s", instanceId),
 		fmt.Sprintf("--inspection-id=%s", inspectionId),
 		fmt.Sprintf("--inventory=%s", path.Join(s.config.Home, "inventory", instanceId+".ini")),
 		fmt.Sprintf("--topology=%s", path.Join(s.config.Home, "topology", instanceId+".json")),
 		fmt.Sprintf("--data-dir=%s", path.Join(s.config.Home, "inspection")),
 		fmt.Sprintf("--collect=%s", strings.Join(items, ",")),
+		fmt.Sprintf("--log-spliter=%s", s.config.Spliter),
+		// TODO: use time range in config
+		fmt.Sprintf("--begin=%s", time.Now().Add(time.Duration(-10)*time.Minute).Format(time.RFC3339)),
+		fmt.Sprintf("--end=%s", time.Now().Format(time.RFC3339)),
 	)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
@@ -65,8 +71,8 @@ func (s *Server) collect(instanceId, inspectionId string) error {
 func (s *Server) analyze(inspectionId string) error {
 	cmd := exec.Command(
 		s.config.Analyzer,
-		fmt.Sprintf("--db=%s", path.Join(s.config.Home, "sqlite.db")),
-		fmt.Sprintf("--src=%s", path.Join(s.config.Home, "inspection", inspectionId)),
+		fmt.Sprintf("--home=%s", s.config.Home),
+		fmt.Sprintf("--inspection-id=%s", inspectionId),
 	)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
@@ -223,11 +229,17 @@ func (s *Server) createInspection(r *http.Request) (*model.Inspection, error) {
 		err := s.collect(instanceId, inspectionId)
 		if err != nil {
 			log.Error("collect ", inspectionId, ": ", err)
+			inspection.Status = "exception"
+			inspection.Message = "collect failed"
+			s.model.SetInspection(inspection)
 			return
 		}
 		err = s.analyze(inspectionId)
 		if err != nil {
 			log.Error("analyze ", inspectionId, ": ", err)
+			inspection.Status = "exception"
+			inspection.Message = "analyze failed"
+			s.model.SetInspection(inspection)
 			return
 		}
 	}()
@@ -285,6 +297,9 @@ func (s *Server) importInspection(r *http.Request) (*model.Inspection, error) {
 		err = s.analyze(inspectionId)
 		if err != nil {
 			log.Error("analyze ", inspectionId, ": ", err)
+			inspection.Status = "exception"
+			inspection.Message = "analyze failed"
+			s.model.SetInspection(inspection)
 			return
 		}
 	}()
@@ -345,5 +360,5 @@ func (s *Server) deleteInspection(r *http.Request) (*utils.SimpleResponse, error
 		return nil, utils.NewForesightError(http.StatusInternalServerError, "DB_DELETE_ERROR", "error on delete data")
 	}
 
-	return utils.NewSimpleResponse("OK", "success"), nil
+	return nil, nil
 }
