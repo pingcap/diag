@@ -1,4 +1,4 @@
-package syncer
+package main
 
 // componentPattern is a list of special cases for the log file naming pattern of a component,
 // By default, all components that begin with the component name will be matched.

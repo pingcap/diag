@@ -57,7 +57,5 @@ func NewServer(config *bootstrap.ForesightConfig, db *sql.DB) *Server {
 func (s *Server) Run() error {
 	log.Info("start listen on ", s.config.Address)
 
-	go syncer.Sync(path.Join(s.config.Home, "topology"), path.Join(s.config.Home, "remote-log"), 5*time.Minute, 10)
-
 	return http.ListenAndServe(s.config.Address, s.Router)
 }

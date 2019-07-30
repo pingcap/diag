@@ -1,4 +1,4 @@
-package syncer_test
+package main_test
 
 import (
 	"io"
@@ -7,14 +7,13 @@ import (
 	"testing"
 
 	. "github.com/pingcap/check"
-	"github.com/pingcap/tidb-foresight/syncer"
 )
 
 func TestSyncer(t *testing.T) { TestingT(t) }
 
 type SyncTestSuit struct {
 	uuid    string
-	cluster *syncer.Cluster
+	cluster *Cluster
 }
 
 var _ = Suite(&SyncTestSuit{})
@@ -146,17 +145,17 @@ var topologyJsonExample = `
    ]
 }
 `
-var clusterSample = &syncer.Cluster{
+var clusterSample = &Cluster{
 	Name:    "test-Cluster",
 	Status:  "exception",
 	Message: "Fail list: [u'10.0.1.10']",
-	Hosts: []syncer.Host{
+	Hosts: []Host{
 		{
 			Status:     "success",
 			Ip:         "10.0.1.8",
 			EnableSudo: true,
 			User:       "tidb",
-			Components: []syncer.Component{{
+			Components: []Component{{
 				Status:    "success",
 				DeployDir: "/data1/liubo/deploy",
 				Name:      "node_exporter", Port: "39100",
@@ -200,7 +199,7 @@ var clusterSample = &syncer.Cluster{
 			Ip:         "10.0.1.9",
 			EnableSudo: true,
 			User:       "tidb",
-			Components: []syncer.Component{{
+			Components: []Component{{
 				Status:    "success",
 				DeployDir: "/data1/liubo/deploy",
 				Name:      "node_exporter",
@@ -222,7 +221,7 @@ var clusterSample = &syncer.Cluster{
 			Ip:         "10.0.1.11",
 			EnableSudo: true,
 			User:       "tidb",
-			Components: []syncer.Component{{
+			Components: []Component{{
 				Status:    "success",
 				DeployDir: "/data1/liubo/deploy",
 				Name:      "node_exporter",
@@ -244,7 +243,7 @@ var clusterSample = &syncer.Cluster{
 			Ip:         "10.0.1.10",
 			EnableSudo: false,
 			User:       "tidb",
-			Components: []syncer.Component{},
+			Components: []Component{},
 			Message:    "Failed to connect to the Host via ssh",
 		},
 	},
@@ -267,7 +266,7 @@ func (s *SyncTestSuit) TestNewCluster(c *C) {
 		c.Fatal(err)
 	}
 
-	cluster, err := syncer.NewCluster(fileName)
+	cluster, err := NewCluster(fileName)
 	if err != nil {
 		c.Fatal(err)
 	}
@@ -281,7 +280,7 @@ func (s *SyncTestSuit) TestNewCluster(c *C) {
 func (s *SyncTestSuit) TestClusterLoadTasks(c *C) {
 	targetDir := "."
 	tasks := clusterSample.LoadTasks(targetDir, s.uuid)
-	expect := []syncer.SyncTask{{
+	expect := []SyncTask{{
 		Key:     "_10.0.1.8_node_exporter_39100",
 		From:    "tidb@10.0.1.8:/data1/liubo/deploy/log/",
 		To:      "10.0.1.8/node_exporter-39100",
