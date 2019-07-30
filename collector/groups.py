@@ -332,7 +332,7 @@ def setup_perf_ops(addr='127.0.0.1', basedir='profile',
     join = os.path.join
     # only support tikv now
     pidfile = join(deploydir, 'status/tikv.pid')
-    perf = 'sudo perf record -F 99 -p `cat %s` -g -o /dev/stdout sleep 60' % (
+    perf = 'sudo perf record -F 99 -p `cat %s` -g -o /tmp/perf.data sleep 60; cat /tmp/perf.data' % (
         pidfile)
     ops = [
         Op(CommandCollector(addr=addr, command=perf),
