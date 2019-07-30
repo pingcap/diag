@@ -1,7 +1,6 @@
 # coding:utf8
-import os
-
 from collector import Collector
+import subprocess
 
 
 class CommandCollector(Collector):
@@ -15,8 +14,7 @@ class CommandCollector(Collector):
         if self.addr:
             command = "ssh tidb@%s 'bash -c \"%s\"'" % (
                 self.addr, self.command)
-        with os.popen(command) as f:
-            return f.read()
+        return subprocess.check_output(command, shell=True)
 
 
 if __name__ == "__main__":
