@@ -10,39 +10,39 @@ import (
 )
 
 type Analyzer struct {
-    inspectionId string
-    home string
-    db *sql.DB
-    data task.TaskData
+	inspectionId string
+	db           *sql.DB
+	src          string
+	data         task.TaskData
 }
 
-func NewAnalyzer(home, inspectionId string) (*Analyzer, error) {
-    analyzer := &Analyzer{
-        inspectionId: inspectionId,
-        home: home,
-    }
-    var err error
+func NewAnalyzer(src string, db string) (*Analyzer, error) {
+	analyzer := &Analyzer{
+		inspectionId: path.Base(src),
+		src:          src,
+	}
+	var err error
 
-    analyzer.db, err = sql.Open("sqlite3", path.Join(home, "sqlite.db"))
-    if err != nil {
-        return nil, err
-    }
+	analyzer.db, err = sql.Open("sqlite3", db)
+	if err != nil {
+		return nil, err
+	}
 
-    return analyzer, nil
+	return analyzer, nil
 }
 
-func (a *Analyzer) runTasks(tasks ...func(task.BaseTask) task.Task) error {
-    for _, t := range tasks {
-        if err := t(task.NewTask(a.inspectionId, a.home, &a.data, a.db)).Run(); err != nil {
-            return err
-        }
-    }
-    return nil
+func (a *Analyzer) runTasks(tasks ...func(inspectionId string, src string, data *task.TaskData, db *sql.DB) task.Task) error {
+	for _, task := range tasks {
+		if err := task(a.inspectionId, a.src, &a.data, a.db).Run(); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func (a *Analyzer) Run() error {
-    return a.runTasks(
-       task.Clear,
+	return a.runTasks(
+		task.Clear,
 
        // parse stage
        task.ParseCollect,
@@ -61,32 +61,34 @@ func (a *Analyzer) Run() error {
        task.SaveBasicInfo,
        task.SaveDBInfo,
        task.SaveSlowLogInfo,
+       task.SaveNetwork,
        task.SaveAlert,
        task.SaveHardwareInfo,
        task.SaveDmesg,
        task.SaveProfile,
 
-       // analyze stage
-       task.Analyze,
-    )
+		// analyze stage
+		task.Analyze,
+	)
 }
 
 func main() {
-    home := flag.String("home", "/tmp/tidb-foresight", "the tidb-foresight data directory")
-    inspectionId := flag.String("inspection-id", "", "the inspection to be analyze")
+	src := flag.String("src", "", "the target to analyze")
+	db := flag.String("db", "", "the sqlite file")
+
 	flag.Parse()
 
-    if *inspectionId == "" {
-        log.Panic("the inspection-id must be specified")
-    }
+	if *src == "" || *db == "" {
+		log.Panic("both src and db must be specified")
+	}
 
-    analyzer, err := NewAnalyzer(*home, *inspectionId)
-    if err != nil {
-        log.Panic("init analyzer: ", err)
-    }
+	analyzer, err := NewAnalyzer(*src, *db)
+	if err != nil {
+		log.Panic("init analyzer: ", err)
+	}
 
-    err = analyzer.Run()
-    if err != nil {
-        log.Error("run analyzer: ", err)
-    }
+	err = analyzer.Run()
+	if err != nil {
+		log.Error("run analyzer: ", err)
+	}
 }

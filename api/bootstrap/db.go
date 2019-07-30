@@ -95,6 +95,16 @@ CREATE TABLE IF NOT EXISTS inspection_slow_log (
 	node_ip VARCHAR(64) NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS inspection_network (
+	inspection VARCHAR(64) NOT NULL,
+	node_ip VARCHAR(64) NOT NULL,
+	connections INT64 NOT NULL,
+	recv INT64 NOT NULL,
+	send INT64 NOT NULL,
+	bad_seg INT64 NOT NULL,
+	retrans INT64 NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS inspection_alerts (
 	inspection VARCHAR(64) NOT NULL,
 	name VARCHAR(64) NOT NULL,
