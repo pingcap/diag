@@ -19,14 +19,18 @@ const tableColumns = (onDelete: any, onConfig: any) => [
     title: '实例名',
     dataIndex: 'name',
     key: 'name',
-    render: (text: any, record: IFormatInstance) => (
-      <Link to={`/inspection/instances/${record.uuid}/reports`}>{text}</Link>
-    ),
+    render: (text: any, record: IFormatInstance) => {
+      if (text === '') {
+        return <span>获取中...</span>;
+      }
+      return <Link to={`/inspection/instances/${record.uuid}/reports`}>{text}</Link>;
+    },
   },
   {
     title: 'PD 址址:端口',
     dataIndex: 'pd',
     key: 'pd',
+    render: (text: any, record: IFormatInstance) => <span>{text || '获取中...'}</span>,
   },
   {
     title: '创建时间',

@@ -36,7 +36,7 @@ function Login({ form, dispatch, logging }: LoginProps) {
         })(
           <Input
             prefix={<Icon type="user" style={{ color: 'rgba(0,0,0,.25)' }} />}
-            placeholder="username (admin or dba)"
+            placeholder="username (foresight or admin)"
           />,
         )}
       </Form.Item>
@@ -47,7 +47,7 @@ function Login({ form, dispatch, logging }: LoginProps) {
           <Input
             prefix={<Icon type="lock" style={{ color: 'rgba(0,0,0,.25)' }} />}
             type="password"
-            placeholder="password (tidb)"
+            placeholder="password (foresight or admin)"
           />,
         )}
       </Form.Item>

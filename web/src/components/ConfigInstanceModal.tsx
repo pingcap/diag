@@ -3,6 +3,7 @@ import { Modal, Form, Checkbox, Divider, Select, message, Spin } from 'antd';
 import moment from 'moment';
 import { queryInstanceConfig, updateInstanceConfig, addInspection } from '@/services/inspection';
 import { IInstanceConfig } from '@/models/inspection';
+import { Dispatch } from '@/models/connect';
 
 const { Option } = Select;
 
@@ -11,6 +12,8 @@ const styles = require('./ConfigInstanceModal.less');
 interface Props {
   visible: boolean;
   onClose: () => void;
+
+  dispatch?: Dispatch;
 
   manual: boolean;
 
@@ -42,7 +45,7 @@ const oneDayTimes: string[] = Array(48)
       .format('HH:mm'),
   );
 
-function ConfigInstanceModal({ visible, onClose, manual, instanceId }: Props) {
+function ConfigInstanceModal({ visible, onClose, dispatch, manual, instanceId }: Props) {
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [config, setConfig] = useState<IInstanceConfig | null>(null);
@@ -96,20 +99,31 @@ function ConfigInstanceModal({ visible, onClose, manual, instanceId }: Props) {
 
   async function submit() {
     setSubmitting(true);
-    try {
-      if (manual) {
-        await addInspection(instanceId, config as IInstanceConfig);
-        onClose();
-        message.success(`${instanceId} 手动诊断成功！`);
-      } else {
+
+    if (manual && dispatch) {
+      dispatch({
+        type: 'inspection/addInspection',
+        payload: {
+          instanceId,
+          config,
+        },
+      }).then((res: any) => {
+        setSubmitting(false);
+        if (res) {
+          onClose();
+          message.success(`${instanceId} 手动诊断成功！`);
+        }
+      });
+    } else if (!manual) {
+      try {
         await updateInstanceConfig(instanceId, config as IInstanceConfig);
+        setSubmitting(false);
         onClose();
         message.success(`${instanceId} 自动诊断配置修改成功！`);
+      } catch (err) {
+        // TODO
       }
-    } catch (err) {
-      // TODO
     }
-    setSubmitting(false);
   }
 
   return (
@@ -205,20 +219,24 @@ function ConfigInstanceModal({ visible, onClose, manual, instanceId }: Props) {
             </Checkbox>
           </Form.Item>
           <Divider />
-          <Form.Item label="开始时间">
-            <Select
-              style={{ width: 120 }}
-              onChange={handleStartTimeChange}
-              value={config.auto_sched_start}
-            >
-              {oneDayTimes.map(time => (
-                <Option value={time} key={time}>
-                  {time}
-                </Option>
-              ))}
-            </Select>
-          </Form.Item>
-          <Divider />
+          {!manual && (
+            <React.Fragment>
+              <Form.Item label="开始时间">
+                <Select
+                  style={{ width: 120 }}
+                  onChange={handleStartTimeChange}
+                  value={config.auto_sched_start}
+                >
+                  {oneDayTimes.map(time => (
+                    <Option value={time} key={time}>
+                      {time}
+                    </Option>
+                  ))}
+                </Select>
+              </Form.Item>
+              <Divider />
+            </React.Fragment>
+          )}
           <Form.Item label="报告收集频率">
             <span>每日 1 次</span>
           </Form.Item>

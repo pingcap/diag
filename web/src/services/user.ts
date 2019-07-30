@@ -5,7 +5,7 @@ export async function accountLogin(loginInfo: { username: string; password: stri
 }
 
 export async function accountLogout() {
-  return request.post('/logout');
+  return request.delete('/logout');
 }
 
 export async function queryCurrent(): Promise<any> {

@@ -17,7 +17,7 @@ export async function updateInstanceConfig(
   instanceId: string,
   config: IInstanceConfig,
 ): Promise<any> {
-  return request.post(`/instances/${instanceId}/config`, { data: config });
+  return request.put(`/instances/${instanceId}/config`, { data: config });
 }
 
 // /////////////

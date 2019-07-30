@@ -40,7 +40,7 @@ const tableColumns = (curUser: CurrentUser, onDelete: any, onUpload: any) => [
     key: 'format_finish_time',
     render: (text: any, record: IFlameGraph) => {
       if (record.status === 'running') {
-        return <span>running...</span>;
+        return <span>running</span>;
       }
       return <span>{text}</span>;
     },

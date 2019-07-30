@@ -10,7 +10,7 @@ const mockedInstance = {
     return `${this.ip}:${this.port}`;
   },
   create_time: '@datetime',
-  'status|1': ['running', 'exception'],
+  'status|1': ['pending', 'exception', 'success'],
   message: '@title',
 };
 
@@ -19,7 +19,7 @@ const mockedInspection = {
   instance_id: '@guid',
   instance_name: '@name',
   user: '@first',
-  'status|1': ['running', 'finish'],
+  'status|1': ['running', 'exception', 'success'],
   'type|1': ['manual', 'auto'],
   create_time: '@datetime',
   finish_time: '@datetime',

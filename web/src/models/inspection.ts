@@ -20,7 +20,7 @@ export interface IInstance {
   user: string;
   pd: string;
   create_time: string;
-  status: 'running' | 'exception';
+  status: 'pending' | 'exception' | 'success';
   message: string;
 }
 
@@ -49,7 +49,8 @@ export interface IInspection {
   instance_id: string;
   instance_name: string;
   user: string;
-  status: 'running' | 'finish';
+  status: 'running' | 'exception' | 'success';
+  message: string;
   type: 'manual' | 'auto';
   create_time: string;
   finish_time: string;
@@ -185,13 +186,16 @@ const InspectionModel: InspectionModelType = {
       message.success(`诊断报告 ${inspectionId} 已删除！`);
       return true;
     },
-    *addInspection({ _ }, { call, put }) {
-      const res = yield call(addInspection);
-      yield put({
-        type: 'saveInspection',
-        payload: res as IInspection,
-      });
-      message.success(`诊断 ${res.uuid} 已经进行中！`);
+    *addInspection({ payload }, { call, put }) {
+      const { instanceId, config } = payload;
+      const res = yield call(addInspection, instanceId, config);
+      if (res) {
+        yield put({
+          type: 'saveInspection',
+          payload: res as IInspection,
+        });
+      }
+      return res;
     },
   },
 

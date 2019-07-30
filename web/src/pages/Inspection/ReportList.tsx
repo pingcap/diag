@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Table, Button, Divider, Modal } from 'antd';
+import { Table, Button, Divider, Modal, Tooltip, Icon } from 'antd';
 import { connect } from 'dva';
 import { Link } from 'umi';
 import { PaginationConfig } from 'antd/lib/table';
@@ -43,8 +43,18 @@ const tableColumns = (curUser: CurrentUser, onDelete: any, onUpload: any) => [
     dataIndex: 'format_finish_time',
     key: 'format_finish_time',
     render: (text: any, record: IFormatInspection) => {
+      if (record.status === 'exception') {
+        return (
+          <div className={styles.instance_status}>
+            <span style={{ color: 'red' }}>exception</span>
+            <Tooltip title={record.message}>
+              <Icon type="question-circle" />
+            </Tooltip>
+          </div>
+        );
+      }
       if (record.status === 'running') {
-        return <span>running...</span>;
+        return <span>running</span>;
       }
       return <span>{text}</span>;
     },
@@ -54,25 +64,25 @@ const tableColumns = (curUser: CurrentUser, onDelete: any, onUpload: any) => [
     key: 'action',
     render: (text: any, record: IFormatInspection) => (
       <span>
-        {record.status === 'running' ? (
-          <span>详情</span>
-        ) : (
+        {record.status === 'success' ? (
           <Link to={`/inspection/reports/${record.uuid}`}>详情</Link>
+        ) : (
+          <span>详情</span>
         )}
         {curUser.role === 'admin' && (
           <React.Fragment>
             <Divider type="vertical" />
-            {record.status === 'running' ? (
-              <span>下载</span>
-            ) : (
+            {record.status === 'success' ? (
               <a download href={`/api/v1/inspections/${record.uuid}.tar.gz`}>
                 下载
               </a>
+            ) : (
+              <span>下载</span>
             )}
             {curUser.ka && (
               <React.Fragment>
                 <Divider type="vertical" />
-                {record.status === 'running' ? <span>上传</span> : <a onClick={onUpload}>上传</a>}
+                {record.status === 'success' ? <a onClick={onUpload}>上传</a> : <span>上传</span>}
               </React.Fragment>
             )}
           </React.Fragment>
@@ -184,6 +194,7 @@ function ReportList({ dispatch, curUser, inspection, match, loading }: ReportLis
         pagination={pagination}
       />
       <ConfigInstanceModal
+        dispatch={dispatch}
         visible={configModalVisible}
         onClose={() => setConfigModalVisible(false)}
         manual
