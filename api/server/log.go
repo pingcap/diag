@@ -24,7 +24,16 @@ type LogResult struct {
 	Logs  []*searcher.Item `json:"logs"`
 }
 
-func (s *Server) listLogs() ([]*model.LogEntity, error) {
+func (s *Server) listLogs(r *http.Request) (*utils.PaginationResponse, error) {
+	page, err := strconv.ParseInt(r.URL.Query().Get("page"), 10, 32)
+	if err != nil {
+		page = 1
+	}
+	size, err := strconv.ParseInt(r.URL.Query().Get("per_page"), 10, 32)
+	if err != nil {
+		size = 10
+	}
+
 	ls, err := ioutil.ReadDir(path.Join(s.config.Home, "remote-log"))
 	if err != nil {
 		log.Error("read dir: ", err)
@@ -35,11 +44,11 @@ func (s *Server) listLogs() ([]*model.LogEntity, error) {
 		logs = append(logs, l.Name())
 	}
 
-	entities, err := s.model.ListLogs(logs)
+	entities, total, err := s.model.ListLogs(logs, page, size)
 	if err != nil {
 		return nil, err
 	}
-	return entities, nil
+	return utils.NewPaginationResponse(total, entities), nil
 }
 
 func (s *Server) searchLog(r *http.Request) (*LogResult, error) {
