@@ -1,6 +1,9 @@
 # go.sum
 */go.sum
 
+# syncer
+syncer/syncer
+
 # spliter
 spliter/spliter
 
