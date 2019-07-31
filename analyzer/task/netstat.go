@@ -27,6 +27,10 @@ type netstat struct {
 }
 
 func (t *SaveNetworkTask) Run() error {
+	if !t.data.args.Collect(ITEM_BASIC) || t.data.status[ITEM_BASIC].Status != "success" {
+		return nil
+	}
+
 	netDir := path.Join(t.src, "net")
 	ls, err := ioutil.ReadDir(netDir)
 	if err != nil {
