@@ -68,7 +68,11 @@ const tableColumns = (curUser: CurrentUser, onDelete: any, onUpload: any) => [
             {curUser.ka && (
               <React.Fragment>
                 <Divider type="vertical" />
-                {record.status === 'running' ? <span>上传</span> : <a onClick={onUpload}>上传</a>}
+                {record.status === 'running' ? (
+                  <span>上传</span>
+                ) : (
+                  <a onClick={() => onUpload(record)}>上传</a>
+                )}
               </React.Fragment>
             )}
           </React.Fragment>
@@ -190,7 +194,7 @@ function FlameGraphList({
         )}
         {curUser.role === 'dba' && (
           <Button type="primary" onClick={() => setUploadLocalModalVisible(true)}>
-            + 上传本地报告
+            + 导入本地报告
           </Button>
         )}
       </div>

@@ -25,14 +25,14 @@ function UploadLocalReportModal({ visible, actionUrl, title, onClose, onData }: 
         onData(info.file.response);
         onClose();
       } else if (status === 'error') {
-        message.error(`${info.file.name} 上传失败，错误：${info.file.response.error}`);
+        message.error(`${info.file.name} 上传失败，错误：${info.file.response.message}`);
       }
     },
   };
 
   return (
     <Modal
-      title={title || '上传本地报告'}
+      title={title || '导入本地报告'}
       visible={visible}
       onCancel={onClose}
       okButtonProps={{ hidden: true }}

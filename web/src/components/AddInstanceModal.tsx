@@ -24,7 +24,7 @@ function AddInstanceModal({ visible, onClose, onData }: Props) {
         onData(info.file.response as IInstance);
         onClose();
       } else if (status === 'error') {
-        message.error(`${info.file.name} 上传失败，错误：${info.file.response.error}`);
+        message.error(`${info.file.name} 上传失败，错误：${info.file.response.message}`);
       }
     },
   };

@@ -82,7 +82,11 @@ const tableColumns = (curUser: CurrentUser, onDelete: any, onUpload: any) => [
             {curUser.ka && (
               <React.Fragment>
                 <Divider type="vertical" />
-                {record.status === 'success' ? <a onClick={onUpload}>上传</a> : <span>上传</span>}
+                {record.status === 'success' ? (
+                  <a onClick={() => onUpload(record)}>上传</a>
+                ) : (
+                  <span>上传</span>
+                )}
               </React.Fragment>
             )}
           </React.Fragment>
@@ -182,7 +186,7 @@ function ReportList({ dispatch, curUser, inspection, match, loading }: ReportLis
         )}
         {curUser.role === 'dba' && (
           <Button type="primary" onClick={() => setUploadLocalModalVisible(true)}>
-            + 上传本地报告
+            + 导入本地报告
           </Button>
         )}
       </div>

@@ -157,7 +157,7 @@ function ReportList({
         )}
         {curUser.role === 'dba' && (
           <Button type="primary" onClick={() => setUploadLocalModalVisible(true)}>
-            + 上传本地报告
+            + 导入本地日志
           </Button>
         )}
       </div>
