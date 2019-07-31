@@ -23,9 +23,42 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+type LogItem struct {
+	Host string `json:"ip"`
+	Port string `json:"port"`
+	Component string `json:"component"`
+	File string `json:"file"`
+	Time *time.Time `json:"time"`
+	Level string `json:"level"`
+	Content string `json:"content"`
+}
+
+
 type LogResult struct {
-	Token string           `json:"token"`
-	Logs  []*searcher.Item `json:"logs"`
+	Token string     `json:"token"`
+	Logs  []*LogItem `json:"logs"`
+}
+
+func LogFromSearch(l *searcher.Item) *LogItem {
+	item := &LogItem{
+		Host: l.Host,
+		Port: l.Port,
+		Component: l.Component,
+		File: l.File,
+		Time: l.Time,
+		Content: l.Line,
+	}
+
+	switch l.Level {
+	case -1: item.Level = "SLOWLOG"
+	case searcher.LevelFATAL: item.Level = "FATAL"
+	case searcher.LevelERROR: item.Level = "ERROR"
+	case searcher.LevelWARN: item.Level = "WARN"
+	case searcher.LevelINFO: item.Level = "INFO"
+	case searcher.LevelDEBUG: item.Level = "DEBUG"
+	}
+
+	return item
 }
 
 func (s *Server) listLogInstances(r *http.Request) ([]*model.LogEntity, error) {
@@ -82,7 +115,7 @@ func (s *Server) searchLog(r *http.Request) (*LogResult, error) {
 		return nil, utils.NewForesightError(http.StatusNotFound, "NOT_FOUND", "token not found")
 	}
 
-	logs := []*searcher.Item{}
+	logs := []*LogItem{}
 	for i := 0; i < int(limit); i++ {
 		if l, err := iter.Next(); err != nil {
 			log.Error("search log: ", err)
@@ -96,7 +129,7 @@ func (s *Server) searchLog(r *http.Request) (*LogResult, error) {
 			}
 			break
 		} else {
-			logs = append(logs, l)
+			logs = append(logs, LogFromSearch(l))
 		}
 	}
 
