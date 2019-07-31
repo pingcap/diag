@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Table, Button, DatePicker, Input, Select, Modal } from 'antd';
+import { Table, Button, DatePicker, Input, Select } from 'antd';
 import { connect } from 'dva';
 import { RangePickerValue } from 'antd/lib/date-picker/interface';
 import { ConnectState, ConnectProps, Dispatch } from '@/models/connect';
@@ -15,13 +15,8 @@ const styles = require('../style.less');
 const tableColumns = [
   {
     title: '时间',
-    dataIndex: 'time',
-    key: 'time',
-  },
-  {
-    title: '实例名称',
-    dataIndex: 'instance_name',
-    key: 'instance_name',
+    dataIndex: 'format_time',
+    key: 'format_time',
   },
   {
     title: '日志级别',
@@ -106,10 +101,6 @@ function ReportList({
     });
   }
 
-  function handleDownlaod() {
-    Modal.confirm({ title: '下载搜索结果', content: 'TODO' });
-  }
-
   function handleLoadMore() {
     dispatch({
       type: 'log/loadMoreLogs',
@@ -145,14 +136,20 @@ function ReportList({
             type="primary"
             style={{ marginRight: 20 }}
             onClick={() => setUploadRemoteModalVisible(true)}
-            disabled={log.logs.length === 0}
+            disabled={disableSearch()}
           >
             上传
           </Button>
         )}
         {curUser.role === 'admin' && (
-          <Button type="primary" onClick={handleDownlaod} disabled={disableSearch()}>
-            下载
+          <Button type="primary" disabled={disableSearch()}>
+            <a
+              href={`/api/v1/loginstances/${logInstanceId}.tar.gz?begin=${encodeURIComponent(
+                timeRange[0],
+              )}&end=${encodeURIComponent(timeRange[1])}`}
+            >
+              下载
+            </a>
           </Button>
         )}
         {curUser.role === 'dba' && (
@@ -173,7 +170,7 @@ function ReportList({
           >
             {log.logFiles.map(item => (
               <Option value={item.uuid} key={item.uuid}>
-                {item.filename}
+                {item.instance_name}
               </Option>
             ))}
           </Select>
@@ -190,7 +187,7 @@ function ReportList({
             >
               {log.logInstances.map(item => (
                 <Option value={item.uuid} key={item.uuid}>
-                  {item.name}
+                  {item.instance_name}
                 </Option>
               ))}
             </Select>
@@ -242,7 +239,9 @@ function ReportList({
         content="确定要将此次搜索结果上传吗？"
         visible={uploadRemoteModalVisible}
         onClose={() => setUploadRemoteModalVisible(false)}
-        uploadUrl={`/loginstances/${logInstanceId}/logs`}
+        uploadUrl={`/loginstances/${logInstanceId}?begin=${encodeURIComponent(
+          timeRange[0],
+        )}&end=${encodeURIComponent(timeRange[1])}`}
       />
       <UploadLocalReportModal
         title="上传本地日志"

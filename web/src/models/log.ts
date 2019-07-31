@@ -13,17 +13,16 @@ import { formatDatetime } from '@/utils/datetime-util';
 
 export interface ILogInstance {
   uuid: string;
-  name: string;
+  instance_name: string;
 }
 
 export interface ILogFile {
   uuid: string;
-  filename: string;
+  instance_name: string;
 }
 
 export interface ILog {
   time: string;
-  instance_name: string;
   level: string;
   content: string;
 }
@@ -119,8 +118,8 @@ const MiscModel: LogModelType = {
       const { logInstanceId, logFileId, search, startTime, endTime, logLevel } = payload;
       const parms: ILogQueryParams = {
         search,
-        start_time: startTime,
-        end_time: endTime,
+        start_time: encodeURIComponent(startTime),
+        end_time: encodeURIComponent(endTime),
         level: logLevel,
         limit: 10,
       };
