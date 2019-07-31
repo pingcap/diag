@@ -71,12 +71,9 @@ func (s *Server) CreateRouter() http.Handler {
 	r.Handle("/api/v1/instances/{id}/profiles", fn.Wrap(s.createProfile)).Methods("POST")
 
 	// logs
+	r.Handle("/api/v1/loginstances", fn.Wrap(s.listLogInstances)).Methods("GET")
+	r.Handle("/api/v1/logfiles", fn.Wrap(s.listLogFiles)).Methods("GET")
 	// they are same, just keep compatible with future
-	r.Handle("/api/v1/logs", fn.Wrap(s.listLogs)).Methods("GET")
-	r.Handle("/api/v1/loginstances", fn.Wrap(s.listLogs)).Methods("GET")
-	r.Handle("/api/v1/logfiles", fn.Wrap(s.listLogs)).Methods("GET")
-	// also they are same too.
-	r.Handle("/api/v1/logs/{id}", fn.Wrap(s.searchLog)).Methods("GET")
 	r.Handle("/api/v1/loginstances/{id}/logs", fn.Wrap(s.searchLog)).Methods("GET")
 	r.Handle("/api/v1/logfiles/{id}/logs", fn.Wrap(s.searchLog)).Methods("GET")
 	// upload log inspection (dba)
