@@ -187,5 +187,6 @@ func (s *Server) exportLog(w http.ResponseWriter, r *http.Request) {
 	}
 	defer localFile.Close()
 
+	w.Header().Set("Content-Disposition", "attachment; filename=" + inspectionId+".tar.gz")
 	io.Copy(w, localFile)
 }
