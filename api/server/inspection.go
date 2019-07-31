@@ -348,7 +348,7 @@ func (s *Server) uploadInspection(ctx context.Context, r *http.Request) (*utils.
 		return nil, utils.NewForesightError(http.StatusInternalServerError, "SERVER_ERROR", "error on upload")
 	}
 
-	return utils.NewSimpleResponse("OK", "success"), nil
+	return nil, nil
 }
 
 func (s *Server) deleteInspection(r *http.Request) (*utils.SimpleResponse, error) {

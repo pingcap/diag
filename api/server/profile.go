@@ -21,7 +21,6 @@ func (s *Server) profileAllProcess(instanceId, inspectionId string) error {
 		s.config.Collector,
 		fmt.Sprintf("--instance-id=%s", inspectionId),
 		fmt.Sprintf("--inspection-id=%s", inspectionId),
-		fmt.Sprintf("--inventory=%s", path.Join(s.config.Home, "inventory", instanceId+".ini")),
 		fmt.Sprintf("--topology=%s", path.Join(s.config.Home, "topology", instanceId+".json")),
 		fmt.Sprintf("--dest=%s", path.Join(s.config.Home, "inspection", inspectionId)),
 		"--collect=profile",

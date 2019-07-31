@@ -1,14 +1,22 @@
 package server
 
 import (
+	"fmt"
+	"io"
+	"io/ioutil"
+	"net/http"
+	"os"
+	"os/exec"
+	"path"
+	"strconv"
+	"time"
+
+	"github.com/google/uuid"
 	"github.com/gorilla/mux"
+	"github.com/pingcap/tidb-foresight/model"
 	"github.com/pingcap/tidb-foresight/searcher"
 	"github.com/pingcap/tidb-foresight/utils"
 	log "github.com/sirupsen/logrus"
-	"io/ioutil"
-	"net/http"
-	"path"
-	"strconv"
 )
 
 type LogResult struct {
@@ -16,7 +24,7 @@ type LogResult struct {
 	Logs  []*searcher.Item `json:"logs"`
 }
 
-func (s *Server) listLogs() ([]string, error) {
+func (s *Server) listLogs() ([]*model.LogEntity, error) {
 	ls, err := ioutil.ReadDir(path.Join(s.config.Home, "remote-log"))
 	if err != nil {
 		log.Error("read dir: ", err)
@@ -26,7 +34,12 @@ func (s *Server) listLogs() ([]string, error) {
 	for _, l := range ls {
 		logs = append(logs, l.Name())
 	}
-	return logs, nil
+
+	entities, err := s.model.ListLogs(logs)
+	if err != nil {
+		return nil, err
+	}
+	return entities, nil
 }
 
 func (s *Server) searchLog(r *http.Request) (*LogResult, error) {
@@ -69,4 +82,100 @@ func (s *Server) searchLog(r *http.Request) (*LogResult, error) {
 		Token: token,
 		Logs:  logs,
 	}, nil
+}
+
+func (s *Server) importLog(r *http.Request) (*model.LogEntity, error) {
+	var err error
+	inspectionId, err := s.upload(r)
+	if err != nil {
+		return nil, err
+	}
+
+	err = s.uppack(inspectionId)
+	if err != nil {
+		log.Error("unpack: ", err)
+		return nil, utils.NewForesightError(http.StatusInternalServerError, "SERVER_ERROR", "error on uppack file")
+	}
+
+	inspection := &model.Inspection{
+		Uuid:   inspectionId,
+		Status: "running",
+	}
+	err = s.model.SetInspection(inspection)
+	if err != nil {
+		log.Error("create inspection: ", err)
+		return nil, utils.NewForesightError(http.StatusInternalServerError, "DB_INSERT_ERROR", "error on insert data")
+	}
+
+	err = s.analyze(inspectionId)
+	if err != nil {
+		log.Error("analyze ", inspectionId, ": ", err)
+		inspection.Status = "exception"
+		inspection.Message = "analyze failed"
+		s.model.SetInspection(inspection)
+		return nil, utils.NewForesightError(http.StatusInternalServerError, "SERVER_ERROR", "error on import log")
+	}
+
+	inspection, err = s.model.GetInspectionDetail(inspectionId)
+	if err != nil {
+		log.Error("get inspection detail:", err)
+		return nil, utils.NewForesightError(http.StatusInternalServerError, "DB_QUERY_ERROR", "error on query data")
+	}
+	if inspection == nil {
+		log.Error("not found inspection after import log")
+		return nil, utils.NewForesightError(http.StatusInternalServerError, "SERVER_ERROR", "inspection not found")
+	}
+
+	return &model.LogEntity{Id: inspection.Uuid, InstanceName: inspection.InstanceName}, nil
+}
+
+func (s *Server) collectLog(instanceId, inspectionId string, begin, end time.Time) error {
+	cmd := exec.Command(
+		s.config.Collector,
+		fmt.Sprintf("--instance-id=%s", instanceId),
+		fmt.Sprintf("--inspection-id=%s", inspectionId),
+		fmt.Sprintf("--topology=%s", path.Join(s.config.Home, "topology", instanceId+".json")),
+		fmt.Sprintf("--data-dir=%s", path.Join(s.config.Home, "inspection")),
+		"--collect=log",
+		fmt.Sprintf("--log-spliter=%s", s.config.Spliter),
+		fmt.Sprintf("--begin=%s", begin.Format(time.RFC3339)),
+		fmt.Sprintf("--end=%s", end.Format(time.RFC3339)),
+	)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	log.Info(cmd.Args)
+	if err := cmd.Run(); err != nil {
+		log.Error("run ", s.config.Collector, ": ", err)
+		return err
+	}
+	return nil
+}
+
+func (s *Server) exportLog(w http.ResponseWriter, r *http.Request) {
+	instanceId := mux.Vars(r)["id"]
+	inspectionId := uuid.New().String()
+	begin := time.Now().Add(time.Duration(-1) * time.Hour)
+	end := time.Now()
+
+	if err := s.collectLog(instanceId, inspectionId, begin, end); err != nil {
+		log.Error("collect log:", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	if err := s.pack(inspectionId); err != nil {
+		log.Error("pack: ", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	localFile, err := os.Open(path.Join(s.config.Home, "package", inspectionId+".tar.gz"))
+	if err != nil {
+		log.Error("read file: ", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	defer localFile.Close()
+
+	io.Copy(w, localFile)
 }
