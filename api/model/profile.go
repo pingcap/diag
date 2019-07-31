@@ -80,7 +80,7 @@ func (m *Model) ListAllProfiles(page, size int64, profileDir string) ([]*Profile
 
 	rows, err := m.db.Query(
 		`SELECT id,instance,status,create_t,create_t FROM inspections WHERE id IN (
-			SELECT inspection FROM inspection_items WHERE status <> 'none'
+			SELECT inspection FROM inspection_items WHERE name = 'profile' AND status <> 'none'
 		) limit ?,?`,
 		(page-1)*size, size,
 	)
@@ -104,7 +104,9 @@ func (m *Model) ListAllProfiles(page, size int64, profileDir string) ([]*Profile
 	}
 
 	total := 0
-	if err = m.db.QueryRow("SELECT COUNT(DISTINCT(inspection)) FROM inspection_items WHERE status <> 'none'").Scan(&total); err != nil {
+	if err = m.db.QueryRow(
+		"SELECT COUNT(DISTINCT(inspection)) FROM inspection_items WHERE name = 'profile' AND status <> 'none'",
+	).Scan(&total); err != nil {
 		log.Error("db.Query:", err)
 		return nil, 0, err
 	}
