@@ -2,7 +2,6 @@ package model
 
 import (
 	"strings"
-	"time"
 
 	log "github.com/sirupsen/logrus"
 )
@@ -10,7 +9,6 @@ import (
 type LogEntity struct {
 	Id           string    `json:"id"`
 	InstanceName string    `json:"instance_name"`
-	CreateTime   time.Time `json:"create_time"`
 }
 
 func (m *Model) ListLogFiles(ids []string, page, size int64) ([]*LogEntity, int, error) {
@@ -24,7 +22,7 @@ func (m *Model) ListLogFiles(ids []string, page, size int64) ([]*LogEntity, int,
 
 	// TODO: avoid sql injection
 	rows, err := m.db.Query(
-		`SELECT id,instance,create_t FROM inspections WHERE id in (`+idstr+`) ORDER BY create_t DESC limit ?, ?`,
+		`SELECT id,instance_name FROM inspections WHERE id in (`+idstr+`) ORDER BY create_t DESC limit ?, ?`,
 		(page-1)*size, size,
 	)
 	if err != nil {
@@ -35,7 +33,7 @@ func (m *Model) ListLogFiles(ids []string, page, size int64) ([]*LogEntity, int,
 
 	for rows.Next() {
 		l := LogEntity{}
-		if err := rows.Scan(&l.Id, &l.InstanceName, &l.CreateTime); err != nil {
+		if err := rows.Scan(&l.Id, &l.InstanceName); err != nil {
 			log.Error("db.Query:", err)
 			return nil, 0, err
 		}
@@ -62,7 +60,7 @@ func (m *Model) ListLogInstances(ids []string, page, size int64) ([]*LogEntity, 
 
 	// TODO: avoid sql injection
 	rows, err := m.db.Query(
-		`SELECT id,name,create_t FROM instances WHERE id IN (`+idstr+`) ORDER BY create_t DESC limit ?, ?`,
+		`SELECT id,name FROM instances WHERE id IN (`+idstr+`) ORDER BY create_t DESC limit ?, ?`,
 		(page-1)*size, size,
 	)
 	if err != nil {
@@ -73,7 +71,7 @@ func (m *Model) ListLogInstances(ids []string, page, size int64) ([]*LogEntity, 
 
 	for rows.Next() {
 		l := LogEntity{}
-		if err := rows.Scan(&l.Id, &l.InstanceName, &l.CreateTime); err != nil {
+		if err := rows.Scan(&l.Id, &l.InstanceName); err != nil {
 			log.Error("db.Query:", err)
 			return nil, 0, err
 		}
