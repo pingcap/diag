@@ -7,7 +7,7 @@ import (
 )
 
 type LogEntity struct {
-	Id           string `json:"id"`
+	Id           string `json:"uuid"`
 	InstanceName string `json:"instance_name"`
 }
 
@@ -22,7 +22,7 @@ func (m *Model) ListLogFiles(ids []string) ([]*LogEntity, error) {
 
 	// TODO: avoid sql injection
 	rows, err := m.db.Query(
-		`SELECT id,instance_name FROM inspections WHERE id in (`+idstr+`) ORDER BY create_t DESC`,
+		`SELECT id,instance_name FROM inspections WHERE id in (` + idstr + `) ORDER BY create_t DESC`,
 	)
 	if err != nil {
 		log.Error("db.Query:", err)
@@ -53,7 +53,7 @@ func (m *Model) ListLogInstances(ids []string) ([]*LogEntity, error) {
 
 	// TODO: avoid sql injection
 	rows, err := m.db.Query(
-		`SELECT id,name FROM instances WHERE id IN (`+idstr+`) ORDER BY create_t DESC`,
+		`SELECT id,name FROM instances WHERE id IN (` + idstr + `) ORDER BY create_t DESC`,
 	)
 	if err != nil {
 		log.Error("db.Query:", err)

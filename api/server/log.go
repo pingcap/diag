@@ -24,15 +24,14 @@ import (
 )
 
 type LogItem struct {
-	Host string `json:"ip"`
-	Port string `json:"port"`
-	Component string `json:"component"`
-	File string `json:"file"`
-	Time *time.Time `json:"time"`
-	Level string `json:"level"`
-	Content string `json:"content"`
+	Host      string     `json:"ip"`
+	Port      string     `json:"port"`
+	Component string     `json:"component"`
+	File      string     `json:"file"`
+	Time      *time.Time `json:"time"`
+	Level     string     `json:"level"`
+	Content   string     `json:"content"`
 }
-
 
 type LogResult struct {
 	Token string     `json:"token"`
@@ -41,21 +40,27 @@ type LogResult struct {
 
 func LogFromSearch(l *searcher.Item) *LogItem {
 	item := &LogItem{
-		Host: l.Host,
-		Port: l.Port,
+		Host:      l.Host,
+		Port:      l.Port,
 		Component: l.Component,
-		File: l.File,
-		Time: l.Time,
-		Content: l.Line,
+		File:      l.File,
+		Time:      l.Time,
+		Content:   l.Line,
 	}
 
 	switch l.Level {
-	case -1: item.Level = "SLOWLOG"
-	case searcher.LevelFATAL: item.Level = "FATAL"
-	case searcher.LevelERROR: item.Level = "ERROR"
-	case searcher.LevelWARN: item.Level = "WARN"
-	case searcher.LevelINFO: item.Level = "INFO"
-	case searcher.LevelDEBUG: item.Level = "DEBUG"
+	case -1:
+		item.Level = "SLOWLOG"
+	case searcher.LevelFATAL:
+		item.Level = "FATAL"
+	case searcher.LevelERROR:
+		item.Level = "ERROR"
+	case searcher.LevelWARN:
+		item.Level = "WARN"
+	case searcher.LevelINFO:
+		item.Level = "INFO"
+	case searcher.LevelDEBUG:
+		item.Level = "DEBUG"
 	}
 
 	return item
@@ -185,6 +190,7 @@ func (s *Server) importLog(r *http.Request) (*model.LogEntity, error) {
 }
 
 func (s *Server) collectLog(instanceId, inspectionId string, begin, end time.Time) error {
+	log.Info(begin, end)
 	cmd := exec.Command(
 		s.config.Collector,
 		fmt.Sprintf("--instance-id=%s", instanceId),
@@ -217,7 +223,7 @@ func (s *Server) exportLog(w http.ResponseWriter, r *http.Request) {
 		begin = bt
 	}
 	if et, e := time.Parse(time.RFC3339, r.URL.Query().Get("end")); e == nil {
-		begin = et
+		end = et
 	}
 
 	if err := s.collectLog(instanceId, inspectionId, begin, end); err != nil {
@@ -254,7 +260,7 @@ func (s *Server) uploadLog(ctx context.Context, r *http.Request) (*utils.SimpleR
 		begin = bt
 	}
 	if et, e := time.Parse(time.RFC3339, r.URL.Query().Get("end")); e == nil {
-		begin = et
+		end = et
 	}
 
 	if err := s.collectLog(instanceId, inspectionId, begin, end); err != nil {
