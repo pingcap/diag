@@ -146,6 +146,7 @@ func (s *Server) collectLog(instanceId, inspectionId string, begin, end time.Tim
 		fmt.Sprintf("--topology=%s", path.Join(s.config.Home, "topology", instanceId+".json")),
 		fmt.Sprintf("--data-dir=%s", path.Join(s.config.Home, "inspection")),
 		"--collect=log",
+		fmt.Sprintf("--log-dir=%s", path.Join(s.config.Home, "remote-log", instanceId)),
 		fmt.Sprintf("--log-spliter=%s", s.config.Spliter),
 		fmt.Sprintf("--begin=%s", begin.Format(time.RFC3339)),
 		fmt.Sprintf("--end=%s", end.Format(time.RFC3339)),

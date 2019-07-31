@@ -8,7 +8,7 @@
     --data-dir=/dir/to/store
     --inventory=inventory.ini
     --topology=topology.json
-    --collect=basic,profile,dbinfo,slowlog:1h,metric:1h
+    --collect=basic,profile,dbinfo,log,metric
 ```
 
 ## 元信息目录
