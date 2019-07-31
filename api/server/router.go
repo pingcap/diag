@@ -73,8 +73,8 @@ func (s *Server) CreateRouter() http.Handler {
 	// logs
 	r.Handle("/api/v1/loginstances", fn.Wrap(s.listLogInstances)).Methods("GET")
 	r.Handle("/api/v1/logfiles", fn.Wrap(s.listLogFiles)).Methods("GET")
-	// they are same, just keep compatible with future
 	r.Handle("/api/v1/loginstances/{id}/logs", fn.Wrap(s.searchLog)).Methods("GET")
+	r.Handle("/api/v1/loginstances/{id}", fn.Wrap(s.uploadLog)).Methods("PUT")
 	r.Handle("/api/v1/logfiles/{id}/logs", fn.Wrap(s.searchLog)).Methods("GET")
 	// upload log inspection (dba)
 	r.Handle("/api/v1/logfiles", fn.Wrap(s.importLog)).Methods("POST")

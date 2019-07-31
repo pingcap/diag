@@ -340,7 +340,7 @@ func (s *Server) uploadInspection(ctx context.Context, r *http.Request) (*utils.
 
 	_, err = service.PutObject(&s3.PutObjectInput{
 		Bucket: aws.String(s.config.Aws.Bucket),
-		Key:    aws.String(s.config.User.Name + "/" + uuid + ".tar.gz"),
+		Key:    aws.String(s.config.User.Name + "/inspections/" + uuid + ".tar.gz"),
 		Body:   localFile,
 	})
 	if err != nil {

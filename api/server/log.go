@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -11,6 +12,9 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 	"github.com/pingcap/tidb-foresight/model"
@@ -214,6 +218,56 @@ func (s *Server) exportLog(w http.ResponseWriter, r *http.Request) {
 	}
 	defer localFile.Close()
 
-	w.Header().Set("Content-Disposition", "attachment; filename=" + inspectionId+".tar.gz")
+	w.Header().Set("Content-Disposition", "attachment; filename="+inspectionId+".tar.gz")
 	io.Copy(w, localFile)
+}
+
+func (s *Server) uploadLog(ctx context.Context, r *http.Request) (*utils.SimpleResponse, error) {
+	instanceId := mux.Vars(r)["id"]
+	inspectionId := uuid.New().String()
+	begin := time.Now().Add(time.Duration(-1) * time.Hour)
+	end := time.Now()
+
+	if err := s.collectLog(instanceId, inspectionId, begin, end); err != nil {
+		log.Error("collect log:", err)
+		return nil, utils.NewForesightError(http.StatusInternalServerError, "SERVER_ERROR", "error on collect log")
+	}
+
+	if err := s.pack(inspectionId); err != nil {
+		log.Error("pack: ", err)
+		return nil, utils.NewForesightError(http.StatusInternalServerError, "SERVER_ERROR", "error on pack log")
+	}
+
+	localFile, err := os.Open(path.Join(s.config.Home, "package", inspectionId+".tar.gz"))
+	if err != nil {
+		log.Error("read file: ", err)
+		return nil, utils.NewForesightError(http.StatusInternalServerError, "SERVER_FS_ERROR", "error on read file")
+	}
+	defer localFile.Close()
+
+	if err := os.Setenv("AWS_ACCESS_KEY_ID", s.config.Aws.AccessKey); err != nil {
+		log.Error("set env: ", err)
+		return nil, utils.NewForesightError(http.StatusInternalServerError, "SERVER_ENV_ERROR", "error on set env")
+	}
+	if err := os.Setenv("AWS_SECRET_ACCESS_KEY", s.config.Aws.AccessSecret); err != nil {
+		log.Error("set env: ", err)
+		return nil, utils.NewForesightError(http.StatusInternalServerError, "SERVER_ENV_ERROR", "error on set env")
+	}
+
+	sess := session.Must(session.NewSession(&aws.Config{
+		Region: aws.String(s.config.Aws.Region),
+	}))
+	service := s3.New(sess)
+
+	_, err = service.PutObject(&s3.PutObjectInput{
+		Bucket: aws.String(s.config.Aws.Bucket),
+		Key:    aws.String(s.config.User.Name + "/logs/" + inspectionId + ".tar.gz"),
+		Body:   localFile,
+	})
+	if err != nil {
+		log.Error("upload: ", err)
+		return nil, utils.NewForesightError(http.StatusInternalServerError, "SERVER_ERROR", "error on upload")
+	}
+
+	return nil, nil
 }

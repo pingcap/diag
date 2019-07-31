@@ -7,8 +7,8 @@ import (
 )
 
 type LogEntity struct {
-	Id           string    `json:"id"`
-	InstanceName string    `json:"instance_name"`
+	Id           string `json:"id"`
+	InstanceName string `json:"instance_name"`
 }
 
 func (m *Model) ListLogFiles(ids []string, page, size int64) ([]*LogEntity, int, error) {
