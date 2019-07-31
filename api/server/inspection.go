@@ -102,7 +102,7 @@ func (s *Server) pack(inspectionId string) error {
 	return nil
 }
 
-func (s *Server) uppack(inspectionId string) error {
+func (s *Server) unpack(inspectionId string) error {
 	cmd := exec.Command(
 		"tar",
 		"-xzvf",
@@ -276,10 +276,10 @@ func (s *Server) importInspection(r *http.Request) (*model.Inspection, error) {
 		return nil, err
 	}
 
-	err = s.uppack(inspectionId)
+	err = s.unpack(inspectionId)
 	if err != nil {
 		log.Error("unpack: ", err)
-		return nil, utils.NewForesightError(http.StatusInternalServerError, "SERVER_ERROR", "error on uppack file")
+		return nil, utils.NewForesightError(http.StatusInternalServerError, "SERVER_ERROR", "error on unpack file")
 	}
 
 	inspection := &model.Inspection{

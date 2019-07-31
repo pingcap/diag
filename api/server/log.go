@@ -100,10 +100,10 @@ func (s *Server) importLog(r *http.Request) (*model.LogEntity, error) {
 		return nil, err
 	}
 
-	err = s.uppack(inspectionId)
+	err = s.unpack(inspectionId)
 	if err != nil {
 		log.Error("unpack: ", err)
-		return nil, utils.NewForesightError(http.StatusInternalServerError, "SERVER_ERROR", "error on uppack file")
+		return nil, utils.NewForesightError(http.StatusInternalServerError, "SERVER_ERROR", "error on unpack file")
 	}
 
 	inspection := &model.Inspection{
