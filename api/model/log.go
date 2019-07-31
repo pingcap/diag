@@ -11,23 +11,22 @@ type LogEntity struct {
 	InstanceName string `json:"instance_name"`
 }
 
-func (m *Model) ListLogFiles(ids []string, page, size int64) ([]*LogEntity, int, error) {
+func (m *Model) ListLogFiles(ids []string) ([]*LogEntity, error) {
 	logs := []*LogEntity{}
 
 	if len(ids) == 0 {
-		return logs, 0, nil
+		return logs, nil
 	}
 
 	idstr := `"` + strings.Join(ids, `","`) + `"`
 
 	// TODO: avoid sql injection
 	rows, err := m.db.Query(
-		`SELECT id,instance_name FROM inspections WHERE id in (`+idstr+`) ORDER BY create_t DESC limit ?, ?`,
-		(page-1)*size, size,
+		`SELECT id,instance_name FROM inspections WHERE id in (`+idstr+`) ORDER BY create_t DESC`,
 	)
 	if err != nil {
 		log.Error("db.Query:", err)
-		return nil, 0, err
+		return nil, err
 	}
 	defer rows.Close()
 
@@ -35,37 +34,30 @@ func (m *Model) ListLogFiles(ids []string, page, size int64) ([]*LogEntity, int,
 		l := LogEntity{}
 		if err := rows.Scan(&l.Id, &l.InstanceName); err != nil {
 			log.Error("db.Query:", err)
-			return nil, 0, err
+			return nil, err
 		}
 		logs = append(logs, &l)
 	}
 
-	total := 0
-	if err = m.db.QueryRow(`SELECT COUNT(*) FROM inspections WHERE id in (` + idstr + `)`).Scan(&total); err != nil {
-		log.Error("db.Query:", err)
-		return nil, 0, err
-	}
-
-	return logs, total, nil
+	return logs, nil
 }
 
-func (m *Model) ListLogInstances(ids []string, page, size int64) ([]*LogEntity, int, error) {
+func (m *Model) ListLogInstances(ids []string) ([]*LogEntity, error) {
 	logs := []*LogEntity{}
 
 	if len(ids) == 0 {
-		return logs, 0, nil
+		return logs, nil
 	}
 
 	idstr := `"` + strings.Join(ids, `","`) + `"`
 
 	// TODO: avoid sql injection
 	rows, err := m.db.Query(
-		`SELECT id,name FROM instances WHERE id IN (`+idstr+`) ORDER BY create_t DESC limit ?, ?`,
-		(page-1)*size, size,
+		`SELECT id,name FROM instances WHERE id IN (`+idstr+`) ORDER BY create_t DESC`,
 	)
 	if err != nil {
 		log.Error("db.Query:", err)
-		return nil, 0, err
+		return nil, err
 	}
 	defer rows.Close()
 
@@ -73,16 +65,10 @@ func (m *Model) ListLogInstances(ids []string, page, size int64) ([]*LogEntity, 
 		l := LogEntity{}
 		if err := rows.Scan(&l.Id, &l.InstanceName); err != nil {
 			log.Error("db.Query:", err)
-			return nil, 0, err
+			return nil, err
 		}
 		logs = append(logs, &l)
 	}
 
-	total := 0
-	if err = m.db.QueryRow(`SELECT COUNT(*) FROM instances WHERE id in (` + idstr + `)`).Scan(&total); err != nil {
-		log.Error("db.Query:", err)
-		return nil, 0, err
-	}
-
-	return logs, total, nil
+	return logs, nil
 }

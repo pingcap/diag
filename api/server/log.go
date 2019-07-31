@@ -28,16 +28,7 @@ type LogResult struct {
 	Logs  []*searcher.Item `json:"logs"`
 }
 
-func (s *Server) listLogInstances(r *http.Request) (*utils.PaginationResponse, error) {
-	page, err := strconv.ParseInt(r.URL.Query().Get("page"), 10, 32)
-	if err != nil {
-		page = 1
-	}
-	size, err := strconv.ParseInt(r.URL.Query().Get("per_page"), 10, 32)
-	if err != nil {
-		size = 10
-	}
-
+func (s *Server) listLogInstances(r *http.Request) ([]*model.LogEntity, error) {
 	ls, err := ioutil.ReadDir(path.Join(s.config.Home, "remote-log"))
 	if err != nil {
 		log.Error("read dir: ", err)
@@ -48,23 +39,14 @@ func (s *Server) listLogInstances(r *http.Request) (*utils.PaginationResponse, e
 		logs = append(logs, l.Name())
 	}
 
-	entities, total, err := s.model.ListLogInstances(logs, page, size)
+	entities, err := s.model.ListLogInstances(logs)
 	if err != nil {
 		return nil, err
 	}
-	return utils.NewPaginationResponse(total, entities), nil
+	return entities, nil
 }
 
-func (s *Server) listLogFiles(r *http.Request) (*utils.PaginationResponse, error) {
-	page, err := strconv.ParseInt(r.URL.Query().Get("page"), 10, 32)
-	if err != nil {
-		page = 1
-	}
-	size, err := strconv.ParseInt(r.URL.Query().Get("per_page"), 10, 32)
-	if err != nil {
-		size = 10
-	}
-
+func (s *Server) listLogFiles(r *http.Request) ([]*model.LogEntity, error) {
 	ls, err := ioutil.ReadDir(path.Join(s.config.Home, "remote-log"))
 	if err != nil {
 		log.Error("read dir: ", err)
@@ -75,11 +57,11 @@ func (s *Server) listLogFiles(r *http.Request) (*utils.PaginationResponse, error
 		logs = append(logs, l.Name())
 	}
 
-	entities, total, err := s.model.ListLogFiles(logs, page, size)
+	entities, err := s.model.ListLogFiles(logs)
 	if err != nil {
 		return nil, err
 	}
-	return utils.NewPaginationResponse(total, entities), nil
+	return entities, nil
 }
 
 func (s *Server) searchLog(r *http.Request) (*LogResult, error) {
