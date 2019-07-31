@@ -213,6 +213,13 @@ func (s *Server) exportLog(w http.ResponseWriter, r *http.Request) {
 	begin := time.Now().Add(time.Duration(-1) * time.Hour)
 	end := time.Now()
 
+	if bt, e := time.Parse(time.RFC3339, r.URL.Query().Get("begin")); e == nil {
+		begin = bt
+	}
+	if et, e := time.Parse(time.RFC3339, r.URL.Query().Get("end")); e == nil {
+		begin = et
+	}
+
 	if err := s.collectLog(instanceId, inspectionId, begin, end); err != nil {
 		log.Error("collect log:", err)
 		w.WriteHeader(http.StatusInternalServerError)
@@ -242,6 +249,13 @@ func (s *Server) uploadLog(ctx context.Context, r *http.Request) (*utils.SimpleR
 	inspectionId := uuid.New().String()
 	begin := time.Now().Add(time.Duration(-1) * time.Hour)
 	end := time.Now()
+
+	if bt, e := time.Parse(time.RFC3339, r.URL.Query().Get("begin")); e == nil {
+		begin = bt
+	}
+	if et, e := time.Parse(time.RFC3339, r.URL.Query().Get("end")); e == nil {
+		begin = et
+	}
 
 	if err := s.collectLog(instanceId, inspectionId, begin, end); err != nil {
 		log.Error("collect log:", err)
