@@ -8,8 +8,8 @@ import (
 )
 
 type LogEntity struct {
-	Id           string `json:"id"`
-	InstanceName string `json:"instance_name"`
+	Id           string    `json:"id"`
+	InstanceName string    `json:"instance_name"`
 	CreateTime   time.Time `json:"create_time"`
 }
 
@@ -24,9 +24,9 @@ func (m *Model) ListLogs(ids []string, page, size int64) ([]*LogEntity, int, err
 
 	// TODO: avoid sql injection
 	rows, err := m.db.Query(
-		`SELECT id,name,create_t FROM instances WHERE id IN (` + idstr + `)
+		`SELECT id,name,create_t FROM instances WHERE id IN (`+idstr+`)
 		UNION 
-		SELECT id,instance,create_t FROM inspections WHERE id in (` + idstr + `)
+		SELECT id,instance,create_t FROM inspections WHERE id in (`+idstr+`)
 		ORDER BY create_t DESC limit ?, ?`,
 		(page-1)*size, size,
 	)

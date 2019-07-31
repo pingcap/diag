@@ -79,6 +79,10 @@ func (s *Server) CreateRouter() http.Handler {
 	r.Handle("/api/v1/logs/{id}", fn.Wrap(s.searchLog)).Methods("GET")
 	r.Handle("/api/v1/loginstances/{id}/logs", fn.Wrap(s.searchLog)).Methods("GET")
 	r.Handle("/api/v1/logfiles/{id}/logs", fn.Wrap(s.searchLog)).Methods("GET")
+	// upload log inspection (dba)
+	r.Handle("/api/v1/logfiles", fn.Wrap(s.importLog)).Methods("GET")
+	// download log inspection (user)
+	r.HandleFunc("/api/v1/loginstances/{id}.tar.gz", s.exportLog).Methods("GET")
 
 	// metric
 	r.PathPrefix("/api/v1/metric/").HandlerFunc(s.metric)
