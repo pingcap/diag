@@ -77,7 +77,7 @@ func (s *Server) CreateRouter() http.Handler {
 	r.Handle("/api/v1/loginstances/{id}/logs", fn.Wrap(s.searchLog)).Methods("GET")
 	r.Handle("/api/v1/logfiles/{id}/logs", fn.Wrap(s.searchLog)).Methods("GET")
 	// upload log inspection (dba)
-	r.Handle("/api/v1/logfiles", fn.Wrap(s.importLog)).Methods("GET")
+	r.Handle("/api/v1/logfiles", fn.Wrap(s.importLog)).Methods("POST")
 	// download log inspection (user)
 	r.HandleFunc("/api/v1/loginstances/{id}.tar.gz", s.exportLog).Methods("GET")
 
