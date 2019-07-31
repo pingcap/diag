@@ -22,9 +22,11 @@ func (s *Server) profileAllProcess(instanceId, inspectionId string) error {
 		fmt.Sprintf("--instance-id=%s", inspectionId),
 		fmt.Sprintf("--inspection-id=%s", inspectionId),
 		fmt.Sprintf("--topology=%s", path.Join(s.config.Home, "topology", instanceId+".json")),
-		fmt.Sprintf("--dest=%s", path.Join(s.config.Home, "inspection", inspectionId)),
+		fmt.Sprintf("--data-dir=%s", path.Join(s.config.Home, "inspection")),
 		"--collect=profile",
 	)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
 	log.Info(cmd.Args)
 	err := cmd.Run()
 	if err != nil {
