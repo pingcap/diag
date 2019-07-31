@@ -47,9 +47,9 @@ func (m *Model) ListLogs(ids []string, page, size int64) ([]*LogEntity, int, err
 
 	total := 0
 	if err = m.db.QueryRow(`SELECT COUNT(*) FROM (
-		SELECT id FORM instances WHERE id in (` + idstr + `)
+		SELECT id FROM instances WHERE id in (` + idstr + `)
 		UNION
-		SELECT id FORM inspections WHERE id in (` + idstr + `)
+		SELECT id FROM inspections WHERE id in (` + idstr + `)
 	)`).Scan(&total); err != nil {
 		log.Error("db.Query:", err)
 		return nil, 0, err
