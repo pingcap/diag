@@ -96,6 +96,7 @@ func (s *Server) CreateRouter() http.Handler {
 	r.Handle("/api/v1/profiles", fn.Wrap(s.listAllProfiles)).Methods("GET")
 	r.HandleFunc("/api/v1/profiles/{id}/{component}/{address}/{type}/{file}", s.getProfile).Methods("GET")
 	r.Handle("/api/v1/profiles/{id}", fn.Wrap(s.uploadInspection)).Methods("PUT")
+	r.HandleFunc("/api/v1/profiles/{id}.tar.gz", s.exportInspection).Methods("GET")
 
 	// other
 	r.Handle("/ping", fn.Wrap(s.ping)).Methods("GET")
