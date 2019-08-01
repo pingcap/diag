@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Button, Modal, Spin } from 'antd';
+import { Button, Modal, Table } from 'antd';
 import { router } from 'umi';
 import { connect } from 'dva';
 import { ConnectProps, Dispatch, ConnectState } from '@/models/connect';
 import { CurrentUser } from '@/models/user';
 import UploadRemoteReportModal from '@/components/UploadRemoteReportModal';
-import { IFlameGraphDetail } from '@/models/misc';
+import { IFlameGraph } from '@/models/misc';
 import { queryFlamegraph } from '@/services/misc';
 
 const styles = require('../style.less');
@@ -16,29 +16,67 @@ interface ReportDetailProps extends ConnectProps {
   curUser: CurrentUser;
 }
 
-function FlameGraph({ detail }: { detail: IFlameGraphDetail }) {
-  return (
-    <div>
-      <p>click to view in a new tab</p>
-      <a href={detail.svg_url} target="_blank" rel="noopener noreferrer">
-        <img alt="flamegraph" src={detail.image_url} style={{ maxWidth: '100%' }} />
+interface IFlame {
+  component: string;
+  address: string;
+  svgFullPath: string;
+  svgFileName: string;
+}
+
+const tableColumns = [
+  {
+    title: '组件',
+    dataIndex: 'component',
+    key: 'component',
+  },
+  {
+    title: '机器',
+    dataIndex: 'address',
+    key: 'address',
+  },
+  {
+    title: '图片',
+    dataIndex: 'url',
+    key: 'url',
+    render: (text: any, record: IFlame) => (
+      <a target="_blank" rel="noopener noreferrer" href={record.svgFullPath}>
+        {record.svgFileName}
       </a>
-    </div>
-  );
+    ),
+  },
+];
+
+function genFlames(detail: IFlameGraph): IFlame[] {
+  const flames: IFlame[] = [];
+  detail.items.forEach(item => {
+    item.flames.forEach(flame => {
+      flames.push({
+        component: item.component,
+        address: item.address,
+        svgFullPath: flame,
+        svgFileName: flame.split('/').pop() || '',
+      });
+    });
+  });
+  return flames;
 }
 
 function FlameGraphDetail({ dispatch, match, curUser }: ReportDetailProps) {
   const reportId: string | undefined = match && match.params && (match.params as any).id;
 
+  const [loading, setLoading] = useState(false);
+  const [flames, setFlames] = useState<IFlame[]>([]);
+
   const [uploadRemoteModalVisible, setUploadRemoteModalVisible] = useState(false);
-  const [detail, setDetail] = useState<IFlameGraphDetail | null>(null);
 
   useEffect(() => {
     async function fetchDetail() {
       if (reportId) {
-        const res: IFlameGraphDetail | undefined = await queryFlamegraph(reportId);
+        setLoading(true);
+        const res: IFlameGraph | undefined = await queryFlamegraph(reportId);
+        setLoading(false);
         if (res) {
-          setDetail(res);
+          setFlames(genFlames(res));
         }
       }
     }
@@ -55,7 +93,7 @@ function FlameGraphDetail({ dispatch, match, curUser }: ReportDetailProps) {
         dispatch({
           type: 'misc/deleteFlamegraph',
           payload: reportId,
-        }).then(() => router.goBack());
+        }).then((ret: boolean) => ret && router.goBack());
       },
     });
   }
@@ -75,7 +113,7 @@ function FlameGraphDetail({ dispatch, match, curUser }: ReportDetailProps) {
               上传
             </Button>
             <Button type="primary" style={{ marginRight: 20 }}>
-              <a download href={`/api/v1/flamegraphs/${reportId}.tar.gz`}>
+              <a download href={`/api/v1/perfprofiles/${reportId}.tar.gz`}>
                 下载
               </a>
             </Button>
@@ -85,17 +123,11 @@ function FlameGraphDetail({ dispatch, match, curUser }: ReportDetailProps) {
           删除
         </Button>
       </div>
-      <section className={styles.report_detail_body}>
-        {detail ? (
-          <FlameGraph detail={detail} />
-        ) : (
-          <Spin size="small" style={{ marginLeft: 8, marginRight: 8 }} />
-        )}
-      </section>
+      <Table dataSource={flames} columns={tableColumns} pagination={false} loading={loading} />
       <UploadRemoteReportModal
         visible={uploadRemoteModalVisible}
         onClose={() => setUploadRemoteModalVisible(false)}
-        uploadUrl={`/flamegraphs/${reportId}`}
+        uploadUrl={`/perfprofiles/${reportId}`}
       />
     </div>
   );

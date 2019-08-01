@@ -26,8 +26,8 @@ const tableColumns = (curUser: CurrentUser, onDelete: any, onUpload: any) => [
   },
   {
     title: '实例名称',
-    dataIndex: 'machine',
-    key: 'machine',
+    dataIndex: 'instance_name',
+    key: 'instance_name',
   },
   {
     title: '开始时间',

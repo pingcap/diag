@@ -28,9 +28,9 @@ function PerfProfileDetail({ dispatch, match, curUser }: ReportDetailProps) {
       okButtonProps: { type: 'danger' },
       onOk() {
         dispatch({
-          type: 'misc/deleteFlamegraph',
+          type: 'misc/deletePerfProfile',
           payload: reportId,
-        }).then(() => router.goBack());
+        }).then((ret: boolean) => ret && router.goBack());
       },
     });
   }

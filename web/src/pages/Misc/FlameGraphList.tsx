@@ -26,8 +26,8 @@ const tableColumns = (curUser: CurrentUser, onDelete: any, onUpload: any) => [
   },
   {
     title: '实例名称',
-    dataIndex: 'machine',
-    key: 'machine',
+    dataIndex: 'instance_name',
+    key: 'instance_name',
   },
   {
     title: '开始时间',
@@ -61,7 +61,7 @@ const tableColumns = (curUser: CurrentUser, onDelete: any, onUpload: any) => [
             {record.status === 'running' ? (
               <span>下载</span>
             ) : (
-              <a download href={`/api/v1/flamegraphs/${record.uuid}.tar.gz`}>
+              <a download href={`/api/v1/perfprofiles/${record.uuid}.tar.gz`}>
                 下载
               </a>
             )}
@@ -151,7 +151,7 @@ function FlameGraphList({
 
   function uploadFlamegraph(record: IFlameGraph) {
     setUploadRemoteModalVisible(true);
-    setUploadRemoteUrl(`/flamegraphs/${record.uuid}`);
+    setUploadRemoteUrl(`/perfprofiles/${record.uuid}`);
   }
 
   function handleAddFlamegraph(instanceId: string): Promise<any> {
@@ -219,7 +219,7 @@ function FlameGraphList({
       <UploadLocalReportModal
         visible={uploadLocalModalVisible}
         onClose={() => setUploadLocalModalVisible(false)}
-        actionUrl="/api/v1/flamegraphs"
+        actionUrl="/api/v1/perfprofiles"
         onData={handleLocalFileUploaded}
       />
     </div>

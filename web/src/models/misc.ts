@@ -15,11 +15,13 @@ import { formatDatetime } from '@/utils/datetime-util';
 
 export interface IFlameGraph {
   uuid: string;
-  machine: string;
+  instance_name: string;
   user: string;
-  status: 'running' | 'finish';
+  status: 'running' | 'exception' | 'success';
   create_time: string;
   finish_time: string;
+
+  items: IFlameGraphItem[];
 }
 
 export interface IFormatFlameGraph extends IFlameGraph {
@@ -28,9 +30,10 @@ export interface IFormatFlameGraph extends IFlameGraph {
   format_finish_time: string;
 }
 
-export interface IFlameGraphDetail {
-  image_url: string;
-  svg_url: string;
+export interface IFlameGraphItem {
+  address: string;
+  component: string;
+  flames: string[];
 }
 
 export type IPerfProfile = IFlameGraph;
@@ -125,13 +128,16 @@ const MiscModel: MiscModelType = {
     },
     *deleteFlamegraph({ payload }, { call, put }) {
       const uuid = payload;
-      yield call(deleteFlamegraph, uuid);
-      yield put({
-        type: 'removeFlamegraph',
-        payload,
-      });
-      message.success(`火焰图报告 ${uuid} 已删除！`);
-      return true;
+      const res = yield call(deleteFlamegraph, uuid);
+      if (res !== undefined) {
+        yield put({
+          type: 'removeFlamegraph',
+          payload,
+        });
+        message.success(`火焰图报告 ${uuid} 已删除！`);
+        return true;
+      }
+      return false;
     },
 
     *fetchPerfProfiles({ payload }, { call, put }) {
@@ -153,13 +159,16 @@ const MiscModel: MiscModelType = {
     },
     *deletePerfProfile({ payload }, { call, put }) {
       const uuid = payload;
-      yield call(deletePerfProfile, uuid);
-      yield put({
-        type: 'removePerfProfile',
-        payload,
-      });
-      message.success(`Perf Profile 报告 ${uuid} 已删除！`);
-      return true;
+      const res = yield call(deletePerfProfile, uuid);
+      if (res !== undefined) {
+        yield put({
+          type: 'removePerfProfile',
+          payload,
+        });
+        message.success(`Perf Profile 报告 ${uuid} 已删除！`);
+        return true;
+      }
+      return false;
     },
   },
   reducers: {
