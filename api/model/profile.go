@@ -46,17 +46,27 @@ func (p *Profile) loadItems(dir string) error {
 			return err
 		}
 
+		metas := []string{}
+		for _, m := range ms {
+			metas = append(metas, path.Join("/api", "v1", "perfprofiles", p.Uuid, xs[0], xs[1], "meta", m))
+		}
+
 		fs, err := p.listFileNames(path.Join(dir, p.Uuid, f.Name(), "flame"))
 		if err != nil {
 			log.Error("list dir:", err)
 			return err
 		}
 
+		flames := []string{}
+		for _, f := range fs {
+			flames = append(flames, path.Join("/api", "v1", "perfprofiles", p.Uuid, xs[0], xs[1], "flame", f))
+		}
+
 		p.Items = append(p.Items, ProfileItem{
 			Component: xs[0],
 			Address:   xs[1],
-			Metas:     path.Join("api", "v1", "perfprofiles", p.Uuid, xs[0], xs[1], "meta", ms),
-			Flames:    path.Join("api", "v1", "perfprofiles", p.Uuid, xs[0], xs[1], "flame", fs),
+			Metas:     metas,
+			Flames:    flames,
 		})
 	}
 
