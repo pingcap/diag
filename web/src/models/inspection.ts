@@ -145,19 +145,23 @@ const InspectionModel: InspectionModelType = {
   effects: {
     *fetchInstances(_, { call, put }) {
       const res: IInstance[] = yield call(queryInstances);
-      yield put({
-        type: 'saveInstances',
-        payload: res,
-      });
+      if (res !== undefined) {
+        yield put({
+          type: 'saveInstances',
+          payload: res,
+        });
+      }
     },
     *deleteInstance({ payload }, { call, put }) {
       const instanceId = payload;
-      yield call(deleteInstance, instanceId);
-      yield put({
-        type: 'removeInstance',
-        payload,
-      });
-      message.success(`实例 ${instanceId} 已删除！`);
+      const res = yield call(deleteInstance, instanceId);
+      if (res !== undefined) {
+        yield put({
+          type: 'removeInstance',
+          payload,
+        });
+        message.success(`实例 ${instanceId} 已删除！`);
+      }
     },
 
     *fetchInspections({ payload }, { call, put }) {
@@ -168,34 +172,38 @@ const InspectionModel: InspectionModelType = {
       } else {
         res = yield call(queryAllInspections, page);
       }
-      yield put({
-        type: 'saveInspections',
-        payload: {
-          res,
-          page,
-        },
-      });
+      if (res !== undefined) {
+        yield put({
+          type: 'saveInspections',
+          payload: {
+            res,
+            page,
+          },
+        });
+      }
     },
     *deleteInspection({ payload }, { call, put }) {
       const inspectionId = payload;
-      yield call(deleteInspection, inspectionId);
-      yield put({
-        type: 'removeInspection',
-        payload,
-      });
-      message.success(`诊断报告 ${inspectionId} 已删除！`);
-      return true;
+      const res = yield call(deleteInspection, inspectionId);
+      if (res !== undefined) {
+        yield put({
+          type: 'removeInspection',
+          payload,
+        });
+        message.success(`诊断报告 ${inspectionId} 已删除！`);
+      }
+      return res !== undefined;
     },
     *addInspection({ payload }, { call, put }) {
       const { instanceId, config } = payload;
       const res = yield call(addInspection, instanceId, config);
-      if (res) {
+      if (res !== undefined) {
         yield put({
           type: 'saveInspection',
           payload: res as IInspection,
         });
       }
-      return res;
+      return res !== undefined;
     },
   },
 

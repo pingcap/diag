@@ -29,7 +29,7 @@ function ReportDetail({ dispatch, match, curUser }: ReportDetailProps) {
         dispatch({
           type: 'inspection/deleteInspection',
           payload: reportId,
-        }).then(() => router.goBack());
+        }).then((ret: boolean) => ret && router.goBack());
       },
     });
   }

@@ -38,7 +38,7 @@ const UserModel: UserModelType = {
     *login({ payload }, { call, put }) {
       const loginInfo = payload;
       const res = yield call(accountLogin, loginInfo);
-      if (res) {
+      if (res !== undefined) {
         yield put({
           type: 'saveCurrentUser',
           payload: res,
@@ -68,11 +68,13 @@ const UserModel: UserModelType = {
         return;
       }
 
-      const response = yield call(queryCurrent);
-      yield put({
-        type: 'saveCurrentUser',
-        payload: response,
-      });
+      const res = yield call(queryCurrent);
+      if (res !== undefined) {
+        yield put({
+          type: 'saveCurrentUser',
+          payload: res,
+        });
+      }
     },
   },
 

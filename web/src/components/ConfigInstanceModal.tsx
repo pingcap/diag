@@ -107,9 +107,9 @@ function ConfigInstanceModal({ visible, onClose, dispatch, manual, instanceId }:
           instanceId,
           config,
         },
-      }).then((res: any) => {
+      }).then((ret: boolean) => {
         setSubmitting(false);
-        if (res) {
+        if (ret) {
           onClose();
           message.success(`${instanceId} 手动诊断成功！`);
         }

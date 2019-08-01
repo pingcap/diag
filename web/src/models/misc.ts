@@ -112,19 +112,23 @@ const MiscModel: MiscModelType = {
     *fetchFlamegraphs({ payload }, { call, put }) {
       const { page } = payload;
       const res = yield call(queryFlamegraphs, page);
-      yield put({
-        type: 'saveFlamegraphs',
-        payload: { page, res },
-      });
+      if (res !== undefined) {
+        yield put({
+          type: 'saveFlamegraphs',
+          payload: { page, res },
+        });
+      }
     },
     *addFlamegraph({ payload }, { call, put }) {
       const instanceId = payload;
       const res = yield call(addFlamegraph, instanceId);
-      yield put({
-        type: 'saveFlamegraph',
-        payload: res,
-      });
-      return true;
+      if (res !== undefined) {
+        yield put({
+          type: 'saveFlamegraph',
+          payload: res,
+        });
+      }
+      return res !== undefined;
     },
     *deleteFlamegraph({ payload }, { call, put }) {
       const uuid = payload;
@@ -135,27 +139,30 @@ const MiscModel: MiscModelType = {
           payload,
         });
         message.success(`火焰图报告 ${uuid} 已删除！`);
-        return true;
       }
-      return false;
+      return res !== undefined;
     },
 
     *fetchPerfProfiles({ payload }, { call, put }) {
       const { page } = payload;
       const res = yield call(queryPerfProfiles, page);
-      yield put({
-        type: 'savePerfProfiles',
-        payload: { page, res },
-      });
+      if (res !== undefined) {
+        yield put({
+          type: 'savePerfProfiles',
+          payload: { page, res },
+        });
+      }
     },
     *addPerfProfile({ payload }, { call, put }) {
       const instanceId = payload;
       const res = yield call(addPerfProfile, instanceId);
-      yield put({
-        type: 'savePerfProfile',
-        payload: res,
-      });
-      return true;
+      if (res !== undefined) {
+        yield put({
+          type: 'savePerfProfile',
+          payload: res,
+        });
+      }
+      return res !== undefined;
     },
     *deletePerfProfile({ payload }, { call, put }) {
       const uuid = payload;
@@ -166,9 +173,8 @@ const MiscModel: MiscModelType = {
           payload,
         });
         message.success(`Perf Profile 报告 ${uuid} 已删除！`);
-        return true;
       }
-      return false;
+      return res !== undefined;
     },
   },
   reducers: {

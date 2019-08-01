@@ -95,7 +95,7 @@ const MiscModel: LogModelType = {
   effects: {
     *fetchLogInstances({ _ }, { call, put }) {
       const res: ILogInstance[] | undefined = yield call(queryLogInstances);
-      if (res) {
+      if (res !== undefined) {
         yield put({
           type: 'saveLogInstances',
           payload: res,
@@ -104,7 +104,7 @@ const MiscModel: LogModelType = {
     },
     *fetchLogFiles({ _ }, { call, put }) {
       const res: ILogFile[] | undefined = yield call(queryLogFiles);
-      if (res) {
+      if (res !== undefined) {
         yield put({
           type: 'saveLogFiles',
           payload: res,
@@ -129,7 +129,7 @@ const MiscModel: LogModelType = {
       } else {
         res = yield call(queryFileLogs, logFileId, parms);
       }
-      if (res) {
+      if (res !== undefined) {
         yield put({
           type: 'saveLogs',
           payload: res,
@@ -145,7 +145,7 @@ const MiscModel: LogModelType = {
       } else {
         res = yield call(queryFileLogs, logFileId, { token });
       }
-      if (res) {
+      if (res !== undefined) {
         yield put({
           type: 'saveLogs',
           payload: res,
