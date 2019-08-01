@@ -1,7 +1,6 @@
 package task
 
 import (
-	"database/sql"
 	"fmt"
 	"io/ioutil"
 	"path"
@@ -15,8 +14,8 @@ type SaveNetworkTask struct {
 	BaseTask
 }
 
-func SaveNetwork(NetworkId string, src string, data *TaskData, db *sql.DB) Task {
-	return &SaveNetworkTask{BaseTask{NetworkId, src, data, db}}
+func SaveNetwork(base BaseTask) Task {
+	return &SaveNetworkTask{base}
 }
 
 type netstat struct {

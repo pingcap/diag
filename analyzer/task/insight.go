@@ -12,19 +12,17 @@ type Insight []*InsightInfo
 
 type InsightInfo struct {
 	NodeIp string
-	Info   struct {
-		Meta struct {
-			Tidb []struct {
-				Version string `json:"release_version"`
-			} `json:"tidb"`
-			Tikv []struct {
-				Version string `json:"release_version"`
-			} `json:"tikv"`
-			Pd []struct {
-				Version string `json:"release_version"`
-			} `json:"pd"`
-		} `json:"meta"`
-	}
+	Meta   struct {
+		Tidb []struct {
+			Version string `json:"release_version"`
+		} `json:"tidb"`
+		Tikv []struct {
+			Version string `json:"release_version"`
+		} `json:"tikv"`
+		Pd []struct {
+			Version string `json:"release_version"`
+		} `json:"pd"`
+	} `json:"meta"`
 	Sysinfo struct {
 		Os struct {
 			Name string `json:"name"`
@@ -87,6 +85,7 @@ func (t *ParseInsightTask) Run() error {
 		if err != nil {
 			log.Error("parse collect.json", err)
 		}
+		info.NodeIp = ip.Name()
 		insight = append(insight, info)
 	}
 

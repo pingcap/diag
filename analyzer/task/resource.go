@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/pingcap/tidb-foresight/analyzer/utils"
+	log "github.com/sirupsen/logrus"
 )
 
 type Resource struct {
@@ -61,4 +62,45 @@ func (t *ParseResourceTask) ResourceUtil(query string) utils.FloatArray {
 	inspectTime := time.Unix(int64(t.data.meta.InspectTime), 0)
 	v, _ := utils.QueryPromRange(query, inspectTime.Add(-1*time.Hour), inspectTime, time.Minute)
 	return v
+}
+
+type SaveResourceTask struct {
+	BaseTask
+}
+
+// SaveResource returns an instance of SaveResourceTask
+func SaveResource(base BaseTask) Task {
+	return &SaveResourceTask{base}
+}
+
+func (t *SaveResourceTask) Run() error {
+	r := t.data.resource
+	err := t.InsertData("cpu", "1h", r.AvgCPU)
+	if err != nil {
+		return err
+	}
+	err = t.InsertData("disk", "1h", r.AvgDisk)
+	if err != nil {
+		return err
+	}
+	err = t.InsertData("ioutil", "1h", r.AvgIoUtil)
+	if err != nil {
+		return err
+	}
+	err = t.InsertData("mem", "1h", r.AvgMem)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (t *SaveResourceTask) InsertData(resource, duration string, value float64) error {
+	if _, err := t.db.Exec(
+		"INSERT INTO inspection_resource(inspection, resource, duration, value) VALUES(?, ?, ?, ?)",
+		t.inspectionId, resource, duration, value,
+	); err != nil {
+		log.Error("db:Exec: ", err)
+		return err
+	}
+	return nil
 }

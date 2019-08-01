@@ -94,12 +94,12 @@ CREATE TABLE IF NOT EXISTS inspection_slow_log (
 	db VARCHAR(64) NOT NULL,
 	digest VARCHAR(64) NOT NULL,
 	query TEXT NOT NULL,
-	node_ip VARCHAR(64) NOT NULL
+	node_ip VARCHAR(16) NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS inspection_network (
 	inspection VARCHAR(64) NOT NULL,
-	node_ip VARCHAR(64) NOT NULL,
+	node_ip VARCHAR(16) NOT NULL,
 	connections INT64 NOT NULL,
 	recv INT64 NOT NULL,
 	send INT64 NOT NULL,
@@ -126,9 +126,32 @@ CREATE TABLE IF NOT EXISTS inspection_hardware (
 
 CREATE TABLE IF NOT EXISTS inspection_dmesg (
 	inspection VARCHAR(64) NOT NULL,
-	node_ip VARCHAR(64) NOT NULL,
+	node_ip VARCHAR(16) NOT NULL,
 	log TEXT NOT NULL,
 	PRIMARY KEY (inspection, node_ip)
+);
+
+CREATE TABLE IF NOT EXISTS software_version (
+	inspection VARCHAR(64) NOT NULL,
+	node_ip VARCHAR(16) NOT NULL,
+	component VARCHAR(16) NOT NULL,
+	version VARCHAR(64) NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS software_config (
+	inspection VARCHAR(64) NOT NULL,
+	node_ip VARCHAR(16) NOT NULL,
+	port INT NOT NULL,
+	component VARCHAR(16) NOT NULL,
+	config TEXT NOT NULL,
+	PRIMARY KEY (inspection, node_ip, port, component)
+);
+
+CREATE TABLE IF NOT EXISTS inspection_resource (
+	inspection VARCHAR(64) NOT NULL,
+	resource VARCHAR(64) NOT NULL,
+	duration VARCHAR(64) NOT NULL,
+	value DOUBLE NOT NULL
 );
 `
 
