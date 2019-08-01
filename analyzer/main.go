@@ -41,7 +41,7 @@ func (a *Analyzer) runTasks(tasks ...func(task.BaseTask) task.Task) error {
 		if err := t(base).Run(); err != nil {
 			fname := runtime.FuncForPC(reflect.ValueOf(t).Pointer()).Name()
 			log.Error("run task ", fname, " :", err)
-			base.InsertSymptom(
+			err := base.InsertSymptom(
 				"exception",
 				fmt.Sprintf("error on running analyze task: %s", fname),
 				"this error is not about the tidb cluster you are running, it's about tidb-foresight itself",
@@ -66,6 +66,7 @@ func (a *Analyzer) Run() error {
 		task.ParseDBInfo,
 		task.ParseAlert,
 		task.ParseInsight,
+		task.ParseResource,
 
 		// save stage
 		task.SaveItems,
@@ -77,8 +78,11 @@ func (a *Analyzer) Run() error {
 		task.SaveAlert,
 		task.SaveHardwareInfo,
 		task.SaveDmesg,
-        task.SaveProfile,
-        task.SaveLog,
+    task.SaveLog,
+		task.SaveProfile,
+		task.SaveResource,
+		task.SaveSoftwareVersion,
+		task.SaveSoftwareConfig,
 
 		// analyze stage
 		task.Analyze,
