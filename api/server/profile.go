@@ -8,6 +8,7 @@ import (
 	"os/exec"
 	"path"
 	"strconv"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
@@ -36,17 +37,24 @@ func (s *Server) profileAllProcess(instanceId, inspectionId string) error {
 	return nil
 }
 
-func (s *Server) createProfile(r *http.Request) (*model.Inspection, error) {
+func (s *Server) createProfile(r *http.Request) (*model.Profile, error) {
 	instanceId := mux.Vars(r)["id"]
 	inspectionId := uuid.New().String()
 
-	inspection := &model.Inspection{
-		Uuid:       inspectionId,
-		InstanceId: instanceId,
-		Status:     "running",
-		Type:       "manual",
+	instance, err := s.model.GetInstance(instanceId)
+	if err != nil {
+		log.Error("get instance:", err)
+		return nil, utils.NewForesightError(http.StatusInternalServerError, "DB_QUERY_ERROR", "error on query data")
 	}
-	err := s.model.SetInspection(inspection)
+	inspection := &model.Inspection{
+		Uuid:         inspectionId,
+		InstanceId:   instanceId,
+		InstanceName: instance.Name,
+		Status:       "running",
+		Type:         "manual",
+	}
+
+	err = s.model.SetInspection(inspection)
 	if err != nil {
 		log.Error("set inpsection: ", err)
 		return nil, utils.NewForesightError(http.StatusInternalServerError, "DB_INSERT_ERROR", "error on insert data")
@@ -71,7 +79,12 @@ func (s *Server) createProfile(r *http.Request) (*model.Inspection, error) {
 		}
 	}()
 
-	return inspection, nil
+	return &model.Profile{
+		Uuid:         inspectionId,
+		InstanceName: instance.Name,
+		Status:       "running",
+		StartTime:    time.Now(),
+	}, nil
 }
 
 func (s *Server) listProfiles(r *http.Request) (*utils.PaginationResponse, error) {
