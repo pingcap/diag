@@ -67,8 +67,8 @@ func (s *Server) CreateRouter() http.Handler {
 	r.Handle("/api/v1/instances/{id}/config", fn.Wrap(s.updateInstanceConfig)).Methods("PUT")
 	r.Handle("/api/v1/instances/{id}/inspections", fn.Wrap(s.listInspections)).Methods("GET")
 	r.Handle("/api/v1/instances/{id}/inspections", fn.Wrap(s.createInspection)).Methods("POST")
-	r.Handle("/api/v1/instances/{id}/profiles", fn.Wrap(s.listProfiles)).Methods("GET")
-	r.Handle("/api/v1/instances/{id}/profiles", fn.Wrap(s.createProfile)).Methods("POST")
+	r.Handle("/api/v1/instances/{id}/perfprofiles", fn.Wrap(s.listProfiles)).Methods("GET")
+	r.Handle("/api/v1/instances/{id}/perfprofiles", fn.Wrap(s.createProfile)).Methods("POST")
 
 	// logs
 	r.Handle("/api/v1/loginstances", fn.Wrap(s.listLogInstances)).Methods("GET")
@@ -93,10 +93,12 @@ func (s *Server) CreateRouter() http.Handler {
 	r.Handle("/api/v1/inspections/{id}", fn.Wrap(s.deleteInspection)).Methods("DELETE")
 
 	// profiles
-	r.Handle("/api/v1/profiles", fn.Wrap(s.listAllProfiles)).Methods("GET")
-	r.HandleFunc("/api/v1/profiles/{id}/{component}/{address}/{type}/{file}", s.getProfile).Methods("GET")
-	r.Handle("/api/v1/profiles/{id}", fn.Wrap(s.uploadInspection)).Methods("PUT")
-	r.HandleFunc("/api/v1/profiles/{id}.tar.gz", s.exportInspection).Methods("GET")
+	r.Handle("/api/v1/perfprofiles", fn.Wrap(s.listAllProfiles)).Methods("GET")
+	r.HandleFunc("/api/v1/perfprofiles/{id}/{component}/{address}/{type}/{file}", s.getProfile).Methods("GET")
+	r.Handle("/api/v1/perfprofiles/{id}", fn.Wrap(s.uploadInspection)).Methods("PUT")
+	r.HandleFunc("/api/v1/perfprofiles/{id}.tar.gz", s.exportInspection).Methods("GET")
+	r.Handle("/api/v1/perfprofiles", fn.Wrap(s.importInspection)).Methods("POST")
+	r.Handle("/api/v1/perfprofiles/{id}", fn.Wrap(s.deleteInspection)).Methods("DELETE")
 
 	// other
 	r.Handle("/ping", fn.Wrap(s.ping)).Methods("GET")

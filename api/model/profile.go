@@ -55,8 +55,8 @@ func (p *Profile) loadItems(dir string) error {
 		p.Items = append(p.Items, ProfileItem{
 			Component: xs[0],
 			Address:   xs[1],
-			Metas:     ms,
-			Flames:    fs,
+			Metas:     path.Join("api", "v1", "perfprofiles", p.Uuid, xs[0], xs[1], "meta", ms),
+			Flames:    path.Join("api", "v1", "perfprofiles", p.Uuid, xs[0], xs[1], "flame", fs),
 		})
 	}
 
