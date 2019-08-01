@@ -89,7 +89,7 @@ func (m *Model) ListAllProfiles(page, size int64, profileDir string) ([]*Profile
 	profiles := []*Profile{}
 
 	rows, err := m.db.Query(
-		`SELECT id,instance,status,create_t,create_t FROM inspections WHERE id IN (
+		`SELECT id,instance_name,status,create_t,create_t FROM inspections WHERE id IN (
 			SELECT inspection FROM inspection_items WHERE name = 'profile' AND status <> 'none'
 		) limit ?,?`,
 		(page-1)*size, size,
@@ -128,7 +128,7 @@ func (m *Model) ListProfiles(instanceId string, page, size int64, profileDir str
 	profiles := []*Profile{}
 
 	rows, err := m.db.Query(
-		`SELECT id,instance,status,create_t,create_t FROM inspections 
+		`SELECT id,instance_name,,status,create_t,create_t FROM inspections 
 		WHERE instance = ? AND id IN (
 			SELECT inspection FROM inspection_items WHERE status <> 'none'
 		) limit ?,?`,

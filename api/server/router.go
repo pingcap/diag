@@ -94,10 +94,10 @@ func (s *Server) CreateRouter() http.Handler {
 
 	// profiles
 	r.Handle("/api/v1/perfprofiles", fn.Wrap(s.listAllProfiles)).Methods("GET")
+	r.HandleFunc("/api/v1/perfprofiles/{id}.tar.gz", s.exportInspection).Methods("GET")
 	r.Handle("/api/v1/perfprofiles/{id}", fn.Wrap(s.getProfileDetail)).Methods("GET")
 	r.HandleFunc("/api/v1/perfprofiles/{id}/{component}/{address}/{type}/{file}", s.getProfile).Methods("GET")
 	r.Handle("/api/v1/perfprofiles/{id}", fn.Wrap(s.uploadInspection)).Methods("PUT")
-	r.HandleFunc("/api/v1/perfprofiles/{id}.tar.gz", s.exportInspection).Methods("GET")
 	r.Handle("/api/v1/perfprofiles", fn.Wrap(s.importInspection)).Methods("POST")
 	r.Handle("/api/v1/perfprofiles/{id}", fn.Wrap(s.deleteInspection)).Methods("DELETE")
 
