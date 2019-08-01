@@ -8,27 +8,28 @@ import (
 )
 
 type Inspection struct {
-	Uuid       string      `json:"uuid"`
-	InstanceId string      `json:"instance_id"`
-	Status     string      `json:"status"`
-	Message    string      `json:"message"`
-	Type       string      `json:"type"`
-	CreateTime *time.Time  `json:"create_time,omitempty"`
-	FinishTime *time.Time  `json:"finish_time,omitempty"`
-	ReportPath string      `json:"report_path"`
-	Tidb       string      `json:"tidb"`
-	Tikv       string      `json:"tikv"`
-	Pd         string      `json:"pd"`
-	Grafana    string      `json:"grafana"`
-	Prometheus string      `json:"prometheus"`
-	Report     interface{} `json:"report,omitempty"`
+	Uuid         string      `json:"uuid"`
+	InstanceId   string      `json:"instance_id"`
+	InstanceName string      `json:"instance_name"`
+	Status       string      `json:"status"`
+	Message      string      `json:"message"`
+	Type         string      `json:"type"`
+	CreateTime   *time.Time  `json:"create_time,omitempty"`
+	FinishTime   *time.Time  `json:"finish_time,omitempty"`
+	ReportPath   string      `json:"report_path"`
+	Tidb         string      `json:"tidb"`
+	Tikv         string      `json:"tikv"`
+	Pd           string      `json:"pd"`
+	Grafana      string      `json:"grafana"`
+	Prometheus   string      `json:"prometheus"`
+	Report       interface{} `json:"report,omitempty"`
 }
 
 func (m *Model) ListAllInspections(page, size int64) ([]*Inspection, int, error) {
 	inspections := []*Inspection{}
 
 	rows, err := m.db.Query(
-		"SELECT id,instance,status,message,type,create_t,tidb,tikv,pd,grafana,prometheus FROM inspections ORDER BY create_t DESC LIMIT ?, ?", 
+		"SELECT id,instance,status,message,type,create_t,tidb,tikv,pd,grafana,prometheus FROM inspections ORDER BY create_t DESC LIMIT ?, ?",
 		(page-1)*size, size,
 	)
 	if err != nil {
@@ -76,7 +77,8 @@ func (m *Model) ListInspections(instanceId string, page, size int64) ([]*Inspect
 	inspections := []*Inspection{}
 
 	rows, err := m.db.Query(
-		"SELECT id,instance,status,message,type,create_t,tidb,tikv,pd,grafana,prometheus FROM inspections WHERE instance = ? limit ?,?",
+		`SELECT id,instance,instance_name,status,message,type,create_t,tidb,tikv,pd,grafana,prometheus 
+		FROM inspections WHERE instance = ? ORDER BY create_t DESC LIMIT ?,?`,
 		instanceId, (page-1)*size, size,
 	)
 	if err != nil {
@@ -88,9 +90,9 @@ func (m *Model) ListInspections(instanceId string, page, size int64) ([]*Inspect
 	for rows.Next() {
 		inspection := Inspection{}
 		err := rows.Scan(
-			&inspection.Uuid, &inspection.InstanceId, &inspection.Status, &inspection.Message,
-			&inspection.Type, &inspection.CreateTime, &inspection.Tidb, &inspection.Tikv, &inspection.Pd,
-			&inspection.Grafana, &inspection.Prometheus,
+			&inspection.Uuid, &inspection.InstanceId, &inspection.InstanceName, &inspection.Status,
+			&inspection.Message, &inspection.Type, &inspection.CreateTime, &inspection.Tidb, &inspection.Tikv,
+			&inspection.Pd, &inspection.Grafana, &inspection.Prometheus,
 		)
 		if err != nil {
 			log.Error("db.Query:", err)
@@ -122,9 +124,11 @@ func (m *Model) ListInspections(instanceId string, page, size int64) ([]*Inspect
 
 func (m *Model) SetInspection(inspection *Inspection) error {
 	_, err := m.db.Exec(
-		"REPLACE INTO inspections(id,instance,status,message,type,tidb,tikv,pd,grafana,prometheus) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-		inspection.Uuid, inspection.InstanceId, inspection.Status, inspection.Message, inspection.Type,
-		inspection.Tidb, inspection.Tikv, inspection.Pd, inspection.Grafana, inspection.Prometheus,
+		`REPLACE INTO inspections(id,instance,instance_name,status,message,type,tidb,tikv,pd,grafana,prometheus) 
+		VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		inspection.Uuid, inspection.InstanceId, inspection.InstanceName, inspection.Status,
+		inspection.Message, inspection.Type, inspection.Tidb, inspection.Tikv, inspection.Pd,
+		inspection.Grafana, inspection.Prometheus,
 	)
 	if err != nil {
 		log.Error("db.Exec:", err)
@@ -137,12 +141,13 @@ func (m *Model) SetInspection(inspection *Inspection) error {
 func (m *Model) GetInspectionDetail(inspectionId string) (*Inspection, error) {
 	inspection := Inspection{}
 	err := m.db.QueryRow(
-		"SELECT id,instance,status,message,type,create_t,tidb,tikv,pd,grafana,prometheus FROM inspections WHERE id = ?",
+		`SELECT id,instance,instance_name,status,message,type,create_t,
+		tidb,tikv,pd,grafana,prometheus FROM inspections WHERE id = ?`,
 		inspectionId,
 	).Scan(
-		&inspection.Uuid, &inspection.InstanceId, &inspection.Status, &inspection.Message,
-		&inspection.Type, &inspection.CreateTime, &inspection.Tidb, &inspection.Tikv, &inspection.Pd,
-		&inspection.Grafana, &inspection.Prometheus,
+		&inspection.Uuid, &inspection.InstanceId, &inspection.InstanceName, &inspection.Status,
+		&inspection.Message, &inspection.Type, &inspection.CreateTime, &inspection.Tidb, &inspection.Tikv,
+		&inspection.Pd, &inspection.Grafana, &inspection.Prometheus,
 	)
 	if err != nil {
 		log.Error("db.Query:", err)

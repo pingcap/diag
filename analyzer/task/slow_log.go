@@ -134,7 +134,7 @@ func (t *SaveSlowLogTask) Run() error {
 		return nil
 	}
 
-	logDir := filepath.Join(t.src, "remote-log")
+	logDir := filepath.Join(t.src, "log")
 
 	files, err := LoadSlowQueryLogFiles(logDir)
 	if err != nil {
@@ -188,6 +188,10 @@ func LoadSlowQueryLogFiles(logDir string) ([]SlowQueryLogFile, error) {
 	var files []SlowQueryLogFile
 	// "xxxxx", "172.16.5.7", "tidb-4000", "tidb_slow_query.log")
 	err := filepath.Walk(logDir, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			log.Error("walk dir:", err)
+			return err
+		}
 		if info.Name() != "tidb_slow_query.log" {
 			return nil
 		}

@@ -46,17 +46,27 @@ func (p *Profile) loadItems(dir string) error {
 			return err
 		}
 
+		metas := []string{}
+		for _, m := range ms {
+			metas = append(metas, path.Join("/api", "v1", "perfprofiles", p.Uuid, xs[0], xs[1], "meta", m))
+		}
+
 		fs, err := p.listFileNames(path.Join(dir, p.Uuid, f.Name(), "flame"))
 		if err != nil {
 			log.Error("list dir:", err)
 			return err
 		}
 
+		flames := []string{}
+		for _, f := range fs {
+			flames = append(flames, path.Join("/api", "v1", "perfprofiles", p.Uuid, xs[0], xs[1], "flame", f))
+		}
+
 		p.Items = append(p.Items, ProfileItem{
 			Component: xs[0],
 			Address:   xs[1],
-			Metas:     ms,
-			Flames:    fs,
+			Metas:     metas,
+			Flames:    flames,
 		})
 	}
 
@@ -79,8 +89,8 @@ func (m *Model) ListAllProfiles(page, size int64, profileDir string) ([]*Profile
 	profiles := []*Profile{}
 
 	rows, err := m.db.Query(
-		`SELECT id,instance,status,create_t,create_t FROM inspections WHERE id IN (
-			SELECT inspection FROM inspection_items WHERE status <> 'none'
+		`SELECT id,instance_name,status,create_t,create_t FROM inspections WHERE id IN (
+			SELECT inspection FROM inspection_items WHERE name = 'profile' AND status <> 'none'
 		) limit ?,?`,
 		(page-1)*size, size,
 	)
@@ -104,7 +114,9 @@ func (m *Model) ListAllProfiles(page, size int64, profileDir string) ([]*Profile
 	}
 
 	total := 0
-	if err = m.db.QueryRow("SELECT COUNT(DISTINCT(inspection)) FROM inspection_items WHERE status <> 'none'").Scan(&total); err != nil {
+	if err = m.db.QueryRow(
+		"SELECT COUNT(DISTINCT(inspection)) FROM inspection_items WHERE name = 'profile' AND status <> 'none'",
+	).Scan(&total); err != nil {
 		log.Error("db.Query:", err)
 		return nil, 0, err
 	}
@@ -116,7 +128,7 @@ func (m *Model) ListProfiles(instanceId string, page, size int64, profileDir str
 	profiles := []*Profile{}
 
 	rows, err := m.db.Query(
-		`SELECT id,instance,status,create_t,create_t FROM inspections 
+		`SELECT id,instance_name,,status,create_t,create_t FROM inspections 
 		WHERE instance = ? AND id IN (
 			SELECT inspection FROM inspection_items WHERE status <> 'none'
 		) limit ?,?`,
@@ -155,4 +167,24 @@ func (m *Model) ListProfiles(instanceId string, page, size int64, profileDir str
 	}
 
 	return profiles, total, nil
+}
+
+func (m *Model) GetProfileDetail(profileId, profileDir string) (*Profile, error) {
+	profile := Profile{}
+	if err := m.db.QueryRow(
+		`SELECT id,instance,status,create_t,create_t FROM inspections WHERE id = ?`,
+		profileId,
+	).Scan(
+		&profile.Uuid, &profile.InstanceName, &profile.Status, &profile.StartTime, &profile.EndTime,
+	); err != nil {
+		log.Error("db.Query:", err)
+		return nil, err
+	}
+
+	if err := profile.loadItems(profileDir); err != nil {
+		log.Error("load profile items:", err)
+		return nil, err
+	}
+
+	return &profile, nil
 }

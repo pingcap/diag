@@ -53,7 +53,7 @@ func (a *Analyzer) runTasks(tasks ...func(task.BaseTask) task.Task) error {
 }
 
 func (a *Analyzer) Run() error {
-	return a.runTasks(
+	err := a.runTasks(
 		task.Clear,
 
 		// parse stage
@@ -78,6 +78,7 @@ func (a *Analyzer) Run() error {
 		task.SaveAlert,
 		task.SaveHardwareInfo,
 		task.SaveDmesg,
+    task.SaveLog,
 		task.SaveProfile,
 		task.SaveResource,
 		task.SaveSoftwareVersion,
@@ -86,6 +87,22 @@ func (a *Analyzer) Run() error {
 		// analyze stage
 		task.Analyze,
 	)
+
+	if err == nil {
+		_, err = a.db.Exec(
+			"UPDATE inspections SET status = ? WHERE id = ?",
+			"success", a.inspectionId,
+		)
+		return err
+	} else {
+		_, err = a.db.Exec(
+			"UPDATE inspections SET status = ?, message = ? WHERE id = ?",
+			"exception", "error on running analyzer", a.inspectionId,
+		)
+		return err
+	}
+
+	return nil
 }
 
 func main() {

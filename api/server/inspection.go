@@ -32,23 +32,22 @@ func (s *Server) collect(instanceId, inspectionId string) error {
 	items := []string{"metric", "basic", "dbinfo", "config", "profile"}
 	if config != nil {
 		if config.CollectHardwareInfo {
-		//	items = append(items, "hardware")
+			//	items = append(items, "hardware")
 		}
 		if config.CollectSoftwareInfo {
-		//	items = append(items, "software")
+			//	items = append(items, "software")
 		}
 		if config.CollectLog {
-		//	items = append(items, "log")
+			//	items = append(items, "log")
 		}
 		if config.CollectDemsg {
-		//	items = append(items, "demsg")
+			//	items = append(items, "demsg")
 		}
 	}
 	cmd := exec.Command(
 		s.config.Collector,
 		fmt.Sprintf("--instance-id=%s", instanceId),
 		fmt.Sprintf("--inspection-id=%s", inspectionId),
-		fmt.Sprintf("--inventory=%s", path.Join(s.config.Home, "inventory", instanceId+".ini")),
 		fmt.Sprintf("--topology=%s", path.Join(s.config.Home, "topology", instanceId+".json")),
 		fmt.Sprintf("--data-dir=%s", path.Join(s.config.Home, "inspection")),
 		fmt.Sprintf("--collect=%s", strings.Join(items, ",")),
@@ -103,7 +102,7 @@ func (s *Server) pack(inspectionId string) error {
 	return nil
 }
 
-func (s *Server) uppack(inspectionId string) error {
+func (s *Server) unpack(inspectionId string) error {
 	cmd := exec.Command(
 		"tar",
 		"-xzvf",
@@ -277,10 +276,10 @@ func (s *Server) importInspection(r *http.Request) (*model.Inspection, error) {
 		return nil, err
 	}
 
-	err = s.uppack(inspectionId)
+	err = s.unpack(inspectionId)
 	if err != nil {
 		log.Error("unpack: ", err)
-		return nil, utils.NewForesightError(http.StatusInternalServerError, "SERVER_ERROR", "error on uppack file")
+		return nil, utils.NewForesightError(http.StatusInternalServerError, "SERVER_ERROR", "error on unpack file")
 	}
 
 	inspection := &model.Inspection{
@@ -341,7 +340,7 @@ func (s *Server) uploadInspection(ctx context.Context, r *http.Request) (*utils.
 
 	_, err = service.PutObject(&s3.PutObjectInput{
 		Bucket: aws.String(s.config.Aws.Bucket),
-		Key:    aws.String(s.config.User.Name + "/" + uuid + ".tar.gz"),
+		Key:    aws.String(s.config.User.Name + "/inspections/" + uuid + ".tar.gz"),
 		Body:   localFile,
 	})
 	if err != nil {
@@ -349,7 +348,7 @@ func (s *Server) uploadInspection(ctx context.Context, r *http.Request) (*utils.
 		return nil, utils.NewForesightError(http.StatusInternalServerError, "SERVER_ERROR", "error on upload")
 	}
 
-	return utils.NewSimpleResponse("OK", "success"), nil
+	return nil, nil
 }
 
 func (s *Server) deleteInspection(r *http.Request) (*utils.SimpleResponse, error) {

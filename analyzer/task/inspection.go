@@ -16,6 +16,7 @@ func SaveInspection(base BaseTask) Task {
 
 func (t *SaveInspectionTask) Run() error {
 	instance := t.data.args.InstanceId
+	instanceName := t.data.topology.ClusterName
 	createTime := t.data.meta.CreateTime
 	components := map[string][]string{}
 
@@ -26,9 +27,9 @@ func (t *SaveInspectionTask) Run() error {
 	}
 
 	if _, err := t.db.Exec(
-		`INSERT INTO inspections(id, instance, status, type, tidb, tikv, pd, grafana, prometheus, create_t)
-		  VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-		t.inspectionId, instance, "running", "manual", strings.Join(components["tidb"], ","),
+		`INSERT INTO inspections(id, instance, instance_name, status, type, tidb, tikv, pd, grafana, prometheus, create_t)
+		  VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		t.inspectionId, instance, instanceName, "running", "manual", strings.Join(components["tidb"], ","),
 		strings.Join(components["tikv"], ","), strings.Join(components["pd"], ","),
 		strings.Join(components["grafana"], ","), strings.Join(components["prometheus"], ","), time.Unix(int64(createTime), 0),
 	); err != nil {

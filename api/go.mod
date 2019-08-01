@@ -12,7 +12,7 @@ require (
 	github.com/gorilla/mux v1.7.3
 	github.com/mattn/go-sqlite3 v1.10.0
 	github.com/pingcap/check v0.0.0-20190102082844-67f458068fc8
-	github.com/pingcap/fn v0.0.0-20190705093707-35c78062c0ec
+	github.com/pingcap/fn v0.0.0-20190719082715-aecf7e1753e7
 	github.com/prometheus/common v0.6.0
 	github.com/sirupsen/logrus v1.4.2
 )

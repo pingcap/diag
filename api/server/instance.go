@@ -30,14 +30,14 @@ func (s *Server) listInstance() ([]*model.Instance, error) {
 func (s *Server) createInstance(r *http.Request) (*model.Instance, error) {
 	uid := uuid.New().String()
 
-        const MAX_FILE_SIZE = 32 * 1024 * 1024
-        r.ParseMultipartForm(MAX_FILE_SIZE)
-        file, _, err := r.FormFile("file")
-        if err != nil {
-                log.Error("retrieving file: ", err)
-                return nil, utils.NewForesightError(http.StatusBadRequest, "BAD_REQUEST", "error on retrieving file")
-        }
-        defer file.Close()
+	const MAX_FILE_SIZE = 32 * 1024 * 1024
+	r.ParseMultipartForm(MAX_FILE_SIZE)
+	file, _, err := r.FormFile("file")
+	if err != nil {
+		log.Error("retrieving file: ", err)
+		return nil, utils.NewForesightError(http.StatusBadRequest, "BAD_REQUEST", "error on retrieving file")
+	}
+	defer file.Close()
 
 	inventoryPath := path.Join(s.config.Home, "inventory", uid+".ini")
 	err = utils.SaveFile(file, inventoryPath)

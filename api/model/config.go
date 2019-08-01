@@ -74,7 +74,7 @@ func (m *Model) SetInstanceConfig(config *Config) error {
 		VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 		config.InstanceId, toInt(config.CollectHardwareInfo), toInt(config.CollectSoftwareInfo),
 		toInt(config.CollectLog), config.CollectLogDuration, config.CollectMetricDuration, toInt(config.CollectDemsg),
-		config.AutoSchedStart + "/" + config.AutoSchedDuration, config.ReportKeepDuration,
+		config.AutoSchedStart+"/"+config.AutoSchedDuration, config.ReportKeepDuration,
 	)
 
 	return err

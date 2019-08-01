@@ -60,8 +60,8 @@ def main():
                 collect(groups['metric'])
             elif item[0] == "config":
                 collect(groups['config'])
-            elif item[0] == "slowlog":
-                collect(groups['slowlog'])
+            elif item[0] == "log":
+                collect(groups['log'])
             status[item[0]] = {"status": "success"}
         except Exception as e:
             status[item[0]] = {"status": "error", "message": str(e)}

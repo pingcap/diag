@@ -28,18 +28,18 @@ class OpGroup:
         return iter(self.ops)
 
 
-def check_slowlog_args(args):
+def check_log_args(args):
     if args.log_dir is None:
-        print("--log-dir is requred when collecting slowlog")
+        print("--log-dir is requred when collecting log")
         sys.exit(1)
     if args.log_spliter is None:
-        print("--log-spliter is requred when collecting slowlog")
+        print("--log-spliter is requred when collecting log")
         sys.exit(1)
     if args.begin is None:
-        print("--begin is requred when collecting slowlog")
+        print("--begin is requred when collecting log")
         sys.exit(1)
     if args.end is None:
-        print("--end is requred when collecting slowlog")
+        print("--end is requred when collecting log")
         sys.exit(1)
 
 
@@ -77,7 +77,7 @@ def setup_op_groups(topology, args):
         'metric': OpGroup('metric'),
         'config': OpGroup('config'),
         'dbinfo': OpGroup('dbinfo'),
-        'slowlog': OpGroup('slowlog'),
+        'log': OpGroup('log'),
         '_teardown': OpGroup('_teardown'),
     }
 
@@ -90,8 +90,8 @@ def setup_op_groups(topology, args):
     items = map(lambda x: x.split(':'), target.split(','))
     options = {}
     for item in items:
-        if item[0] == 'slowlog':
-            check_slowlog_args(args)
+        if item[0] == 'log':
+            check_log_args(args)
         if item[0] == 'metric':
             check_metric_args(args)
         if groups.has_key(item[0]):
@@ -116,10 +116,10 @@ def setup_op_groups(topology, args):
     groups['_teardown'].add_ops(setup_meta_ops(
         cluster, os.path.join(datadir, inspection_id), create, start))
 
-    groups['slowlog'].add_ops(setup_slowlog_ops(args.log_spliter,
+    groups['log'].add_ops(setup_log_ops(args.log_spliter,
                                                 args.log_dir,
                                                 os.path.join(
-                                                    datadir, inspection_id, 'slowlog'),
+                                                    datadir, inspection_id, 'log'),
                                                 args.begin,
                                                 args.end))
 
@@ -356,10 +356,10 @@ def setup_meta_ops(cluster_name, basedir, create, start):
     return ops
 
 
-def setup_slowlog_ops(spliter, src, dst, begin, end):
+def setup_log_ops(spliter, src, dst, begin, end):
     cmd = '%s -src %s -dst %s -begin %s -end %s' % (
         spliter, src, dst, begin, end)
     ops = [
-        Op(CommandCollector(name='slowlog', command=cmd), NullOutput())
+        Op(CommandCollector(name='log', command=cmd), NullOutput())
     ]
     return ops
