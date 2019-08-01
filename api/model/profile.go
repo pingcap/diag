@@ -168,3 +168,23 @@ func (m *Model) ListProfiles(instanceId string, page, size int64, profileDir str
 
 	return profiles, total, nil
 }
+
+func (m *Model) GetProfileDetail(profileId, profileDir string) (*Profile, error) {
+	profile := Profile{}
+	if err := m.db.QueryRow(
+		`SELECT id,instance,status,create_t,create_t FROM inspections WHERE id = ?`,
+		profileId,
+	).Scan(
+		&profile.Uuid, &profile.InstanceName, &profile.Status, &profile.StartTime, &profile.EndTime,
+	); err != nil {
+		log.Error("db.Query:", err)
+		return nil, err
+	}
+
+	if err := profile.loadItems(profileDir); err != nil {
+		log.Error("load profile items:", err)
+		return nil, err
+	}
+
+	return &profile, nil
+}

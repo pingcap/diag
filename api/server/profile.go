@@ -137,3 +137,14 @@ func (s *Server) getProfile(w http.ResponseWriter, r *http.Request) {
 
 	io.Copy(w, localFile)
 }
+
+func (s *Server) getProfileDetail(r *http.Request) (*model.Profile, error) {
+	profileId := mux.Vars(r)["id"]
+
+	if profile, err := s.model.GetProfileDetail(profileId, path.Join(s.config.Home, "profile")); err != nil {
+		log.Error("get profile detail:", err)
+		return nil, utils.NewForesightError(http.StatusInternalServerError, "DB_SELECT_ERROR", "error on query database")
+	} else {
+		return profile, nil
+	}
+}
