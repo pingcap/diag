@@ -8,6 +8,7 @@ import ProLayout, {
   MenuDataItem,
   BasicLayoutProps as ProLayoutProps,
   Settings,
+  PageHeaderWrapper,
 } from '@ant-design/pro-layout';
 import React, { useEffect } from 'react';
 import Link from 'umi/link';
@@ -86,7 +87,10 @@ const BasicLayout: React.FC<BasicLayoutProps> = props => {
 
   return (
     <ProLayout
+      {...props}
+      {...settings}
       logo={logo}
+      siderWidth={230}
       onCollapse={handleMenuCollapse}
       menuItemRender={(menuItemProps, defaultDom) => {
         if (menuItemProps.isUrl) {
@@ -104,22 +108,15 @@ const BasicLayout: React.FC<BasicLayoutProps> = props => {
         },
         ...routers,
       ]}
-      itemRender={(route, params, routes, paths) => {
-        const first = routes.indexOf(route) === 0;
-        return first ? (
-          <Link to={paths.join('/')}>{route.breadcrumbName}</Link>
-        ) : (
-          <span>{route.breadcrumbName}</span>
-        );
-      }}
+      itemRender={(route, params, routes, paths) => (
+        <Link to={route.path}>{route.breadcrumbName}</Link>
+      )}
       footerRender={footerRender}
       menuDataRender={menuDataRender}
       formatMessage={formatMessage}
       rightContentRender={rightProps => <RightContent {...rightProps} />}
-      {...props}
-      {...settings}
     >
-      {children}
+      <PageHeaderWrapper>{children}</PageHeaderWrapper>
     </ProLayout>
   );
 };

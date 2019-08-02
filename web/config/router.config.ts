@@ -40,6 +40,11 @@ export default [
             component: './Inspection/ReportList',
           },
           {
+            path: '/inspection/instances/:instanceId/reports/:id',
+            name: 'report_detail',
+            component: './Inspection/ReportDetail',
+          },
+          {
             path: '/inspection/reports/:id',
             name: 'report_detail',
             component: './Inspection/ReportDetail',

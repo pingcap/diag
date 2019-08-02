@@ -12,7 +12,18 @@ import ConfigInstanceModal from '@/components/ConfigInstanceModal';
 
 const styles = require('../style.less');
 
-const tableColumns = (curUser: CurrentUser, onDelete: any, onUpload: any) => [
+function getReportDetailLink(instanceId: string | undefined, reportId: string) {
+  return instanceId === undefined
+    ? `/inspection/reports/${reportId}`
+    : `/inspection/instances/${instanceId}/reports/${reportId}`;
+}
+
+const tableColumns = (
+  curUser: CurrentUser,
+  onDelete: any,
+  onUpload: any,
+  instanceId: string | undefined,
+) => [
   {
     title: '诊断报告 ID',
     dataIndex: 'uuid',
@@ -65,7 +76,7 @@ const tableColumns = (curUser: CurrentUser, onDelete: any, onUpload: any) => [
     render: (text: any, record: IFormatInspection) => (
       <span>
         {record.status === 'success' ? (
-          <Link to={`/inspection/reports/${record.uuid}`}>详情</Link>
+          <Link to={getReportDetailLink(instanceId, record.uuid)}>详情</Link>
         ) : (
           <span>详情</span>
         )}
@@ -140,9 +151,10 @@ function ReportList({ dispatch, curUser, inspection, match, loading }: ReportLis
     });
   }
 
-  const columns = useMemo(() => tableColumns(curUser, deleteInspection, uploadInspection), [
-    curUser,
-  ]);
+  const columns = useMemo(
+    () => tableColumns(curUser, deleteInspection, uploadInspection, instanceId),
+    [curUser],
+  );
 
   function deleteInspection(record: IFormatInspection) {
     Modal.confirm({

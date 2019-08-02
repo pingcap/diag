@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Modal, Form, Checkbox, Divider, Select, message, Spin } from 'antd';
 import moment from 'moment';
-import { queryInstanceConfig, updateInstanceConfig, addInspection } from '@/services/inspection';
+import { queryInstanceConfig, updateInstanceConfig } from '@/services/inspection';
 import { IInstanceConfig } from '@/models/inspection';
 import { Dispatch } from '@/models/connect';
 
