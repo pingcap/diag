@@ -106,12 +106,24 @@ func (s *Server) searchLog(r *http.Request) (*LogResult, error) {
 	instanceId := mux.Vars(r)["id"]
 	search := r.URL.Query().Get("search")
 	token := r.URL.Query().Get("token")
+	level := r.URL.Query().Get("level")
 	limit, err := strconv.ParseInt(r.URL.Query().Get("limit"), 10, 32)
 	if err != nil || limit <= 0 || limit > 1000 {
 		limit = 10
 	}
+	begin := time.Now().Add(time.Duration(-1) * time.Hour)
+	end := time.Now()
+	if bt, e := time.Parse(time.RFC3339, r.URL.Query().Get("start_time")); e == nil {
+		begin = bt
+	}
+	if et, e := time.Parse(time.RFC3339, r.URL.Query().Get("end_time")); e == nil {
+		end = et
+	}
 
-	iter, token, err := s.searcher.Search(path.Join(s.config.Home, "remote-log", instanceId), search, token)
+	iter, token, err := s.searcher.Search(
+		path.Join(s.config.Home, "remote-log", instanceId),
+		begin, end, level, search, token,
+	)
 	if err != nil {
 		log.Error("open log: ", err)
 		return nil, utils.NewForesightError(http.StatusInternalServerError, "SERVER_FS_ERROR", "error on open file")
