@@ -38,7 +38,7 @@ function AutoTable({ title, dataArr }: AutoTableProps) {
 
   return (
     <div className={styles.table_container}>
-      <Collapse defaultActiveKey={['panel']} onChange={handleCollapseChange}>
+      <Collapse defaultActiveKey="panel" onChange={handleCollapseChange}>
         <Collapse.Panel header={renderHeader()} key="panel">
           {dataArr.length === 0 ? (
             'None'

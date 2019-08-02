@@ -40,7 +40,7 @@ function AutoObjectTable({ title, data }: AutoTableProps) {
 
   return (
     <div className={styles.table_container}>
-      <Collapse defaultActiveKey={['panel']} onChange={handleCollapseChange}>
+      <Collapse defaultActiveKey="panel" onChange={handleCollapseChange}>
         <Collapse.Panel header={renderHeader()} key="panel">
           <Table dataSource={dataSource} columns={tableColumns} pagination={false} />
         </Collapse.Panel>

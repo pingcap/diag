@@ -2,6 +2,7 @@ import React from 'react';
 import { IInspectionReport } from '@/models/inspection';
 import AutoTable from './AutoTable';
 import AutoObjectTable from './AutoObjectTable';
+import PrometheusMetric from './PrometheusMetric';
 
 interface InspectionReportProps {
   report: IInspectionReport;
@@ -29,9 +30,28 @@ function InspectionReport({ report }: InspectionReportProps) {
 
       <h2>三、监控信息</h2>
       <h3>1、全局监控</h3>
+      <PrometheusMetric title="Vcores" />
+      <PrometheusMetric title="Memory" />
+      <PrometheusMetric title="CPU Usage" />
+      <PrometheusMetric title="Load" />
+
       <h3>2、PD</h3>
+      <PrometheusMetric title="Cluster" />
+      <PrometheusMetric title="Balance" />
+      <PrometheusMetric title="Hot Region" />
+      <PrometheusMetric title="Operator" />
+
       <h3>3、TiDB</h3>
+      <PrometheusMetric title="Cluster" />
+      <PrometheusMetric title="Balance" />
+      <PrometheusMetric title="Hot Region" />
+      <PrometheusMetric title="Operator" />
+
       <h3>4、TiKV</h3>
+      <PrometheusMetric title="Cluster" />
+      <PrometheusMetric title="Balance" />
+      <PrometheusMetric title="Hot Region" />
+      <PrometheusMetric title="Operator" />
     </div>
   );
 }
