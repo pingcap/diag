@@ -1,10 +1,14 @@
-import React, { useState } from 'react';
-import { Button, Modal } from 'antd';
+import React, { useState, useEffect } from 'react';
+import { Button, Modal, Spin } from 'antd';
 import { router } from 'umi';
 import { connect } from 'dva';
 import { ConnectProps, Dispatch, ConnectState } from '@/models/connect';
 import { CurrentUser } from '@/models/user';
 import UploadRemoteReportModal from '@/components/UploadRemoteReportModal';
+import AutoTable from '@/components/InspectionDetail/AutoTable';
+import { IInspectionDetail } from '@/models/inspection';
+import { queryInspection } from '@/services/inspection';
+import InspectionReport from '@/components/InspectionDetail/InspectionReport';
 
 const styles = require('../style.less');
 
@@ -18,6 +22,21 @@ function ReportDetail({ dispatch, match, curUser }: ReportDetailProps) {
   const reportId: string | undefined = match && match.params && (match.params as any).id;
 
   const [uploadRemoteModalVisible, setUploadRemoteModalVisible] = useState(false);
+  const [inspectionDetail, setInspectionDetail] = useState<IInspectionDetail | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    async function fetchInspection() {
+      if (reportId === undefined) return;
+      setLoading(true);
+      const res = await queryInspection(reportId);
+      setLoading(false);
+      if (res !== undefined) {
+        setInspectionDetail(res);
+      }
+    }
+    fetchInspection();
+  }, [reportId]);
 
   function deleteInspection() {
     Modal.confirm({
@@ -59,15 +78,13 @@ function ReportDetail({ dispatch, match, curUser }: ReportDetailProps) {
           删除
         </Button>
       </div>
+
       <div>
-        <p></p>
-        <p>loprem loprem</p>
-        <p>loprem loprem</p>
-        <p>loprem loprem</p>
-        <p>loprem loprem</p>
-        <p>loprem loprem</p>
-        <p>loprem loprem</p>
+        {loading && <Spin size="large" style={{ marginLeft: 8, marginRight: 8 }} />}
+
+        {inspectionDetail && <InspectionReport report={inspectionDetail.report} />}
       </div>
+
       <UploadRemoteReportModal
         visible={uploadRemoteModalVisible}
         onClose={() => setUploadRemoteModalVisible(false)}

@@ -34,6 +34,10 @@ export async function queryAllInspections(page: number = 1) {
   return request(`/inspections?page=${page}`);
 }
 
+export async function queryInspection(inspectionId: string) {
+  return request(`/inspections/${inspectionId}`);
+}
+
 export async function deleteInspection(inspectionId: string) {
   return request.delete(`/inspections/${inspectionId}`);
 }

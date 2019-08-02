@@ -56,6 +56,25 @@ export interface IInspection {
   finish_time: string;
 }
 
+export interface IInspectionReport {
+  symptoms: any[];
+
+  basic: object;
+  dbinfo?: object[];
+  resource?: object[];
+  alert?: object[];
+  slow_log?: object[];
+  hardware?: object[];
+  software_version?: object[];
+  software_config?: object[];
+  network?: object[];
+  demsg?: object[];
+}
+
+export interface IInspectionDetail extends IInspection {
+  report: IInspectionReport;
+}
+
 export interface IFormatInspection extends IInspection {
   key: string;
   format_create_time: string;
