@@ -51,15 +51,17 @@ func (p *TidbLogParser) Next() (err error) {
 			p.current = nil
 		}
 	}()
+
 	line, err := p.BaseParser.Next()
 	if err != nil {
 		return err
 	}
 	// TODO: TiDB version < 2.1.8, using unified log format
-	matches := TiDBLogRE.FindStringSubmatch(line)
-	if len(matches) < 3 {
-		return errors.New("failed to parser tidb log:" + line)
+	if !TiDBLogRE.MatchString(line) {
+		log.Warnf("skip parse illegal TiDB log line: %s", line)
+		return p.Next()
 	}
+	matches := TiDBLogRE.FindStringSubmatch(line)
 	t := matches[1]
 	ts, err := parseTimeStamp(t)
 	if err != nil {
@@ -91,11 +93,11 @@ func (p *TikvLogParser) Next() (err error) {
 		return err
 	}
 	// TODO: TiKV version >= 2.1.15 or >= 3.0.0, using former log format
-	matches := TiKVLogRE.FindStringSubmatch(line)
-	if len(matches) < 3 {
-		log.Warnf("skip parse unsupported line:" + line)
+	if !TiKVLogRE.MatchString(line) {
+		log.Warnf("skip parse illegal TiKV log line: %s", line)
 		return p.Next()
 	}
+	matches := TiKVLogRE.FindStringSubmatch(line)
 	ts, err := parseFormerTimeStamp(matches[1])
 	if err != nil {
 		fmt.Println(line)
@@ -127,12 +129,11 @@ func (p *PDLogParser) Next() (err error) {
 		return err
 	}
 	// TODO: PD will use the unified log format
-	// PD has not implemented unified log format at present (2019/07/19).
-	matches := PDLogRE.FindStringSubmatch(line)
-	if len(matches) < 3 {
-		log.Warnf("skip parse unsupported line:" + line)
+	if !PDLogRE.MatchString(line) {
+		log.Warnf("skip parse illegal PD log line: %s", line)
 		return p.Next()
 	}
+	matches := PDLogRE.FindStringSubmatch(line)
 	ts, err := parseFormerTimeStamp(matches[1])
 	if err != nil {
 		fmt.Println(line)
