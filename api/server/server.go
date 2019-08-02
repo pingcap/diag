@@ -3,7 +3,11 @@ package server
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"net/http"
+	"os"
+	"os/exec"
+	"path"
 
 	"github.com/pingcap/fn"
 	"github.com/pingcap/tidb-foresight/bootstrap"
@@ -52,6 +56,23 @@ func NewServer(config *bootstrap.ForesightConfig, db *sql.DB) *Server {
 }
 
 func (s *Server) Run() error {
+	// sync log from cluster
+	go func() {
+		log.Info("start sync log from cluster")
+		cmd := exec.Command(
+			s.config.Syncer,
+			fmt.Sprintf("--topo=%s", path.Join(s.config.Home, "topology")),
+			fmt.Sprintf("--target=%s", path.Join(s.config.Home, "remote-log")),
+			fmt.Sprintf("--interval=%d", s.config.Log.Interval),
+			fmt.Sprintf("--bwlimit=%d", s.config.Log.Bwlimit),
+		)
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+		if err := cmd.Run(); err != nil {
+			log.Error("syncer:", err)
+		}
+	}()
+
 	log.Info("start listen on ", s.config.Address)
 
 	return http.ListenAndServe(s.config.Address, s.Router)
