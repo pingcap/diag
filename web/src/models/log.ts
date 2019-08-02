@@ -116,18 +116,18 @@ const MiscModel: LogModelType = {
       yield put({ type: 'resetLogs' });
 
       const { logInstanceId, logFileId, search, startTime, endTime, logLevel } = payload;
-      const parms: ILogQueryParams = {
+      const params: ILogQueryParams = {
         search,
-        start_time: encodeURIComponent(startTime),
-        end_time: encodeURIComponent(endTime),
+        start_time: startTime,
+        end_time: endTime,
         level: logLevel,
         limit: 10,
       };
       let res: ILogsRes | undefined;
       if (logInstanceId) {
-        res = yield call(queryInstanceLogs, logInstanceId, parms);
+        res = yield call(queryInstanceLogs, logInstanceId, params);
       } else {
-        res = yield call(queryFileLogs, logFileId, parms);
+        res = yield call(queryFileLogs, logFileId, params);
       }
       if (res !== undefined) {
         yield put({
