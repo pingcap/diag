@@ -15,6 +15,7 @@ type Report struct {
 	ResourceInfo interface{} `json:"resource,omitempty"`
 	SlowLogInfo  interface{} `json:"slowlog,omitempty"`
 	HardwareInfo interface{} `json:"hardware,omitempty"`
+	SoftwareInfo interface{} `json:"software,omitempty"`
 }
 
 func NewReport(db *sql.DB, inspectionId string) *Report {
