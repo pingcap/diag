@@ -69,7 +69,7 @@ func (i *IterWithAccessTime) Next() (*Item, error) {
 				return nil, nil
 			}
 			// check if level is correct
-			if item.Level != levelMap[i.level] {
+			if i.level != "" && item.Level != levelMap[i.level] {
 				continue
 			}
 			return item, nil
