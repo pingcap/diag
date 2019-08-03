@@ -16,6 +16,7 @@ type Report struct {
 	SlowLogInfo  interface{} `json:"slowlog,omitempty"`
 	HardwareInfo interface{} `json:"hardware,omitempty"`
 	SoftwareInfo interface{} `json:"software,omitempty"`
+	ConfigInfo   interface{} `json:"config,omitempty"`
 }
 
 func NewReport(db *sql.DB, inspectionId string) *Report {
@@ -45,5 +46,6 @@ func (r *Report) Load() error {
 		r.loadResourceInfo,
 		r.loadSlowLogInfo,
 		r.loadHardwareInfo,
+		r.loadConfigInfo,
 	)
 }
