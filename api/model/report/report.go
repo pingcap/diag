@@ -12,6 +12,7 @@ type Report struct {
 	BasicInfo    interface{} `json:"basic,omitempty"`
 	DBInfo       interface{} `json:"dbinfo,omitempty"`
 	AlertInfo    interface{} `json:"alert,omitempty"`
+	ResourceInfo interface{} `json:"resource,omitempty"`
 }
 
 func NewReport(db *sql.DB, inspectionId string) *Report {
@@ -38,5 +39,6 @@ func (r *Report) Load() error {
 		r.loadBasicInfo,
 		r.loadDBInfo,
 		r.loadAlertInfo,
+		r.loadResourceInfo,
 	)
 }
