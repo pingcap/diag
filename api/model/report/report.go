@@ -36,7 +36,7 @@ func runAll(fs ...func() error) error {
 	for _, f := range fs {
 		if err := f(); err != nil {
 			fname := runtime.FuncForPC(reflect.ValueOf(f).Pointer()).Name()
-			log.Error(fname, err)
+			log.Error(fname, ":", err)
 			return err
 		}
 	}

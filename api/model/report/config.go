@@ -17,7 +17,7 @@ func (r *Report) loadConfigInfo() error {
 	}
 
 	rows, err := r.db.Query(
-		`SELECT node_ip, port, component, config FROM inspection_config WHERE inspection = ?`,
+		`SELECT node_ip, port, component, config FROM software_config WHERE inspection = ?`,
 		r.inspectionId,
 	)
 	if err != nil {
