@@ -30,7 +30,7 @@ func (r *Report) loadNetworkInfo() error {
 	infos := []*NetworkInfo{}
 	for rows.Next() {
 		info := NetworkInfo{}
-		err = rows.Scan(&info.NodeIp, &info.Connections, &info.Recv, &info.BadSeg, &info.Retrans)
+		err = rows.Scan(&info.NodeIp, &info.Connections, &info.Recv, &info.Send, &info.BadSeg, &info.Retrans)
 		if err != nil {
 			log.Error("db.Query:", err)
 			return err

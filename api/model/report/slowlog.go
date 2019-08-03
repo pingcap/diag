@@ -28,7 +28,8 @@ func (r *Report) loadSlowLogInfo() error {
 	logs := []*SlowLogInfo{}
 	for rows.Next() {
 		info := SlowLogInfo{}
-		err = rows.Scan(&info.Time, &info.Query)
+		count := 0
+		err = rows.Scan(&info.Time, &info.Query, &count)
 		if err != nil {
 			log.Error("db.Query:", err)
 			return err
