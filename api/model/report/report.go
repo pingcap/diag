@@ -18,6 +18,7 @@ type Report struct {
 	SoftwareInfo interface{} `json:"software,omitempty"`
 	ConfigInfo   interface{} `json:"config,omitempty"`
 	NetworkInfo  interface{} `json:"network,omitempty"`
+	DemsgLog     interface{} `json:"demsg,omitempty"`
 }
 
 func NewReport(db *sql.DB, inspectionId string) *Report {
@@ -49,5 +50,6 @@ func (r *Report) Load() error {
 		r.loadHardwareInfo,
 		r.loadConfigInfo,
 		r.loadNetworkInfo,
+		r.loadDemsgLog,
 	)
 }
