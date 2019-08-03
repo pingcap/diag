@@ -15,7 +15,7 @@ func (r *Report) loadDemsgLog() error {
 	}
 
 	rows, err := r.db.Query(
-		`SELECT node_ip, log FROM inspection_demsg WHERE inspection = ?`,
+		`SELECT node_ip, log FROM inspection_dmesg WHERE inspection = ?`,
 		r.inspectionId,
 	)
 	if err != nil {
