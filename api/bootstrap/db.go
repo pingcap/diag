@@ -118,6 +118,7 @@ CREATE TABLE IF NOT EXISTS inspection_alerts (
 
 CREATE TABLE IF NOT EXISTS inspection_hardware (
 	inspection VARCHAR(64) NOT NULL,
+	node_ip VARCHAR(16) NOT NULL,
 	cpu VARCHAR(64) NOT NULL,
 	memory VARCHAR(64) NOT NULL,
 	disk VARCHAR(64) NOT NULL,
