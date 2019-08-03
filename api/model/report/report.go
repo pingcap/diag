@@ -2,6 +2,10 @@ package report
 
 import (
 	"database/sql"
+	"reflect"
+	"runtime"
+
+	log "github.com/sirupsen/logrus"
 )
 
 type Report struct {
@@ -31,6 +35,8 @@ func NewReport(db *sql.DB, inspectionId string) *Report {
 func runAll(fs ...func() error) error {
 	for _, f := range fs {
 		if err := f(); err != nil {
+			fname := runtime.FuncForPC(reflect.ValueOf(f).Pointer()).Name()
+			log.Error(fname, err)
 			return err
 		}
 	}
