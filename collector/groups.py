@@ -110,6 +110,8 @@ def setup_op_groups(topology, args):
     groups['_setup'].add_ops([
         Op(VarCollector(var_name='args', var_value=collect_args(args)),
            FileOutput(os.path.join(datadir, inspection_id, 'args.json'))),
+        Op(VarCollector(var_name='env', var_value=dict(os.environ)),
+           FileOutput(os.path.join(datadir, inspection_id, 'env.json'))),
         Op(VarCollector(var_name='topology', var_value=topology),
            FileOutput(os.path.join(datadir, inspection_id, "topology.json")))])
     create = start = time.time()
