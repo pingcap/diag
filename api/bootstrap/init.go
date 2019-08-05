@@ -13,9 +13,9 @@ func MustInit(homepath string) (*ForesightConfig, *sql.DB) {
 		log.Panic("can't access home: ", homepath)
 	}
 
-	staticDir := path.Join(homepath, "static")
-	if err := os.MkdirAll(staticDir, os.ModePerm); err != nil {
-		log.Panic("can't access static dir: ", staticDir)
+	webDir := path.Join(homepath, "web")
+	if err := os.MkdirAll(webDir, os.ModePerm); err != nil {
+		log.Panic("can't access web dir: ", webDir)
 	}
 
 	inventoryDir := path.Join(homepath, "inventory")
