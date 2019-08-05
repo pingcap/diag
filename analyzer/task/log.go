@@ -21,7 +21,7 @@ func (t *SaveLogTask) Run() error {
 	}
 
 	if err := exec.Command(
-		"cp", "-r", path.Join(t.src, "log"), 
+		"cp", "-r", path.Join(t.src, "log"),
 		path.Join(t.home, "remote-log", t.inspectionId),
 	).Run(); err != nil {
 		log.Error("copy logs:", err)

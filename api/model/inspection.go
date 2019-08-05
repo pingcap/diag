@@ -50,17 +50,6 @@ func (m *Model) ListAllInspections(page, size int64) ([]*Inspection, int, error)
 			return nil, 0, err
 		}
 
-		report := report.NewReport(m.db, inspection.Uuid)
-		err = report.Load()
-		if err != nil {
-			log.Error("load report:", err)
-			return nil, 0, err
-		}
-
-		t := time.Now()
-		inspection.FinishTime = &t // TODO: use real time
-		inspection.ReportPath = "/api/v1/inspections/" + inspection.Uuid + ".tar.gz"
-		inspection.Report = report
 		inspections = append(inspections, &inspection)
 	}
 
@@ -99,17 +88,6 @@ func (m *Model) ListInspections(instanceId string, page, size int64) ([]*Inspect
 			return nil, 0, err
 		}
 
-		report := report.NewReport(m.db, inspection.Uuid)
-		err = report.Load()
-		if err != nil {
-			log.Error("load report:", err)
-			return nil, 0, err
-		}
-
-		t := time.Now()
-		inspection.FinishTime = &t // TODO: use real time
-		inspection.ReportPath = "/api/v1/inspections/" + inspection.Uuid + ".tar.gz"
-		inspection.Report = report
 		inspections = append(inspections, &inspection)
 	}
 
@@ -153,6 +131,19 @@ func (m *Model) GetInspectionDetail(inspectionId string) (*Inspection, error) {
 		log.Error("db.Query:", err)
 		return nil, err
 	}
+
+	report := report.NewReport(m.db, inspection.Uuid)
+	err = report.Load()
+	if err != nil {
+		log.Error("load report:", err)
+		return nil, err
+	}
+
+	t := time.Now()
+	inspection.FinishTime = &t // TODO: use real time
+	inspection.ReportPath = "/api/v1/inspections/" + inspection.Uuid + ".tar.gz"
+	inspection.Report = report
+
 	return &inspection, nil
 }
 

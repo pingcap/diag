@@ -174,29 +174,39 @@ func (t *SaveProfileTask) flameRust(src, dst string) error {
 	defer df.Close()
 
 	script := exec.Command("perf", "script", fmt.Sprintf("--input=%s", src))
+	fold := exec.Command(path.Join(t.bin, "fold-tikv-threads-perf.pl"), "--threads", ".*")
 	collapse := exec.Command(path.Join(t.bin, "stackcollapse-perf.pl"))
 	flamegraph := exec.Command(path.Join(t.bin, "flamegraph.pl"))
 
 	script.Stderr = os.Stderr
-	if collapse.Stdin, err = script.StdoutPipe(); err != nil {
+	if fold.Stdin, err = script.StdoutPipe(); err != nil {
+		log.Error("pipe stdout:", err)
+		return err
+	}
+	defer fold.Stdin.(io.ReadCloser).Close()
+
+	fold.Stderr = os.Stderr
+	if collapse.Stdin, err = fold.StdoutPipe(); err != nil {
 		log.Error("pipe stdout:", err)
 		return err
 	}
 	defer collapse.Stdin.(io.ReadCloser).Close()
+
 	collapse.Stderr = os.Stderr
 	if flamegraph.Stdin, err = collapse.StdoutPipe(); err != nil {
 		log.Error("pipe stdout:", err)
 		return nil
 	}
 	defer flamegraph.Stdin.(io.ReadCloser).Close()
+
 	flamegraph.Stderr = os.Stderr
 	flamegraph.Stdout = df
 
-	if err = utils.StartCommands(script, collapse, flamegraph); err != nil {
+	if err = utils.StartCommands(script, fold, collapse, flamegraph); err != nil {
 		log.Error("exec:", err)
 		return err
 	}
-	if err = utils.WaitCommands(script, collapse, flamegraph); err != nil {
+	if err = utils.WaitCommands(script, fold, collapse, flamegraph); err != nil {
 		log.Error("exec:", err)
 		return err
 	}

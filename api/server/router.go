@@ -101,9 +101,12 @@ func (s *Server) CreateRouter() http.Handler {
 	r.Handle("/api/v1/perfprofiles", fn.Wrap(s.importInspection)).Methods("POST")
 	r.Handle("/api/v1/perfprofiles/{id}", fn.Wrap(s.deleteInspection)).Methods("DELETE")
 
+	// all others are 404
+	r.PathPrefix("/api/v1/").HandlerFunc(http.NotFound)
+
 	// other
 	r.Handle("/ping", fn.Wrap(s.ping)).Methods("GET")
-	r.Handle("/static/", s.static("/static/", path.Join(s.config.Home, "static")))
+	r.PathPrefix("/").Handler(s.web("/", path.Join(s.config.Home, "web")))
 
 	return httpRequestMiddleware(r)
 }

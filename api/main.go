@@ -16,6 +16,7 @@ func main() {
 	collector := flag.String("collector", "", "tool to collect cluster info")
 	analyzer := flag.String("analyzer", "", "tool to analyze cluster info")
 	spliter := flag.String("spliter", "", "tool to split logs")
+	syncer := flag.String("syncer", "", "tool to sync logs from cluster")
 
 	flag.Parse()
 
@@ -32,6 +33,7 @@ func main() {
 	config.Collector = *collector
 	config.Analyzer = *analyzer
 	config.Spliter = *spliter
+	config.Syncer = *syncer
 
 	if config.Pioneer == "" {
 		config.Pioneer = path.Join(config.Home, "bin", "pioneer")
@@ -44,6 +46,9 @@ func main() {
 	}
 	if config.Spliter == "" {
 		config.Spliter = path.Join(config.Home, "bin", "spliter")
+	}
+	if config.Syncer == "" {
+		config.Syncer = path.Join(config.Home, "bin", "syncer")
 	}
 
 	s := server.NewServer(config, db)

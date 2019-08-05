@@ -78,7 +78,7 @@ func (a *Analyzer) Run() error {
 		task.SaveAlert,
 		task.SaveHardwareInfo,
 		task.SaveDmesg,
-    task.SaveLog,
+		task.SaveLog,
 		task.SaveProfile,
 		task.SaveResource,
 		task.SaveSoftwareVersion,

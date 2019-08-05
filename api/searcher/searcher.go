@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	log "github.com/sirupsen/logrus"
 )
 
 type Searcher struct {
@@ -21,13 +22,19 @@ type LogIter interface {
 type IterWithAccessTime struct {
 	iter   LogIter
 	access time.Time
+	begin  time.Time
+	end    time.Time
+	level  string
 	l      sync.Mutex
 }
 
-func NewIter(iter LogIter) *IterWithAccessTime {
+func NewIter(iter LogIter, begin, end time.Time, level string) *IterWithAccessTime {
 	return &IterWithAccessTime{
 		iter:   iter,
 		access: time.Now(),
+		begin:  begin,
+		end:    end,
+		level:  level,
 	}
 }
 
@@ -35,8 +42,38 @@ func (i *IterWithAccessTime) Next() (*Item, error) {
 	i.l.Lock()
 	defer i.l.Unlock()
 	i.access = time.Now()
+	levelMap := map[string]LevelType{
+		"OTHERES": -1,
+		"INFO":    LevelINFO,
+		"DEBUG":   LevelDEBUG,
+		"WARNING": LevelWARN,
+		"ERROR":   LevelERROR,
+	}
+
 	if i.iter != nil {
-		return i.iter.Next()
+		for {
+			item, err := i.iter.Next()
+			if item == nil || err != nil {
+				return nil, err
+			}
+			// check if time in range
+			if item.Time == nil { // FIXME: item.Time should NOT be nil
+				log.Warn("get nil time while search log")
+				continue
+			}
+			log.Info(*item.Time, i.begin, i.end)
+			if item.Time.Before(i.begin) {
+				continue
+			}
+			if item.Time.After(i.end) {
+				return nil, nil
+			}
+			// check if level is correct
+			if i.level != "" && item.Level != levelMap[i.level] {
+				continue
+			}
+			return item, nil
+		}
 	} else {
 		return nil, errors.New("log file closed")
 	}
@@ -102,14 +139,14 @@ func (s *Searcher) Gc(token string, iter *IterWithAccessTime) {
 	}
 }
 
-func (s *Searcher) Search(dir string, text string, token string) (LogIter, string, error) {
+func (s *Searcher) Search(dir string, begin, end time.Time, level, text, token string) (LogIter, string, error) {
 	if token == "" {
 		token = uuid.New().String()
 		i, err := SearchLog(dir, text)
 		if err != nil {
 			return nil, token, err
 		}
-		iter := NewIter(i)
+		iter := NewIter(i, begin, end, level)
 		go s.Gc(token, iter)
 		return iter, token, err
 	} else {
