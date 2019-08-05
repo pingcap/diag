@@ -8,6 +8,7 @@ import (
 )
 
 type TaskData struct {
+	env      map[string]string
 	args     Args
 	topology Topology
 	status   ItemStatus
