@@ -1,18 +1,22 @@
 import React from 'react';
-import { IInspectionReport } from '@/models/inspection';
+import { IInspectionDetail } from '@/models/inspection';
 import AutoTable from './AutoTable';
 import AutoObjectTable from './AutoObjectTable';
 import PrometheusMetric from './PrometheusMetric';
+import { fillInspectionId, VCORES_PROM_SQL } from '@/services/prometheus';
 
 interface InspectionReportProps {
-  report: IInspectionReport;
+  inspection: IInspectionDetail;
 }
 
-function InspectionReport({ report }: InspectionReportProps) {
+function InspectionReport({ inspection }: InspectionReportProps) {
+  const { report } = inspection;
+  const inspectionId = inspection.uuid;
+
   return (
     <div style={{ marginTop: 20 }}>
       <h2>一、全局诊断</h2>
-      <AutoTable dataArr={report.symptoms} />
+      <AutoTable title="overview" dataArr={report.symptoms} />
 
       <h2>二、基本信息</h2>
       <AutoObjectTable title="1、基本信息" data={report.basic || {}} />
@@ -30,8 +34,11 @@ function InspectionReport({ report }: InspectionReportProps) {
 
       <h2>三、监控信息</h2>
       <h3>1、全局监控</h3>
-      <PrometheusMetric title="Vcores" />
-      <PrometheusMetric title="Memory" />
+      <PrometheusMetric
+        title="Vcores"
+        promSQLStr={fillInspectionId(VCORES_PROM_SQL, inspectionId)}
+      />
+      {/* <PrometheusMetric title="Memory" />
       <PrometheusMetric title="CPU Usage" />
       <PrometheusMetric title="Load" />
 
@@ -51,7 +58,7 @@ function InspectionReport({ report }: InspectionReportProps) {
       <PrometheusMetric title="Cluster" />
       <PrometheusMetric title="Balance" />
       <PrometheusMetric title="Hot Region" />
-      <PrometheusMetric title="Operator" />
+      <PrometheusMetric title="Operator" /> */}
     </div>
   );
 }

@@ -30,9 +30,9 @@ function AutoTable({ title, dataArr }: AutoTableProps) {
 
   function renderHeader() {
     return (
-      <h3>
+      <strong>
         {title} {collapsed && `(${dataArr.length})`}
-      </h3>
+      </strong>
     );
   }
 
