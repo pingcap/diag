@@ -21,6 +21,7 @@ func (t *SaveHardwareInfoTask) Run() error {
 	}
 
 	for _, insight := range t.data.insight {
+		nodeIp := insight.NodeIp
 		cpu := insight.Sysinfo.Cpu.Model
 		memory := insight.Sysinfo.Memory.Type
 		disks := []string{}
@@ -32,8 +33,8 @@ func (t *SaveHardwareInfoTask) Run() error {
 			networks = append(networks, fmt.Sprintf("%s:%d", network.Name, network.Speed))
 		}
 		if _, err := t.db.Exec(
-			`INSERT INTO inspection_hardware(inspection, cpu, memory, disk, network) VALUES(?, ?, ?, ?, ?)`,
-			t.inspectionId, cpu, memory, strings.Join(disks, ","), strings.Join(networks, ","),
+			`INSERT INTO inspection_hardware(inspection, node_ip, cpu, memory, disk, network) VALUES(?, ?, ?, ?, ?, ?)`,
+			t.inspectionId, nodeIp, cpu, memory, strings.Join(disks, ","), strings.Join(networks, ","),
 		); err != nil {
 			log.Error("db.Exec: ", err)
 			return err
