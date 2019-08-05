@@ -52,7 +52,7 @@ func (s *Server) createInstance(r *http.Request) (*model.Instance, error) {
 		return nil, utils.NewForesightError(http.StatusInternalServerError, "DB_INSERT_ERROR", "error on insert data")
 	}
 
-	instance := &model.Instance{Uuid: uid, CreateTime: time.Now(), Status: "pending"}
+	instance := &model.Instance{Uuid: uid, User: s.config.User.Name, CreateTime: time.Now(), Status: "pending"}
 	err = s.model.CreateInstance(instance)
 	if err != nil {
 		log.Error("create instance: ", err)

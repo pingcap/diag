@@ -56,6 +56,7 @@ func (s *Server) collect(instanceId, inspectionId string) error {
 		fmt.Sprintf("--begin=%s", time.Now().Add(time.Duration(-10)*time.Minute).Format(time.RFC3339)),
 		fmt.Sprintf("--end=%s", time.Now().Format(time.RFC3339)),
 	)
+	cmd.Env = append(cmd.Env, "FORESIGHT_USER="+s.config.User.Name)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	log.Info(cmd.Args)
