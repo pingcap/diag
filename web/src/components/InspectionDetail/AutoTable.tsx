@@ -17,6 +17,7 @@ function AutoTable({ title, dataArr }: AutoTableProps) {
         title: key,
         dataIndex: key,
         key,
+        render: (text: any) => <pre>{text}</pre>,
       })),
     [dataArr],
   );

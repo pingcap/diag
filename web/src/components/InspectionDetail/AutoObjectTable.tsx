@@ -9,8 +9,8 @@ interface AutoTableProps {
 }
 
 const tableColumns = [
-  { title: '信息', dataIndex: 'field', key: 'field' },
-  { title: '值', dataIndex: 'value', key: 'value' },
+  { title: '信息', dataIndex: 'field', key: 'field', render: (text: any) => <pre>{text}</pre> },
+  { title: '值', dataIndex: 'value', key: 'value', render: (text: any) => <pre>{text}</pre> },
 ];
 
 function AutoObjectTable({ title, data }: AutoTableProps) {
