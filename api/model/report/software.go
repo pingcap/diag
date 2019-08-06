@@ -16,7 +16,7 @@ func (r *Report) loadSoftwareInfo() error {
 	}
 
 	rows, err := r.db.Query(
-		`SELECT node_ip, component, version FROM inspection_resource WHERE inspection = ?`,
+		`SELECT node_ip, component, version FROM software_version WHERE inspection = ?`,
 		r.inspectionId,
 	)
 	if err != nil {

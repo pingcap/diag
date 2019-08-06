@@ -34,7 +34,7 @@ func (t *ParseDmesgTask) Run() error {
 	}
 
 	for _, ip := range ips {
-		content, err := ioutil.ReadFile(path.Join(t.src, "demsg", ip.Name(), "demsg"))
+		content, err := ioutil.ReadFile(path.Join(t.src, "dmesg", ip.Name(), "dmesg"))
 		if err != nil {
 			log.Error("read dmesg:", err)
 		}
@@ -64,7 +64,7 @@ func (t *SaveDmesgTask) Run() error {
 
 	for _, dmesg := range t.data.dmesg {
 		if _, err := t.db.Exec(
-			`INSERT INTO inspection_dmesg(inspection, node_ip, dmesg) VALUES(?, ?, ?)`,
+			`INSERT INTO inspection_dmesg(inspection, node_ip, log) VALUES(?, ?, ?)`,
 			t.inspectionId, dmesg.Ip, dmesg.Log,
 		); err != nil {
 			log.Error("db.Exec: ", err)

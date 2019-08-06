@@ -68,6 +68,7 @@ func (a *Analyzer) Run() error {
 		task.ParseAlert,
 		task.ParseInsight,
 		task.ParseResource,
+		task.ParseDmesg,
 
 		// save stage
 		task.SaveItems,
