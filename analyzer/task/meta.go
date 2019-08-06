@@ -16,6 +16,7 @@ type Meta struct {
 	ClusterName string  `json:"cluster_name"`
 	CreateTime  float64 `json:"create_time"`
 	InspectTime float64 `json:"inspect_time"`
+	EndTime     float64 `json:"end_time"`
 	TidbCount   int     `json:"tidb_count"`
 	TikvCount   int     `json:"tikv_count"`
 	PdCount     int     `json:"pd_count"`
