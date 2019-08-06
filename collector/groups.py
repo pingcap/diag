@@ -119,11 +119,11 @@ def setup_op_groups(topology, args):
         cluster, os.path.join(datadir, inspection_id), create, start))
 
     groups['log'].add_ops(setup_log_ops(args.log_spliter,
-                                                args.log_dir,
-                                                os.path.join(
-                                                    datadir, inspection_id, 'log'),
-                                                args.begin,
-                                                args.end))
+                                        args.log_dir,
+                                        os.path.join(
+                                            datadir, inspection_id, 'log'),
+                                        args.begin,
+                                        args.end))
 
     db_collected = False
     deploydir = {}
@@ -348,12 +348,13 @@ def setup_meta_ops(cluster_name, basedir, create, start):
         'cluster_name': cluster_name,
         'create_time': create,
         'inspect_time': start,
-        'end_time': time.time()
     }
+    def end():
+        meta['end_time'] = time.time()
     join = os.path.join
     ops = [
         Op(VarCollector(var_name='meta', var_value=meta),
-           FileOutput(join(basedir, 'meta.json')))
+           FileOutput(join(basedir, 'meta.json')), end)
     ]
     return ops
 
