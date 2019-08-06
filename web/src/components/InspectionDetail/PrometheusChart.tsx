@@ -52,14 +52,14 @@ function PrometheusChart({ title, promSQLs, promParams }: PrometheusChartProps) 
 
   return (
     <div>
-      {title && <h4 style={{ textAlign: 'center' }}>{title}</h4>}
+      {title && <h4 style={{ textAlign: 'center', marginTop: 10 }}>{title}</h4>}
 
       {oriChartData.length > 0 ? (
         <div style={{ height: 200 }}>
           <SerialLineChart data={oriChartData} labels={chartLabels} />
         </div>
       ) : (
-        'No Data'
+        <p style={{ textAlign: 'center' }}>No Data</p>
       )}
     </div>
   );
