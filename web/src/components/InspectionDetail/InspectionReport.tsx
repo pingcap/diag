@@ -15,7 +15,9 @@ const CHART_SAMPLE_COUNT = 15;
 
 function InspectionReport({ inspection }: InspectionReportProps) {
   const { report } = inspection;
-  const inspectionId = inspection.uuid;
+
+  const fillHelper = (oriPromSQL: string | string[]) =>
+    fillInspectionId(oriPromSQL, inspection.uuid);
 
   const start = moment(inspection.scrape_begin).unix();
   const end = moment(inspection.scrape_end).unix();
@@ -44,62 +46,41 @@ function InspectionReport({ inspection }: InspectionReportProps) {
       <h2>三、监控信息</h2>
       <h3>1、全局监控</h3>
       <CollpasePanel title="Vcores">
-        <PrometheusChart
-          promSQLs={[fillInspectionId(PROM_SQLS.vcores, inspectionId)]}
-          promParams={promParams}
-        />
+        <PrometheusChart promSQLs={fillHelper(PROM_SQLS.vcores)} promParams={promParams} />
       </CollpasePanel>
       <CollpasePanel title="Memory">
-        <PrometheusChart
-          promSQLs={[fillInspectionId(PROM_SQLS.memory, inspectionId)]}
-          promParams={promParams}
-        />
+        <PrometheusChart promSQLs={fillHelper(PROM_SQLS.memory)} promParams={promParams} />
       </CollpasePanel>
       <CollpasePanel title="CPU Usage">
-        <PrometheusChart
-          promSQLs={[fillInspectionId(PROM_SQLS.cpu_usage, inspectionId)]}
-          promParams={promParams}
-        />
+        <PrometheusChart promSQLs={fillHelper(PROM_SQLS.cpu_usage)} promParams={promParams} />
       </CollpasePanel>
       <CollpasePanel title="Load">
-        <PrometheusChart
-          promSQLs={[fillInspectionId(PROM_SQLS.load, inspectionId)]}
-          promParams={promParams}
-        />
+        <PrometheusChart promSQLs={fillHelper(PROM_SQLS.load)} promParams={promParams} />
       </CollpasePanel>
       <CollpasePanel title="Memorey Available">
         <PrometheusChart
-          promSQLs={[fillInspectionId(PROM_SQLS.memory_available, inspectionId)]}
+          promSQLs={fillHelper(PROM_SQLS.memory_available)}
           promParams={promParams}
         />
       </CollpasePanel>
       <CollpasePanel title="Network Traffic">
-        <PrometheusChart
-          promSQLs={[
-            fillInspectionId(PROM_SQLS.network_traffic_receive, inspectionId),
-            fillInspectionId(PROM_SQLS.network_traffic_transmit, inspectionId),
-          ]}
-          promParams={promParams}
-        />
+        <PrometheusChart promSQLs={fillHelper(PROM_SQLS.network_traffic)} promParams={promParams} />
       </CollpasePanel>
       <CollpasePanel title="TCP Retrans">
-        <PrometheusChart
-          promSQLs={[
-            fillInspectionId(PROM_SQLS.tcp_retrans_syn, inspectionId),
-            fillInspectionId(PROM_SQLS.tcp_retrans_slow_start, inspectionId),
-            fillInspectionId(PROM_SQLS.tcp_retrans_forward, inspectionId),
-          ]}
-          promParams={promParams}
-        />
+        <PrometheusChart promSQLs={fillHelper(PROM_SQLS.tcp_retrans)} promParams={promParams} />
       </CollpasePanel>
       <CollpasePanel title="IO Util">
-        <PrometheusChart
-          promSQLs={[fillInspectionId(PROM_SQLS.io_util, inspectionId)]}
-          promParams={promParams}
-        />
+        <PrometheusChart promSQLs={fillHelper(PROM_SQLS.io_util)} promParams={promParams} />
       </CollpasePanel>
 
       <h3>2、PD</h3>
+      <CollpasePanel title="Cluster">
+        <PrometheusChart
+          title="Store Status"
+          promSQLs={fillHelper(PROM_SQLS.stores_status)}
+          promParams={promParams}
+        />
+      </CollpasePanel>
 
       <h3>3、TiDB</h3>
 

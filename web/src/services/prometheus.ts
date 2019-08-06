@@ -1,7 +1,7 @@
 import request from '@/utils/request';
 
 // ////
-export const PROM_SQLS = {
+const RAW_PROM_SQLS = {
   // Overview
   vcores: 'count(node_cpu{mode="user", inspectionid="INSPECTION_ID_PLACEHOLDER"}) by (instance)',
   memory: 'node_memory_MemTotal{inspectionid="INSPECTION_ID_PLACEHOLDER"}',
@@ -23,10 +23,51 @@ export const PROM_SQLS = {
     'irate(node_netstat_TcpExt_TCPForwardRetrans{inspectionid="INSPECTION_ID_PLACEHOLDER"}[1m])',
 
   io_util: 'rate(node_disk_io_time_ms{inspectionid="INSPECTION_ID_PLACEHOLDER"}[1m]) / 1000',
+
+  // pd
+  // pd cluster
+  // store status
+  disconnect_stores:
+    'sum(pd_cluster_status{type="store_disconnected_count", inspectionid="INSPECTION_ID_PLACEHOLDER"})',
+  unhealth_stores:
+    'sum(pd_cluster_status{type="store_unhealth_count", inspectionid="INSPECTION_ID_PLACEHOLDER"})',
+  low_space_stores:
+    'sum(pd_cluster_status{type="store_low_space_count", inspectionid="INSPECTION_ID_PLACEHOLDER"})',
+  down_stores:
+    'sum(pd_cluster_status{type="store_down_count", inspectionid="INSPECTION_ID_PLACEHOLDER"})',
+  offline_stores:
+    'sum(pd_cluster_status{type="store_offline_count", inspectionid="INSPECTION_ID_PLACEHOLDER"})',
+  tombstone_stores:
+    'sum(pd_cluster_status{type="store_tombstone_count", inspectionid="INSPECTION_ID_PLACEHOLDER"})',
 };
 
-export function fillInspectionId(oriPromSQL: string, inspectionId: string) {
-  return oriPromSQL.replace('INSPECTION_ID_PLACEHOLDER', inspectionId);
+export const PROM_SQLS = {
+  ...RAW_PROM_SQLS,
+
+  network_traffic: [RAW_PROM_SQLS.network_traffic_receive, RAW_PROM_SQLS.network_traffic_transmit],
+  tcp_retrans: [
+    RAW_PROM_SQLS.tcp_retrans_syn,
+    RAW_PROM_SQLS.tcp_retrans_slow_start,
+    RAW_PROM_SQLS.tcp_retrans_forward,
+  ],
+  stores_status: [
+    RAW_PROM_SQLS.disconnect_stores,
+    RAW_PROM_SQLS.unhealth_stores,
+    RAW_PROM_SQLS.low_space_stores,
+    RAW_PROM_SQLS.down_stores,
+    RAW_PROM_SQLS.offline_stores,
+    RAW_PROM_SQLS.tombstone_stores,
+  ],
+};
+
+export function fillInspectionId(oriPromSQL: string | string[], inspectionId: string): string[] {
+  let promSQLs: string[];
+  if (typeof oriPromSQL === 'string') {
+    promSQLs = [oriPromSQL];
+  } else {
+    promSQLs = oriPromSQL;
+  }
+  return promSQLs.map(item => item.replace('INSPECTION_ID_PLACEHOLDER', inspectionId));
 }
 
 // ////

@@ -18,11 +18,13 @@ import { prometheusRangeQuery, IPromParams } from '@/services/prometheus';
 // const dumbLables = ['timestamp', 'qps'];
 
 interface PrometheusChartProps {
+  title?: string;
+
   promSQLs: string[];
   promParams: IPromParams;
 }
 
-function PrometheusChart({ promSQLs, promParams }: PrometheusChartProps) {
+function PrometheusChart({ title, promSQLs, promParams }: PrometheusChartProps) {
   const [chartLabels, setChartLabels] = useState<string[]>([]);
   const [oriChartData, setOriChartData] = useState<number[][]>([]);
 
@@ -49,9 +51,13 @@ function PrometheusChart({ promSQLs, promParams }: PrometheusChartProps) {
   }, [promSQLs, promParams]);
 
   return (
-    <div style={{ height: 200 }}>
+    <div>
+      {title && <h4 style={{ textAlign: 'center' }}>{title}</h4>}
+
       {oriChartData.length > 0 ? (
-        <SerialLineChart data={oriChartData} labels={chartLabels} />
+        <div style={{ height: 200 }}>
+          <SerialLineChart data={oriChartData} labels={chartLabels} />
+        </div>
       ) : (
         'No Data'
       )}
