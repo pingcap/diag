@@ -73,6 +73,8 @@ export interface IInspectionReport {
 
 export interface IInspectionDetail extends IInspection {
   report: IInspectionReport;
+  scrape_begin: string;
+  scrape_end: string;
 }
 
 export interface IFormatInspection extends IInspection {

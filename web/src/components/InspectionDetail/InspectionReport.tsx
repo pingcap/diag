@@ -1,17 +1,26 @@
 import React from 'react';
+import moment from 'moment';
 import { IInspectionDetail } from '@/models/inspection';
 import AutoTable from './AutoTable';
 import AutoObjectTable from './AutoObjectTable';
-import PrometheusMetric from './PrometheusMetric';
-import { fillInspectionId, PROM_SQLS } from '@/services/prometheus';
+import { fillInspectionId, PROM_SQLS, IPromParams } from '@/services/prometheus';
+import CollpasePanel from './CollapsePanel';
+import PrometheusChart from './PrometheusChart';
 
 interface InspectionReportProps {
   inspection: IInspectionDetail;
 }
 
+const CHART_SAMPLE_COUNT = 15;
+
 function InspectionReport({ inspection }: InspectionReportProps) {
   const { report } = inspection;
   const inspectionId = inspection.uuid;
+
+  const start = moment(inspection.scrape_begin).unix();
+  const end = moment(inspection.scrape_end).unix();
+  const step = Math.floor((end - start) / CHART_SAMPLE_COUNT);
+  const promParams: IPromParams = { start, end, step };
 
   return (
     <div style={{ marginTop: 20 }}>
@@ -34,50 +43,67 @@ function InspectionReport({ inspection }: InspectionReportProps) {
 
       <h2>三、监控信息</h2>
       <h3>1、全局监控</h3>
-      <PrometheusMetric
-        title="Vcores"
-        promSQLs={[fillInspectionId(PROM_SQLS.vcores, inspectionId)]}
-      />
-      <PrometheusMetric
-        title="Memory"
-        promSQLs={[fillInspectionId(PROM_SQLS.memory, inspectionId)]}
-      />
-      <PrometheusMetric
-        title="CPU Usage"
-        promSQLs={[fillInspectionId(PROM_SQLS.cpu_usage, inspectionId)]}
-      />
-      <PrometheusMetric title="Load" promSQLs={[fillInspectionId(PROM_SQLS.load, inspectionId)]} />
-      <PrometheusMetric
-        title="Memorey Available"
-        promSQLs={[fillInspectionId(PROM_SQLS.memory_available, inspectionId)]}
-      />
-      <PrometheusMetric
-        title="Network Traffic"
-        promSQLs={[
-          fillInspectionId(PROM_SQLS.network_traffic_receive, inspectionId),
-          fillInspectionId(PROM_SQLS.network_traffic_transmit, inspectionId),
-        ]}
-      />
-
-      {/*
+      <CollpasePanel title="Vcores">
+        <PrometheusChart
+          promSQLs={[fillInspectionId(PROM_SQLS.vcores, inspectionId)]}
+          promParams={promParams}
+        />
+      </CollpasePanel>
+      <CollpasePanel title="Memory">
+        <PrometheusChart
+          promSQLs={[fillInspectionId(PROM_SQLS.memory, inspectionId)]}
+          promParams={promParams}
+        />
+      </CollpasePanel>
+      <CollpasePanel title="CPU Usage">
+        <PrometheusChart
+          promSQLs={[fillInspectionId(PROM_SQLS.cpu_usage, inspectionId)]}
+          promParams={promParams}
+        />
+      </CollpasePanel>
+      <CollpasePanel title="Load">
+        <PrometheusChart
+          promSQLs={[fillInspectionId(PROM_SQLS.load, inspectionId)]}
+          promParams={promParams}
+        />
+      </CollpasePanel>
+      <CollpasePanel title="Memorey Available">
+        <PrometheusChart
+          promSQLs={[fillInspectionId(PROM_SQLS.memory_available, inspectionId)]}
+          promParams={promParams}
+        />
+      </CollpasePanel>
+      <CollpasePanel title="Network Traffic">
+        <PrometheusChart
+          promSQLs={[
+            fillInspectionId(PROM_SQLS.network_traffic_receive, inspectionId),
+            fillInspectionId(PROM_SQLS.network_traffic_transmit, inspectionId),
+          ]}
+          promParams={promParams}
+        />
+      </CollpasePanel>
+      <CollpasePanel title="TCP Retrans">
+        <PrometheusChart
+          promSQLs={[
+            fillInspectionId(PROM_SQLS.tcp_retrans_syn, inspectionId),
+            fillInspectionId(PROM_SQLS.tcp_retrans_slow_start, inspectionId),
+            fillInspectionId(PROM_SQLS.tcp_retrans_forward, inspectionId),
+          ]}
+          promParams={promParams}
+        />
+      </CollpasePanel>
+      <CollpasePanel title="IO Util">
+        <PrometheusChart
+          promSQLs={[fillInspectionId(PROM_SQLS.io_util, inspectionId)]}
+          promParams={promParams}
+        />
+      </CollpasePanel>
 
       <h3>2、PD</h3>
-      <PrometheusMetric title="Cluster" />
-      <PrometheusMetric title="Balance" />
-      <PrometheusMetric title="Hot Region" />
-      <PrometheusMetric title="Operator" />
 
       <h3>3、TiDB</h3>
-      <PrometheusMetric title="Cluster" />
-      <PrometheusMetric title="Balance" />
-      <PrometheusMetric title="Hot Region" />
-      <PrometheusMetric title="Operator" />
 
       <h3>4、TiKV</h3>
-      <PrometheusMetric title="Cluster" />
-      <PrometheusMetric title="Balance" />
-      <PrometheusMetric title="Hot Region" />
-      <PrometheusMetric title="Operator" /> */}
     </div>
   );
 }

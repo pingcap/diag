@@ -14,6 +14,15 @@ export const PROM_SQLS = {
     'irate(node_network_receive_bytes{device!="lo", inspectionid="INSPECTION_ID_PLACEHOLDER"}[5m]) * 8',
   network_traffic_transmit:
     'irate(node_network_transmit_bytes{device!="lo", inspectionid="INSPECTION_ID_PLACEHOLDER"}[5m]) * 8',
+
+  tcp_retrans_syn:
+    'irate(node_netstat_TcpExt_TCPSynRetrans{inspectionid="INSPECTION_ID_PLACEHOLDER"}[1m])',
+  tcp_retrans_slow_start:
+    'irate(node_netstat_TcpExt_TCPSlowStartRetrans{inspectionid="INSPECTION_ID_PLACEHOLDER"}[1m])',
+  tcp_retrans_forward:
+    'irate(node_netstat_TcpExt_TCPForwardRetrans{inspectionid="INSPECTION_ID_PLACEHOLDER"}[1m])',
+
+  io_util: 'rate(node_disk_io_time_ms{inspectionid="INSPECTION_ID_PLACEHOLDER"}[1m]) / 1000',
 };
 
 export function fillInspectionId(oriPromSQL: string, inspectionId: string) {
@@ -21,6 +30,12 @@ export function fillInspectionId(oriPromSQL: string, inspectionId: string) {
 }
 
 // ////
+
+export interface IPromParams {
+  start: number;
+  end: number;
+  step: number;
+}
 
 // request:
 // http://localhost:3000/metric/api/v1/query_range?query=pd_cluster_status%7Btype%3D%22storage_size%22%7D&start=1560836237&end=1560836537&step=20
@@ -65,16 +80,11 @@ export function fillInspectionId(oriPromSQL: string, inspectionId: string) {
 // ]
 export async function prometheusRangeQuery(
   query: string,
-  start: number,
-  end: number,
-  sampleCount: number = 15,
+  otherParmas: IPromParams,
 ): Promise<{ metricLabels: string[]; metricValues: number[][] }> {
-  const step = Math.floor((end - start) / sampleCount);
   const params = {
     query,
-    start,
-    end,
-    step,
+    ...otherParmas,
   };
   const res = await request('/metric/query_range', { params });
 

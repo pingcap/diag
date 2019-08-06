@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import SerialLineChart from '../Chart/SerialLineChart';
-import { prometheusRangeQuery } from '@/services/prometheus';
+import { prometheusRangeQuery, IPromParams } from '@/services/prometheus';
 
 // const dumbData = [
 //   [1540982900657, 23.45678],
@@ -19,18 +19,16 @@ import { prometheusRangeQuery } from '@/services/prometheus';
 
 interface PrometheusChartProps {
   promSQLs: string[];
+  promParams: IPromParams;
 }
 
-function PrometheusChart({ promSQLs }: PrometheusChartProps) {
+function PrometheusChart({ promSQLs, promParams }: PrometheusChartProps) {
   const [chartLabels, setChartLabels] = useState<string[]>([]);
   const [oriChartData, setOriChartData] = useState<number[][]>([]);
 
   useEffect(() => {
     function query() {
-      const end = Math.floor(new Date().getTime() / 1000); // convert millseconds to seconds
-      const start = end - 1 * 60 * 60;
-
-      Promise.all(promSQLs.map(sql => prometheusRangeQuery(sql, start, end))).then(results => {
+      Promise.all(promSQLs.map(sql => prometheusRangeQuery(sql, promParams))).then(results => {
         let labels: string[] = [];
         let data: number[][] = [];
         results.forEach((result, idx) => {
@@ -48,7 +46,7 @@ function PrometheusChart({ promSQLs }: PrometheusChartProps) {
     }
 
     query();
-  }, [promSQLs]);
+  }, [promSQLs, promParams]);
 
   return (
     <div style={{ height: 200 }}>
