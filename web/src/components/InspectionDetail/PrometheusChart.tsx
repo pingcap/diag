@@ -18,24 +18,37 @@ import { prometheusRangeQuery } from '@/services/prometheus';
 // const dumbLables = ['timestamp', 'qps'];
 
 interface PrometheusChartProps {
-  promSQLStr: string;
+  promSQLs: string[];
 }
 
-function PrometheusChart({ promSQLStr }: PrometheusChartProps) {
+function PrometheusChart({ promSQLs }: PrometheusChartProps) {
   const [chartLabels, setChartLabels] = useState<string[]>([]);
-  const [oriChartData, setOriChartData] = useState<any[]>([]);
+  const [oriChartData, setOriChartData] = useState<number[][]>([]);
 
   useEffect(() => {
     function query() {
       const end = Math.floor(new Date().getTime() / 1000); // convert millseconds to seconds
       const start = end - 1 * 60 * 60;
-      prometheusRangeQuery(promSQLStr, start, end).then((result: [string[], any[]]) => {
-        setChartLabels(result[0]);
-        setOriChartData(result[1]);
+
+      Promise.all(promSQLs.map(sql => prometheusRangeQuery(sql, start, end))).then(results => {
+        let labels: string[] = [];
+        let data: number[][] = [];
+        results.forEach((result, idx) => {
+          if (idx === 0) {
+            labels = result.metricLabels;
+            data = result.metricValues;
+          } else {
+            labels = labels.concat(result.metricLabels.slice(1));
+            data = data.map((item, index) => item.concat(result.metricValues[index].slice(1)));
+          }
+        });
+        setChartLabels(labels);
+        setOriChartData(data);
       });
     }
+
     query();
-  }, []);
+  }, [promSQLs]);
 
   return (
     <div style={{ height: 200 }}>

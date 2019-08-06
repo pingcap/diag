@@ -1,9 +1,20 @@
 import request from '@/utils/request';
 
 // ////
+export const PROM_SQLS = {
+  // Overview
+  vcores: 'count(node_cpu{mode="user", inspectionid="INSPECTION_ID_PLACEHOLDER"}) by (instance)',
+  memory: 'node_memory_MemTotal{inspectionid="INSPECTION_ID_PLACEHOLDER"}',
+  cpu_usage:
+    '100 - avg by (instance) (irate(node_cpu{mode="idle", inspectionid="INSPECTION_ID_PLACEHOLDER"}[1m]) ) * 100',
+  load: 'node_load1{inspectionid="INSPECTION_ID_PLACEHOLDER"}',
+  memory_available: 'node_memory_MemAvailable{inspectionid="INSPECTION_ID_PLACEHOLDER"}',
 
-export const VCORES_PROM_SQL =
-  'count(node_cpu{mode="user", inspectionid="INSPECTION_ID_PLACEHOLDER"}) by (instance)';
+  network_traffic_receive:
+    'irate(node_network_receive_bytes{device!="lo", inspectionid="INSPECTION_ID_PLACEHOLDER"}[5m]) * 8',
+  network_traffic_transmit:
+    'irate(node_network_transmit_bytes{device!="lo", inspectionid="INSPECTION_ID_PLACEHOLDER"}[5m]) * 8',
+};
 
 export function fillInspectionId(oriPromSQL: string, inspectionId: string) {
   return oriPromSQL.replace('INSPECTION_ID_PLACEHOLDER', inspectionId);
@@ -46,12 +57,18 @@ export function fillInspectionId(oriPromSQL: string, inspectionId: string) {
 //     ]
 //   }
 // }
+// return :
+// labels: ['timestamp', 'tidb-default-pd-0', 'tidb-default-pd-1']
+// values: [
+//   [1560836339, 132132072, 132132800],
+//   [1560836359, 132132071, 132132801],
+// ]
 export async function prometheusRangeQuery(
   query: string,
   start: number,
   end: number,
   sampleCount: number = 15,
-): Promise<[string[], any[]]> {
+): Promise<{ metricLabels: string[]; metricValues: number[][] }> {
   const step = Math.floor((end - start) / sampleCount);
   const params = {
     query,
@@ -62,7 +79,7 @@ export async function prometheusRangeQuery(
   const res = await request('/metric/query_range', { params });
 
   const metricLabels: string[] = ['timestamp'];
-  const metricValues: any[] = [];
+  const metricValues: number[][] = [];
 
   if (res !== undefined) {
     const { data } = res;
@@ -82,5 +99,5 @@ export async function prometheusRangeQuery(
       });
     });
   }
-  return [metricLabels, metricValues];
+  return { metricLabels, metricValues };
 }

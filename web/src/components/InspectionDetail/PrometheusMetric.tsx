@@ -6,15 +6,15 @@ const styles = require('./AutoTable.less');
 
 interface PrometheusMetricProps {
   title: string;
-  promSQLStr: string;
+  promSQLs: string[];
 }
 
-function PrometheusMetric({ title, promSQLStr }: PrometheusMetricProps) {
+function PrometheusMetric({ title, promSQLs }: PrometheusMetricProps) {
   return (
     <div className={styles.table_container}>
       <Collapse defaultActiveKey="panel">
         <Collapse.Panel header={<strong>{title}</strong>} key="panel">
-          <PrometheusChart promSQLStr={promSQLStr} />
+          <PrometheusChart promSQLs={promSQLs} />
         </Collapse.Panel>
       </Collapse>
     </div>

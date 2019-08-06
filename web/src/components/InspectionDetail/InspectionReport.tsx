@@ -3,7 +3,7 @@ import { IInspectionDetail } from '@/models/inspection';
 import AutoTable from './AutoTable';
 import AutoObjectTable from './AutoObjectTable';
 import PrometheusMetric from './PrometheusMetric';
-import { fillInspectionId, VCORES_PROM_SQL } from '@/services/prometheus';
+import { fillInspectionId, PROM_SQLS } from '@/services/prometheus';
 
 interface InspectionReportProps {
   inspection: IInspectionDetail;
@@ -36,11 +36,30 @@ function InspectionReport({ inspection }: InspectionReportProps) {
       <h3>1、全局监控</h3>
       <PrometheusMetric
         title="Vcores"
-        promSQLStr={fillInspectionId(VCORES_PROM_SQL, inspectionId)}
+        promSQLs={[fillInspectionId(PROM_SQLS.vcores, inspectionId)]}
       />
-      {/* <PrometheusMetric title="Memory" />
-      <PrometheusMetric title="CPU Usage" />
-      <PrometheusMetric title="Load" />
+      <PrometheusMetric
+        title="Memory"
+        promSQLs={[fillInspectionId(PROM_SQLS.memory, inspectionId)]}
+      />
+      <PrometheusMetric
+        title="CPU Usage"
+        promSQLs={[fillInspectionId(PROM_SQLS.cpu_usage, inspectionId)]}
+      />
+      <PrometheusMetric title="Load" promSQLs={[fillInspectionId(PROM_SQLS.load, inspectionId)]} />
+      <PrometheusMetric
+        title="Memorey Available"
+        promSQLs={[fillInspectionId(PROM_SQLS.memory_available, inspectionId)]}
+      />
+      <PrometheusMetric
+        title="Network Traffic"
+        promSQLs={[
+          fillInspectionId(PROM_SQLS.network_traffic_receive, inspectionId),
+          fillInspectionId(PROM_SQLS.network_traffic_transmit, inspectionId),
+        ]}
+      />
+
+      {/*
 
       <h3>2、PD</h3>
       <PrometheusMetric title="Cluster" />
