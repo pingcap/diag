@@ -126,10 +126,10 @@ def setup_op_groups(topology, args):
                                         args.end))
 
     db_collected = False
-    deploydir = {}
+    deploydirs = {}
     ips = [host['ip'] for host in hosts]
     for i in range(len(ips)):
-        deploydir[ips[i]] = hosts[i]['components'][0]['deploy_dir']
+        deploydirs[ips[i]] = hosts[i]['components'][0]['deploy_dir']
 
     has_profiled = False
     if options.has_key('profile'):
@@ -155,7 +155,7 @@ def setup_op_groups(topology, args):
         groups['basic'].add_ops(setup_insight_ops(ip,
                                                   os.path.join(datadir,
                                                                inspection_id),
-                                                  deploydir[ip]))
+                                                  deploydirs[ip]))
         for svc in services:
             status = svc['status']
             name = svc['name']
