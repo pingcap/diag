@@ -1,6 +1,8 @@
 package task
 
 import (
+	"time"
+
 	log "github.com/sirupsen/logrus"
 )
 
@@ -19,8 +21,8 @@ func (t *SaveBasicInfoTask) Run() error {
 
 	if _, err := t.db.Exec(
 		`INSERT INTO inspection_basic_info(inspection, cluster_name, cluster_create_t, inspect_t, tidb_count, tikv_count, pd_count) 
-		VALUES(?, ?, ?, ?, ?, ?, ?)`, t.inspectionId, t.data.meta.ClusterName, t.data.meta.CreateTime, t.data.meta.InspectTime,
-		t.data.meta.TidbCount, t.data.meta.TikvCount, t.data.meta.PdCount,
+		VALUES(?, ?, ?, ?, ?, ?, ?)`, t.inspectionId, t.data.meta.ClusterName, t.data.env["CLUSTER_CREATE_TIME"],
+		time.Unix(int64(t.data.meta.InspectTime), 0), t.data.meta.TidbCount, t.data.meta.TikvCount, t.data.meta.PdCount,
 	); err != nil {
 		log.Error("db.Exec: ", err)
 		return err
