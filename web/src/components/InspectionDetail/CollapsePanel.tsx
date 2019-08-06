@@ -18,7 +18,7 @@ function CollpasePanel({ expand = true, title, children }: CollpasePanelProps) {
 
   return (
     <div className={styles.table_container}>
-      <Collapse defaultActiveKey="panel" onChange={handleCollapseChange}>
+      <Collapse defaultActiveKey={expand ? 'panel' : ''} onChange={handleCollapseChange}>
         <Collapse.Panel header={<strong>{title}</strong>} key="panel">
           {!collapsed && children}
         </Collapse.Panel>

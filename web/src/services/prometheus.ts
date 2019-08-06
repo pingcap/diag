@@ -2,6 +2,7 @@ import request from '@/utils/request';
 
 // ////
 const RAW_PROM_SQLS = {
+  // ////////////////////////////
   // Overview
   vcores: 'count(node_cpu{mode="user", inspectionid="INSPECTION_ID_PLACEHOLDER"}) by (instance)',
   memory: 'node_memory_MemTotal{inspectionid="INSPECTION_ID_PLACEHOLDER"}',
@@ -24,9 +25,9 @@ const RAW_PROM_SQLS = {
 
   io_util: 'rate(node_disk_io_time_ms{inspectionid="INSPECTION_ID_PLACEHOLDER"}[1m]) / 1000',
 
-  // pd
+  // ////////////////////////////
+  // PD
   // pd cluster
-  // store status
   disconnect_stores:
     'sum(pd_cluster_status{type="store_disconnected_count", inspectionid="INSPECTION_ID_PLACEHOLDER"})',
   unhealth_stores:
@@ -39,6 +40,57 @@ const RAW_PROM_SQLS = {
     'sum(pd_cluster_status{type="store_offline_count", inspectionid="INSPECTION_ID_PLACEHOLDER"})',
   tombstone_stores:
     'sum(pd_cluster_status{type="store_tombstone_count", inspectionid="INSPECTION_ID_PLACEHOLDER"})',
+
+  storage_capacity:
+    'sum(pd_cluster_status{type="storage_capacity", inspectionid="INSPECTION_ID_PLACEHOLDER" })',
+
+  storage_size: 'pd_cluster_status{type="storage_size"}',
+  storage_size_ratio:
+    'avg(pd_cluster_status{type="storage_size", inspectionid="INSPECTION_ID_PLACEHOLDER"}) / avg(pd_cluster_status{type="storage_capacity", inspectionid="INSPECTION_ID_PLACEHOLDER"})',
+
+  regions_label_level: 'pd_regions_label_level{inspectionid="INSPECTION_ID_PLACEHOLDER"}',
+
+  regions_status: 'pd_regions_status{inspectionid="INSPECTION_ID_PLACEHOLDER"}',
+  regions_status_sum: 'sum(pd_regions_status) by (instance, type)',
+
+  // balance
+  store_available: '{inspectionid="INSPECTION_ID_PLACEHOLDER", type="store_available"}',
+  store_leader_score:
+    'pd_scheduler_store_status{inspectionid="INSPECTION_ID_PLACEHOLDER", type="leader_score"}',
+  store_region_score:
+    'pd_scheduler_store_status{inspectionid="INSPECTION_ID_PLACEHOLDER", type="region_score"}',
+  store_leader_count:
+    'pd_scheduler_store_status{inspectionid="INSPECTION_ID_PLACEHOLDER", type="leader_count"}',
+
+  // hot region
+  hot_write_region_leader_distribution:
+    'pd_hotspot_status{inspectionid="INSPECTION_ID_PLACEHOLDER",type="hot_write_region_as_leader"}',
+  hot_write_region_peer_distribution:
+    'pd_hotspot_status{inspectionid="INSPECTION_ID_PLACEHOLDER",type="hot_write_region_as_peer"}',
+  hot_read_region_leader_distribution:
+    'pd_hotspot_status{inspectionid="INSPECTION_ID_PLACEHOLDER",type="hot_read_region_as_leader"}',
+
+  // operator
+  schedule_operator_create:
+    'sum(delta(pd_schedule_operators_count{inspectionid="INSPECTION_ID_PLACEHOLDER", event="create"}[1m])) by (type)',
+  schedule_operator_timeout:
+    'sum(delta(pd_schedule_operators_count{inspectionid="INSPECTION_ID_PLACEHOLDER", event="timeout"}[1m])) by (type)',
+
+  // etcd
+  handle_txn_count:
+    'sum(rate(pd_txn_handle_txns_duration_seconds_count[5m])) by (instance, result)',
+  wal_fsync_duration_seconds_99:
+    'histogram_quantile(0.99, sum(rate(etcd_disk_wal_fsync_duration_seconds_bucket[5m])) by (instance, le))',
+
+  // tidb
+  handle_request_duration_seconds_bucket:
+    'histogram_quantile(0.98, sum(rate(pd_client_request_handle_requests_duration_seconds_bucket[30s])) by (type, le))',
+  handle_request_duration_seconds_avg:
+    'avg(rate(pd_client_request_handle_requests_duration_seconds_sum[30s])) by (type) /  avg(rate(pd_client_request_handle_requests_duration_seconds_count[30s])) by (type)',
+
+  // heartbeat
+  region_heartbeat_latency_99:
+    'round(histogram_quantile(0.99, sum(rate(pd_scheduler_region_heartbeat_latency_seconds_bucket[5m])) by (store, le)), 1000)',
 };
 
 export const PROM_SQLS = {
@@ -58,6 +110,12 @@ export const PROM_SQLS = {
     RAW_PROM_SQLS.offline_stores,
     RAW_PROM_SQLS.tombstone_stores,
   ],
+  region_health: [RAW_PROM_SQLS.regions_status, RAW_PROM_SQLS.regions_status_sum],
+
+  handle_request_duration_seconds: [
+    RAW_PROM_SQLS.handle_request_duration_seconds_bucket,
+    RAW_PROM_SQLS.handle_request_duration_seconds_avg,
+  ],
 };
 
 export function fillInspectionId(oriPromSQL: string | string[], inspectionId: string): string[] {
@@ -67,7 +125,7 @@ export function fillInspectionId(oriPromSQL: string | string[], inspectionId: st
   } else {
     promSQLs = oriPromSQL;
   }
-  return promSQLs.map(item => item.replace('INSPECTION_ID_PLACEHOLDER', inspectionId));
+  return promSQLs.map(item => item.replace(/INSPECTION_ID_PLACEHOLDER/g, inspectionId));
 }
 
 // ////
