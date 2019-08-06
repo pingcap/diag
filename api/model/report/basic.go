@@ -2,20 +2,21 @@ package report
 
 import (
 	"strings"
+	"time"
 
 	log "github.com/sirupsen/logrus"
 )
 
 type BasicInfo struct {
-	ClusterName       string `json:"cluster_name"`
-	ClusterCreateTime string `json:"cluster_create_time"`
-	InspectTime       string `json:"inspect_time"`
-	TidbAlive         int    `json:"alive_count"`
-	TikvAlive         int    `json:"alive_count"`
-	PdAlive           int    `json:"alive_count"`
-	TidbCount         int    `json:"tidb_count"`
-	TikvCount         int    `json:"tikv_count"`
-	PdCount           int    `json:"pd_count"`
+	ClusterName       string    `json:"cluster_name"`
+	ClusterCreateTime time.Time `json:"cluster_create_time"`
+	InspectTime       time.Time `json:"inspect_time"`
+	TidbAlive         int       `json:"alive_count"`
+	TikvAlive         int       `json:"alive_count"`
+	PdAlive           int       `json:"alive_count"`
+	TidbCount         int       `json:"tidb_count"`
+	TikvCount         int       `json:"tikv_count"`
+	PdCount           int       `json:"pd_count"`
 }
 
 func (r *Report) loadBasicInfo() error {

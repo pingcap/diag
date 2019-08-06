@@ -24,9 +24,14 @@ import (
 )
 
 func (s *Server) collect(instanceId, inspectionId string) error {
+	instance, err := s.model.GetInstance(instanceId)
+	if err != nil {
+		log.Error("get instance:", err)
+		return err
+	}
 	config, err := s.model.GetInstanceConfig(instanceId)
 	if err != nil {
-		log.Error("get instance config: ", err)
+		log.Error("get instance config:", err)
 		return err
 	}
 	items := []string{"metric", "basic", "dbinfo", "config", "profile"}
@@ -56,7 +61,11 @@ func (s *Server) collect(instanceId, inspectionId string) error {
 		fmt.Sprintf("--begin=%s", time.Now().Add(time.Duration(-10)*time.Minute).Format(time.RFC3339)),
 		fmt.Sprintf("--end=%s", time.Now().Format(time.RFC3339)),
 	)
-	cmd.Env = append(cmd.Env, "FORESIGHT_USER="+s.config.User.Name)
+	cmd.Env = append(
+		cmd.Env,
+		"FORESIGHT_USER="+s.config.User.Name,
+		"CLUSTER_CREATE_TIME="+instance.CreateTime.Format(time.RFC3339),
+	)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	log.Info(cmd.Args)
