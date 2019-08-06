@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="294px" height="340px" viewBox="0 0 294 340" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <!-- Generator: Sketch 54.1 (76490) - https://sketchapp.com -->
+    <title>Group</title>
+    <desc>Created with Sketch.</desc>
+    <g id="Page-1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g id="Artboard" transform="translate(-498.000000, -164.000000)">
+            <g id="Group" transform="translate(498.000000, 164.000000)">
+                <g id="logo" fill-rule="nonzero">
+                    <g id="Group_1863" transform="translate(0.034022, 0.271424)">
+                        <polygon id="Path_3591" fill="#E30C34" points="0 84.8138644 0 254.305017 146.886372 338.982881 293.772745 254.305017 293.772745 84.8138644 146.886372 0"></polygon>
+                        <polygon id="Path_3592" fill="#FFFFFF" points="146.750861 56.5425763 49.2342993 112.813153 49.2342993 169.083729 98.0603358 140.948441 98.0603358 254.305017 146.750861 282.440881 146.750861 282.440881 146.750861 112.813153 195.576898 84.6778644"></polygon>
+                        <polygon id="Path_3593" fill="#FFFFFF" points="195.848496 141.220441 195.848496 254.305593 244.81062 226.034305 244.81062 112.949153"></polygon>
+                    </g>
+                </g>
+                <rect id="Rectangle" x="0" y="0" width="295" height="340"></rect>
+            </g>
+        </g>
+    </g>
+</svg>
