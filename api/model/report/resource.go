@@ -5,9 +5,9 @@ import (
 )
 
 type ResourceInfo struct {
-	Name     string `json:"resource"`
-	Duration string `json:"duration"`
-	Value    int    `json:"value"`
+	Name     string  `json:"resource"`
+	Duration string  `json:"duration"`
+	Value    float64 `json:"value"`
 }
 
 func (r *Report) loadResourceInfo() error {

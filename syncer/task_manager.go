@@ -11,10 +11,10 @@ import (
 )
 
 type TaskManager struct {
-	Cfg        RsyncConfig
-	Interval   time.Duration
-	StopCh     chan struct{}
-	cancel     context.CancelFunc
+	Cfg      RsyncConfig
+	Interval time.Duration
+	StopCh   chan struct{}
+	cancel   context.CancelFunc
 }
 
 func (t *TaskManager) CancelAllTask() {

@@ -30,8 +30,8 @@ func Sync(topoDir string, targetDir string, interval time.Duration, bwlimit int)
 		targetDir,
 	}
 	manager := TaskManager{
-		Interval:   interval,
-		StopCh:     make(chan struct{}),
+		Interval: interval,
+		StopCh:   make(chan struct{}),
 		Cfg: RsyncConfig{
 			Args: []string{
 				"-avz",

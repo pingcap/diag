@@ -14,8 +14,8 @@ type Args struct {
 	InstanceId   string    `json:"instance_id"`
 	InspectionId string    `json:"inspection_id"`
 	Collects     string    `json:"collect"`
-	BeginTime    time.Time `json:"begin"`
-	EndTime      time.Time `json:"end"`
+	ScrapeBegin  time.Time `json:"begin"`
+	ScrapeEnd    time.Time `json:"end"`
 }
 
 func (a *Args) Collect(iname string) bool {
