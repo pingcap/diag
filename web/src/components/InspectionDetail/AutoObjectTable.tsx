@@ -32,9 +32,9 @@ function AutoObjectTable({ title, data }: AutoTableProps) {
 
   function renderHeader() {
     return (
-      <h3>
+      <strong>
         {title} {collapsed && `(${Object.keys(data).length})`}
-      </h3>
+      </strong>
     );
   }
 

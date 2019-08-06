@@ -82,7 +82,7 @@ function ReportDetail({ dispatch, match, curUser }: ReportDetailProps) {
       <div>
         {loading && <Spin size="large" style={{ marginLeft: 8, marginRight: 8 }} />}
 
-        {inspectionDetail && <InspectionReport report={inspectionDetail.report} />}
+        {inspectionDetail && <InspectionReport inspection={inspectionDetail} />}
       </div>
 
       <UploadRemoteReportModal
