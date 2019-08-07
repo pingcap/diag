@@ -86,7 +86,7 @@ func (t *SaveAlertTask) Run() error {
 		}
 		if _, err := t.db.Exec(
 			`INSERT INTO inspection_alerts(inspection, name, value, time) VALUES(?, ?, ?, ?)`,
-			t.inspectionId, alert.Metric.Name, time.Unix(int64(ts), 0), v,
+			t.inspectionId, alert.Metric.Name, v, time.Unix(int64(ts), 0),
 		); err != nil {
 			log.Error("db.Exec: ", err)
 			return err
