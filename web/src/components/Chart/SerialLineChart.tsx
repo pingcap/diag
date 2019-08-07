@@ -5,55 +5,66 @@ import {
   Line,
   XAxis,
   YAxis,
+  Tooltip,
   CartesianGrid,
   Legend,
 } from 'recharts';
-import { Tooltip } from 'antd';
 import moment from 'moment';
+import _ from 'lodash';
+import { NumberConverer } from '@/utils/formatter';
 
-const styles = require('./Chart.less');
+// const styles = require('./Chart.less');
 
-const colorsConfig: string[] = '#E79FD5,#B3AD9E,#89DAC1,#17B8BE,#4DC19C,#88572C,#DDB27C,#19CDD7,#FF9833,#79C7E3,#12939A'.split(
+const DEF_COLORS: string[] = '#E79FD5,#B3AD9E,#89DAC1,#17B8BE,#4DC19C,#88572C,#DDB27C,#19CDD7,#FF9833,#79C7E3,#12939A'.split(
   ',',
 );
 
 interface ISerailLineChartProps {
   style?: object;
 
-  title?: string;
-
   data: number[][];
   labels: string[];
 
-  showLabel?: boolean;
-
   timeFormat?: string;
-
-  chartValConverter?: any;
+  valConverter?: NumberConverer;
 }
 
-function convertChartData(oriData: number[][], lables: string[], timeFormat: string) {
+function convertChartData(oriData: number[][], chartLabels: string[], timeFormat: string) {
   return oriData.map(d => {
     const obj = {};
-    lables.forEach((l, idx) => {
-      const dataKey = `${l}-${idx}`; // combine label and idx to avoid the same dataKey caused same labels
+    chartLabels.forEach((cl, idx) => {
       if (idx === 0) {
-        obj[l] = moment(d[idx]).format(timeFormat);
+        obj[cl] = moment(d[idx]).format(timeFormat);
       } else {
-        obj[dataKey] = d[idx];
+        obj[cl] = d[idx];
       }
     });
     return obj;
   });
 }
 
-function SerialLineChart({ labels, data, timeFormat = 'HH:mm:ss' }: ISerailLineChartProps) {
-  const chartLabels: string[] = labels;
-  const chartData: any[] = useMemo(() => convertChartData(data, labels, timeFormat), [
-    labels,
+function uniqLabels(oriLabels: string[]): string[] {
+  const uniqueLabels = _.uniq(oriLabels);
+  if (uniqueLabels.length === oriLabels.length) {
+    return oriLabels;
+  }
+  // combine label and idx to avoid the same dataKey caused same labels
+  return oriLabels.map((label, idx) => `${label}-${idx}`);
+}
+
+function SerialLineChart({
+  labels,
+  data,
+  timeFormat = 'HH:mm:ss',
+  valConverter,
+}: ISerailLineChartProps) {
+  const chartLabels: string[] = useMemo(() => uniqLabels(labels), [labels]);
+  const chartData = useMemo(() => convertChartData(data, chartLabels, timeFormat), [
+    chartLabels,
     data,
     timeFormat,
   ]);
+  const shuffedColors: string[] = useMemo(() => _.shuffle(DEF_COLORS), []);
 
   return (
     <ResponsiveContainer width="100%">
@@ -67,18 +78,22 @@ function SerialLineChart({ labels, data, timeFormat = 'HH:mm:ss' }: ISerailLineC
         }}
       >
         <XAxis dataKey={chartLabels[0]} />
-        <YAxis width={80} type="number" />
+        <YAxis
+          width={80}
+          type="number"
+          tickFormatter={val => (valConverter ? valConverter(val) : val)}
+        />
 
         <CartesianGrid strokeDasharray="3 3" />
-        <Tooltip />
+        <Tooltip formatter={val => (valConverter ? valConverter(val as number) : val)} />
         <Legend />
 
         {chartLabels.slice(1).map((cl, idx) => (
           <Line
-            key={`${cl}-${idx + 1}`}
+            key={cl}
             type="monotone"
-            dataKey={`${cl}-${idx + 1}`}
-            stroke={colorsConfig[idx]}
+            dataKey={cl}
+            stroke={shuffedColors[idx]}
             activeDot={{ r: 6 }}
           />
         ))}
