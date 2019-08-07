@@ -79,7 +79,7 @@ func (t *SaveAlertTask) Run() error {
 			log.Error("parse ts from alert failed")
 			continue
 		}
-		v, ok := alert.Value[0].(string)
+		v, ok := alert.Value[1].(string)
 		if !ok {
 			log.Error("parse value from alert failed")
 			continue

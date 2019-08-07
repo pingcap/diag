@@ -128,7 +128,7 @@ CREATE TABLE IF NOT EXISTS inspection_hardware (
 	memory VARCHAR(64) NOT NULL,
 	disk VARCHAR(64) NOT NULL,
 	network VARCHAR(64) NOT NULL,
-	PRIMARY KEY (inspection)
+	PRIMARY KEY (inspection, node_ip)
 );
 
 CREATE TABLE IF NOT EXISTS inspection_dmesg (
