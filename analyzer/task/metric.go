@@ -140,7 +140,8 @@ func (t *SaveMetricTask) Run() error {
 
 	// Use a batch method to improve the speed to import
 	step := 100
-	for idx := 0; idx < len(t.data.matrix); idx += step {
+	count := len(t.data.matrix)
+	for idx := 0; idx < count; idx += step {
 		batch, err := influxdb.NewBatchPoints(influxdb.BatchPointsConfig{
 			Database:  database,
 			Precision: "s",
@@ -148,7 +149,11 @@ func (t *SaveMetricTask) Run() error {
 		if err != nil {
 			return err
 		}
-		for _, series := range t.data.matrix[idx : idx+step] {
+		end := idx + step
+		if end > count{
+			end = count
+		}
+		for _, series := range t.data.matrix[idx:end] {
 			tags := series.Metric
 
 			name, ok := tags["__name__"]
