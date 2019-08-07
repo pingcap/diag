@@ -31,7 +31,7 @@ func (m *Model) ListAllInspections(page, size int64) ([]*Inspection, int, error)
 
 	rows, err := m.db.Query(
 		`SELECT id,instance,instance_name,user,status,message,type,create_t,finish_t,tidb,tikv,pd,grafana,prometheus 
-		FROM inspections ORDER BY create_t DESC LIMIT ?, ?`,
+		FROM inspections WHERE type IN ('manual', 'auto') ORDER BY create_t DESC LIMIT ?, ?`,
 		(page-1)*size, size,
 	)
 	if err != nil {
@@ -56,7 +56,7 @@ func (m *Model) ListAllInspections(page, size int64) ([]*Inspection, int, error)
 	}
 
 	total := 0
-	if err = m.db.QueryRow("SELECT COUNT(id) FROM inspections").Scan(&total); err != nil {
+	if err = m.db.QueryRow("SELECT COUNT(id) FROM inspections WHERE type IN ('manual', 'auto')").Scan(&total); err != nil {
 		log.Error("db.Query:", err)
 		return nil, 0, err
 	}
@@ -69,7 +69,7 @@ func (m *Model) ListInspections(instanceId string, page, size int64) ([]*Inspect
 
 	rows, err := m.db.Query(
 		`SELECT id,instance,instance_name,user,status,message,type,create_t,finish_t,scrape_bt,scrape_et,tidb,tikv,pd,grafana,prometheus 
-		FROM inspections WHERE instance = ? ORDER BY create_t DESC LIMIT ?, ?`,
+		FROM inspections WHERE instance = ? AND type IN ('manual', 'auto') ORDER BY create_t DESC LIMIT ?, ?`,
 		instanceId, (page-1)*size, size,
 	)
 	if err != nil {
@@ -94,7 +94,10 @@ func (m *Model) ListInspections(instanceId string, page, size int64) ([]*Inspect
 	}
 
 	total := 0
-	if err = m.db.QueryRow("SELECT COUNT(id) FROM inspections WHERE instance = ?", instanceId).Scan(&total); err != nil {
+	if err = m.db.QueryRow(
+		"SELECT COUNT(id) FROM inspections WHERE instance = ? AND type IN ('manual', 'auto')",
+		instanceId,
+	).Scan(&total); err != nil {
 		log.Error("db.Query:", err)
 		return nil, 0, err
 	}
