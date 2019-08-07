@@ -284,7 +284,14 @@ def setup_alert_ops(addr='127.0.0.1:9090', basedir='alert'):
 
 def setup_db_ops(addr='127.0.0.1:10080', basedir='dbinfo'):
     ops = []
-    dbs = get_databases(addr)
+    try:
+        dbs = get_databases(addr)
+    except Exception as e:
+        logging.error('get database failed, error:%s', e)
+        def f(): raise e
+        # return an Op with an exception, when it is executed
+        # the execption will be raised and recored by status.json
+        return [Op(None, None, f)]
     join = os.path.join
 
     def op(name):
