@@ -19,8 +19,8 @@ type Report struct {
 	ResourceInfo interface{} `json:"resource,omitempty"`
 	SlowLogInfo  interface{} `json:"slowlog,omitempty"`
 	HardwareInfo interface{} `json:"hardware,omitempty"`
-	SoftwareInfo interface{} `json:"software,omitempty"`
-	ConfigInfo   interface{} `json:"config,omitempty"`
+	SoftwareInfo interface{} `json:"software_version,omitempty"`
+	ConfigInfo   interface{} `json:"software_config,omitempty"`
 	NetworkInfo  interface{} `json:"network,omitempty"`
 	DemsgLog     interface{} `json:"demsg,omitempty"`
 }
@@ -54,8 +54,9 @@ func (r *Report) Load() error {
 		r.loadResourceInfo,
 		r.loadSlowLogInfo,
 		r.loadHardwareInfo,
-		r.loadConfigInfo,
 		r.loadNetworkInfo,
 		r.loadDemsgLog,
+		r.loadSoftwareInfo,
+		r.loadConfigInfo,
 	)
 }
