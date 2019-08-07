@@ -65,6 +65,7 @@ func (s *Server) collect(instanceId, inspectionId string) error {
 		cmd.Env,
 		"FORESIGHT_USER="+s.config.User.Name,
 		"CLUSTER_CREATE_TIME="+instance.CreateTime.Format(time.RFC3339),
+		"INSPECTION_TYPE=manual",
 	)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr

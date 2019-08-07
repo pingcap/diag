@@ -8,7 +8,6 @@ import (
 	"os/exec"
 	"path"
 	"strconv"
-	"time"
 
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
@@ -28,6 +27,11 @@ func (s *Server) profileAllProcess(instanceId, inspectionId string) error {
 	)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
+	cmd.Env = append(
+		cmd.Env,
+		"FORESIGHT_USER="+s.config.User.Name,
+		"INSPECTION_TYPE=profile",
+	)
 	log.Info(cmd.Args)
 	err := cmd.Run()
 	if err != nil {
@@ -51,7 +55,7 @@ func (s *Server) createProfile(r *http.Request) (*model.Profile, error) {
 		InstanceId:   instanceId,
 		InstanceName: instance.Name,
 		Status:       "running",
-		Type:         "manual",
+		Type:         "profile",
 	}
 
 	err = s.model.SetInspection(inspection)
@@ -83,7 +87,6 @@ func (s *Server) createProfile(r *http.Request) (*model.Profile, error) {
 		Uuid:         inspectionId,
 		InstanceName: instance.Name,
 		Status:       "running",
-		StartTime:    time.Now(),
 	}, nil
 }
 
@@ -100,7 +103,7 @@ func (s *Server) listProfiles(r *http.Request) (*utils.PaginationResponse, error
 
 	profiles, total, err := s.model.ListProfiles(instanceId, page, size, path.Join(s.config.Home, "profile"))
 	if err != nil {
-		log.Error("list inspections: ", err)
+		log.Error("list profiles: ", err)
 		return nil, utils.NewForesightError(http.StatusInternalServerError, "DB_SELECT_ERROR", "error on query database")
 	}
 
@@ -119,7 +122,7 @@ func (s *Server) listAllProfiles(r *http.Request) (*utils.PaginationResponse, er
 
 	profiles, total, err := s.model.ListAllProfiles(page, size, path.Join(s.config.Home, "profile"))
 	if err != nil {
-		log.Error("list inspections: ", err)
+		log.Error("list profiles: ", err)
 		return nil, utils.NewForesightError(http.StatusInternalServerError, "DB_SELECT_ERROR", "error on query database")
 	}
 	return utils.NewPaginationResponse(total, profiles), nil
