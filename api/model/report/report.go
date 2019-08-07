@@ -17,7 +17,7 @@ type Report struct {
 	DBInfo       interface{} `json:"dbinfo,omitempty"`
 	AlertInfo    interface{} `json:"alert,omitempty"`
 	ResourceInfo interface{} `json:"resource,omitempty"`
-	SlowLogInfo  interface{} `json:"slowlog,omitempty"`
+	SlowLogInfo  interface{} `json:"slow_log,omitempty"`
 	HardwareInfo interface{} `json:"hardware,omitempty"`
 	SoftwareInfo interface{} `json:"software_version,omitempty"`
 	ConfigInfo   interface{} `json:"software_config,omitempty"`
