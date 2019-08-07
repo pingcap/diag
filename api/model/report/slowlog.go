@@ -17,7 +17,7 @@ func (r *Report) loadSlowLogInfo() error {
 	}
 
 	rows, err := r.db.Query(
-		`SELECT MAX(time), query, COUNT(time) as c FROM inspection_slow_log WHERE inspection = ? GROUP BY query ORDER BY c LIMIT 0, 20`,
+		`SELECT time, query, COUNT(time) as c FROM inspection_slow_log WHERE inspection = ? GROUP BY query ORDER BY c LIMIT 0, 20`,
 		r.inspectionId,
 	)
 	if err != nil {
