@@ -245,7 +245,15 @@ def setup_pprof_ops(addr='127.0.0.1:6060', basedir='pprof'):
 
 
 def setup_metric_ops(addr, basedir, start, end):
-    metrics = get_metrics(addr)
+    try:
+        metrics = get_metrics(addr)
+    except Exception as e:
+        logging.error('get metrics failed, error:%s', e)
+        def f(): raise e
+        # return an Op with an exception, when it is executed
+        # the execption will be raised and recored by status.json
+        return [Op(None, None, f)]
+
     if metrics['status'] != 'success':
         logging.error('get metrics failed, status:%s', metrics['status'])
         return
@@ -276,7 +284,14 @@ def setup_alert_ops(addr='127.0.0.1:9090', basedir='alert'):
 
 def setup_db_ops(addr='127.0.0.1:10080', basedir='dbinfo'):
     ops = []
-    dbs = get_databases(addr)
+    try:
+        dbs = get_databases(addr)
+    except Exception as e:
+        logging.error('get database failed, error:%s', e)
+        def f(): raise e
+        # return an Op with an exception, when it is executed
+        # the execption will be raised and recored by status.json
+        return [Op(None, None, f)]
     join = os.path.join
 
     def op(name):
@@ -349,6 +364,7 @@ def setup_meta_ops(cluster_name, basedir, create, start):
         'create_time': create,
         'inspect_time': start,
     }
+
     def end():
         meta['end_time'] = time.time()
     join = os.path.join
