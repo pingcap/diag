@@ -28,12 +28,12 @@ func (t *SaveInspectionTask) Run() error {
 	}
 
 	if _, err := t.db.Exec(
-		`INSERT INTO inspections(id,instance,instance_name,user,status,type,tidb,tikv,pd,grafana,prometheus,create_t,finish_t,scrape_bt,scrape_et)
+		`REPLACE INTO inspections(id,instance,instance_name,user,status,type,tidb,tikv,pd,grafana,prometheus,create_t,finish_t,scrape_bt,scrape_et)
 		  VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-		t.inspectionId, instance, instanceName, t.data.env["FORESIGHT_USER"], "running", "manual", strings.Join(components["tidb"], ","),
-		strings.Join(components["tikv"], ","), strings.Join(components["pd"], ","), strings.Join(components["grafana"], ","),
-		strings.Join(components["prometheus"], ","), time.Unix(int64(createTime), 0), time.Unix(int64(finishTime), 0),
-		t.data.args.ScrapeBegin, t.data.args.ScrapeEnd,
+		t.inspectionId, instance, instanceName, t.data.env["FORESIGHT_USER"], "running", t.data.env["INSPECTION_TYPE"],
+		strings.Join(components["tidb"], ","), strings.Join(components["tikv"], ","), strings.Join(components["pd"], ","),
+		strings.Join(components["grafana"], ","), strings.Join(components["prometheus"], ","), time.Unix(int64(createTime), 0),
+		time.Unix(int64(finishTime), 0), t.data.args.ScrapeBegin, t.data.args.ScrapeEnd,
 	); err != nil {
 		log.Error("db.Exec: ", err)
 		return err

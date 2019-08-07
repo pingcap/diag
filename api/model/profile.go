@@ -4,18 +4,19 @@ import (
 	"io/ioutil"
 	"path"
 	"strings"
-	"time"
 
+	"github.com/pingcap/tidb-foresight/utils"
 	log "github.com/sirupsen/logrus"
 )
 
 type Profile struct {
-	Uuid         string        `json:"uuid"`
-	InstanceName string        `json:"instance_name"`
-	Status       string        `json:"status"`
-	StartTime    time.Time     `json:"start_time"`
-	EndTime      time.Time     `json:"end_time"`
-	Items        []ProfileItem `json:"items"`
+	Uuid         string         `json:"uuid"`
+	InstanceName string         `json:"instance_name"`
+	User         string         `json:"user"`
+	Status       string         `json:"status"`
+	StartTime    utils.NullTime `json:"start_time"`
+	EndTime      utils.NullTime `json:"end_time"`
+	Items        []ProfileItem  `json:"items"`
 }
 
 type ProfileItem struct {
@@ -26,6 +27,10 @@ type ProfileItem struct {
 }
 
 func (p *Profile) loadItems(dir string) error {
+	if p.Status != "success" {
+		return nil
+	}
+
 	flist, err := ioutil.ReadDir(path.Join(dir, p.Uuid))
 	if err != nil {
 		log.Error("read dir: ", err)
@@ -89,9 +94,7 @@ func (m *Model) ListAllProfiles(page, size int64, profileDir string) ([]*Profile
 	profiles := []*Profile{}
 
 	rows, err := m.db.Query(
-		`SELECT id,instance_name,status,create_t,create_t FROM inspections WHERE id IN (
-			SELECT inspection FROM inspection_items WHERE name = 'profile' AND status <> 'none'
-		) limit ?,?`,
+		`SELECT id,instance_name,user,status,create_t,finish_t FROM inspections WHERE type = 'profile' limit ?,?`,
 		(page-1)*size, size,
 	)
 	if err != nil {
@@ -102,7 +105,7 @@ func (m *Model) ListAllProfiles(page, size int64, profileDir string) ([]*Profile
 
 	for rows.Next() {
 		profile := Profile{}
-		if err := rows.Scan(&profile.Uuid, &profile.InstanceName, &profile.Status, &profile.StartTime, &profile.EndTime); err != nil {
+		if err := rows.Scan(&profile.Uuid, &profile.InstanceName, &profile.User, &profile.Status, &profile.StartTime, &profile.EndTime); err != nil {
 			log.Error("db.Query:", err)
 			return nil, 0, err
 		}
@@ -115,7 +118,7 @@ func (m *Model) ListAllProfiles(page, size int64, profileDir string) ([]*Profile
 
 	total := 0
 	if err = m.db.QueryRow(
-		"SELECT COUNT(DISTINCT(inspection)) FROM inspection_items WHERE name = 'profile' AND status <> 'none'",
+		`SELECT count(id) FROM inspections WHERE type = 'profile'`,
 	).Scan(&total); err != nil {
 		log.Error("db.Query:", err)
 		return nil, 0, err
@@ -128,10 +131,7 @@ func (m *Model) ListProfiles(instanceId string, page, size int64, profileDir str
 	profiles := []*Profile{}
 
 	rows, err := m.db.Query(
-		`SELECT id,instance_name,,status,create_t,create_t FROM inspections 
-		WHERE instance = ? AND id IN (
-			SELECT inspection FROM inspection_items WHERE status <> 'none'
-		) limit ?,?`,
+		`SELECT id,instance_name,user,status,create_t,create_t FROM inspections WHERE type = 'profile' AND instance = ? LIMIT ?,?`,
 		instanceId, (page-1)*size, size,
 	)
 	if err != nil {
@@ -156,10 +156,7 @@ func (m *Model) ListProfiles(instanceId string, page, size int64, profileDir str
 
 	total := 0
 	if err = m.db.QueryRow(
-		`SELECT COUNT(id) FROM inspections 
-		 WHERE instance = ? AND id IN (
-			SELECT inspection FROM inspection_items WHERE status <> 'none'
-		)`,
+		`SELECT COUNT(id) FROM inspections WHERE type = 'profile' AND instance = ?`,
 		instanceId,
 	).Scan(&total); err != nil {
 		log.Error("db.Query:", err)
