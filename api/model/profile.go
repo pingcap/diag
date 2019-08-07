@@ -131,7 +131,7 @@ func (m *Model) ListProfiles(instanceId string, page, size int64, profileDir str
 	profiles := []*Profile{}
 
 	rows, err := m.db.Query(
-		`SELECT id,instance_name,user,status,create_t,create_t FROM inspections WHERE type = 'profile' LIMIT ?,?`,
+		`SELECT id,instance_name,user,status,create_t,create_t FROM inspections WHERE type = 'profile' AND instance = ? LIMIT ?,?`,
 		instanceId, (page-1)*size, size,
 	)
 	if err != nil {
@@ -156,7 +156,7 @@ func (m *Model) ListProfiles(instanceId string, page, size int64, profileDir str
 
 	total := 0
 	if err = m.db.QueryRow(
-		`SELECT COUNT(id) FROM inspections WHERE type = 'profile'`,
+		`SELECT COUNT(id) FROM inspections WHERE type = 'profile' AND instance = ?`,
 		instanceId,
 	).Scan(&total); err != nil {
 		log.Error("db.Query:", err)
