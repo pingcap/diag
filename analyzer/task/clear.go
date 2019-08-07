@@ -13,11 +13,6 @@ func Clear(base BaseTask) Task {
 }
 
 func (t *ClearTask) Run() error {
-	if _, err := t.db.Exec("DELETE FROM inspections WHERE id = ?", t.inspectionId); err != nil {
-		log.Error("delete inspection: ", err)
-		return err
-	}
-
 	if _, err := t.db.Exec("DELETE FROM inspection_items WHERE inspection = ?", t.inspectionId); err != nil {
 		log.Error("delete inspection_items: ", err)
 		return err

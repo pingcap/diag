@@ -202,7 +202,6 @@ func (s *Server) importLog(r *http.Request) (*model.LogEntity, error) {
 }
 
 func (s *Server) collectLog(instanceId, inspectionId string, begin, end time.Time) error {
-	log.Info(begin, end)
 	cmd := exec.Command(
 		s.config.Collector,
 		fmt.Sprintf("--instance-id=%s", instanceId),
@@ -217,6 +216,11 @@ func (s *Server) collectLog(instanceId, inspectionId string, begin, end time.Tim
 	)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
+	cmd.Env = append(
+		cmd.Env,
+		"FORESIGHT_USER="+s.config.User.Name,
+		"INSPECTION_TYPE=log",
+	)
 	log.Info(cmd.Args)
 	if err := cmd.Run(); err != nil {
 		log.Error("run ", s.config.Collector, ": ", err)
