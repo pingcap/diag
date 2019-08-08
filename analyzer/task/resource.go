@@ -59,8 +59,7 @@ func (t *ParseResourceTask) Run() error {
 }
 
 func (t *ParseResourceTask) ResourceUtil(query string) utils.FloatArray {
-	inspectTime := time.Unix(int64(t.data.meta.InspectTime), 0)
-	v, _ := utils.QueryPromRange(query, inspectTime.Add(-1*time.Hour), inspectTime, time.Minute)
+	v, _ := utils.QueryPromRange(query, t.data.args.ScrapeBegin, t.data.args.ScrapeEnd, time.Minute)
 	return v
 }
 
@@ -75,19 +74,20 @@ func SaveResource(base BaseTask) Task {
 
 func (t *SaveResourceTask) Run() error {
 	r := t.data.resource
-	err := t.InsertData("cpu", "1h", r.AvgCPU)
+	d := utils.HumanizeDuration(t.data.args.ScrapeEnd.Sub(t.data.args.ScrapeBegin))
+	err := t.InsertData("cpu", d, r.AvgCPU)
 	if err != nil {
 		return err
 	}
-	err = t.InsertData("disk", "1h", r.AvgDisk)
+	err = t.InsertData("disk", d, r.AvgDisk)
 	if err != nil {
 		return err
 	}
-	err = t.InsertData("ioutil", "1h", r.AvgIoUtil)
+	err = t.InsertData("ioutil", d, r.AvgIoUtil)
 	if err != nil {
 		return err
 	}
-	err = t.InsertData("mem", "1h", r.AvgMem)
+	err = t.InsertData("mem", d, r.AvgMem)
 	if err != nil {
 		return err
 	}
