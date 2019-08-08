@@ -33,6 +33,12 @@ aws_secret_access_key = ""
 [log]
 interval = 600		# 5min
 bwlimit = 10		# KB/s
+
+[influx]
+endpoint = "http://127.0.0.1:8086"
+
+[prometheus]
+endpoint = "http://127.0.0.1:8080"
 `
 
 type ForesightConfig struct {
@@ -74,6 +80,14 @@ type ForesightConfig struct {
 		Interval int `toml:"interval`
 		Bwlimit  int `toml:"bwlimit`
 	} `toml:"log"`
+
+	Influx struct {
+		Endpoint string `toml:"endpoint"`
+	} `toml:"influx"`
+
+	Prometheus struct {
+		Endpoint string `toml:"endpoint"`
+	} `toml:"prometheus"`
 }
 
 func initConfig(path string) *ForesightConfig {

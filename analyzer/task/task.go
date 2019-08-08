@@ -70,13 +70,13 @@ func (t *BaseTask) SetStatus(item, status, message, description string) error {
 }
 
 type Symptom struct {
-	status string
-	message string
+	status      string
+	message     string
 	description string
 }
 
 func (t *BaseTask) InsertSymptoms(symptoms []Symptom) error {
-	for _, item := range symptoms{
+	for _, item := range symptoms {
 		if _, err := t.db.Exec(
 			"INSERT INTO inspection_symptoms(inspection, status, message, description) VALUES(?, ?, ?, ?)",
 			t.inspectionId, item.status, item.message, item.description,

@@ -9,7 +9,7 @@ import (
 )
 
 func (s *Server) metric(w http.ResponseWriter, r *http.Request) {
-	u := "http://localhost:8080/api/v1"
+	u := s.config.Prometheus.Endpoint + "/api/v1"
 	url, err := url.Parse(u)
 	if err != nil {
 		log.Panic("parse url:", err)
