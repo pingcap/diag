@@ -87,6 +87,7 @@ func (s *Server) analyze(inspectionId string) error {
 	cmd.Env = append(
 		cmd.Env,
 		"INFLUX_ADDR="+s.config.Influx.Endpoint,
+		"PROM_ADDR="+s.config.Prometheus.Endpoint,
 	)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
