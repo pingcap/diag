@@ -43,7 +43,12 @@ function PrometheusChart({ title, promMetrics, promParams }: PrometheusChartProp
             data = result.metricValues;
           } else {
             labels = labels.concat(result.metricLabels.slice(1));
-            data = data.map((item, index) => item.concat(result.metricValues[index].slice(1)));
+            const emtpyPlacehoder: number[] = Array(result.metricLabels.length).fill(0);
+            data = data.map((item, index) =>
+              // the result.metricValues may have different length
+              // so result.metricValues[index] may undefined
+              item.concat((result.metricValues[index] || emtpyPlacehoder).slice(1)),
+            );
           }
         });
         setChartLabels(labels);

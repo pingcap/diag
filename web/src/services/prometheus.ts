@@ -9,6 +9,7 @@ import {
   toFixed2,
   toPercent,
   toAnyUnit,
+  toFixed1,
 } from '@/utils/formatter';
 
 export interface IRawMetric {
@@ -143,7 +144,7 @@ const RAW_METRICS: { [key: string]: IRawMetric } = {
   },
 
   storage_size: {
-    promQLTemplate: 'pd_cluster_status{type="storage_size"}',
+    promQLTemplate: 'pd_cluster_status{type="storage_size", inspectionid="{{inspectionId}}"}',
     labelTemplate: 'storage size',
     valConverter: val => bytesSizeFormatter(val, true, 2),
   },
@@ -164,7 +165,7 @@ const RAW_METRICS: { [key: string]: IRawMetric } = {
     labelTemplate: '{{type}}',
   },
   regions_status_sum: {
-    promQLTemplate: 'sum(pd_regions_status) by (instance, type)',
+    promQLTemplate: 'sum(pd_regions_status{inspectionid="{{inspectionId}}"}) by (instance, type)',
     labelTemplate: '{{type}}',
   },
 
@@ -222,13 +223,13 @@ const RAW_METRICS: { [key: string]: IRawMetric } = {
   // etcd
   handle_txn_count: {
     promQLTemplate:
-      'sum(rate(pd_txn_handle_txns_duration_seconds_count[5m])) by (instance, result)',
+      'sum(rate(pd_txn_handle_txns_duration_seconds_count{inspectionid="{{inspectionId}}"}[5m])) by (instance, result)',
     labelTemplate: '{{instance}} : {{result}}',
     valConverter: toFixed2,
   },
   wal_fsync_duration_seconds_99: {
     promQLTemplate:
-      'histogram_quantile(0.99, sum(rate(etcd_disk_wal_fsync_duration_seconds_bucket[5m])) by (instance, le))',
+      'histogram_quantile(0.99, sum(rate(etcd_disk_wal_fsync_duration_seconds_bucket{inspectionid="{{inspectionId}}"}[5m])) by (instance, le))',
     labelTemplate: '{{instance}}',
     valConverter: val => toAnyUnit(val, 1000 * 1000, 2, 'us'),
   },
@@ -236,13 +237,13 @@ const RAW_METRICS: { [key: string]: IRawMetric } = {
   // tidb
   handle_request_duration_seconds_bucket: {
     promQLTemplate:
-      'histogram_quantile(0.98, sum(rate(pd_client_request_handle_requests_duration_seconds_bucket[30s])) by (type, le))',
+      'histogram_quantile(0.98, sum(rate(pd_client_request_handle_requests_duration_seconds_bucket{inspectionid="{{inspectionId}}"}[30s])) by (type, le))',
     labelTemplate: '{{type}} 98th percentile',
     valConverter: val => toAnyUnit(val, 1000 * 1000, 2, 'us'),
   },
   handle_request_duration_seconds_avg: {
     promQLTemplate:
-      'avg(rate(pd_client_request_handle_requests_duration_seconds_sum[30s])) by (type) /  avg(rate(pd_client_request_handle_requests_duration_seconds_count[30s])) by (type)',
+      'avg(rate(pd_client_request_handle_requests_duration_seconds_sum{inspectionid="{{inspectionId}}"}[30s])) by (type) /  avg(rate(pd_client_request_handle_requests_duration_seconds_count{inspectionid="{{inspectionId}}"}[30s])) by (type)',
     labelTemplate: '{{type}} average',
     valConverter: val => toAnyUnit(val, 1000 * 1000, 2, 'us'),
   },
@@ -250,9 +251,174 @@ const RAW_METRICS: { [key: string]: IRawMetric } = {
   // heartbeat
   region_heartbeat_latency_99: {
     promQLTemplate:
-      'round(histogram_quantile(0.99, sum(rate(pd_scheduler_region_heartbeat_latency_seconds_bucket[5m])) by (store, le)), 1000)',
+      'round(histogram_quantile(0.99, sum(rate(pd_scheduler_region_heartbeat_latency_seconds_bucket{inspectionid="{{inspectionId}}"}[5m])) by (store, le)), 1000)',
     labelTemplate: 'store{{store}}',
     valConverter: val => toAnyUnit(val, 1000, 1, 'ms'),
+  },
+
+  // ///////////////////////
+  // TiDB
+  // Query Summary: QPS, QPS By Instance, Duration, Failed Query OPM
+  // qps
+  qps_total: {
+    promQLTemplate:
+      'sum(rate(tidb_server_query_total{inspectionid="{{inspectionId}}"}[1m])) by (result)',
+    labelTemplate: 'query {{result}}',
+  },
+  qps_total_yesterday: {
+    promQLTemplate:
+      'sum(rate(tidb_server_query_total{result="OK", inspectionid="{{inspectionId}}"}[1m]  offset 1d))',
+    labelTemplate: 'yesterday',
+  },
+  qps_ideal: {
+    promQLTemplate:
+      'sum(tidb_server_connections{inspectionid="{{inspectionId}}"}) * sum(rate(tidb_server_handle_query_duration_seconds_count{inspectionid="{{inspectionId}}"}[1m])) / sum(rate(tidb_server_handle_query_duration_seconds_sum{inspectionid="{{inspectionId}}"}[1m]))',
+    labelTemplate: 'ideal QPS',
+  },
+
+  // qps by instance
+  qps_by_instance: {
+    promQLTemplate: 'rate(tidb_server_query_total{inspectionid="{{inspectionId}}"}[1m])',
+    labelTemplate: '{{instance}} {{type}} {{result}}',
+  },
+
+  // duration
+  duration_999: {
+    promQLTemplate:
+      'histogram_quantile(0.999, sum(rate(tidb_server_handle_query_duration_seconds_bucket{inspectionid="{{inspectionId}}"}[1m])) by (le))',
+    labelTemplate: '999',
+    valConverter: val => toAnyUnit(val, 1000, 0, 'ms'),
+  },
+  duration_99: {
+    promQLTemplate:
+      'histogram_quantile(0.99, sum(rate(tidb_server_handle_query_duration_seconds_bucket{inspectionid="{{inspectionId}}"}[1m])) by (le))',
+    labelTemplate: '99',
+    valConverter: val => toAnyUnit(val, 1000, 0, 'ms'),
+  },
+  duration_95: {
+    promQLTemplate:
+      'histogram_quantile(0.95, sum(rate(tidb_server_handle_query_duration_seconds_bucket{inspectionid="{{inspectionId}}"}[1m])) by (le))',
+    labelTemplate: '95',
+    valConverter: val => toAnyUnit(val, 1000, 0, 'ms'),
+  },
+  duration_80: {
+    promQLTemplate:
+      'histogram_quantile(0.80, sum(rate(tidb_server_handle_query_duration_seconds_bucket{inspectionid="{{inspectionId}}"}[1m])) by (le))',
+    labelTemplate: '80',
+    valConverter: val => toAnyUnit(val, 1000, 0, 'ms'),
+  },
+
+  // failed query opm
+  failed_query_opm: {
+    promQLTemplate:
+      'sum(increase(tidb_server_execute_error_total{inspectionid="{{inspectionId}}"}[1m])) by (type, instance)',
+    labelTemplate: '{{type}}-{{instance}}',
+  },
+
+  // ////
+  // Server Panel
+  // Connection Count
+  connection_count: {
+    promQLTemplate: 'tidb_server_connections{inspectionid="{{inspectionId}}"}',
+    labelTemplate: '{{instance}}',
+  },
+  connection_count_sum: {
+    promQLTemplate: 'sum(tidb_server_connections{inspectionid="{{inspectionId}}"})',
+    labelTemplate: 'total',
+  },
+  // Goroutine Count
+  goroutine_count: {
+    promQLTemplate: ' go_goroutines{job=~"tidb.*", inspectionid="{{inspectionId}}"}',
+    labelTemplate: '{{instance}}',
+  },
+  heap_memory_usage: {
+    promQLTemplate: 'go_memstats_heap_inuse_bytes{job=~"tidb.*", inspectionid="{{inspectionId}}"}',
+    labelTemplate: '{{instance}}',
+    valConverter: bytesSizeFormatter,
+  },
+  // /////
+  // Distsql Panel
+  distsql_duration_999: {
+    promQLTemplate:
+      'histogram_quantile(0.999, sum(rate(tidb_distsql_handle_query_duration_seconds_bucket{inspectionid="{{inspectionId}}"}[1m])) by (le, type))',
+    labelTemplate: '999-{{type}}',
+    valConverter: val => toAnyUnit(val, 1000, 1, 'ms'),
+  },
+  distsql_duration_99: {
+    promQLTemplate:
+      'histogram_quantile(0.99, sum(rate(tidb_distsql_handle_query_duration_seconds_bucket{inspectionid="{{inspectionId}}"}[1m])) by (le, type))',
+    labelTemplate: '99-{{type}}',
+  },
+  distsql_duration_90: {
+    promQLTemplate:
+      'histogram_quantile(0.90, sum(rate(tidb_distsql_handle_query_duration_seconds_bucket{inspectionid="{{inspectionId}}"}[1m])) by (le, type))',
+    labelTemplate: '90-{{type}}',
+  },
+  distsql_duration_50: {
+    promQLTemplate:
+      'histogram_quantile(0.50, sum(rate(tidb_distsql_handle_query_duration_seconds_bucket{inspectionid="{{inspectionId}}"}[1m])) by (le, type))',
+    labelTemplate: '50-{{type}}',
+  },
+  // //////////
+  // KV Errors Panel
+  ticlient_region_error_total: {
+    promQLTemplate:
+      'sum(rate(tidb_tikvclient_region_err_total{inspectionid="{{inspectionId}}"}[1m])) by (type)',
+    labelTemplate: '{{type}}',
+  },
+  ticlient_region_error_total_busy: {
+    promQLTemplate:
+      'sum(rate(tidb_tikvclient_region_err_total{type="server_is_busy", inspectionid="{{inspectionId}}"}[1m]))',
+    labelTemplate: 'sum',
+  },
+  lock_resolve_ops: {
+    promQLTemplate:
+      'sum(rate(tidb_tikvclient_lock_resolver_actions_total{inspectionid="{{inspectionId}}"}[1m])) by (type)',
+    labelTemplate: '{{type}}',
+  },
+  // ////////////
+  // PD Client Panel
+  pod_client_cmd_fail_ops: {
+    promQLTemplate:
+      'sum(rate(pd_client_cmd_handle_failed_cmds_duration_seconds_count{inspectionid="{{inspectionId}}"}[1m])) by (type)',
+    labelTemplate: '{{type}}',
+  },
+  pd_tso_rpc_duration_999: {
+    promQLTemplate:
+      'histogram_quantile(0.999, sum(rate(pd_client_request_handle_requests_duration_seconds_bucket{type="tso", inspectionid="{{inspectionId}}"}[1m])) by (le))',
+    labelTemplate: '999',
+    valConverter: val => toAnyUnit(val, 1000, 1, 'ms'),
+  },
+  pd_tso_rpc_duration_99: {
+    promQLTemplate:
+      'histogram_quantile(0.99, sum(rate(pd_client_request_handle_requests_duration_seconds_bucket{type="tso", inspectionid="{{inspectionId}}"}[1m])) by (le))',
+    labelTemplate: '99',
+  },
+  pd_tso_rpc_duration_90: {
+    promQLTemplate:
+      'histogram_quantile(0.90, sum(rate(pd_client_request_handle_requests_duration_seconds_bucket{type="tso", inspectionid="{{inspectionId}}"}[1m])) by (le))',
+    labelTemplate: '90',
+  },
+
+  // ///////////
+  // Schema Load Panel
+  load_schema_duration: {
+    promQLTemplate:
+      'histogram_quantile(0.99, sum(rate(tidb_domain_load_schema_duration_seconds_bucket{inspectionid="{{inspectionId}}"}[1m])) by (le, instance))',
+    labelTemplate: '{{instance}}',
+    valConverter: val => toAnyUnit(val, 1000, 1, 'ms'),
+  },
+  schema_lease_error_opm: {
+    promQLTemplate:
+      'sum(increase(tidb_session_schema_lease_error_total{inspectionid="{{inspectionId}}"}[1m])) by (instance)',
+    labelTemplate: '{{instance}}',
+  },
+  // /////////////
+  // DDL Panel
+  ddl_opm: {
+    promQLTemplate:
+      'increase(tidb_ddl_worker_operation_total{inspectionid="{{inspectionId}}"}[1m])',
+    labelTemplate: '{{instance}}-{{type}}',
   },
 };
 
@@ -282,7 +448,34 @@ export const RAW_METRICS_ARR: { [key: string]: IRawMetric[] } = {
     RAW_METRICS.handle_request_duration_seconds_bucket,
     RAW_METRICS.handle_request_duration_seconds_avg,
   ],
+
+  // TiDB QPS
+  qps: [RAW_METRICS.qps_total, RAW_METRICS.qps_total_yesterday, RAW_METRICS.qps_ideal],
+  duration: [
+    RAW_METRICS.duration_999,
+    RAW_METRICS.duration_99,
+    RAW_METRICS.duration_95,
+    RAW_METRICS.duration_80,
+  ],
+  connection_count_all: [RAW_METRICS.connection_count, RAW_METRICS.connection_count_sum],
+  distsql_duration: [
+    RAW_METRICS.distsql_duration_999,
+    RAW_METRICS.distsql_duration_99,
+    RAW_METRICS.distsql_duration_90,
+    RAW_METRICS.distsql_duration_50,
+  ],
+  ticlient_region_error: [
+    RAW_METRICS.ticlient_region_error_total,
+    RAW_METRICS.ticlient_region_error_total_busy,
+  ],
+  pd_tso_rpc_duration: [
+    RAW_METRICS.pd_tso_rpc_duration_999,
+    RAW_METRICS.pd_tso_rpc_duration_99,
+    RAW_METRICS.pd_tso_rpc_duration_90,
+  ],
 };
+
+// /////////////////////////////////////////////////////////////////////////////////////
 
 export function fillPromQLTemplate(rawMetrics: IRawMetric[], inspectionId: string): IMetric[] {
   return rawMetrics.map(rawMetric => ({
@@ -290,8 +483,6 @@ export function fillPromQLTemplate(rawMetrics: IRawMetric[], inspectionId: strin
     promQL: _.template(rawMetric.promQLTemplate)({ inspectionId }),
   }));
 }
-
-// ////
 
 export interface IPromParams {
   start: number;
