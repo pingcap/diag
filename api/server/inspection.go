@@ -365,6 +365,12 @@ func (s *Server) uploadInspection(ctx context.Context, r *http.Request) (*utils.
 func (s *Server) deleteInspection(r *http.Request) (*utils.SimpleResponse, error) {
 	uuid := mux.Vars(r)["id"]
 
+	// ignore any error on remove inspection files
+	os.RemoveAll(path.Join(s.config.Home, "inspection", uuid))
+	os.RemoveAll(path.Join(s.config.Home, "package", uuid+".tar.gz"))
+	os.RemoveAll(path.Join(s.config.Home, "profile", uuid))
+	os.RemoveAll(path.Join(s.config.Home, "remote-log", uuid))
+
 	if err := s.model.DeleteInspection(uuid); err != nil {
 		log.Error("delete inspection: ", err)
 		return nil, utils.NewForesightError(http.StatusInternalServerError, "DB_DELETE_ERROR", "error on delete data")
