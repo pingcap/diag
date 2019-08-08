@@ -5,11 +5,13 @@ import (
 	"path"
 
 	"github.com/pingcap/tidb-foresight/bootstrap"
+	"github.com/pingcap/tidb-foresight/release"
 	"github.com/pingcap/tidb-foresight/server"
 	log "github.com/sirupsen/logrus"
 )
 
 func main() {
+	printVersion := flag.Bool("V", false, "print version info")
 	homepath := flag.String("home", "/tmp/tidb-foresight", "tidb-foresight work home")
 	address := flag.String("address", "0.0.0.0:8888", "tidb foresight listen address")
 	pioneer := flag.String("pioneer", "", "tool to parse inventory.ini and get basic cluster info")
@@ -23,6 +25,11 @@ func main() {
 	log.SetFormatter(&log.TextFormatter{
 		FullTimestamp: true,
 	})
+
+	if *printVersion {
+		release.PrintReleaseInfo()
+		return
+	}
 
 	config, db := bootstrap.MustInit(*homepath)
 	defer db.Close()

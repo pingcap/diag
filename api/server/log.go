@@ -111,7 +111,8 @@ func (s *Server) searchLog(r *http.Request) (*LogResult, error) {
 	if err != nil || limit <= 0 || limit > 1000 {
 		limit = 10
 	}
-	begin := time.Time{}		// long long ago.
+
+	begin := time.Time{} // long long ago.
 	end := time.Now()
 	if bt, e := time.Parse(time.RFC3339, r.URL.Query().Get("start_time")); e == nil {
 		begin = bt
