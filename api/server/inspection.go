@@ -84,6 +84,11 @@ func (s *Server) analyze(inspectionId string) error {
 		fmt.Sprintf("--home=%s", s.config.Home),
 		fmt.Sprintf("--inspection-id=%s", inspectionId),
 	)
+	cmd.Env = append(
+		cmd.Env,
+		"INFLUX_ADDR="+s.config.Influx.Endpoint,
+		"PROM_ADDR="+s.config.Prometheus.Endpoint,
+	)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	log.Info(cmd.Args)

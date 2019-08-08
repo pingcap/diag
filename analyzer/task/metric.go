@@ -120,8 +120,12 @@ func (t *SaveMetricTask) Run() error {
 	}
 
 	database := "inspection"
+	addr := os.Getenv("INFLUX_ADDR")
+	if addr == "" {
+		addr = "http://127.0.0.1:8086"
+	}
 	cli, err := influxdb.NewHTTPClient(influxdb.HTTPConfig{
-		Addr:     "http://127.0.0.1:8086",
+		Addr:     addr,
 		Username: os.Getenv("INFLUX_USER"),
 		Password: os.Getenv("INFLUX_PWD"),
 	})
@@ -150,7 +154,7 @@ func (t *SaveMetricTask) Run() error {
 			return err
 		}
 		end := idx + step
-		if end > count{
+		if end > count {
 			end = count
 		}
 		for _, series := range t.data.matrix[idx:end] {
