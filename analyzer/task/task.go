@@ -68,3 +68,22 @@ func (t *BaseTask) SetStatus(item, status, message, description string) error {
 
 	return t.InsertSymptom(status, message, description)
 }
+
+type Symptom struct {
+	status string
+	message string
+	description string
+}
+
+func (t *BaseTask) InsertSymptoms(symptoms []Symptom) error {
+	for _, item := range symptoms{
+		if _, err := t.db.Exec(
+			"INSERT INTO inspection_symptoms(inspection, status, message, description) VALUES(?, ?, ?, ?)",
+			t.inspectionId, item.status, item.message, item.description,
+		); err != nil {
+			log.Error("insert symptom: ", err)
+			return err
+		}
+	}
+	return nil
+}

@@ -22,7 +22,24 @@ func (t *AnalyzeTask) Run() error {
 		log.Error("db.Exec: ", err)
 		return err
 	}
-
+	if err := t.CheckIndex(); err != nil {
+		return err
+	}
+	if err := t.CheckResource(); err != nil {
+		return err
+	}
+	if err := t.CheckAlert(); err != nil {
+		return err
+	}
+	if err := t.CheckSlowQuery(); err != nil {
+		return err
+	}
+	if err := t.CheckSoftwareVersion(); err != nil {
+		return err
+	}
+	if err := t.CheckSoftwareConfig(); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -36,18 +53,22 @@ func (t *AnalyzeTask) CheckIndex() error {
 		return err
 	}
 	var db, table string
+	var symptoms []Symptom
 	for rows.Next() {
 		err := rows.Scan(&db, &table)
 		if err != nil {
 			return err
 		}
-		msg := fmt.Sprintf("table %s missing index in databse %s", db, table)
-		err = t.InsertSymptom("error", msg, "")
-		if err != nil {
-			return err
-		}
+		symptoms = append(symptoms, Symptom{
+			status:      "error",
+			message:     fmt.Sprintf("table %s missing index in databse %s", db, table),
+			description: "please add index for the table",
+		})
 	}
-	return nil
+	if err := rows.Close(); err != nil {
+		return err
+	}
+	return t.InsertSymptoms(symptoms)
 }
 
 const ResourceThreshold = 20
@@ -62,19 +83,24 @@ func (t *AnalyzeTask) CheckResource() error {
 		return err
 	}
 	var resource, duration string
+	var symptoms []Symptom
 	for rows.Next() {
 		err := rows.Scan(&resource, &duration)
 		if err != nil {
 			return err
 		}
-		msg := fmt.Sprintf("%s Resource utilization/%s exceeds %d%%, Please increase resources appropriately.",
+		msg := fmt.Sprintf("%s Resource utilization/%s exceeds %d%%",
 			resource, duration, ResourceThreshold)
-		err = t.InsertSymptom("warning", msg, "")
-		if err != nil {
-			return err
-		}
+		symptoms = append(symptoms, Symptom{
+			status:      "error",
+			message:     msg,
+			description: "please increase resources appropriately",
+		})
 	}
-	return nil
+	if err := rows.Close(); err != nil {
+		return err
+	}
+	return t.InsertSymptoms(symptoms)
 }
 
 func (t *AnalyzeTask) CheckAlert() error {
@@ -90,7 +116,7 @@ func (t *AnalyzeTask) CheckAlert() error {
 	if count == 0 {
 		return nil
 	}
-	msg := "Alarm information currently exists in the cluster"
+	msg := "alert information currently exists in the cluster"
 	err = t.InsertSymptom("warning", msg, "")
 	if err != nil {
 		return err
@@ -111,8 +137,8 @@ func (t *AnalyzeTask) CheckSlowQuery() error {
 	if count != 0 {
 		return nil
 	}
-	msg := "No slow logs were collected in the cluster"
-	err = t.InsertSymptom("warning", msg, "")
+	msg := "no slow logs were collected in the cluster"
+	err = t.InsertSymptom("error", msg, "")
 	if err != nil {
 		return err
 	}
@@ -132,8 +158,9 @@ func (t *AnalyzeTask) CheckSoftwareVersion() error {
 	if count == 1 {
 		return nil
 	}
-	msg := "Inconsistent software version information"
-	err = t.InsertSymptom("warning", msg, "")
+	msg := "software versions are not identical"
+	desc := "make sure all software have the same version"
+	err = t.InsertSymptom("error", msg, desc)
 	if err != nil {
 		return err
 	}
@@ -153,8 +180,9 @@ func (t *AnalyzeTask) CheckSoftwareConfig() error {
 	if count == 1 {
 		return nil
 	}
-	msg := "Inconsistent software config information"
-	err = t.InsertSymptom("warning", msg, "")
+	msg := "software config is not identical"
+	desc := "make sure all software have the same config"
+	err = t.InsertSymptom("error", msg, desc)
 	if err != nil {
 		return err
 	}
