@@ -43,13 +43,32 @@ function convertChartData(oriData: number[][], chartLabels: string[], timeFormat
   });
 }
 
-function uniqLabels(oriLabels: string[]): string[] {
-  const uniqueLabels = _.uniq(oriLabels);
-  if (uniqueLabels.length === oriLabels.length) {
-    return oriLabels;
+function loopGenUniqName(
+  oriName: string,
+  existNames: string[],
+  tryCount: number = 1,
+): [string, number] {
+  const newName: string = tryCount > 1 ? `${oriName}-${tryCount}` : oriName;
+  if (!existNames.includes(newName)) {
+    return [newName, tryCount];
   }
-  // combine label and idx to avoid the same dataKey caused same labels
-  return oriLabels.map((label, idx) => `${label}-${idx}`);
+  return loopGenUniqName(oriName, existNames, tryCount + 1);
+}
+
+function uniqLabels(oriLabels: string[]): string[] {
+  let newLabels: string[] = [];
+  const duplicatedLabels: string[] = [];
+  oriLabels.forEach(oriLabel => {
+    const [newLabel, tryCount] = loopGenUniqName(oriLabel, newLabels);
+    if (tryCount === 2) {
+      duplicatedLabels.push(oriLabel);
+    }
+    newLabels.push(newLabel);
+  });
+  if (duplicatedLabels.length > 0) {
+    newLabels = newLabels.map(label => (duplicatedLabels.includes(label) ? `${label}-1` : label));
+  }
+  return newLabels;
 }
 
 function SerialLineChart({
