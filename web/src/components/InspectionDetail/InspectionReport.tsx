@@ -115,6 +115,35 @@ function InspectionReport({ inspection }: InspectionReportProps) {
       </CollpasePanel>
 
       <h3>3、TiDB</h3>
+      <CollpasePanel title="Query Summary" expand={false}>
+        {renderPromethuesChart('qps', 'QPS')}
+        {renderPromethuesChart('qps_by_instance', 'QPS By Instance')}
+        {renderPromethuesChart('duration', 'Duration')}
+        {renderPromethuesChart('failed_query_opm', 'Failed Query OPM')}
+      </CollpasePanel>
+      <CollpasePanel title="Server" expand={false}>
+        {renderPromethuesChart('connection_count_all', 'Connection Count')}
+        {renderPromethuesChart('goroutine_count', 'Goroutine Count')}
+        {renderPromethuesChart('heap_memory_usage', 'Heap Memory Usage')}
+      </CollpasePanel>
+      <CollpasePanel title="Distsql" expand={false}>
+        {renderPromethuesChart('distsql_duration', 'Distsql Duration')}
+      </CollpasePanel>
+      <CollpasePanel title="KV Errors" expand={false}>
+        {renderPromethuesChart('ticlient_region_error', 'TiClient Region Error OPS')}
+        {renderPromethuesChart('lock_resolve_ops', 'Lock Resolve OPS')}
+      </CollpasePanel>
+      <CollpasePanel title="PD Client" expand={false}>
+        {renderPromethuesChart('pod_client_cmd_fail_ops', 'PD Client CMD Fail OPS')}
+        {renderPromethuesChart('pd_tso_rpc_duration', 'PD TSO RPC Duration')}
+      </CollpasePanel>
+      <CollpasePanel title="Schema Load" expand={false}>
+        {renderPromethuesChart('load_schema_duration', 'Load Schema Duration')}
+        {renderPromethuesChart('schema_lease_error_opm', 'Schema Lease Error OPM')}
+      </CollpasePanel>
+      <CollpasePanel title="DDL" expand={false}>
+        {renderPromethuesChart('ddl_opm', 'DDL OPM')}
+      </CollpasePanel>
 
       <h3>4、TiKV</h3>
     </div>
