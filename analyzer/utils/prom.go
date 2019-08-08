@@ -12,7 +12,7 @@ import (
 )
 
 func QueryProm(query string, t time.Time) (*float64, error) {
-	client, err := api.NewClient(api.Config{Address: "http://172.16.5.7:8080"})
+	client, err := api.NewClient(api.Config{Address: "http://127.0.0.1:8080"})
 	if err != nil {
 		log.Error("connect prometheus:", err)
 		return nil, err
@@ -40,7 +40,7 @@ func QueryProm(query string, t time.Time) (*float64, error) {
 func QueryPromRange(query string, start, end time.Time, step time.Duration) (FloatArray, error) {
 	values := FloatArray{}
 
-	client, err := api.NewClient(api.Config{Address: "http://172.16.5.7:8080"})
+	client, err := api.NewClient(api.Config{Address: "http://127.0.0.1:8080"})
 	if err != nil {
 		log.Error("connect prometheus:", err)
 		return values, err

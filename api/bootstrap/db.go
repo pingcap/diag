@@ -117,8 +117,7 @@ CREATE TABLE IF NOT EXISTS inspection_alerts (
 	inspection VARCHAR(64) NOT NULL,
 	name VARCHAR(64) NOT NULL,
 	value TEXT NOT NULL,
-	time DATETIME NOT NULL,
-	PRIMARY KEY (inspection, name)
+	time DATETIME NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS inspection_hardware (
