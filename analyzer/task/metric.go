@@ -150,7 +150,7 @@ func (t *SaveMetricTask) Run() error {
 			return err
 		}
 		end := idx + step
-		if end > count{
+		if end > count {
 			end = count
 		}
 		for _, series := range t.data.matrix[idx:end] {
