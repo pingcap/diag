@@ -61,7 +61,7 @@ func (t *AnalyzeTask) CheckIndex() error {
 		}
 		symptoms = append(symptoms, Symptom{
 			status:      "error",
-			message:     fmt.Sprintf("table %s missing index in databse %s", db, table),
+			message:     fmt.Sprintf("table %s missing index in database %s", db, table),
 			description: "please add index for the table",
 		})
 	}
@@ -116,8 +116,9 @@ func (t *AnalyzeTask) CheckAlert() error {
 	if count == 0 {
 		return nil
 	}
-	msg := "alert information currently exists in the cluster"
-	err = t.InsertSymptom("warning", msg, "")
+	msg := "there are alert information in the cluster"
+	desc := "please check the alert information"
+	err = t.InsertSymptom("warning", msg, desc)
 	if err != nil {
 		return err
 	}
@@ -134,11 +135,12 @@ func (t *AnalyzeTask) CheckSlowQuery() error {
 		log.Error("db.QueryRow: ", err)
 		return err
 	}
-	if count != 0 {
+	if count == 0 {
 		return nil
 	}
-	msg := "no slow logs were collected in the cluster"
-	err = t.InsertSymptom("error", msg, "")
+	msg := "there are slow logs in the cluster"
+	desc := "please check the slow log"
+	err = t.InsertSymptom("warning", msg, desc)
 	if err != nil {
 		return err
 	}
@@ -146,45 +148,69 @@ func (t *AnalyzeTask) CheckSlowQuery() error {
 }
 
 func (t *AnalyzeTask) CheckSoftwareVersion() error {
-	var count int
-	err := t.db.QueryRow(
-		`SELECT COUNT(DISTINCT(version)) FROM software_version WHERE inspection = ? GROUP BY component`,
+	rows, err := t.db.Query(
+		`SELECT component, COUNT(DISTINCT(version)) FROM software_version WHERE inspection = ? GROUP BY component`,
 		t.inspectionId,
-	).Scan(&count)
+	)
 	if err != nil {
 		log.Error("db.QueryRow: ", err)
 		return err
 	}
-	if count == 1 {
-		return nil
+	var name string
+	var count int
+	var symptoms []Symptom
+	for rows.Next() {
+		err := rows.Scan(&name, &count)
+		if err != nil {
+			return err
+		}
+		if count == 1 {
+			continue
+		}
+		msg := fmt.Sprintf("%s versions are not identical", name)
+		desc := fmt.Sprintf("make sure all %s have the same version", name)
+		symptoms = append(symptoms, Symptom{
+			status:      "error",
+			message:     msg,
+			description: desc,
+		})
 	}
-	msg := "software versions are not identical"
-	desc := "make sure all software have the same version"
-	err = t.InsertSymptom("error", msg, desc)
-	if err != nil {
+	if err := rows.Close(); err != nil {
 		return err
 	}
-	return nil
+	return t.InsertSymptoms(symptoms)
 }
 
 func (t *AnalyzeTask) CheckSoftwareConfig() error {
-	var count int
-	err := t.db.QueryRow(
-		`SELECT COUNT(DISTINCT(config)) FROM software_config WHERE inspection = ? GROUP BY component`,
+	rows, err := t.db.Query(
+		`SELECT component, COUNT(DISTINCT(config)) FROM software_config WHERE inspection = ? GROUP BY component`,
 		t.inspectionId,
-	).Scan(&count)
+	)
 	if err != nil {
 		log.Error("db.QueryRow: ", err)
 		return err
 	}
-	if count == 1 {
-		return nil
+	var name string
+	var count int
+	var symptoms []Symptom
+	for rows.Next() {
+		err := rows.Scan(&name, &count)
+		if err != nil {
+			return err
+		}
+		if count == 1 {
+			continue
+		}
+		msg := fmt.Sprintf("%s config is not identical", name)
+		desc := fmt.Sprintf("make sure all %s have the same config", name)
+		symptoms = append(symptoms, Symptom{
+			status:      "error",
+			message:     msg,
+			description: desc,
+		})
 	}
-	msg := "software config is not identical"
-	desc := "make sure all software have the same config"
-	err = t.InsertSymptom("error", msg, desc)
-	if err != nil {
+	if err := rows.Close(); err != nil {
 		return err
 	}
-	return nil
+	return t.InsertSymptoms(symptoms)
 }
