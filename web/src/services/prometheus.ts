@@ -9,16 +9,17 @@ import {
   toFixed2,
   toPercent,
   toAnyUnit,
-  toFixed1,
 } from '@/utils/formatter';
 
 export interface IRawMetric {
+  title?: string;
   promQLTemplate: string;
   labelTemplate: string;
   valConverter?: NumberConverer;
 }
 
 export interface IMetric {
+  title?: string;
   promQL: string;
   labelTemplate: string;
   valConverter?: NumberConverer;
@@ -420,6 +421,341 @@ const RAW_METRICS: { [key: string]: IRawMetric } = {
       'increase(tidb_ddl_worker_operation_total{inspectionid="{{inspectionId}}"}[1m])',
     labelTemplate: '{{instance}}-{{type}}',
   },
+
+  // ///////////////////
+  // TiKV
+  // Cluster: Store Size, CPU, Memory, IO Utilization, QPS, Leader
+  tikv_store_size: {
+    promQLTemplate: 'sum(tikv_engine_size_bytes{inspectionid="{{inspectionId}}"}) by (job)',
+    labelTemplate: '{{job}}',
+    valConverter: bytesSizeFormatter,
+  },
+  tikv_cpu: {
+    promQLTemplate:
+      'sum(rate(tikv_thread_cpu_seconds_total{inspectionid="{{inspectionId}}"}[1m])) by (instance,job)',
+    labelTemplate: '{{instance}}-{{job}}',
+    valConverter: val => toPercent(val, 3),
+  },
+  tikv_memory: {
+    promQLTemplate: 'avg(process_resident_memory_bytes{inspectionid="{{inspectionId}}"}) by (job)',
+    labelTemplate: '{{job}}',
+    valConverter: bytesSizeFormatter,
+  },
+  tikv_io_utilization: {
+    promQLTemplate: 'rate(node_disk_io_time_ms{inspectionid="{{inspectionId}}"}[1m]) / 1000',
+    labelTemplate: '{{instance}} - {{device}}',
+    valConverter: val => toPercent(val, 1),
+  },
+  tikv_qps: {
+    title: 'QPS',
+    promQLTemplate:
+      'sum(rate(tikv_grpc_msg_duration_seconds_count{type!="kv_gc", inspectionid="{{inspectionId}}"}[1m])) by (job,type)',
+    labelTemplate: '{{job}} - {{type}}',
+    valConverter: val => toAnyUnit(val, 1, 1, 'ops'),
+  },
+  tikv_leader: {
+    title: 'Leader',
+    promQLTemplate:
+      'sum(tikv_pd_heartbeat_tick_total{type="leader", inspectionid="{{inspectionId}}"}) by (job)',
+    labelTemplate: '{{job}}',
+  },
+
+  // ///////////
+  // Errors Panel
+  tikv_server_busy_scheduler: {
+    title: 'Server is Busy',
+    promQLTemplate:
+      'sum(rate(tikv_scheduler_too_busy_total{inspectionid="{{inspectionId}}"}[1m])) by (job)',
+    labelTemplate: 'scheduler-{{job}}',
+  },
+  tikv_server_busy_channel: {
+    title: 'Server is Busy',
+    promQLTemplate:
+      'sum(rate(tikv_channel_full_total{inspectionid="{{inspectionId}}"}[1m])) by (job, type)',
+    labelTemplate: 'channelfull-{{job}}-{{type}}',
+  },
+  tikv_server_busy_coprocessor: {
+    title: 'Server is Busy',
+    promQLTemplate:
+      'sum(rate(tikv_coprocessor_request_error{type="full", inspectionid="{{inspectionId}}"}[1m])) by (job)',
+    labelTemplate: 'coprocessor-{{job}}',
+  },
+  tikv_server_busy_stall: {
+    title: 'Server is Busy',
+    promQLTemplate:
+      'avg(tikv_engine_write_stall{type="write_stall_percentile99", inspectionid="{{inspectionId}}"}) by (job)',
+    labelTemplate: 'stall-{{job}}',
+  },
+
+  tikv_server_report_failures: {
+    title: 'Server Report Failures',
+    promQLTemplate:
+      'sum(rate(tikv_server_report_failure_msg_total{inspectionid="{{inspectionId}}"}[1m])) by (type,instance,job,store_id)',
+    labelTemplate: '{{job}} - {{type}} - to - {{store_id}}',
+  },
+  tikv_raftstore_error: {
+    title: 'Raftstore Error',
+    promQLTemplate:
+      'sum(rate(tikv_storage_engine_async_request_total{status!~"success|all", inspectionid="{{inspectionId}}"}[1m])) by (job, status)',
+    labelTemplate: '{{job}}-{{status}}',
+  },
+  tikv_scheduler_error: {
+    title: 'Scheduler Error',
+    promQLTemplate:
+      'sum(rate(tikv_scheduler_stage_total{stage=~"snapshot_err|prepare_write_err", inspectionid="{{inspectionId}}"}[1m])) by (job, stage)',
+    labelTemplate: '{{job}}-{{stage}}',
+  },
+  tikv_coprocessor_error: {
+    title: 'Coprocessor Error',
+    promQLTemplate:
+      'sum(rate(tikv_coprocessor_request_error{inspectionid="{{inspectionId}}"}[1m])) by (job, reason)',
+    labelTemplate: '{{job}}-{{reason}}',
+  },
+  tikv_grpc_message_error: {
+    title: 'gRPC message error',
+    promQLTemplate:
+      'sum(rate(tikv_grpc_msg_fail_total{inspectionid="{{inspectionId}}"}[1m])) by (job, type)',
+    labelTemplate: '{{job}}-{{type}}',
+  },
+  tikv_leader_drop: {
+    title: 'Leader drop',
+    promQLTemplate:
+      'sum(delta(tikv_pd_heartbeat_tick_total{type="leader", inspectionid="{{inspectionId}}"}[1m])) by (job)',
+    labelTemplate: '{{job}}',
+  },
+  tikv_leader_missing: {
+    title: 'Leader missing',
+    promQLTemplate: 'sum(tikv_raftstore_leader_missing{inspectionid="{{inspectionId}}"}) by (job)',
+    labelTemplate: '{{job}}',
+  },
+
+  // //////////////
+  // Server Panel
+  tikv_channel_full: {
+    title: 'Channel full',
+    promQLTemplate:
+      'sum(rate(tikv_channel_full_total{inspectionid="{{inspectionId}}"}[1m])) by (job, type)',
+    labelTemplate: '{{job}} - {{type}}',
+  },
+
+  tikv_approximate_region_size_99: {
+    title: 'Approximate Region size',
+    promQLTemplate:
+      'histogram_quantile(0.99, sum(rate(tikv_raftstore_region_size_bucket{inspectionid="{{inspectionId}}"}[1m])) by (le))',
+    labelTemplate: '99%',
+    valConverter: bytesSizeFormatter,
+  },
+  tikv_approximate_region_size_95: {
+    title: 'Approximate Region size',
+    promQLTemplate:
+      'histogram_quantile(0.95, sum(rate(tikv_raftstore_region_size_bucket{inspectionid="{{inspectionId}}"}[1m])) by (le))',
+    labelTemplate: '95%',
+  },
+  tikv_approximate_region_size_avg: {
+    title: 'Approximate Region size',
+    promQLTemplate:
+      'sum(rate(tikv_raftstore_region_size_sum{inspectionid="{{inspectionId}}"}[1m])) / sum(rate(tikv_raftstore_region_size_count{inspectionid="{{inspectionId}}"}[1m])) ',
+    labelTemplate: 'avg',
+  },
+
+  // /////////////////
+  // Raft IO Panel
+  // Apply log duration
+  tikv_apply_log_duration_99: {
+    title: 'Apply log duration',
+    promQLTemplate:
+      'histogram_quantile(0.99, sum(rate(tikv_raftstore_apply_log_duration_seconds_bucket{inspectionid="{{inspectionId}}"}[1m])) by (le))',
+    labelTemplate: '99%',
+    valConverter: val => toAnyUnit(val, 1000 * 1000, 1, 'us'),
+  },
+  tikv_apply_log_duration_90: {
+    promQLTemplate:
+      'histogram_quantile(0.90, sum(rate(tikv_raftstore_apply_log_duration_seconds_bucket{inspectionid="{{inspectionId}}"}[1m])) by (le))',
+    labelTemplate: '90%',
+  },
+  tikv_apply_log_duration_avg: {
+    promQLTemplate:
+      'sum(rate(tikv_raftstore_apply_log_duration_seconds_sum{inspectionid="{{inspectionId}}"}[1m])) / sum(rate(tikv_raftstore_apply_log_duration_seconds_count{inspectionid="{{inspectionId}}"}[1m])) ',
+    labelTemplate: 'avg',
+  },
+
+  tikv_apply_log_duration_per_server: {
+    title: 'Apply log duration per server',
+    promQLTemplate:
+      'histogram_quantile(0.99, sum(rate(tikv_raftstore_apply_log_duration_seconds_bucket{inspectionid="{{inspectionId}}"}[1m])) by (le, job))',
+    labelTemplate: '{{job}}',
+    valConverter: val => toAnyUnit(val, 1000 * 1000, 1, 'us'),
+  },
+
+  tikv_append_log_duration_99: {
+    title: 'Append log duration',
+    promQLTemplate:
+      'histogram_quantile(0.99, sum(rate(tikv_raftstore_append_log_duration_seconds_bucket{inspectionid="{{inspectionId}}"}[1m])) by (le))',
+    labelTemplate: '99%',
+    valConverter: val => toAnyUnit(val, 1000 * 1000, 1, 'us'),
+  },
+  tikv_append_log_duration_95: {
+    promQLTemplate:
+      'histogram_quantile(0.95, sum(rate(tikv_raftstore_append_log_duration_seconds_bucket{inspectionid="{{inspectionId}}"}[1m])) by (le))',
+    labelTemplate: '95%',
+  },
+  tikv_append_log_duration_avg: {
+    promQLTemplate:
+      'sum(rate(tikv_raftstore_append_log_duration_seconds_sum{inspectionid="{{inspectionId}}"}[1m])) / sum(rate(tikv_raftstore_append_log_duration_seconds_count{inspectionid="{{inspectionId}}"}[1m])) ',
+    labelTemplate: 'avg',
+  },
+
+  tikv_append_log_duration_per_server: {
+    title: 'Append log duration per server',
+    promQLTemplate:
+      'histogram_quantile(0.99, sum(rate(tikv_raftstore_append_log_duration_seconds_bucket{inspectionid="{{inspectionId}}"}[1m])) by (le, job))',
+    labelTemplate: '{{job}}',
+    valConverter: val => toAnyUnit(val, 1000 * 1000, 1, 'us'),
+  },
+
+  // ////////////////
+  // Scheduler - prewrite Panel
+  tikv_scheduler_prewrite_latch_wait_duration_99: {
+    title: 'Scheduler latch wait duration',
+    promQLTemplate:
+      'histogram_quantile(0.99, sum(rate(tikv_scheduler_latch_wait_duration_seconds_bucket{type="prewrite", inspectionid="{{inspectionId}}"}[1m])) by (le))',
+    labelTemplate: '99%',
+    valConverter: val => toAnyUnit(val, 1000 * 1000, 1, 'us'),
+  },
+  tikv_scheduler_prewrite_latch_wait_duration_95: {
+    promQLTemplate:
+      'histogram_quantile(0.95, sum(rate(tikv_scheduler_latch_wait_duration_seconds_bucket{type="prewrite", inspectionid="{{inspectionId}}"}[1m])) by (le))',
+    labelTemplate: '95%',
+  },
+  tikv_scheduler_prewrite_latch_wait_duration_avg: {
+    promQLTemplate:
+      'sum(rate(tikv_scheduler_latch_wait_duration_seconds_sum{type="prewrite", inspectionid="{{inspectionId}}"}[1m])) / sum(rate(tikv_scheduler_latch_wait_duration_seconds_count{type="prewrite", inspectionid="{{inspectionId}}"}[1m])) ',
+    labelTemplate: 'avg',
+  },
+
+  tivk_scheduler_prewrite_command_duration_99: {
+    title: 'Scheduler command duration',
+    promQLTemplate:
+      'histogram_quantile(0.99, sum(rate(tikv_scheduler_command_duration_seconds_bucket{type="prewrite", inspectionid="{{inspectionId}}"}[1m])) by (le))',
+    labelTemplate: '99%',
+    valConverter: val => toAnyUnit(val, 1000, 1, 'ms'),
+  },
+  tivk_scheduler_prewrite_command_duration_95: {
+    title: 'Scheduler command duration',
+    promQLTemplate:
+      'histogram_quantile(0.95, sum(rate(tikv_scheduler_command_duration_seconds_bucket{type="prewrite", inspectionid="{{inspectionId}}"}[1m])) by (le))',
+    labelTemplate: '95%',
+  },
+  tivk_scheduler_prewrite_command_duration_avg: {
+    title: 'Scheduler command duration',
+    promQLTemplate:
+      'sum(rate(tikv_scheduler_command_duration_seconds_sum{type="prewrite", inspectionid="{{inspectionId}}"}[1m])) / sum(rate(tikv_scheduler_command_duration_seconds_count{type="prewrite", inspectionid="{{inspectionId}}"}[1m])) ',
+    labelTemplate: 'avg',
+  },
+  // ////////////////
+  // Scheduler - commit Panel
+  tikv_scheduler_commit_latch_wait_duration_99: {
+    title: 'Scheduler latch wait duration',
+    promQLTemplate:
+      'histogram_quantile(0.99, sum(rate(tikv_scheduler_latch_wait_duration_seconds_bucket{type="commit", inspectionid="{{inspectionId}}"}[1m])) by (le))',
+    labelTemplate: '99%',
+    valConverter: val => toAnyUnit(val, 1000, 1, 'ms'),
+  },
+  tikv_scheduler_commit_latch_wait_duration_95: {
+    promQLTemplate:
+      'histogram_quantile(0.95, sum(rate(tikv_scheduler_latch_wait_duration_seconds_bucket{type="commit", inspectionid="{{inspectionId}}"}[1m])) by (le))',
+    labelTemplate: '95%',
+  },
+  tikv_scheduler_commit_latch_wait_duration_avg: {
+    promQLTemplate:
+      'sum(rate(tikv_scheduler_command_duration_seconds_sum{type="commit", inspectionid="{{inspectionId}}"}[1m])) / sum(rate(tikv_scheduler_command_duration_seconds_count{type="commit", inspectionid="{{inspectionId}}"}[1m])) ',
+    labelTemplate: 'avg',
+  },
+
+  tivk_scheduler_commit_command_duration_99: {
+    title: 'Scheduler command duration',
+    promQLTemplate:
+      'histogram_quantile(0.99, sum(rate(tikv_scheduler_command_duration_seconds_bucket{type="commit", inspectionid="{{inspectionId}}"}[1m])) by (le))',
+    labelTemplate: '99%',
+    valConverter: val => toAnyUnit(val, 1000, 1, 'ms'),
+  },
+  tivk_scheduler_commit_command_duration_95: {
+    title: 'Scheduler command duration',
+    promQLTemplate:
+      'histogram_quantile(0.95, sum(rate(tikv_scheduler_command_duration_seconds_bucket{type="commit", inspectionid="{{inspectionId}}"}[1m])) by (le))',
+    labelTemplate: '95%',
+  },
+  tivk_scheduler_commit_command_duration_avg: {
+    title: 'Scheduler command duration',
+    promQLTemplate:
+      'sum(rate(tikv_scheduler_command_duration_seconds_sum{type="commit", inspectionid="{{inspectionId}}"}[1m])) / sum(rate(tikv_scheduler_command_duration_seconds_count{type="commit", inspectionid="{{inspectionId}}"}[1m])) ',
+    labelTemplate: 'avg',
+  },
+  // //////////////////////
+  // Raft Propose Panel
+  tikv_propose_wait_duration_99: {
+    title: 'Propose wait duration',
+    promQLTemplate:
+      'histogram_quantile(0.99, sum(rate(tikv_raftstore_request_wait_time_duration_secs_bucket{inspectionid="{{inspectionId}}"}[1m])) by (le))',
+    labelTemplate: '99%',
+    valConverter: val => toAnyUnit(val, 1000 * 1000, 0, 'us'),
+  },
+  tikv_propose_wait_duration_95: {
+    promQLTemplate:
+      'histogram_quantile(0.95, sum(rate(tikv_raftstore_request_wait_time_duration_secs_bucket{inspectionid="{{inspectionId}}"}[1m])) by (le))',
+    labelTemplate: '95%',
+  },
+  tikv_propose_wait_duration_avg: {
+    promQLTemplate:
+      'sum(rate(tikv_raftstore_request_wait_time_duration_secs_sum{inspectionid="{{inspectionId}}"}[1m])) / sum(rate(tikv_raftstore_request_wait_time_duration_secs_count{inspectionid="{{inspectionId}}"}[1m]))',
+    labelTemplate: 'avg',
+  },
+  // //////////////////////
+  // Raft Message Panel
+  tikv_raft_vote: {
+    title: 'Vote',
+    promQLTemplate:
+      'sum(rate(tikv_raftstore_raft_sent_message_total{type="vote", inspectionid="{{inspectionId}}"}[1m])) by (job)',
+    labelTemplate: '{{job}}',
+    valConverter: val => toAnyUnit(val, 1, 1, 'ops'),
+  },
+  // //////////////////////
+  // Storage Panel
+  tikv_storage_async_write_duration_99: {
+    title: 'Storage async write duration',
+    promQLTemplate:
+      'histogram_quantile(0.99, sum(rate(tikv_storage_engine_async_request_duration_seconds_bucket{type="write", inspectionid="{{inspectionId}}"}[1m])) by (le))',
+    labelTemplate: '99%',
+    valConverter: val => toAnyUnit(val, 1000 * 1000, 0, 'us'),
+  },
+  tikv_storage_async_write_duration_95: {
+    promQLTemplate:
+      'histogram_quantile(0.95, sum(rate(tikv_storage_engine_async_request_duration_seconds_bucket{type="write", inspectionid="{{inspectionId}}"}[1m])) by (le))',
+    labelTemplate: '95%',
+  },
+  tikv_storage_async_write_duration_avg: {
+    promQLTemplate:
+      'sum(rate(tikv_storage_engine_async_request_duration_seconds_sum{type="write", inspectionid="{{inspectionId}}"}[1m])) / sum(rate(tikv_storage_engine_async_request_duration_seconds_count{type="write", inspectionid="{{inspectionId}}"}[1m]))',
+    labelTemplate: 'avg',
+  },
+
+  tikv_storage_async_snapshot_duration_99: {
+    title: 'Storage async snapshot duration',
+    promQLTemplate:
+      'histogram_quantile(0.99, sum(rate(tikv_storage_engine_async_request_duration_seconds_bucket{type="snapshot", inspectionid="{{inspectionId}}"}[1m])) by (le))',
+    labelTemplate: '99%',
+    valConverter: val => toAnyUnit(val, 1000, 0, 'ms'),
+  },
+  tikv_storage_async_snapshot_duration_95: {
+    promQLTemplate:
+      'histogram_quantile(0.95, sum(rate(tikv_storage_engine_async_request_duration_seconds_bucket{type="snapshot", inspectionid="{{inspectionId}}"}[1m])) by (le))',
+    labelTemplate: '95%',
+  },
+  tikv_storage_async_snapshot_duration_avg: {
+    promQLTemplate:
+      'sum(rate(tikv_storage_engine_async_request_duration_seconds_sum{type="snapshot", inspectionid="{{inspectionId}}"}[1m])) / sum(rate(tikv_storage_engine_async_request_duration_seconds_count{type="write", inspectionid="{{inspectionId}}"}[1m]))',
+    labelTemplate: 'avg',
+  },
 };
 
 export const RAW_METRICS_ARR: { [key: string]: IRawMetric[] } = {
@@ -449,7 +785,6 @@ export const RAW_METRICS_ARR: { [key: string]: IRawMetric[] } = {
     RAW_METRICS.handle_request_duration_seconds_avg,
   ],
 
-  // TiDB QPS
   qps: [RAW_METRICS.qps_total, RAW_METRICS.qps_total_yesterday, RAW_METRICS.qps_ideal],
   duration: [
     RAW_METRICS.duration_999,
@@ -472,6 +807,62 @@ export const RAW_METRICS_ARR: { [key: string]: IRawMetric[] } = {
     RAW_METRICS.pd_tso_rpc_duration_999,
     RAW_METRICS.pd_tso_rpc_duration_99,
     RAW_METRICS.pd_tso_rpc_duration_90,
+  ],
+  tikv_server_busy: [
+    RAW_METRICS.tikv_server_busy_scheduler,
+    RAW_METRICS.tikv_server_busy_channel,
+    RAW_METRICS.tikv_server_busy_coprocessor,
+    RAW_METRICS.tikv_server_busy_stall,
+  ],
+  tikv_approximate_region_size: [
+    RAW_METRICS.tikv_approximate_region_size_99,
+    RAW_METRICS.tikv_approximate_region_size_95,
+    RAW_METRICS.tikv_approximate_region_size_avg,
+  ],
+  tikv_apply_log_duration: [
+    RAW_METRICS.tikv_apply_log_duration_99,
+    RAW_METRICS.tikv_apply_log_duration_90,
+    RAW_METRICS.tikv_apply_log_duration_avg,
+  ],
+  tikv_append_log_duration: [
+    RAW_METRICS.tikv_append_log_duration_99,
+    RAW_METRICS.tikv_append_log_duration_95,
+    RAW_METRICS.tikv_append_log_duration_avg,
+  ],
+  tikv_scheduler_prewrite_latch_wait_duration: [
+    RAW_METRICS.tikv_scheduler_prewrite_latch_wait_duration_99,
+    RAW_METRICS.tikv_scheduler_prewrite_latch_wait_duration_95,
+    RAW_METRICS.tikv_scheduler_prewrite_latch_wait_duration_avg,
+  ],
+  tivk_scheduler_prewrite_command_duration: [
+    RAW_METRICS.tivk_scheduler_prewrite_command_duration_99,
+    RAW_METRICS.tivk_scheduler_prewrite_command_duration_95,
+    RAW_METRICS.tivk_scheduler_prewrite_command_duration_avg,
+  ],
+  tikv_scheduler_commit_latch_wait_duration: [
+    RAW_METRICS.tikv_scheduler_commit_latch_wait_duration_99,
+    RAW_METRICS.tikv_scheduler_commit_latch_wait_duration_95,
+    RAW_METRICS.tikv_scheduler_commit_latch_wait_duration_avg,
+  ],
+  tivk_scheduler_commit_command_duration: [
+    RAW_METRICS.tivk_scheduler_commit_command_duration_99,
+    RAW_METRICS.tivk_scheduler_commit_command_duration_95,
+    RAW_METRICS.tivk_scheduler_commit_command_duration_avg,
+  ],
+  tikv_propose_wait_duration: [
+    RAW_METRICS.tikv_propose_wait_duration_99,
+    RAW_METRICS.tikv_propose_wait_duration_95,
+    RAW_METRICS.tikv_propose_wait_duration_avg,
+  ],
+  tikv_storage_async_write_duration: [
+    RAW_METRICS.tikv_storage_async_write_duration_99,
+    RAW_METRICS.tikv_storage_async_write_duration_95,
+    RAW_METRICS.tikv_storage_async_write_duration_avg,
+  ],
+  tikv_storage_async_snapshot_duration: [
+    RAW_METRICS.tikv_storage_async_snapshot_duration_99,
+    RAW_METRICS.tikv_storage_async_snapshot_duration_95,
+    RAW_METRICS.tikv_storage_async_snapshot_duration_avg,
   ],
 };
 
@@ -564,7 +955,11 @@ export async function prometheusRangeQuery(
           metricValues[arrIdx] = Array(metricValuesItemArrLength).fill(0);
           metricValues[arrIdx][0] = arr[0] * 1000; // convert seconds to milliseconds
         }
-        metricValues[arrIdx][idx + 1] = +arr[1]; // convert string to number
+        let numVal = +arr[1];
+        if (Number.isNaN(numVal)) {
+          numVal = 0;
+        }
+        metricValues[arrIdx][idx + 1] = numVal; // convert string to number
       });
     });
   }

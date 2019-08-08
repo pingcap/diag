@@ -6,10 +6,11 @@ const styles = require('./AutoTable.less');
 interface AutoTableProps {
   title?: string;
   dataArr: object[];
+  expand?: boolean;
 }
 
-function AutoTable({ title, dataArr }: AutoTableProps) {
-  const [collapsed, setCollapsed] = useState(false);
+function AutoTable({ title, dataArr, expand = true }: AutoTableProps) {
+  const [collapsed, setCollapsed] = useState(!expand);
 
   const tableColumns = useMemo(
     () =>
@@ -39,13 +40,14 @@ function AutoTable({ title, dataArr }: AutoTableProps) {
 
   return (
     <div className={styles.table_container}>
-      <Collapse defaultActiveKey="panel" onChange={handleCollapseChange}>
+      <Collapse defaultActiveKey={collapsed ? '' : 'panel'} onChange={handleCollapseChange}>
         <Collapse.Panel header={renderHeader()} key="panel">
-          {dataArr.length === 0 ? (
-            'None'
-          ) : (
-            <Table dataSource={dataSource} columns={tableColumns} pagination={false} />
-          )}
+          {!collapsed &&
+            (dataArr.length === 0 ? (
+              'None'
+            ) : (
+              <Table dataSource={dataSource} columns={tableColumns} pagination={false} />
+            ))}
         </Collapse.Panel>
       </Collapse>
     </div>

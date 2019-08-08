@@ -30,27 +30,34 @@ function InspectionReport({ inspection }: InspectionReportProps) {
   function renderPromethuesChart(rawMetricKey: string, title?: string) {
     const rawMetrics: IRawMetric[] = RAW_METRICS_ARR[rawMetricKey];
     const metrics: IMetric[] = fillPromQLTemplate(rawMetrics, inspection.uuid);
-    return <PrometheusChart title={title} promMetrics={metrics} promParams={promParams} />;
+    const finalTitle = title || metrics[0].title;
+    return <PrometheusChart title={finalTitle} promMetrics={metrics} promParams={promParams} />;
   }
 
   return (
     <div style={{ marginTop: 20 }}>
+      {/*
+      <CollpasePanel title="" expand={true}>
+        {renderPromethuesChart('')}
+      </CollpasePanel>
+       */}
+
       <h2>一、全局诊断</h2>
       <AutoTable title="overview" dataArr={report.symptoms} />
 
       <h2>二、基本信息</h2>
       <AutoObjectTable title="1、基本信息" data={report.basic || {}} />
-      <AutoTable title="2、数据库基本信息" dataArr={report.dbinfo || []} />
+      <AutoTable title="2、数据库基本信息" dataArr={report.dbinfo || []} expand={false} />
       <AutoTable title="3、资源信息" dataArr={report.resource || []} />
       <AutoTable title="4、告警信息" dataArr={report.alert || []} />
       <AutoTable title="5、慢查询信息" dataArr={report.slow_log || []} />
       <AutoTable title="6、硬件信息" dataArr={report.hardware || []} />
       <AutoTable title="7、软件信息" dataArr={report.software_version || []} />
-      <AutoTable title="8、软件配置信息" dataArr={report.software_config || []} />
+      <AutoTable title="8、软件配置信息" dataArr={report.software_config || []} expand={false} />
       <AutoTable title="9、机器 NTP 时间同步信息" dataArr={[]} />
       <AutoTable title="10、网络质量信息" dataArr={report.network || []} />
       <AutoTable title="11、集群拓扑结构信息" dataArr={[]} />
-      <AutoTable title="12、demsg 信息" dataArr={report.demsg || []} />
+      <AutoTable title="12、demsg 信息" dataArr={report.demsg || []} expand={false} />
 
       <h2>三、监控信息</h2>
       <h3>1、全局监控</h3>
@@ -146,6 +153,52 @@ function InspectionReport({ inspection }: InspectionReportProps) {
       </CollpasePanel>
 
       <h3>4、TiKV</h3>
+      <CollpasePanel title="Cluster" expand={false}>
+        {renderPromethuesChart('tikv_store_size', 'Store Size')}
+        {renderPromethuesChart('tikv_cpu', 'CPU')}
+        {renderPromethuesChart('tikv_memory', 'Memory')}
+        {renderPromethuesChart('tikv_io_utilization', 'IO Utilization')}
+        {renderPromethuesChart('tikv_qps')}
+        {renderPromethuesChart('tikv_leader')}
+      </CollpasePanel>
+      <CollpasePanel title="Errors" expand={false}>
+        {renderPromethuesChart('tikv_server_busy')}
+        {renderPromethuesChart('tikv_server_report_failures')}
+        {renderPromethuesChart('tikv_raftstore_error')}
+        {renderPromethuesChart('tikv_scheduler_error')}
+        {renderPromethuesChart('tikv_coprocessor_error')}
+        {renderPromethuesChart('tikv_grpc_message_error')}
+        {renderPromethuesChart('tikv_leader_drop')}
+        {renderPromethuesChart('tikv_leader_missing')}
+      </CollpasePanel>
+      <CollpasePanel title="Server" expand={false}>
+        {renderPromethuesChart('tikv_channel_full')}
+        {renderPromethuesChart('tikv_approximate_region_size')}
+      </CollpasePanel>
+      <CollpasePanel title="Raft IO" expand={false}>
+        {renderPromethuesChart('tikv_apply_log_duration')}
+        {renderPromethuesChart('tikv_apply_log_duration_per_server')}
+        {renderPromethuesChart('tikv_append_log_duration')}
+        {renderPromethuesChart('tikv_append_log_duration_per_server')}
+      </CollpasePanel>
+      <CollpasePanel title="Scheduler - prewrite" expand={false}>
+        {renderPromethuesChart('tikv_scheduler_prewrite_latch_wait_duration')}
+        {renderPromethuesChart('tivk_scheduler_prewrite_command_duration')}
+      </CollpasePanel>
+      <CollpasePanel title="Scheduler - commit" expand={false}>
+        {renderPromethuesChart('tikv_scheduler_commit_latch_wait_duration')}
+        {renderPromethuesChart('tivk_scheduler_commit_command_duration')}
+      </CollpasePanel>
+      <CollpasePanel title="Raft propose" expand={false}>
+        {renderPromethuesChart('tikv_propose_wait_duration')}
+      </CollpasePanel>
+      <CollpasePanel title="Raft message" expand={false}>
+        {renderPromethuesChart('tikv_raft_vote')}
+      </CollpasePanel>
+      <CollpasePanel title="Storage" expand={false}>
+        {renderPromethuesChart('tikv_storage_async_write_duration')}
+        {renderPromethuesChart('tikv_storage_async_snapshot_duration')}
+      </CollpasePanel>
     </div>
   );
 }
