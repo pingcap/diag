@@ -34,7 +34,7 @@ aws_secret_access_key = ""
 interval = 600		# 5min
 bwlimit = 10		# KB/s
 
-[influx]
+[influxdb]
 endpoint = "http://127.0.0.1:8086"
 
 [prometheus]
@@ -83,7 +83,7 @@ type ForesightConfig struct {
 
 	Influx struct {
 		Endpoint string `toml:"endpoint"`
-	} `toml:"influx"`
+	} `toml:"influxdb"`
 
 	Prometheus struct {
 		Endpoint string `toml:"endpoint"`
