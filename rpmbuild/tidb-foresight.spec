@@ -41,12 +41,11 @@ go build
 cd %{_builddir}/tidb-foresight/web
 yarn && yarn build
 cd %{_builddir}/graphviz-2.40.1
-./configure --prefix=%{_buildrootdir}/%{name}-%{version}-%{release}.%{_build_arch}/usr/local/graphviz --enable-static=yes
+./configure --prefix=%{_builddir}/graphviz --enable-static=yes
 make
 make install
 
 %install
-
 # install foresight
 mkdir -p %{_buildrootdir}/%{name}-%{version}-%{release}.%{_build_arch}/usr/local/tidb-foresight/bin
 mkdir -p %{_buildrootdir}/%{name}-%{version}-%{release}.%{_build_arch}/usr/local/tidb-foresight/web
@@ -163,23 +162,15 @@ RestartSec=15s
 WantedBy=multi-user.target
 EOF
 
+# install graphviz
+cp -r %{_builddir}/graphviz %{_buildrootdir}/%{name}-%{version}-%{release}.%{_build_arch}/usr/local/graphviz
+
 %files
 # foresight
-/usr/local/tidb-foresight/
-/etc/systemd/system/foresight.service
+/usr/local/
+/etc/
+/var/
 
-# influxdb
-/usr/local/influxdb/
-/etc/systemd/system/influxd.service
-/var/lib/influxdb
-/etc/logrotate.d/influxdb
-
-# prometheus
-/usr/local/prometheus/
-/etc/systemd/system/prometheus.service
-
-# graphviz
-/usr/local/graphviz
 %pre
 grep -w tidb /etc/shadow > /dev/null
 if [ $? != 0 ]; then
@@ -196,7 +187,8 @@ chown -R tidb:tidb /usr/local/prometheus
 chown -R influxdb:influxdb /usr/local/influxdb
 chown -R influxdb:influxdb /var/lib/influxdb
 echo 'export PATH=$PATH:/usr/local/graphviz/bin' >> /etc/bashrc
-source /etc/bashrc
+echo 'export PATH=$PATH:/usr/local/graphviz/bin' >> ~/.bashrc
+source ~/.bashrc
 %preun
 systemctl stop foresight.service
 systemctl stop prometheus.service
@@ -217,7 +209,6 @@ rm -rf /var/lib/influxdb
 rm -rf /etc/systemd/system/influxd.service
 rm -rf /usr/local/graphviz
 sed -i '/graphviz/d' /etc/bashrc
-source /etc/bashrc
 
 %clean
 rm -rf %{_buildrootdir}/*
