@@ -186,7 +186,7 @@ chown -R tidb:tidb /usr/local/tidb-foresight
 chown -R tidb:tidb /usr/local/prometheus
 chown -R influxdb:influxdb /usr/local/influxdb
 chown -R influxdb:influxdb /var/lib/influxdb
-echo 'export PATH=$PATH:/usr/local/graphviz/bin' >> /etc/bashrc
+echo 'export PATH=$PATH:/usr/local/graphviz/bin' >> /etc/profile
 echo 'export PATH=$PATH:/usr/local/graphviz/bin' >> ~/.bashrc
 source ~/.bashrc
 %preun
@@ -208,7 +208,8 @@ rm -rf /etc/logrotate.d/influxdb
 rm -rf /var/lib/influxdb
 rm -rf /etc/systemd/system/influxd.service
 rm -rf /usr/local/graphviz
-sed -i '/graphviz/d' /etc/bashrc
+sed -i '/graphviz/d' /etc/profile
+sed -i '/graphviz/d' ~/.bashrc
 
 %clean
 rm -rf %{_buildrootdir}/*
