@@ -25,11 +25,11 @@ const plugins: IPlugin[] = [
       },
       locale: {
         // default false
-        enable: true,
+        enable: false,
         // default zh-CN
         default: 'zh-CN',
         // default true, when it is true, will use `navigator.language` overwrite default
-        baseNavigator: true,
+        baseNavigator: false,
       },
       dynamicImport: {
         loadingComponent: './components/PageLoading/index',

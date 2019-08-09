@@ -54,7 +54,7 @@ export default {
   menu: {
     locale: true,
   },
-  title: 'TiDB Foresight',
+  title: '诊断工具',
   pwa: false,
   iconfontUrl: '',
 } as DefaultSettings;
