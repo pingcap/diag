@@ -34,7 +34,7 @@ func Sync(topoDir string, targetDir string, interval time.Duration, bwlimit int)
 		StopCh:   make(chan struct{}),
 		Cfg: RsyncConfig{
 			Args: []string{
-				"-avz",
+				"-az --inplace -T /tmp/rsync",
 				fmt.Sprintf("--bwlimit=%d", bwlimit),
 			},
 		},
