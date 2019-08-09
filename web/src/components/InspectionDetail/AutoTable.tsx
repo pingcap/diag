@@ -46,7 +46,12 @@ function AutoTable({ title, dataArr, expand = true }: AutoTableProps) {
             (dataArr.length === 0 ? (
               'None'
             ) : (
-              <Table dataSource={dataSource} columns={tableColumns} pagination={false} />
+              <Table
+                dataSource={dataSource}
+                columns={tableColumns}
+                pagination={false}
+                scroll={{ x: true }}
+              />
             ))}
         </Collapse.Panel>
       </Collapse>
