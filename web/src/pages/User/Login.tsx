@@ -18,7 +18,6 @@ function Login({ form, dispatch, logging }: LoginProps) {
   function handleSubmit(e: any) {
     e.preventDefault();
     form.validateFields((err, values) => {
-      console.log(values);
       if (!err) {
         dispatch({
           type: 'user/login',
