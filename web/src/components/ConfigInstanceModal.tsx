@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { Modal, Form, Checkbox, Divider, Select, message, Spin } from 'antd';
+import { Modal, Form, Checkbox, Divider, Select, message, Spin, DatePicker } from 'antd';
 import moment from 'moment';
+import { RangePickerValue } from 'antd/lib/date-picker/interface';
 import { queryInstanceConfig, updateInstanceConfig } from '@/services/inspection';
 import { IInstanceConfig } from '@/models/inspection';
 import { Dispatch } from '@/models/connect';
@@ -45,10 +46,16 @@ const oneDayTimes: string[] = Array(48)
       .format('HH:mm'),
   );
 
+const yesterday = moment()
+  .subtract(1, 'days')
+  .endOf('day');
+
 function ConfigInstanceModal({ visible, onClose, dispatch, manual, instanceId }: Props) {
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [config, setConfig] = useState<IInstanceConfig | null>(null);
+
+  const defTimeRange: [moment.Moment, moment.Moment] = [moment(), moment().add(1, 'hours')];
 
   useEffect(() => {
     async function fetchConfig() {
@@ -56,11 +63,12 @@ function ConfigInstanceModal({ visible, onClose, dispatch, manual, instanceId }:
         return;
       }
       setLoading(true);
-      try {
-        const res = await queryInstanceConfig(instanceId);
-        setConfig(res as IInstanceConfig);
-      } catch (error) {
-        // TODO
+      const res = await queryInstanceConfig(instanceId);
+      if (res !== undefined) {
+        setConfig({
+          ...(res as IInstanceConfig),
+          manual_sched_range: [defTimeRange[0].format(), defTimeRange[1].format()],
+        });
       }
       setLoading(false);
     }
@@ -76,25 +84,35 @@ function ConfigInstanceModal({ visible, onClose, dispatch, manual, instanceId }:
     });
   }
 
-  function handleLogDurationChange(duration: number) {
-    setConfig({
-      ...(config as IInstanceConfig),
-      collect_log_duration: duration,
-    });
-  }
-
-  function handleMetricDurationChange(duration: number) {
-    setConfig({
-      ...(config as IInstanceConfig),
-      collect_metric_duration: duration,
-    });
-  }
-
-  function handleStartTimeChange(startTime: string) {
+  function handleAutoSchedStartTimeChange(startTime: string) {
     setConfig({
       ...(config as IInstanceConfig),
       auto_sched_start: startTime,
     });
+  }
+
+  function handleAutoSchedDurationChange(duration: number) {
+    setConfig({
+      ...(config as IInstanceConfig),
+      auto_sched_duration: duration,
+    });
+  }
+
+  function handleManualSchedRangeChange(dates: RangePickerValue, dateStrings: [string, string]) {
+    // 如果用户进行了 clear，dates 为 [], dateStrings 为 ["", ""]
+    let timeRange: [string, string] = ['', ''];
+    if (dates[0] && dates[1]) {
+      timeRange = [dates[0].format(), dates[1].format()];
+    }
+    setConfig({
+      ...(config as IInstanceConfig),
+      manual_sched_range: timeRange,
+    });
+  }
+
+  function disableDate(current: moment.Moment | undefined) {
+    // Can not select days before today
+    return (current && current < yesterday) || false;
   }
 
   async function submit() {
@@ -115,19 +133,18 @@ function ConfigInstanceModal({ visible, onClose, dispatch, manual, instanceId }:
         }
       });
     } else if (!manual) {
-      try {
-        await updateInstanceConfig(instanceId, config as IInstanceConfig);
-        setSubmitting(false);
+      const res = await updateInstanceConfig(instanceId, config as IInstanceConfig);
+      setSubmitting(false);
+      if (res !== undefined) {
         onClose();
         message.success(`${instanceId} 自动诊断配置修改成功！`);
-      } catch (err) {
-        // TODO
       }
     }
   }
 
   return (
     <Modal
+      width={manual ? 600 : 520}
       visible={visible}
       onCancel={onClose}
       onOk={submit}
@@ -142,7 +159,9 @@ function ConfigInstanceModal({ visible, onClose, dispatch, manual, instanceId }:
             <Checkbox
               onChange={handleChange}
               name="collect_hardware_info"
-              checked={config.collect_hardware_info}
+              // checked={config.collect_hardware_info}
+              checked
+              disabled
             >
               硬件信息
             </Checkbox>
@@ -151,7 +170,9 @@ function ConfigInstanceModal({ visible, onClose, dispatch, manual, instanceId }:
             <Checkbox
               onChange={handleChange}
               name="collect_software_info"
-              checked={config.collect_software_info}
+              // checked={config.collect_software_info}
+              checked
+              disabled
             >
               软件信息
             </Checkbox>
@@ -177,36 +198,20 @@ function ConfigInstanceModal({ visible, onClose, dispatch, manual, instanceId }:
             </Checkbox>
           </Form.Item>
           <Form.Item {...formItemLayoutWithOutLabel}>
-            <div style={{ display: 'flex', alignItems: 'center' }}>
-              <Checkbox onChange={handleChange} name="collect_log" checked={config.collect_log}>
-                应用日志信息
-              </Checkbox>
-              <Select
-                style={{ width: 120 }}
-                onChange={handleLogDurationChange}
-                value={config.collect_log_duration}
-              >
-                <Option value={60}>1 小时</Option>
-                <Option value={120}>2 小时</Option>
-                <Option value={240}>4 小时</Option>
-              </Select>
-            </div>
+            <Checkbox
+              onChange={handleChange}
+              name="collect_log"
+              // checked={config.collect_log}
+              checked
+              disabled
+            >
+              应用日志信息
+            </Checkbox>
           </Form.Item>
           <Form.Item {...formItemLayoutWithOutLabel}>
-            <div style={{ display: 'flex', alignItems: 'center' }}>
-              <Checkbox checked disabled>
-                性能监控信息
-              </Checkbox>
-              <Select
-                style={{ width: 120 }}
-                onChange={handleMetricDurationChange}
-                value={config.collect_metric_duration}
-              >
-                <Option value={60}>1 小时</Option>
-                <Option value={120}>2 小时</Option>
-                <Option value={240}>4 小时</Option>
-              </Select>
-            </div>
+            <Checkbox checked disabled>
+              性能监控信息
+            </Checkbox>
           </Form.Item>
           <Form.Item {...formItemLayoutWithOutLabel}>
             <Checkbox checked disabled>
@@ -214,7 +219,13 @@ function ConfigInstanceModal({ visible, onClose, dispatch, manual, instanceId }:
             </Checkbox>
           </Form.Item>
           <Form.Item {...formItemLayoutWithOutLabel}>
-            <Checkbox onChange={handleChange} name="collect_demsg" checked={config.collect_demsg}>
+            <Checkbox
+              onChange={handleChange}
+              name="collect_demsg"
+              //  checked={config.collect_demsg}
+              checked
+              disabled
+            >
               机器 demsg 信息
             </Checkbox>
           </Form.Item>
@@ -224,7 +235,7 @@ function ConfigInstanceModal({ visible, onClose, dispatch, manual, instanceId }:
               <Form.Item label="开始时间">
                 <Select
                   style={{ width: 120 }}
-                  onChange={handleStartTimeChange}
+                  onChange={handleAutoSchedStartTimeChange}
                   value={config.auto_sched_start}
                 >
                   {oneDayTimes.map(time => (
@@ -233,6 +244,32 @@ function ConfigInstanceModal({ visible, onClose, dispatch, manual, instanceId }:
                     </Option>
                   ))}
                 </Select>
+              </Form.Item>
+              <Form.Item label="统计信息时长">
+                <Select
+                  style={{ width: 120 }}
+                  onChange={handleAutoSchedDurationChange}
+                  value={config.auto_sched_duration}
+                >
+                  <Option value={60}>1 小时</Option>
+                  <Option value={60 * 2}>2 小时</Option>
+                  <Option value={60 * 4}>4 小时</Option>
+                </Select>
+              </Form.Item>
+              <Divider />
+            </React.Fragment>
+          )}
+          {manual && (
+            <React.Fragment>
+              <Form.Item label="统计信息时间段">
+                <DatePicker.RangePicker
+                  showTime={{ format: 'HH:mm' }}
+                  format="YYYY-MM-DD HH:mm"
+                  placeholder={['起始时间', '结束时间']}
+                  defaultValue={defTimeRange}
+                  disabledDate={disableDate}
+                  onChange={handleManualSchedRangeChange}
+                />
               </Form.Item>
               <Divider />
             </React.Fragment>

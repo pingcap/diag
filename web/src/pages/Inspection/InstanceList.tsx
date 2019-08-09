@@ -60,9 +60,17 @@ const tableColumns = (onDelete: any, onConfig: any) => [
     key: 'action',
     render: (text: any, record: IFormatInstance) => (
       <span>
-        <Link to={`/inspection/instances/${record.uuid}/reports`}>查看</Link>
+        {record.status === 'success' ? (
+          <Link to={`/inspection/instances/${record.uuid}/reports`}>查看</Link>
+        ) : (
+          <span>查看</span>
+        )}
         <Divider type="vertical" />
-        <a onClick={() => onConfig(record)}>设置</a>
+        {record.status === 'success' ? (
+          <a onClick={() => onConfig(record)}>设置</a>
+        ) : (
+          <span>设置</span>
+        )}
         <Divider type="vertical" />
         <a style={{ color: 'red' }} onClick={() => onDelete(record)}>
           删除
