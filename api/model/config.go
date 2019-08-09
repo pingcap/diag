@@ -2,27 +2,50 @@ package model
 
 import (
 	"database/sql"
-	"strings"
+	"time"
 
 	log "github.com/sirupsen/logrus"
 )
 
+// the config for a diagnosis or cluster.
+// user can set auto schedule config for
+// a cluster or set for each diagnosis.
 type Config struct {
-	InstanceId            string `json:"instance_id"`
-	CollectHardwareInfo   bool   `json:"collect_hardware_info"`
-	CollectSoftwareInfo   bool   `json:"collect_software_info"`
-	CollectLog            bool   `json:"collect_log"`
-	CollectLogDuration    int    `json:"collect_log_duration"`
-	CollectMetricDuration int    `json:"collect_metric_duration"`
-	CollectDemsg          bool   `json:"collect_demsg"`
-	AutoSchedDuration     string `json:"auto_sched_duration"`
-	AutoSchedStart        string `json:"auto_sched_start"`
-	ReportKeepDuration    string `json:"report_keep_duration"`
+	// the instance this config belong to
+	InstanceId string `json:"instance_id"`
+
+	// should collector colecct hardware info
+	CollectHardwareInfo bool `json:"collect_hardware_info"`
+
+	// should collector collect software info
+	CollectSoftwareInfo bool `json:"collect_software_info"`
+
+	// should collector collect log
+	CollectLog bool `json:"collect_log"`
+
+	// should collector collect dmesg
+	CollectDemsg bool `json:"collect_demsg"`
+
+	// auto schedule start time, eg. 00:00, 00:30, 01:00, 01:30
+	AutoSchedStart string `json:"auto_sched_start"`
+
+	// auto schedule duration, minutes
+	AutoSchedDuration int64 `json:"auto_sched_duration"`
+
+	// when user click diagnose button, he will chose a time range
+	// for collecting metric and log infomation.
+	ManualSchedRange []time.Time `json:"manual_sched_range"`
+
+	// how long before the foresight gc remove a report
+	ReportKeepDuration int64 `json:"report_keep_duration"`
 }
 
+// the default config for a instance on it's born
 func DefaultInstanceConfig(instanceId string) *Config {
 	return &Config{
-		InstanceId: instanceId,
+		InstanceId:        instanceId,
+		AutoSchedStart:    "00:00",
+		AutoSchedDuration: 60,
 	}
 }
 
@@ -30,27 +53,19 @@ func (m *Model) GetInstanceConfig(instanceId string) (*Config, error) {
 	config := &Config{}
 
 	row := m.db.QueryRow(
-		"SELECT instance,c_hardw,c_softw,c_log,c_log_d,c_metric_d,c_demsg,s_cron,r_duration FROM configs WHERE instance = ?",
+		"SELECT instance,c_hardw,c_softw,c_log,c_demsg,s_start,s_duration,r_duration FROM configs WHERE instance = ?",
 		instanceId,
 	)
-	var cHardw, cSoftw, cLog, cDemsg int
-	var sCron string
+	var cHardw, cSoftw, cLog, cDemsg int64
 	err := row.Scan(
-		&config.InstanceId, &cHardw, &cSoftw, &cLog, &config.CollectLogDuration,
-		&config.CollectMetricDuration, &cDemsg, &sCron, &config.ReportKeepDuration,
+		&config.InstanceId, &cHardw, &cSoftw, &cLog, &cDemsg,
+		&config.AutoSchedStart, &config.AutoSchedDuration, &config.ReportKeepDuration,
 	)
-	ss := strings.Split(sCron, "/")
 	if err == nil {
 		config.CollectHardwareInfo = cHardw != 0
 		config.CollectSoftwareInfo = cSoftw != 0
 		config.CollectLog = cLog != 0
 		config.CollectDemsg = cDemsg != 0
-		if len(ss) > 0 {
-			config.AutoSchedStart = ss[0]
-		}
-		if len(ss) > 1 {
-			config.AutoSchedDuration = ss[1]
-		}
 		return config, nil
 	} else if err == sql.ErrNoRows {
 		log.Error("no config for instance ", instanceId, ": ", err)
@@ -70,11 +85,11 @@ func (m *Model) SetInstanceConfig(config *Config) error {
 		}
 	}
 	_, err := m.db.Exec(
-		`REPLACE INTO configs(instance,c_hardw,c_softw,c_log,c_log_d,c_metric_d,c_demsg,s_cron,r_duration)
-		VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		`REPLACE INTO configs(instance,c_hardw,c_softw,c_log,c_demsg,s_start,s_duration,r_duration)
+		VALUES(?, ?, ?, ?, ?, ?, ?, ?)`,
 		config.InstanceId, toInt(config.CollectHardwareInfo), toInt(config.CollectSoftwareInfo),
-		toInt(config.CollectLog), config.CollectLogDuration, config.CollectMetricDuration, toInt(config.CollectDemsg),
-		config.AutoSchedStart+"/"+config.AutoSchedDuration, config.ReportKeepDuration,
+		toInt(config.CollectLog), toInt(config.CollectDemsg), config.AutoSchedStart, config.AutoSchedDuration,
+		config.ReportKeepDuration,
 	)
 
 	return err

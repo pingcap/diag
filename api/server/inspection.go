@@ -23,7 +23,7 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-func (s *Server) collect(instanceId, inspectionId string) error {
+func (s *Server) collect(instanceId, inspectionId string, from, to time.Time) error {
 	instance, err := s.model.GetInstance(instanceId)
 	if err != nil {
 		log.Error("get instance:", err)
@@ -58,11 +58,11 @@ func (s *Server) collect(instanceId, inspectionId string) error {
 		fmt.Sprintf("--collect=%s", strings.Join(items, ",")),
 		fmt.Sprintf("--log-spliter=%s", s.config.Spliter),
 		// TODO: use time range in config
-		fmt.Sprintf("--begin=%s", time.Now().Add(time.Duration(-10)*time.Minute).Format(time.RFC3339)),
-		fmt.Sprintf("--end=%s", time.Now().Format(time.RFC3339)),
+		fmt.Sprintf("--begin=%s", from.Format(time.RFC3339)),
+		fmt.Sprintf("--end=%s", to.Format(time.RFC3339)),
 	)
 	cmd.Env = append(
-		cmd.Env,
+		os.Environ(),
 		"FORESIGHT_USER="+s.config.User.Name,
 		"CLUSTER_CREATE_TIME="+instance.CreateTime.Format(time.RFC3339),
 		"INSPECTION_TYPE=manual",
@@ -85,7 +85,7 @@ func (s *Server) analyze(inspectionId string) error {
 		fmt.Sprintf("--inspection-id=%s", inspectionId),
 	)
 	cmd.Env = append(
-		cmd.Env,
+		os.Environ(),
 		"INFLUX_ADDR="+s.config.Influx.Endpoint,
 		"PROM_ADDR="+s.config.Prometheus.Endpoint,
 	)
@@ -224,7 +224,7 @@ func (s *Server) getInspectionDetail(r *http.Request) (*model.Inspection, error)
 	}
 }
 
-func (s *Server) createInspection(r *http.Request) (*model.Inspection, error) {
+func (s *Server) createInspection(r *http.Request, c *model.Config) (*model.Inspection, error) {
 	instanceId := mux.Vars(r)["id"]
 	inspectionId := uuid.New().String()
 
@@ -240,8 +240,17 @@ func (s *Server) createInspection(r *http.Request) (*model.Inspection, error) {
 		return nil, utils.NewForesightError(http.StatusInternalServerError, "DB_INSERT_ERROR", "error on insert data")
 	}
 
+	from := time.Now().Add(time.Duration(-10) * time.Minute)
+	to := time.Now()
+	if len(c.ManualSchedRange) > 0 {
+		from = c.ManualSchedRange[0]
+	}
+	if len(c.ManualSchedRange) > 1 {
+		to = c.ManualSchedRange[1]
+	}
+
 	go func() {
-		err := s.collect(instanceId, inspectionId)
+		err := s.collect(instanceId, inspectionId, from, to)
 		if err != nil {
 			log.Error("collect ", inspectionId, ": ", err)
 			inspection.Status = "exception"
