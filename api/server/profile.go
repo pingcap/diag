@@ -28,7 +28,7 @@ func (s *Server) profileAllProcess(instanceId, inspectionId string) error {
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	cmd.Env = append(
-		cmd.Env,
+		os.Environ(),
 		"FORESIGHT_USER="+s.config.User.Name,
 		"INSPECTION_TYPE=profile",
 	)

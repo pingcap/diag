@@ -27,10 +27,9 @@ CREATE TABLE IF NOT EXISTS configs (
 	c_hardw INT2,
 	c_softw INT2,
 	c_log INT2,
-	c_log_d INT64,
-	c_metric_d INT64,
 	c_demsg INT2,
-	s_cron VARCHAR(32),
+	s_start VARCHAR(32),
+	s_duration INT,
 	r_duration VARCHAR(16),
 	PRIMARY KEY (instance)
 );
