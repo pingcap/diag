@@ -44,3 +44,17 @@
 
 ## Get RPM
 When the build is complete, you can get the rpm package in the `~/rpmbuild/RPMS` directory.
+
+# Build DEB for ubuntu and debain
+
+## Install alien
+
+```
+sudo apt install -y alien
+```
+
+## Convert RPM to DEB
+
+```
+sudo alien -k --scripts tidb-foresight-xxx.x86_64.rpm
+```
