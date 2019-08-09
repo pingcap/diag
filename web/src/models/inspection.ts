@@ -32,15 +32,16 @@ export interface IFormatInstance extends IInstance {
 export interface IInstanceConfig {
   collect_hardware_info: boolean; // 硬件信息
   collect_software_info: boolean; // 软件信息
-
   collect_log: boolean; // 应用日志信息
-  collect_log_duration: number; // 应用日志信息时长
-
-  collect_metric_duration: number; // 性能监控信息时长
-
   collect_demsg: boolean; // 机器 demsg 信息
 
+  // collect_log_duration: number; // 应用日志信息时长
+  // collect_metric_duration: number; // 性能监控信息时长
+
   auto_sched_start: string; // 开始时间
+  auto_sched_duration: number; // 统计信息时长
+  manual_sched_range: [string, string]; // 手动诊断时的统计信息时间段
+
   report_keep_duration: number; // 保存时长
 }
 

@@ -48,6 +48,7 @@ const tableColumns = (
     title: '开始时间',
     dataIndex: 'format_create_time',
     key: 'format_create_time',
+    render: (text: any) => (text === 'Invalid date' ? '获取中...' : text),
   },
   {
     title: '完成时间',
