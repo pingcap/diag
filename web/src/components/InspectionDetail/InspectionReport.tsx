@@ -9,6 +9,8 @@ import {
   IPromParams,
   IMetric,
   IRawMetric,
+  IPanel,
+  PANELS,
 } from '@/services/prometheus';
 import CollpasePanel from './CollapsePanel';
 import PrometheusChart from './PrometheusChart';
@@ -31,17 +33,27 @@ function InspectionReport({ inspection }: InspectionReportProps) {
     const rawMetrics: IRawMetric[] = RAW_METRICS_ARR[rawMetricKey];
     const metrics: IMetric[] = fillPromQLTemplate(rawMetrics, inspection.uuid);
     const finalTitle = title || metrics[0].title;
-    return <PrometheusChart title={finalTitle} promMetrics={metrics} promParams={promParams} />;
+    return (
+      <PrometheusChart
+        key={rawMetricKey}
+        title={finalTitle}
+        promMetrics={metrics}
+        promParams={promParams}
+      />
+    );
+  }
+
+  function renderPanel(panelKey: string) {
+    const panel: IPanel = PANELS[panelKey];
+    return (
+      <CollpasePanel title={panel.title} expand={panel.expand}>
+        {panel.charts.map(chartKey => renderPromethuesChart(chartKey))}
+      </CollpasePanel>
+    );
   }
 
   return (
     <div style={{ marginTop: 20 }}>
-      {/*
-      <CollpasePanel title="" expand={true}>
-        {renderPromethuesChart('')}
-      </CollpasePanel>
-       */}
-
       <h2>一、全局诊断</h2>
       <AutoTable title="overview" dataArr={report.symptoms} />
 
@@ -199,6 +211,36 @@ function InspectionReport({ inspection }: InspectionReportProps) {
         {renderPromethuesChart('tikv_storage_async_write_duration')}
         {renderPromethuesChart('tikv_storage_async_snapshot_duration')}
       </CollpasePanel>
+      <CollpasePanel title="Scheduler pending commands" expand={false}>
+        {renderPromethuesChart('scheduler_pending_commands')}
+      </CollpasePanel>
+      <CollpasePanel title="RocksDB - raft" expand={false}>
+        {renderPromethuesChart('rocksdb_raft_write_duration')}
+        {renderPromethuesChart('rocksdb_raft_write_stall_duration')}
+        {renderPromethuesChart('rocksdb_raft_get_duration')}
+        {renderPromethuesChart('rocksdb_raft_seek_duration')}
+        {renderPromethuesChart('rocksdb_raft_wal_sync_duration')}
+        {renderPromethuesChart('rocksdb_raft_wal_sync_operations')}
+        {renderPromethuesChart('rocksdb_raft_number_files_each_level')}
+        {renderPromethuesChart('rocksdb_raft_compaction_pending_bytes')}
+        {renderPromethuesChart('rocksdb_raft_block_cache_size')}
+      </CollpasePanel>
+
+      <CollpasePanel title="RocksDB - kv" expand={false}>
+        {renderPromethuesChart('rocksdb_kv_write_duration')}
+        {renderPromethuesChart('rocksdb_kv_write_stall_duration')}
+        {renderPromethuesChart('rocksdb_kv_get_duration')}
+        {renderPromethuesChart('rocksdb_kv_seek_duration')}
+        {renderPromethuesChart('rocksdb_kv_wal_sync_duration')}
+        {renderPromethuesChart('rocksdb_kv_wal_sync_operations')}
+        {renderPromethuesChart('rocksdb_kv_number_files_each_level')}
+        {renderPromethuesChart('rocksdb_kv_compaction_pending_bytes')}
+        {renderPromethuesChart('rocksdb_kv_block_cache_size')}
+      </CollpasePanel>
+      {renderPanel('tikv_coprocessor')}
+      {renderPanel('tikv_snapshot')}
+      {renderPanel('tikv_thread_cpu')}
+      {renderPanel('tikv_grpc')}
     </div>
   );
 }
