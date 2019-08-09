@@ -25,11 +25,13 @@ interface PrometheusChartProps {
 }
 
 function PrometheusChart({ title, promMetrics, promParams }: PrometheusChartProps) {
+  const [loading, setLoading] = useState(false);
   const [chartLabels, setChartLabels] = useState<string[]>([]);
   const [oriChartData, setOriChartData] = useState<number[][]>([]);
 
   useEffect(() => {
     function query() {
+      setLoading(true);
       Promise.all(
         promMetrics.map(metric =>
           prometheusRangeQuery(metric.promQL, metric.labelTemplate, promParams),
@@ -53,6 +55,7 @@ function PrometheusChart({ title, promMetrics, promParams }: PrometheusChartProp
         });
         setChartLabels(labels);
         setOriChartData(data);
+        setLoading(false);
       });
     }
 
@@ -62,8 +65,9 @@ function PrometheusChart({ title, promMetrics, promParams }: PrometheusChartProp
   return (
     <div>
       {title && <h4 style={{ textAlign: 'center', marginTop: 10 }}>{title}</h4>}
-
-      {oriChartData.length > 0 ? (
+      {loading && <p style={{ textAlign: 'center' }}>loading...</p>}
+      {!loading && oriChartData.length === 0 && <p style={{ textAlign: 'center' }}>No Data</p>}
+      {!loading && oriChartData.length > 0 && (
         <div style={{ height: 200 }}>
           <SerialLineChart
             data={oriChartData}
@@ -71,8 +75,6 @@ function PrometheusChart({ title, promMetrics, promParams }: PrometheusChartProp
             valConverter={promMetrics[0].valConverter}
           />
         </div>
-      ) : (
-        <p style={{ textAlign: 'center' }}>No Data</p>
       )}
     </div>
   );
