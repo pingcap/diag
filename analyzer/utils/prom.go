@@ -9,7 +9,6 @@ import (
 	"github.com/prometheus/client_golang/api"
 	prom "github.com/prometheus/client_golang/api/prometheus/v1"
 	pm "github.com/prometheus/common/model"
-	log "github.com/sirupsen/logrus"
 )
 
 func QueryProm(query string, t time.Time) (*float64, error) {
@@ -19,13 +18,11 @@ func QueryProm(query string, t time.Time) (*float64, error) {
 	}
 	client, err := api.NewClient(api.Config{Address: addr})
 	if err != nil {
-		log.Error("connect prometheus:", err)
 		return nil, err
 	}
 	api := prom.NewAPI(client)
 	v, _, err := api.Query(context.Background(), query, t)
 	if err != nil {
-		log.Error("query prometheus:", err)
 		return nil, err
 	}
 
@@ -35,7 +32,7 @@ func QueryProm(query string, t time.Time) (*float64, error) {
 	}
 
 	if len(vec) == 0 {
-		return nil, nil
+		return nil, errors.New("metric not found")
 	}
 
 	value := float64(vec[0].Value)
@@ -50,13 +47,11 @@ func QueryPromRange(query string, start, end time.Time, step time.Duration) (Flo
 	}
 	client, err := api.NewClient(api.Config{Address: addr})
 	if err != nil {
-		log.Error("connect prometheus:", err)
 		return values, err
 	}
 	api := prom.NewAPI(client)
 	v, _, err := api.QueryRange(context.Background(), query, prom.Range{start, end, step})
 	if err != nil {
-		log.Error("query prometheus:", err)
 		return values, err
 	}
 
