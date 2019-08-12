@@ -46,16 +46,14 @@ const oneDayTimes: string[] = Array(48)
       .format('HH:mm'),
   );
 
-const yesterday = moment()
-  .subtract(1, 'days')
-  .endOf('day');
+const endOfToday = moment().endOf('day');
 
 function ConfigInstanceModal({ visible, onClose, dispatch, manual, instanceId }: Props) {
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [config, setConfig] = useState<IInstanceConfig | null>(null);
 
-  const defTimeRange: [moment.Moment, moment.Moment] = [moment(), moment().add(1, 'hours')];
+  const defTimeRange: [moment.Moment, moment.Moment] = [moment().subtract(1, 'hours'), moment()];
 
   useEffect(() => {
     async function fetchConfig() {
@@ -112,7 +110,7 @@ function ConfigInstanceModal({ visible, onClose, dispatch, manual, instanceId }:
 
   function disableDate(current: moment.Moment | undefined) {
     // Can not select days before today
-    return (current && current < yesterday) || false;
+    return (current && current > endOfToday) || false;
   }
 
   async function submit() {
@@ -274,9 +272,11 @@ function ConfigInstanceModal({ visible, onClose, dispatch, manual, instanceId }:
               <Divider />
             </React.Fragment>
           )}
-          <Form.Item label="报告收集频率">
-            <span>每日 1 次</span>
-          </Form.Item>
+          {!manual && (
+            <Form.Item label="报告收集频率">
+              <span>每日 1 次</span>
+            </Form.Item>
+          )}
           <Form.Item label="报告保存时长">
             <span>30 天</span>
           </Form.Item>
