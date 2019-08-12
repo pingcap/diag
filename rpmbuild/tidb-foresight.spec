@@ -49,13 +49,17 @@ make install
 # install foresight
 mkdir -p %{_buildrootdir}/%{name}-%{version}-%{release}.%{_build_arch}/usr/local/tidb-foresight/bin
 mkdir -p %{_buildrootdir}/%{name}-%{version}-%{release}.%{_build_arch}/usr/local/tidb-foresight/web
+mkdir -p %{_buildrootdir}/%{name}-%{version}-%{release}.%{_build_arch}/usr/local/tidb-foresight/script
 mkdir -p %{_buildrootdir}/%{name}-%{version}-%{release}.%{_build_arch}/etc/systemd/system/
+# if there is config file, cp it
+if [ -e %{_builddir}/tidb-foresight/tidb-foresight.toml ];then 
+	cp %{_builddir}/tidb-foresight/tidb-foresight.toml %{_buildrootdir}/%{name}-%{version}-%{release}.%{_build_arch}/usr/local/tidb-foresight/
+fi
 cp -r %{_builddir}/tidb-foresight/api/tidb-foresight %{_buildrootdir}/%{name}-%{version}-%{release}.%{_build_arch}/usr/local/tidb-foresight/bin/
 cp -r %{_builddir}/tidb-foresight/analyzer/analyzer %{_buildrootdir}/%{name}-%{version}-%{release}.%{_build_arch}/usr/local/tidb-foresight/bin/
 cp -r %{_builddir}/tidb-foresight/spliter/spliter %{_buildrootdir}/%{name}-%{version}-%{release}.%{_build_arch}/usr/local/tidb-foresight/bin/
 cp -r %{_builddir}/tidb-foresight/syncer/syncer %{_buildrootdir}/%{name}-%{version}-%{release}.%{_build_arch}/usr/local/tidb-foresight/bin/
-cp -r %{_builddir}/tidb-foresight/collector %{_buildrootdir}/%{name}-%{version}-%{release}.%{_build_arch}/usr/local/tidb-foresight/bin/
-ln -s %{_builddir}/bin/collector/collect %{_buildrootdir}/%{name}-%{version}-%{release}.%{_build_arch}/usr/local/tidb-foresight/bin/collect
+cp -r %{_builddir}/tidb-foresight/collector %{_buildrootdir}/%{name}-%{version}-%{release}.%{_build_arch}/usr/local/tidb-foresight/script/
 cp -r %{_builddir}/tidb-foresight/pioneer/pioneer.py %{_buildrootdir}/%{name}-%{version}-%{release}.%{_build_arch}/usr/local/tidb-foresight/bin/pioneer
 cp -r %{_builddir}/tidb-foresight/web/dist/* %{_buildrootdir}/%{name}-%{version}-%{release}.%{_build_arch}/usr/local/tidb-foresight/web/
 cat>%{_buildrootdir}/%{name}-%{version}-%{release}.%{_build_arch}/etc/systemd/system/foresight.service<<EOF
@@ -181,6 +185,7 @@ if [ $? != 0 ]; then
 	useradd influxdb
 fi
 %post
+ln -s /usr/local/tidb-foresight/script/collector/collector /usr/local/tidb-foresight/bin/collector
 systemctl daemon-reload
 chown -R tidb:tidb /usr/local/tidb-foresight
 chown -R tidb:tidb /usr/local/prometheus
