@@ -9,6 +9,7 @@ import {
   toFixed2,
   toPercent,
   toAnyUnit,
+  toFixed1,
 } from '@/utils/formatter';
 
 export interface IRawMetric {
@@ -756,6 +757,478 @@ const RAW_METRICS: { [key: string]: IRawMetric } = {
       'sum(rate(tikv_storage_engine_async_request_duration_seconds_sum{type="snapshot", inspectionid="{{inspectionId}}"}[1m])) / sum(rate(tikv_storage_engine_async_request_duration_seconds_count{type="write", inspectionid="{{inspectionId}}"}[1m]))',
     labelTemplate: 'avg',
   },
+
+  // ///////////////////////
+  // Scheduler Panel
+  scheduler_pending_commands: {
+    title: 'Scheduler pending commands',
+    promQLTemplate: 'sum(tikv_scheduler_contex_total{inspectionid="{{inspectionId}}"}) by (job)',
+    labelTemplate: '{{job}}',
+  },
+
+  // ///////////////////////
+  // RocksDB - raft Panel
+  // write duration
+  rocksdb_raft_write_duration_max: {
+    title: 'Write duration',
+    promQLTemplate:
+      'avg(tikv_engine_write_micro_seconds{db="raft",type="write_max", inspectionid="{{inspectionId}}"})',
+    labelTemplate: 'max',
+    valConverter: val => toAnyUnit(val, 1, 1, 'us'),
+  },
+  rocksdb_raft_write_duration_99: {
+    promQLTemplate:
+      'avg(tikv_engine_write_micro_seconds{db="raft",type="write_percentile99", inspectionid="{{inspectionId}}"})',
+    labelTemplate: '99%',
+  },
+  rocksdb_raft_write_duration_95: {
+    promQLTemplate:
+      'avg(tikv_engine_write_micro_seconds{db="raft",type="write_percentile95", inspectionid="{{inspectionId}}"})',
+    labelTemplate: '95%',
+  },
+  rocksdb_raft_write_duration_avg: {
+    promQLTemplate:
+      'avg(tikv_engine_write_micro_seconds{db="raft",type="write_average", inspectionid="{{inspectionId}}"})',
+    labelTemplate: 'avg',
+  },
+
+  // write stall duration
+  rocksdb_raft_write_stall_duration_max: {
+    title: 'Write stall duration',
+    promQLTemplate:
+      'avg(tikv_engine_write_stall{db="raft",type="write_stall_max", inspectionid="{{inspectionId}}"})',
+    labelTemplate: 'max',
+    valConverter: val => toAnyUnit(val, 1, 1, 'us'),
+  },
+  rocksdb_raft_write_stall_duration_99: {
+    promQLTemplate:
+      'avg(tikv_engine_write_stall{db="raft",type="write_stall_percentile99", inspectionid="{{inspectionId}}"})',
+    labelTemplate: '99%',
+  },
+  rocksdb_raft_write_stall_duration_95: {
+    promQLTemplate:
+      'avg(tikv_engine_write_stall{db="raft",type="write_stall_percentile95", inspectionid="{{inspectionId}}"})',
+    labelTemplate: '95%',
+  },
+  rocksdb_raft_write_stall_duration_avg: {
+    promQLTemplate:
+      'avg(tikv_engine_write_stall{db="raft",type="write_stall_average", inspectionid="{{inspectionId}}"})',
+    labelTemplate: 'avg',
+  },
+
+  // get duration
+  rocksdb_raft_get_duration_max: {
+    title: 'Get duration',
+    promQLTemplate:
+      'avg(tikv_engine_get_micro_seconds{db="raft",type="get_max", inspectionid="{{inspectionId}}"})',
+    labelTemplate: 'max',
+    valConverter: val => toAnyUnit(val, 1, 1, 'us'),
+  },
+  rocksdb_raft_get_duration_99: {
+    promQLTemplate:
+      'avg(tikv_engine_get_micro_seconds{db="raft",type="get_percentile99", inspectionid="{{inspectionId}}"})',
+    labelTemplate: '99%',
+  },
+  rocksdb_raft_get_duration_95: {
+    promQLTemplate:
+      'avg(tikv_engine_get_micro_seconds{db="raft",type="get_percentile95", inspectionid="{{inspectionId}}"})',
+    labelTemplate: '95%',
+  },
+  rocksdb_raft_get_duration_avg: {
+    promQLTemplate:
+      'avg(tikv_engine_get_micro_seconds{db="raft",type="get_average", inspectionid="{{inspectionId}}"})',
+    labelTemplate: 'avg',
+  },
+
+  // seek duration
+  rocksdb_raft_seek_duration_max: {
+    title: 'Seek duration',
+    promQLTemplate:
+      'avg(tikv_engine_seek_micro_seconds{db="raft",type="seek_max", inspectionid="{{inspectionId}}"})',
+    labelTemplate: 'max',
+    valConverter: val => toAnyUnit(val, 1, 1, 'us'),
+  },
+  rocksdb_raft_seek_duration_99: {
+    promQLTemplate:
+      'avg(tikv_engine_seek_micro_seconds{db="raft",type="seek_percentile99", inspectionid="{{inspectionId}}"})',
+    labelTemplate: '99%',
+  },
+  rocksdb_raft_seek_duration_95: {
+    promQLTemplate:
+      'avg(tikv_engine_seek_micro_seconds{db="raft",type="seek_percentile95", inspectionid="{{inspectionId}}"})',
+    labelTemplate: '95%',
+  },
+  rocksdb_raft_seek_duration_avg: {
+    promQLTemplate:
+      'avg(tikv_engine_seek_micro_seconds{db="raft",type="seek_average", inspectionid="{{inspectionId}}"})',
+    labelTemplate: 'avg',
+  },
+
+  // wal sync duration
+  rocksdb_raft_wal_sync_duration_max: {
+    title: 'WAL sync duration',
+    promQLTemplate:
+      'avg(tikv_engine_wal_file_sync_micro_seconds{db="raft",type="wal_file_sync_max", inspectionid="{{inspectionId}}"})',
+    labelTemplate: 'max',
+    valConverter: val => toAnyUnit(val, 1, 1, 'us'),
+  },
+  rocksdb_raft_wal_sync_duration_99: {
+    promQLTemplate:
+      'avg(tikv_engine_wal_file_sync_micro_seconds{db="raft",type="wal_file_sync_percentile99", inspectionid="{{inspectionId}}"})',
+    labelTemplate: '99%',
+  },
+  rocksdb_raft_wal_sync_duration_95: {
+    promQLTemplate:
+      'avg(tikv_engine_wal_file_sync_micro_seconds{db="raft",type="wal_file_sync_percentile95", inspectionid="{{inspectionId}}"})',
+    labelTemplate: '95%',
+  },
+  rocksdb_raft_wal_sync_duration_avg: {
+    promQLTemplate:
+      'avg(tikv_engine_wal_file_sync_micro_seconds{db="raft",type="wal_file_sync_average", inspectionid="{{inspectionId}}"})',
+    labelTemplate: 'avg',
+  },
+
+  // wal sync operation
+  rocksdb_raft_wal_sync_operations: {
+    title: 'WAL sync operations',
+    promQLTemplate:
+      'sum(rate(tikv_engine_wal_file_synced{db="raft", inspectionid="{{inspectionId}}"}[1m]))',
+    labelTemplate: 'sync',
+    valConverter: val => toAnyUnit(val, 1, 1, 'ops'),
+  },
+
+  rocksdb_raft_number_files_each_level: {
+    title: 'Number files at each level',
+    promQLTemplate:
+      'avg(tikv_engine_num_files_at_level{db="raft", inspectionid="{{inspectionId}}"}) by (cf, level)',
+    labelTemplate: 'cf-{{cf}}, level-{{level}}',
+    valConverter: toFixed1,
+  },
+  rocksdb_raft_compaction_pending_bytes: {
+    title: 'Compaction pending bytes',
+    promQLTemplate:
+      'sum(rate(tikv_engine_pending_compaction_bytes{db="raft", inspectionid="{{inspectionId}}"}[1m])) by (cf)',
+    labelTemplate: '{{cf}}',
+  },
+  rocksdb_raft_block_cache_size: {
+    title: 'Block cache size',
+    promQLTemplate:
+      'avg(tikv_engine_block_cache_size_bytes{db="raft", inspectionid="{{inspectionId}}"}) by(cf)',
+    labelTemplate: '{{cf}}',
+    valConverter: bytesSizeFormatter,
+  },
+
+  // ///////////////////////
+  // RocksDB - kv Panel
+  // write duration
+  rocksdb_kv_write_duration_max: {
+    title: 'Write duration',
+    promQLTemplate:
+      'avg(tikv_engine_write_micro_seconds{db="kv",type="write_max", inspectionid="{{inspectionId}}"})',
+    labelTemplate: 'max',
+    valConverter: val => toAnyUnit(val, 1, 1, 'us'),
+  },
+  rocksdb_kv_write_duration_99: {
+    promQLTemplate:
+      'avg(tikv_engine_write_micro_seconds{db="kv",type="write_percentile99", inspectionid="{{inspectionId}}"})',
+    labelTemplate: '99%',
+  },
+  rocksdb_kv_write_duration_95: {
+    promQLTemplate:
+      'avg(tikv_engine_write_micro_seconds{db="kv",type="write_percentile95", inspectionid="{{inspectionId}}"})',
+    labelTemplate: '95%',
+  },
+  rocksdb_kv_write_duration_avg: {
+    promQLTemplate:
+      'avg(tikv_engine_write_micro_seconds{db="kv",type="write_average", inspectionid="{{inspectionId}}"})',
+    labelTemplate: 'avg',
+  },
+
+  // write stall duration
+  rocksdb_kv_write_stall_duration_max: {
+    title: 'Write stall duration',
+    promQLTemplate:
+      'avg(tikv_engine_write_stall{db="kv",type="write_stall_max", inspectionid="{{inspectionId}}"})',
+    labelTemplate: 'max',
+    valConverter: val => toAnyUnit(val, 1, 1, 'us'),
+  },
+  rocksdb_kv_write_stall_duration_99: {
+    promQLTemplate:
+      'avg(tikv_engine_write_stall{db="kv",type="write_stall_percentile99", inspectionid="{{inspectionId}}"})',
+    labelTemplate: '99%',
+  },
+  rocksdb_kv_write_stall_duration_95: {
+    promQLTemplate:
+      'avg(tikv_engine_write_stall{db="kv",type="write_stall_percentile95", inspectionid="{{inspectionId}}"})',
+    labelTemplate: '95%',
+  },
+  rocksdb_kv_write_stall_duration_avg: {
+    promQLTemplate:
+      'avg(tikv_engine_write_stall{db="kv",type="write_stall_average", inspectionid="{{inspectionId}}"})',
+    labelTemplate: 'avg',
+  },
+
+  // get duration
+  rocksdb_kv_get_duration_max: {
+    title: 'Get duration',
+    promQLTemplate:
+      'avg(tikv_engine_get_micro_seconds{db="kv",type="get_max", inspectionid="{{inspectionId}}"})',
+    labelTemplate: 'max',
+    valConverter: val => toAnyUnit(val, 1, 1, 'us'),
+  },
+  rocksdb_kv_get_duration_99: {
+    promQLTemplate:
+      'avg(tikv_engine_get_micro_seconds{db="kv",type="get_percentile99", inspectionid="{{inspectionId}}"})',
+    labelTemplate: '99%',
+  },
+  rocksdb_kv_get_duration_95: {
+    promQLTemplate:
+      'avg(tikv_engine_get_micro_seconds{db="kv",type="get_percentile95", inspectionid="{{inspectionId}}"})',
+    labelTemplate: '95%',
+  },
+  rocksdb_kv_get_duration_avg: {
+    promQLTemplate:
+      'avg(tikv_engine_get_micro_seconds{db="kv",type="get_average", inspectionid="{{inspectionId}}"})',
+    labelTemplate: 'avg',
+  },
+
+  // seek duration
+  rocksdb_kv_seek_duration_max: {
+    title: 'Seek duration',
+    promQLTemplate:
+      'avg(tikv_engine_seek_micro_seconds{db="kv",type="seek_max", inspectionid="{{inspectionId}}"})',
+    labelTemplate: 'max',
+    valConverter: val => toAnyUnit(val, 1, 1, 'us'),
+  },
+  rocksdb_kv_seek_duration_99: {
+    promQLTemplate:
+      'avg(tikv_engine_seek_micro_seconds{db="kv",type="seek_percentile99", inspectionid="{{inspectionId}}"})',
+    labelTemplate: '99%',
+  },
+  rocksdb_kv_seek_duration_95: {
+    promQLTemplate:
+      'avg(tikv_engine_seek_micro_seconds{db="kv",type="seek_percentile95", inspectionid="{{inspectionId}}"})',
+    labelTemplate: '95%',
+  },
+  rocksdb_kv_seek_duration_avg: {
+    promQLTemplate:
+      'avg(tikv_engine_seek_micro_seconds{db="kv",type="seek_average", inspectionid="{{inspectionId}}"})',
+    labelTemplate: 'avg',
+  },
+
+  // wal sync duration
+  rocksdb_kv_wal_sync_duration_max: {
+    title: 'WAL sync duration',
+    promQLTemplate:
+      'avg(tikv_engine_wal_file_sync_micro_seconds{db="kv",type="wal_file_sync_max", inspectionid="{{inspectionId}}"})',
+    labelTemplate: 'max',
+    valConverter: val => toAnyUnit(val, 1, 1, 'us'),
+  },
+  rocksdb_kv_wal_sync_duration_99: {
+    promQLTemplate:
+      'avg(tikv_engine_wal_file_sync_micro_seconds{db="kv",type="wal_file_sync_percentile99", inspectionid="{{inspectionId}}"})',
+    labelTemplate: '99%',
+  },
+  rocksdb_kv_wal_sync_duration_95: {
+    promQLTemplate:
+      'avg(tikv_engine_wal_file_sync_micro_seconds{db="kv",type="wal_file_sync_percentile95", inspectionid="{{inspectionId}}"})',
+    labelTemplate: '95%',
+  },
+  rocksdb_kv_wal_sync_duration_avg: {
+    promQLTemplate:
+      'avg(tikv_engine_wal_file_sync_micro_seconds{db="kv",type="wal_file_sync_average", inspectionid="{{inspectionId}}"})',
+    labelTemplate: 'avg',
+  },
+
+  // wal sync operation
+  rocksdb_kv_wal_sync_operations: {
+    title: 'WAL sync operations',
+    promQLTemplate:
+      'sum(rate(tikv_engine_wal_file_synced{db="kv", inspectionid="{{inspectionId}}"}[1m]))',
+    labelTemplate: 'sync',
+    valConverter: val => toAnyUnit(val, 1, 1, 'ops'),
+  },
+
+  rocksdb_kv_number_files_each_level: {
+    title: 'Number files at each level',
+    promQLTemplate:
+      'avg(tikv_engine_num_files_at_level{db="kv", inspectionid="{{inspectionId}}"}) by (cf, level)',
+    labelTemplate: 'cf-{{cf}}, level-{{level}}',
+    valConverter: toFixed1,
+  },
+  rocksdb_kv_compaction_pending_bytes: {
+    title: 'Compaction pending bytes',
+    promQLTemplate:
+      'sum(rate(tikv_engine_pending_compaction_bytes{db="kv", inspectionid="{{inspectionId}}"}[1m])) by (cf)',
+    labelTemplate: '{{cf}}',
+  },
+  rocksdb_kv_block_cache_size: {
+    title: 'Block cache size',
+    promQLTemplate:
+      'avg(tikv_engine_block_cache_size_bytes{db="kv", inspectionid="{{inspectionId}}"}) by(cf)',
+    labelTemplate: '{{cf}}',
+    valConverter: bytesSizeFormatter,
+  },
+  // ////////////////////
+  // Coprocessor Panel
+  // request duration
+  coprocessor_request_duration_99_99: {
+    title: 'Request duration',
+    promQLTemplate:
+      'histogram_quantile(0.9999, sum(rate(tikv_coprocessor_request_duration_seconds_bucket{inspectionid="{{inspectionId}}"}[1m])) by (le,req))',
+    labelTemplate: '{{req}}-99.99%',
+    valConverter: val => toAnyUnit(val, 1000, 0, 'ms'),
+  },
+  coprocessor_request_duration_99: {
+    promQLTemplate:
+      'histogram_quantile(0.99, sum(rate(tikv_coprocessor_request_duration_seconds_bucket{inspectionid="{{inspectionId}}"}[1m])) by (le,req))',
+    labelTemplate: '{{req}}-99%',
+  },
+  coprocessor_request_duration_95: {
+    promQLTemplate:
+      'histogram_quantile(0.95, sum(rate(tikv_coprocessor_request_duration_seconds_bucket{inspectionid="{{inspectionId}}"}[1m])) by (le,req))',
+    labelTemplate: '{{req}}-95%',
+  },
+  coprocessor_request_duration_avg: {
+    promQLTemplate:
+      'sum(rate(tikv_coprocessor_request_duration_seconds_sum{inspectionid="{{inspectionId}}"}[1m])) by (req) / sum(rate(tikv_coprocessor_request_duration_seconds_count{inspectionid="{{inspectionId}}"}[1m])) by (req)',
+    labelTemplate: '{{req}}-avg',
+  },
+
+  // wait duration
+  coprocessor_wait_duration_99_99: {
+    title: 'Wait duration',
+    promQLTemplate:
+      'histogram_quantile(0.9999, sum(rate(tikv_coprocessor_request_wait_seconds_bucket{inspectionid="{{inspectionId}}"}[1m])) by (le,req))',
+    labelTemplate: '{{req}}-99.99%',
+    valConverter: val => toAnyUnit(val, 1000, 0, 'ms'),
+  },
+  coprocessor_wait_duration_99: {
+    promQLTemplate:
+      'histogram_quantile(0.99, sum(rate(tikv_coprocessor_request_wait_seconds_bucket{inspectionid="{{inspectionId}}"}[1m])) by (le,req))',
+    labelTemplate: '{{req}}-99%',
+  },
+  coprocessor_wait_duration_95: {
+    promQLTemplate:
+      'histogram_quantile(0.95, sum(rate(tikv_coprocessor_request_wait_seconds_bucket{inspectionid="{{inspectionId}}"}[1m])) by (le,req))',
+    labelTemplate: '{{req}}-95%',
+  },
+  coprocessor_wait_duration_avg: {
+    promQLTemplate:
+      'sum(rate(tikv_coprocessor_request_wait_seconds_sum{inspectionid="{{inspectionId}}"}[1m])) by (req) / sum(rate(tikv_coprocessor_request_wait_seconds_count{inspectionid="{{inspectionId}}"}[1m])) by (req)',
+    labelTemplate: '{{req}}-avg',
+  },
+
+  // scan keys
+  coprocessor_scan_keys_99_99: {
+    title: 'Scan keys',
+    promQLTemplate:
+      'histogram_quantile(0.9999, avg(rate(tikv_coprocessor_scan_keys_bucket{inspectionid="{{inspectionId}}"}[1m])) by (le, req))',
+    labelTemplate: '{{req}}-99.99%',
+  },
+  coprocessor_scan_keys_99: {
+    promQLTemplate:
+      'histogram_quantile(0.99, avg(rate(tikv_coprocessor_scan_keys_bucket{inspectionid="{{inspectionId}}"}[1m])) by (le, req))',
+    labelTemplate: '{{req}}-99%',
+  },
+  coprocessor_scan_keys_95: {
+    promQLTemplate:
+      'histogram_quantile(0.95, avg(rate(tikv_coprocessor_scan_keys_bucket{inspectionid="{{inspectionId}}"}[1m])) by (le, req))',
+    labelTemplate: '{{req}}-95%',
+  },
+  coprocessor_scan_keys_90: {
+    promQLTemplate:
+      'histogram_quantile(0.90, avg(rate(tikv_coprocessor_scan_keys_bucket{inspectionid="{{inspectionId}}"}[1m])) by (le, req))',
+    labelTemplate: '{{req}}-90%',
+  },
+
+  // 95% Coprocessor wait duration by store
+  coprocessor_wait_duration_by_store_95: {
+    title: '95% Wait duration by store',
+    promQLTemplate:
+      'histogram_quantile(0.95, sum(rate(tikv_coprocessor_request_wait_seconds_bucket{inspectionid="{{inspectionId}}"}[1m])) by (le, job,req))',
+    labelTemplate: '{{job}}-{{req}}',
+    valConverter: val => toAnyUnit(val, 1000, 1, 'ms'),
+  },
+
+  // handle_snapshot_duration_99
+  handle_snapshot_duration_99_send: {
+    title: '99% Handle snapshot duration',
+    promQLTemplate:
+      'histogram_quantile(0.99, sum(rate(tikv_server_send_snapshot_duration_seconds_bucket{inspectionid="{{inspectionId}}"}[1m])) by (le))',
+    labelTemplate: 'send',
+    valConverter: val => toAnyUnit(val, 1000, 1, 'ms'),
+  },
+  handle_snapshot_duration_99_apply: {
+    promQLTemplate:
+      'histogram_quantile(0.99, sum(rate(tikv_server_send_snapshot_duration_seconds_bucket{type="apply", inspectionid="{{inspectionId}}"}[1m])) by (le))',
+    labelTemplate: 'apply',
+  },
+  handle_snapshot_duration_99_generate: {
+    promQLTemplate:
+      'histogram_quantile(0.99, sum(rate(tikv_server_send_snapshot_duration_seconds_bucket{type="generate", inspectionid="{{inspectionId}}"}[1m])) by (le))',
+    labelTemplate: 'generate',
+  },
+
+  // thread cpu panel
+  raft_store_cpu: {
+    title: 'Raft store CPU',
+    promQLTemplate:
+      'sum(rate(tikv_thread_cpu_seconds_total{name=~"raftstore_.*", inspectionid="{{inspectionId}}"}[1m])) by (job, name)',
+    labelTemplate: '{{job}}',
+    valConverter: val => toPercent(val, 4),
+  },
+  async_apply_cpu: {
+    title: 'Async apply CPU',
+    promQLTemplate:
+      'sum(rate(tikv_thread_cpu_seconds_total{name=~"apply_worker", inspectionid="{{inspectionId}}"}[1m])) by (job, name)',
+    labelTemplate: '{{job}}',
+    valConverter: val => toPercent(val, 4),
+  },
+  coprocessor_cpu: {
+    title: 'Coprocessor CPU',
+    promQLTemplate:
+      'sum(rate(tikv_thread_cpu_seconds_total{name=~"cop_.*", inspectionid="{{inspectionId}}"}[1m])) by (job)',
+    labelTemplate: '{{job}}',
+    valConverter: val => toPercent(val, 4),
+  },
+  storage_readpool_cpu: {
+    title: 'Storage ReadPool CPU',
+    promQLTemplate:
+      'sum(rate(tikv_thread_cpu_seconds_total{name=~"store_read.*", inspectionid="{{inspectionId}}"}[1m])) by (job)',
+    labelTemplate: '{{job}}',
+    valConverter: val => toPercent(val, 4),
+  },
+  split_check_cpu: {
+    title: 'Split check CUP',
+    promQLTemplate:
+      'sum(rate(tikv_thread_cpu_seconds_total{name=~"split_check", inspectionid="{{inspectionId}}"}[1m])) by (job)',
+    labelTemplate: '{{job}}',
+    valConverter: val => toPercent(val, 4),
+  },
+  grpc_poll_cpu: {
+    title: 'gPRC poll CPU',
+    promQLTemplate:
+      'sum(rate(tikv_thread_cpu_seconds_total{name=~"grpc.*", inspectionid="{{inspectionId}}"}[1m])) by (job)',
+    labelTemplate: '{{job}}',
+    valConverter: val => toPercent(val, 4),
+  },
+  scheduler_cpu: {
+    title: 'Scheduler CPU',
+    promQLTemplate:
+      'sum(rate(tikv_thread_cpu_seconds_total{name=~"storage_schedul.*", inspectionid="{{inspectionId}}"}[1m])) by (job)',
+    labelTemplate: '{{job}}',
+    valConverter: val => toPercent(val, 4),
+  },
+
+  // gRPC
+  grpc_message_duration_99: {
+    title: '99% gRPC messge duration',
+    promQLTemplate:
+      'histogram_quantile(0.99, sum(rate(tikv_grpc_msg_duration_seconds_bucket{type!="kv_gc", inspectionid="{{inspectionId}}"}[1m])) by (le, type))',
+    labelTemplate: '{{type}}',
+    valConverter: val => toAnyUnit(val, 1000, 0, 'ms'),
+  },
 };
 
 export const RAW_METRICS_ARR: { [key: string]: IRawMetric[] } = {
@@ -864,6 +1337,133 @@ export const RAW_METRICS_ARR: { [key: string]: IRawMetric[] } = {
     RAW_METRICS.tikv_storage_async_snapshot_duration_95,
     RAW_METRICS.tikv_storage_async_snapshot_duration_avg,
   ],
+  rocksdb_raft_write_duration: [
+    RAW_METRICS.rocksdb_raft_write_duration_max,
+    RAW_METRICS.rocksdb_raft_write_duration_99,
+    RAW_METRICS.rocksdb_raft_write_duration_95,
+    RAW_METRICS.rocksdb_raft_write_duration_avg,
+  ],
+  rocksdb_raft_write_stall_duration: [
+    RAW_METRICS.rocksdb_raft_write_stall_duration_max,
+    RAW_METRICS.rocksdb_raft_write_stall_duration_99,
+    RAW_METRICS.rocksdb_raft_write_stall_duration_95,
+    RAW_METRICS.rocksdb_raft_write_stall_duration_avg,
+  ],
+  rocksdb_raft_get_duration: [
+    RAW_METRICS.rocksdb_raft_get_duration_max,
+    RAW_METRICS.rocksdb_raft_get_duration_99,
+    RAW_METRICS.rocksdb_raft_get_duration_95,
+    RAW_METRICS.rocksdb_raft_get_duration_avg,
+  ],
+  rocksdb_raft_seek_duration: [
+    RAW_METRICS.rocksdb_raft_seek_duration_max,
+    RAW_METRICS.rocksdb_raft_seek_duration_99,
+    RAW_METRICS.rocksdb_raft_seek_duration_95,
+    RAW_METRICS.rocksdb_raft_seek_duration_avg,
+  ],
+  rocksdb_raft_wal_sync_duration: [
+    RAW_METRICS.rocksdb_raft_wal_sync_duration_max,
+    RAW_METRICS.rocksdb_raft_wal_sync_duration_99,
+    RAW_METRICS.rocksdb_raft_wal_sync_duration_95,
+    RAW_METRICS.rocksdb_raft_wal_sync_duration_avg,
+  ],
+
+  rocksdb_kv_write_duration: [
+    RAW_METRICS.rocksdb_kv_write_duration_max,
+    RAW_METRICS.rocksdb_kv_write_duration_99,
+    RAW_METRICS.rocksdb_kv_write_duration_95,
+    RAW_METRICS.rocksdb_kv_write_duration_avg,
+  ],
+  rocksdb_kv_write_stall_duration: [
+    RAW_METRICS.rocksdb_kv_write_stall_duration_max,
+    RAW_METRICS.rocksdb_kv_write_stall_duration_99,
+    RAW_METRICS.rocksdb_kv_write_stall_duration_95,
+    RAW_METRICS.rocksdb_kv_write_stall_duration_avg,
+  ],
+  rocksdb_kv_get_duration: [
+    RAW_METRICS.rocksdb_kv_get_duration_max,
+    RAW_METRICS.rocksdb_kv_get_duration_99,
+    RAW_METRICS.rocksdb_kv_get_duration_95,
+    RAW_METRICS.rocksdb_kv_get_duration_avg,
+  ],
+  rocksdb_kv_seek_duration: [
+    RAW_METRICS.rocksdb_kv_seek_duration_max,
+    RAW_METRICS.rocksdb_kv_seek_duration_99,
+    RAW_METRICS.rocksdb_kv_seek_duration_95,
+    RAW_METRICS.rocksdb_kv_seek_duration_avg,
+  ],
+  rocksdb_kv_wal_sync_duration: [
+    RAW_METRICS.rocksdb_kv_wal_sync_duration_max,
+    RAW_METRICS.rocksdb_kv_wal_sync_duration_99,
+    RAW_METRICS.rocksdb_kv_wal_sync_duration_95,
+    RAW_METRICS.rocksdb_kv_wal_sync_duration_avg,
+  ],
+
+  coprocessor_request_duration: [
+    RAW_METRICS.coprocessor_request_duration_99_99,
+    RAW_METRICS.coprocessor_request_duration_99,
+    RAW_METRICS.coprocessor_request_duration_95,
+    RAW_METRICS.coprocessor_request_duration_avg,
+  ],
+  coprocessor_wait_duration: [
+    RAW_METRICS.coprocessor_wait_duration_99_99,
+    RAW_METRICS.coprocessor_wait_duration_99,
+    RAW_METRICS.coprocessor_wait_duration_95,
+    RAW_METRICS.coprocessor_wait_duration_avg,
+  ],
+  coprocessor_scan_keys: [
+    RAW_METRICS.coprocessor_scan_keys_99_99,
+    RAW_METRICS.coprocessor_scan_keys_99,
+    RAW_METRICS.coprocessor_scan_keys_95,
+    RAW_METRICS.coprocessor_scan_keys_90,
+  ],
+  handle_snapshot_duration_99: [
+    RAW_METRICS.handle_snapshot_duration_99_send,
+    RAW_METRICS.handle_snapshot_duration_99_apply,
+    RAW_METRICS.handle_snapshot_duration_99_generate,
+  ],
+};
+
+export interface IPanel {
+  title: string;
+  expand: boolean;
+  charts: string[];
+}
+
+export const PANELS: { [key: string]: IPanel } = {
+  tikv_coprocessor: {
+    title: 'Coprocessor',
+    expand: false,
+    charts: [
+      'coprocessor_request_duration',
+      'coprocessor_wait_duration',
+      'coprocessor_scan_keys',
+      'coprocessor_wait_duration_by_store_95',
+    ],
+  },
+  tikv_snapshot: {
+    title: 'Snapshot',
+    expand: false,
+    charts: ['handle_snapshot_duration_99'],
+  },
+  tikv_thread_cpu: {
+    title: 'Thread CPU',
+    expand: false,
+    charts: [
+      'raft_store_cpu',
+      'async_apply_cpu',
+      'coprocessor_cpu',
+      'storage_readpool_cpu',
+      'split_check_cpu',
+      'grpc_poll_cpu',
+      'scheduler_cpu',
+    ],
+  },
+  tikv_grpc: {
+    title: 'gRPC',
+    expand: false,
+    charts: ['grpc_message_duration_99'],
+  },
 };
 
 // /////////////////////////////////////////////////////////////////////////////////////
