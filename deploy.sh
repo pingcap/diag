@@ -1,6 +1,5 @@
 #!/usr/bin/bash
 
-
 deploy_dir="/home/tidb/tidb-foresight/"
 bin_dir=$deploy_dir"bin/"
 script_dir=$deploy_dir"script/"
@@ -13,25 +12,13 @@ mkdir -p $web_dir
 
 systemctl stop foresight
 
-cd analyzer
-go build
-/bin/cp analyzer $bin_dir
-cd ..
+go build -o=$bin_dir"tidb-foresight" ./api
 
-cd api
-go build
-/bin/cp tidb-foresight $bin_dir
-cd ..
+go build -o=$bin_dir"analyzer" ./analyzer
 
-cd spliter
-go build
-/bin/cp spliter $bin_dir
-cd ..
+go build -o=$bin_dir"spliter" ./cmd/spliter
 
-cd syncer
-go build
-/bin/cp syncer $bin_dir
-cd ..
+go build -o=$bin_dir"syncer" ./cmd/syncer
 
 /bin/cp -r ./collector $script_dir
 ln -sf $script_dir"collector/collector" $bin_dir"collector"
