@@ -2,6 +2,7 @@ package bootstrap
 
 import (
 	"os"
+	"path"
 
 	"github.com/BurntSushi/toml"
 	log "github.com/sirupsen/logrus"
@@ -90,11 +91,12 @@ type ForesightConfig struct {
 	} `toml:"prometheus"`
 }
 
-func initConfig(path string) *ForesightConfig {
-	if _, err := os.Stat(path); os.IsNotExist(err) {
-		log.Warn("config file ", path, " not found, a default one will be generated")
+func initConfig(home, address string) *ForesightConfig {
+	fpath := path.Join(home, "tidb-foresight.toml")
+	if _, err := os.Stat(fpath); os.IsNotExist(err) {
+		log.Warn("config file ", fpath, " not found, a default one will be generated")
 
-		f, err := os.Create(path)
+		f, err := os.Create(fpath)
 		if err != nil {
 			log.Panic("create default config file failed: ", err)
 		}
@@ -109,8 +111,16 @@ func initConfig(path string) *ForesightConfig {
 		}
 	}
 
-	config := &ForesightConfig{}
-	if _, err := toml.DecodeFile(path, config); err != nil {
+	config := &ForesightConfig{
+		Home:      home,
+		Address:   address,
+		Pioneer:   path.Join(home, "bin", "pioneer"),
+		Collector: path.Join(home, "bin", "collector"),
+		Analyzer:  path.Join(home, "bin", "analyzer"),
+		Spliter:   path.Join(home, "bin", "spliter"),
+		Syncer:    path.Join(home, "bin", "syncer"),
+	}
+	if _, err := toml.DecodeFile(fpath, config); err != nil {
 		log.Panic("parse config failed: ", err)
 	}
 

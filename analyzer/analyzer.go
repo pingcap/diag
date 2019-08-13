@@ -1,10 +1,7 @@
-package main
+package analyzer
 
 import (
-	"flag"
-
 	_ "github.com/mattn/go-sqlite3"
-	log "github.com/sirupsen/logrus"
 
 	"github.com/pingcap/tidb-foresight/analyzer/analyze"
 	"github.com/pingcap/tidb-foresight/analyzer/boot"
@@ -34,17 +31,4 @@ func NewAnalyzer(home, inspectionId string) *Analyzer {
 
 func (a *Analyzer) Run() {
 	a.manager.Run()
-}
-
-func main() {
-	home := flag.String("home", "/tmp/tidb-foresight", "the tidb-foresight data directory")
-	inspectionId := flag.String("inspection-id", "", "the inspection to be analyze")
-	flag.Parse()
-
-	if *inspectionId == "" {
-		log.Panic("the inspection-id must be specified")
-	}
-
-	analyzer := NewAnalyzer(*home, *inspectionId)
-	analyzer.Run()
 }

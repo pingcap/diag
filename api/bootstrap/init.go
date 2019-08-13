@@ -8,7 +8,7 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-func MustInit(homepath string) (*ForesightConfig, *sql.DB) {
+func MustInit(homepath, address string) (*ForesightConfig, *sql.DB) {
 	if err := os.MkdirAll(homepath, os.ModePerm); err != nil {
 		log.Panic("can't access home: ", homepath)
 	}
@@ -48,7 +48,7 @@ func MustInit(homepath string) (*ForesightConfig, *sql.DB) {
 		log.Panic("can't access profile dir: ", profileDir)
 	}
 
-	config := initConfig(path.Join(homepath, "tidb-foresight.toml"))
+	config := initConfig(homepath, address)
 
 	db := initDB(path.Join(homepath, "sqlite.db"))
 

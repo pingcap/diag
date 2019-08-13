@@ -12,7 +12,7 @@ import (
 	"github.com/pingcap/fn"
 	"github.com/pingcap/tidb-foresight/api/bootstrap"
 	"github.com/pingcap/tidb-foresight/api/model"
-	"github.com/pingcap/tidb-foresight/api/searcher"
+	"github.com/pingcap/tidb-foresight/log/searcher"
 	"github.com/pingcap/tidb-foresight/api/utils"
 	log "github.com/sirupsen/logrus"
 )

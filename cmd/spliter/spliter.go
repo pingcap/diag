@@ -6,17 +6,17 @@ import (
 	"path"
 	"time"
 
-	"github.com/pingcap/tidb-foresight/api/logparser"
+	"github.com/pingcap/tidb-foresight/log/parser"
 	log "github.com/sirupsen/logrus"
 )
 
 func copy(src, dest string, begin, end time.Time) error {
-	files, err := logparser.ResolveDir(src)
+	files, err := parser.ResolveDir(src)
 	if err != nil {
 		return err
 	}
 	for _, fw := range files {
-		iter, err := logparser.NewIterator(fw, begin, end)
+		iter, err := parser.NewIterator(fw, begin, end)
 		if err != nil {
 			if err != io.EOF {
 				log.Warnf("create log iterator err: %s", err)
@@ -35,7 +35,7 @@ func copy(src, dest string, begin, end time.Time) error {
 	return nil
 }
 
-func createFile(dest string, fw *logparser.FileWrapper) (*os.File, error) {
+func createFile(dest string, fw *parser.FileWrapper) (*os.File, error) {
 	dest = path.Join(dest, fw.Host, fw.Folder)
 	err := os.MkdirAll(dest, os.ModePerm)
 	if err != nil {
@@ -44,7 +44,7 @@ func createFile(dest string, fw *logparser.FileWrapper) (*os.File, error) {
 	return os.Create(path.Join(dest, fw.Filename))
 }
 
-func copyToFile(f *os.File, iterator logparser.Iterator) error {
+func copyToFile(f *os.File, iterator parser.Iterator) error {
 	defer f.Close()
 	for {
 		item, err := iterator.Next()

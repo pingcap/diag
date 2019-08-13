@@ -4,13 +4,13 @@ import (
 	"io"
 	"time"
 
-	"github.com/pingcap/tidb-foresight/api/logparser"
+	"github.com/pingcap/tidb-foresight/log/parser"
 	log "github.com/sirupsen/logrus"
 )
 
 type IterWrapper struct {
-	iter logparser.Iterator
-	item logparser.Item
+	iter parser.Iterator
+	item parser.Item
 }
 
 type Sequence struct {
@@ -18,8 +18,8 @@ type Sequence struct {
 }
 
 // choose the log with earlier timestamp
-func (s *Sequence) Next() (logparser.Item, error) {
-	var res logparser.Item
+func (s *Sequence) Next() (parser.Item, error) {
+	var res parser.Item
 	currentTs := time.Now()
 	for i := 0; i < len(s.slice); i++ {
 		w := s.slice[i]
@@ -54,7 +54,7 @@ func (s *Sequence) Close() error {
 	return nil
 }
 
-func (s *Sequence) Add(iter logparser.Iterator) {
+func (s *Sequence) Add(iter parser.Iterator) {
 	if iter == nil {
 		return
 	}
@@ -84,12 +84,12 @@ func (s *Sequence) Remove(index int) {
 // return the constructed LogIter object and provide the Next function for external call.
 func SearchLog(src string, begin, end time.Time) (*Sequence, error) {
 	sequence := &Sequence{}
-	files, err := logparser.ResolveDir(src)
+	files, err := parser.ResolveDir(src)
 	if err != nil {
 		return nil, err
 	}
 	for _, fw := range files {
-		iter, err := logparser.NewIterator(fw, begin, end)
+		iter, err := parser.NewIterator(fw, begin, end)
 		if err != nil {
 			if err != io.EOF {
 				log.Warnf("create log iterator err: %s", err)

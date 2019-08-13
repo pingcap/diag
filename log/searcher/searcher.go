@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/pingcap/tidb-foresight/api/logparser"
+	"github.com/pingcap/tidb-foresight/log/parser"
 )
 
 type Searcher struct {
@@ -32,15 +32,15 @@ func NewIter(iter *Sequence, search, level string) *IterWithAccessTime {
 	}
 }
 
-var levelMap = map[string]logparser.LevelType{
+var levelMap = map[string]parser.LevelType{
 	"OTHERES": -1,
-	"INFO":    logparser.LevelINFO,
-	"DEBUG":   logparser.LevelDEBUG,
-	"WARNING": logparser.LevelWARN,
-	"ERROR":   logparser.LevelERROR,
+	"INFO":    parser.LevelINFO,
+	"DEBUG":   parser.LevelDEBUG,
+	"WARNING": parser.LevelWARN,
+	"ERROR":   parser.LevelERROR,
 }
 
-func (i *IterWithAccessTime) Next() (*logparser.LogItem, error) {
+func (i *IterWithAccessTime) Next() (*parser.LogItem, error) {
 	i.l.Lock()
 	defer i.l.Unlock()
 	i.access = time.Now()
