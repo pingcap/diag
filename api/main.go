@@ -4,9 +4,9 @@ import (
 	"flag"
 	"path"
 
-	"github.com/pingcap/tidb-foresight/bootstrap"
-	"github.com/pingcap/tidb-foresight/release"
-	"github.com/pingcap/tidb-foresight/server"
+	"github.com/pingcap/tidb-foresight/api/bootstrap"
+	"github.com/pingcap/tidb-foresight/api/release"
+	"github.com/pingcap/tidb-foresight/api/server"
 	log "github.com/sirupsen/logrus"
 )
 

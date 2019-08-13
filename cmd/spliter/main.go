@@ -34,6 +34,7 @@ func main() {
 
 	err = copy(*src, *dst, from, to)
 	if err != nil {
+		fmt.Println(err)
 		os.Exit(1)
 	}
 }

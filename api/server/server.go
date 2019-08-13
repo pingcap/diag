@@ -10,10 +10,10 @@ import (
 	"path"
 
 	"github.com/pingcap/fn"
-	"github.com/pingcap/tidb-foresight/bootstrap"
-	"github.com/pingcap/tidb-foresight/model"
-	"github.com/pingcap/tidb-foresight/searcher"
-	"github.com/pingcap/tidb-foresight/utils"
+	"github.com/pingcap/tidb-foresight/api/bootstrap"
+	"github.com/pingcap/tidb-foresight/api/model"
+	"github.com/pingcap/tidb-foresight/api/searcher"
+	"github.com/pingcap/tidb-foresight/api/utils"
 	log "github.com/sirupsen/logrus"
 )
 

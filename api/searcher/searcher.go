@@ -1,78 +1,64 @@
 package searcher
 
 import (
+	"bytes"
 	"errors"
 	"sync"
 	"time"
 
 	"github.com/google/uuid"
-	log "github.com/sirupsen/logrus"
+	"github.com/pingcap/tidb-foresight/api/logparser"
 )
 
 type Searcher struct {
-	m map[string]LogIter
+	m map[string]*IterWithAccessTime
 	l sync.Mutex
 }
 
-type LogIter interface {
-	Next() (*Item, error)
-	Close() error
-}
-
 type IterWithAccessTime struct {
-	iter   LogIter
+	iter   *Sequence
 	access time.Time
-	begin  time.Time
-	end    time.Time
+	search []byte
 	level  string
 	l      sync.Mutex
 }
 
-func NewIter(iter LogIter, begin, end time.Time, level string) *IterWithAccessTime {
+func NewIter(iter *Sequence, search, level string) *IterWithAccessTime {
 	return &IterWithAccessTime{
 		iter:   iter,
 		access: time.Now(),
-		begin:  begin,
-		end:    end,
+		search: []byte(search),
 		level:  level,
 	}
 }
 
-func (i *IterWithAccessTime) Next() (*Item, error) {
+var levelMap = map[string]logparser.LevelType{
+	"OTHERES": -1,
+	"INFO":    logparser.LevelINFO,
+	"DEBUG":   logparser.LevelDEBUG,
+	"WARNING": logparser.LevelWARN,
+	"ERROR":   logparser.LevelERROR,
+}
+
+func (i *IterWithAccessTime) Next() (*logparser.LogItem, error) {
 	i.l.Lock()
 	defer i.l.Unlock()
 	i.access = time.Now()
-	levelMap := map[string]LevelType{
-		"OTHERES": -1,
-		"INFO":    LevelINFO,
-		"DEBUG":   LevelDEBUG,
-		"WARNING": LevelWARN,
-		"ERROR":   LevelERROR,
-	}
 
 	if i.iter != nil {
 		for {
 			item, err := i.iter.Next()
-			if item == nil || err != nil {
+			if err != nil {
 				return nil, err
 			}
-			// check if time in range
-			if item.Time == nil { // FIXME: item.Time should NOT be nil
-				log.Warn("get nil time while search log")
+			logItem := item.Get()
+			if !bytes.Contains(logItem.Line, i.search) {
 				continue
 			}
-			log.Info(*item.Time, i.begin, i.end)
-			if item.Time.Before(i.begin) {
+			if i.level != "" && logItem.Level != levelMap[i.level] {
 				continue
 			}
-			if item.Time.After(i.end) {
-				return nil, nil
-			}
-			// check if level is correct
-			if i.level != "" && item.Level != levelMap[i.level] {
-				continue
-			}
-			return item, nil
+			return logItem, nil
 		}
 	} else {
 		return nil, errors.New("log file closed")
@@ -101,17 +87,17 @@ func (i *IterWithAccessTime) GetAccessTime() time.Time {
 
 func NewSearcher() *Searcher {
 	return &Searcher{
-		m: make(map[string]LogIter),
+		m: make(map[string]*IterWithAccessTime),
 	}
 }
 
-func (s *Searcher) SetIter(token string, iter LogIter) {
+func (s *Searcher) SetIter(token string, iter *IterWithAccessTime) {
 	s.l.Lock()
 	defer s.l.Unlock()
 	s.m[token] = iter
 }
 
-func (s *Searcher) GetIter(token string) LogIter {
+func (s *Searcher) GetIter(token string) *IterWithAccessTime {
 	s.l.Lock()
 	defer s.l.Unlock()
 	return s.m[token]
@@ -139,14 +125,14 @@ func (s *Searcher) Gc(token string, iter *IterWithAccessTime) {
 	}
 }
 
-func (s *Searcher) Search(dir string, begin, end time.Time, level, text, token string) (LogIter, string, error) {
+func (s *Searcher) Search(dir string, begin, end time.Time, level, text, token string) (*IterWithAccessTime, string, error) {
 	if token == "" {
 		token = uuid.New().String()
-		i, err := SearchLog(dir, text)
+		i, err := SearchLog(dir, begin, end)
 		if err != nil {
 			return nil, token, err
 		}
-		iter := NewIter(i, begin, end, level)
+		iter := NewIter(i, text, level)
 		go s.Gc(token, iter)
 		return iter, token, err
 	} else {
