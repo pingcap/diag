@@ -2,6 +2,8 @@ package manager
 
 import (
 	"reflect"
+
+	log "github.com/sirupsen/logrus"
 )
 
 // The task is an abstraction of analyze task
@@ -87,12 +89,15 @@ func (t *task) run(args []reflect.Value) []reflect.Value {
 	if len(t.cache) != 0 {
 		return t.cache
 	}
+
 	for idx, arg := range args {
 		if arg == reflect.ValueOf(nil) {
 			// If required input not found, use nil pointer
 			args[idx] = reflect.Zero(t.method.Type().In(idx))
 		}
 	}
+
+	log.Info("run task ", t.id)
 	t.cache = t.method.Call(args)
 	return t.cache
 }
