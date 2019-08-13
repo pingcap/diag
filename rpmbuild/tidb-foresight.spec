@@ -193,6 +193,8 @@ chown -R influxdb:influxdb /usr/local/influxdb
 chown -R influxdb:influxdb /var/lib/influxdb
 echo 'export PATH=$PATH:/usr/local/graphviz/bin' >> /etc/profile
 echo 'export PATH=$PATH:/usr/local/graphviz/bin' >> ~/.bashrc
+echo '/usr/local/graphviz/lib' >> /etc/ld.so.conf
+ldconfig
 source ~/.bashrc
 %preun
 systemctl stop foresight.service

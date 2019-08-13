@@ -3,23 +3,26 @@
 ## Installation dependency package
 
 ```
-# install rpm-build
+# Install rpm-build
 [root@ip] yum install -y rpm-build
 
-# install golang
+# Install static compilation dependencies
+[root@ip] yum install glibc-static libstdc++-static -y
+
+# Install golang
 [root@ip] cd ~
 [root@ip] wget https://dl.google.com/go/go1.12.7.linux-amd64.tar.gz
 [root@ip] tar xf go1.12.7.linux-amd64.tar.gz
 [root@ip] export PATH=$PATH:/root/go/bin # 或者加到 /etc/bashrc、~/.bashrc 等
 
-# install nvm
+# Install nvm
 [root@ip] curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.34.0/install.sh | bash
 [root@ip] source ~/.bashrc
 
-# install node
+# Install node
 [root@ip] nvm install node
 
-# install yarn
+# Install yarn
 [root@ip] curl -o- -L https://yarnpkg.com/install.sh | bash
 [root@ip] source ~/.bashrc
 ```
