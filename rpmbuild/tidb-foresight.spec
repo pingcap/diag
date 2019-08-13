@@ -30,14 +30,8 @@ mv %{_sourcedir}/prometheus-2.8.1.linux-amd64 %{_builddir}/
 mv %{_sourcedir}/graphviz-2.40.1 %{_builddir}/
 mkdir -p %{_buildrootdir}/%{name}-%{version}-%{release}.%{_build_arch}/usr/local/
 %build
-cd %{_builddir}/tidb-foresight/api
-go build
-cd %{_builddir}/tidb-foresight/analyzer
-go build
-cd %{_builddir}/tidb-foresight/spliter
-go build
-cd %{_builddir}/tidb-foresight/syncer
-go build
+cd %{_builddir}/tidb-foresight
+make
 cd %{_builddir}/tidb-foresight/web
 yarn && yarn build
 cd %{_builddir}/graphviz-2.40.1
@@ -55,10 +49,7 @@ mkdir -p %{_buildrootdir}/%{name}-%{version}-%{release}.%{_build_arch}/etc/syste
 if [ -e %{_builddir}/tidb-foresight/tidb-foresight.toml ];then 
 	cp %{_builddir}/tidb-foresight/tidb-foresight.toml %{_buildrootdir}/%{name}-%{version}-%{release}.%{_build_arch}/usr/local/tidb-foresight/
 fi
-cp -r %{_builddir}/tidb-foresight/api/tidb-foresight %{_buildrootdir}/%{name}-%{version}-%{release}.%{_build_arch}/usr/local/tidb-foresight/bin/
-cp -r %{_builddir}/tidb-foresight/analyzer/analyzer %{_buildrootdir}/%{name}-%{version}-%{release}.%{_build_arch}/usr/local/tidb-foresight/bin/
-cp -r %{_builddir}/tidb-foresight/spliter/spliter %{_buildrootdir}/%{name}-%{version}-%{release}.%{_build_arch}/usr/local/tidb-foresight/bin/
-cp -r %{_builddir}/tidb-foresight/syncer/syncer %{_buildrootdir}/%{name}-%{version}-%{release}.%{_build_arch}/usr/local/tidb-foresight/bin/
+cp -r %{_builddir}/tidb-foresight/bin/* %{_buildrootdir}/%{name}-%{version}-%{release}.%{_build_arch}/usr/local/tidb-foresight/bin/
 cp -r %{_builddir}/tidb-foresight/collector %{_buildrootdir}/%{name}-%{version}-%{release}.%{_build_arch}/usr/local/tidb-foresight/script/
 cp -r %{_builddir}/tidb-foresight/pioneer/pioneer.py %{_buildrootdir}/%{name}-%{version}-%{release}.%{_build_arch}/usr/local/tidb-foresight/bin/pioneer
 cp -r %{_builddir}/tidb-foresight/web/dist/* %{_buildrootdir}/%{name}-%{version}-%{release}.%{_build_arch}/usr/local/tidb-foresight/web/

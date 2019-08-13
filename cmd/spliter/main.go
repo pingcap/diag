@@ -5,15 +5,23 @@ import (
 	"fmt"
 	"os"
 	"time"
+
+	"github.com/pingcap/tidb-foresight/version"
 )
 
 func main() {
+	printVersion := flag.Bool("V", false, "print version info")
 	src := flag.String("src", "", "source directory")
 	dst := flag.String("dst", "", "target directory")
 	begin := flag.String("begin", time.Now().AddDate(0, 0, -1).Format(time.RFC3339), "the begin of the log time (RFC3339)")
 	end := flag.String("end", time.Now().AddDate(0, 0, 0).Format(time.RFC3339), "the end of the log time (RFC3339)")
 
 	flag.Parse()
+
+	if *printVersion {
+		version.PrintReleaseInfo()
+		return
+	}
 
 	if *src == "" || *dst == "" {
 		fmt.Println("both src and dst must be specifed")

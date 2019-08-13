@@ -1,4 +1,4 @@
-package release
+package version
 
 import (
 	"fmt"

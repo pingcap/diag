@@ -1,11 +1,8 @@
-# go.sum
-*/go.sum
+go.sum
+go.mod
 
-# api
-api/tidb-foresight
-
-# analyzer
-analyzer/analyzer
+# api server
+bin/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
