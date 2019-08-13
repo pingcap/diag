@@ -43,6 +43,7 @@ func (t *saveMetricTask) Run(c *boot.Config) *Metric {
 
 	cli, err := t.initInfluxdbClient()
 	if err != nil {
+		log.Error("connect influxdb:", err)
 		return nil
 	}
 	defer cli.Close()
@@ -51,9 +52,11 @@ func (t *saveMetricTask) Run(c *boot.Config) *Metric {
 		result := &queryResult{}
 		data, err := ioutil.ReadFile(path.Join(metricDir, file.Name()))
 		if err != nil {
+			log.Error("read metric file:", err)
 			return nil
 		}
 		if err := json.Unmarshal(data, &result); err != nil {
+			log.Error("read metric content", err)
 			return nil
 		}
 		if result.Status != "success" {

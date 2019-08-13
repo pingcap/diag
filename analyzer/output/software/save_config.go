@@ -45,6 +45,9 @@ func loadSoftwareConfigFiles(dir string) ([]SoftwareConfig, error) {
 	var configs []SoftwareConfig
 	// "tikv" "172.16.5.7:20160" "tikv.toml"
 	err := filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
 		filename := info.Name()
 		if filepath.Ext(filename) != ".toml" {
 			return nil
