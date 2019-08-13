@@ -36,6 +36,7 @@ func Sync(topoDir string, targetDir string, interval time.Duration, bwlimit int)
 			Args: []string{
 				"-az",
 				"--inplace",
+				"--update",
 				fmt.Sprintf("--bwlimit=%d", bwlimit),
 			},
 		},
