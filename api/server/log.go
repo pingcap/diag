@@ -17,9 +17,9 @@ import (
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
-	"github.com/pingcap/tidb-foresight/model"
-	"github.com/pingcap/tidb-foresight/searcher"
-	"github.com/pingcap/tidb-foresight/utils"
+	"github.com/pingcap/tidb-foresight/api/logparser"
+	"github.com/pingcap/tidb-foresight/api/model"
+	"github.com/pingcap/tidb-foresight/api/utils"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -38,28 +38,28 @@ type LogResult struct {
 	Logs  []*LogItem `json:"logs"`
 }
 
-func LogFromSearch(l *searcher.Item) *LogItem {
+func LogFromSearch(l *logparser.LogItem) *LogItem {
 	item := &LogItem{
 		Host:      l.Host,
 		Port:      l.Port,
 		Component: l.Component,
 		File:      l.File,
 		Time:      l.Time,
-		Content:   l.Line,
+		Content:   string(l.Line),
 	}
 
 	switch l.Level {
 	case -1:
 		item.Level = "SLOWLOG"
-	case searcher.LevelFATAL:
+	case logparser.LevelFATAL:
 		item.Level = "FATAL"
-	case searcher.LevelERROR:
+	case logparser.LevelERROR:
 		item.Level = "ERROR"
-	case searcher.LevelWARN:
+	case logparser.LevelWARN:
 		item.Level = "WARN"
-	case searcher.LevelINFO:
+	case logparser.LevelINFO:
 		item.Level = "INFO"
-	case searcher.LevelDEBUG:
+	case logparser.LevelDEBUG:
 		item.Level = "DEBUG"
 	}
 
