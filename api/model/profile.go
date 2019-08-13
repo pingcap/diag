@@ -14,8 +14,8 @@ type Profile struct {
 	InstanceName string         `json:"instance_name"`
 	User         string         `json:"user"`
 	Status       string         `json:"status"`
-	StartTime    utils.NullTime `json:"start_time"`
-	EndTime      utils.NullTime `json:"end_time"`
+	CreateTime   utils.NullTime `json:"create_time"`
+	FinishTime   utils.NullTime `json:"finish_time"`
 	Items        []ProfileItem  `json:"items"`
 }
 
@@ -105,7 +105,7 @@ func (m *Model) ListAllProfiles(page, size int64, profileDir string) ([]*Profile
 
 	for rows.Next() {
 		profile := Profile{}
-		if err := rows.Scan(&profile.Uuid, &profile.InstanceName, &profile.User, &profile.Status, &profile.StartTime, &profile.EndTime); err != nil {
+		if err := rows.Scan(&profile.Uuid, &profile.InstanceName, &profile.User, &profile.Status, &profile.CreateTime, &profile.FinishTime); err != nil {
 			log.Error("db.Query:", err)
 			return nil, 0, err
 		}
@@ -131,7 +131,7 @@ func (m *Model) ListProfiles(instanceId string, page, size int64, profileDir str
 	profiles := []*Profile{}
 
 	rows, err := m.db.Query(
-		`SELECT id,instance_name,user,status,create_t,create_t FROM inspections WHERE type = 'profile' AND instance = ? LIMIT ?,?`,
+		`SELECT id,instance_name,user,status,create_t,finish_t FROM inspections WHERE type = 'profile' AND instance = ? LIMIT ?,?`,
 		instanceId, (page-1)*size, size,
 	)
 	if err != nil {
@@ -142,7 +142,7 @@ func (m *Model) ListProfiles(instanceId string, page, size int64, profileDir str
 
 	for rows.Next() {
 		profile := Profile{}
-		err := rows.Scan(&profile.Uuid, &profile.InstanceName, &profile.Status, &profile.StartTime, &profile.EndTime)
+		err := rows.Scan(&profile.Uuid, &profile.InstanceName, &profile.Status, &profile.CreateTime, &profile.FinishTime)
 		if err != nil {
 			log.Error("db.Query:", err)
 			return nil, 0, err
@@ -172,7 +172,7 @@ func (m *Model) GetProfileDetail(profileId, profileDir string) (*Profile, error)
 		`SELECT id,instance,status,create_t,create_t FROM inspections WHERE id = ?`,
 		profileId,
 	).Scan(
-		&profile.Uuid, &profile.InstanceName, &profile.Status, &profile.StartTime, &profile.EndTime,
+		&profile.Uuid, &profile.InstanceName, &profile.Status, &profile.CreateTime, &profile.FinishTime,
 	); err != nil {
 		log.Error("db.Query:", err)
 		return nil, err
