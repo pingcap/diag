@@ -1,6 +1,3 @@
-go.sum
-go.mod
-
 # api server
 bin/
 
