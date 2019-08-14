@@ -1,17 +1,16 @@
 package boot
 
 import (
-	"database/sql"
-
+	"github.com/pingcap/tidb-foresight/wraper/db"
 	log "github.com/sirupsen/logrus"
 )
 
-// sql.DB with usefull tool functions
+// with usefull tool functions
 type DB struct {
-	*sql.DB
+	db.DB
 }
 
-func newDB(db *sql.DB) *DB {
+func newDB(db db.DB) *DB {
 	return &DB{
 		db,
 	}

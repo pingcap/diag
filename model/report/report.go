@@ -1,15 +1,15 @@
 package report
 
 import (
-	"database/sql"
 	"reflect"
 	"runtime"
 
+	"github.com/pingcap/tidb-foresight/wraper/db"
 	log "github.com/sirupsen/logrus"
 )
 
 type Report struct {
-	db           *sql.DB
+	db           db.DB
 	inspectionId string
 	Items        interface{} `json:"items,omitempty"`
 	Symptoms     interface{} `json:"symptoms,omitempty"`
@@ -25,7 +25,7 @@ type Report struct {
 	DemsgLog     interface{} `json:"demsg,omitempty"`
 }
 
-func NewReport(db *sql.DB, inspectionId string) *Report {
+func NewReport(db db.DB, inspectionId string) *Report {
 	return &Report{
 		db:           db,
 		inspectionId: inspectionId,

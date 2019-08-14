@@ -1,7 +1,7 @@
 package server
 
 import (
-	"github.com/pingcap/tidb-foresight/api/bootstrap"
+	"github.com/pingcap/tidb-foresight/server/bootstrap"
 	"net/http"
 	"testing"
 )

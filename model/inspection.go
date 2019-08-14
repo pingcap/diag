@@ -1,8 +1,8 @@
 package model
 
 import (
-	"github.com/pingcap/tidb-foresight/api/model/report"
-	"github.com/pingcap/tidb-foresight/api/utils"
+	"github.com/pingcap/tidb-foresight/model/report"
+	"github.com/pingcap/tidb-foresight/utils"
 	log "github.com/sirupsen/logrus"
 )
 

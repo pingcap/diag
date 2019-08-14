@@ -1,9 +1,8 @@
 package bootstrap
 
 import (
-	"database/sql"
-
 	_ "github.com/mattn/go-sqlite3"
+	"github.com/pingcap/tidb-foresight/wraper/db"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -160,8 +159,8 @@ CREATE TABLE IF NOT EXISTS inspection_resource (
 );
 `
 
-func initDB(dbpath string) *sql.DB {
-	db, err := sql.Open("sqlite3", dbpath)
+func initDB(dbpath string) db.DB {
+	db, err := db.Open(dbpath)
 	if err != nil {
 		log.Panicf("open database(%s) failed: %s", dbpath, err)
 	}
