@@ -1,0 +1,11 @@
+#!/bin/bash
+
+if [ -f /etc/systemd/system/foresight.service ];then
+	systemctl stop foresight.service
+fi
+if [ -f /etc/systemd/system/influxd.service ];then
+	systemctl stop influxd.service
+fi
+if [ -f /etc/systemd/system/prometheus.service ];then
+	systemctl stop prometheus.service
+fi

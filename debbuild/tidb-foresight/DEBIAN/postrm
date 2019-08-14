@@ -1,0 +1,15 @@
+#!/bin/bash
+
+# uninstall foresight
+rm -rf /usr/local/tidb-foresight/
+rm -rf /etc/systemd/system/foresight.service
+
+# uninstall prometheus
+rm -rf /usr/local/prometheus
+rm -rf /etc/systemd/system/prometheus.service
+
+# uninstall influxdb
+rm -rf /usr/local/influxdb
+rm -rf /etc/logrotate.d/influxdb
+rm -rf /var/lib/influxdb
+rm -rf /etc/systemd/system/influxd.service

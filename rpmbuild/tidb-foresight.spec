@@ -6,38 +6,39 @@ License: GPL
 Group: Applications/Server
 Distribution: Linux
 Vendor: PingCAP
+Requires: graphviz = 2.30.1, perf = 3.10.0, rsync = 3.1.2
+#BuildRequires: go>=1.12.7, yarn>=1.17.3, node>=v12.8.0
 %description
 tidb-foresight is a web-based tidb cluster diagnostic tool
 %prep
 rm -rf %{_builddir}/*
 rm -rf %{_buildrootdir}/*
 cd %{_sourcedir}/
-rm -rf prometheus-2.8.1.linux-amd64.tar.gz influxdb-1.7.7-static_linux_amd64.tar.gz graphviz.tar.gz
+rm -rf prometheus-2.8.1.linux-amd64.tar.gz influxdb-1.7.7-static_linux_amd64.tar.gz stackcollapse-perf.pl flamegraph.pl fold-tikv-threads-perf.pl
 if [ ! -d './tidb-foresight' ];then
 	echo "There is no tidb-foresight in ~/rpmbuild/SOURCES/"
 	exit 2
 fi
 wget https://github.com/prometheus/prometheus/releases/download/v2.8.1/prometheus-2.8.1.linux-amd64.tar.gz
 wget https://dl.influxdata.com/influxdb/releases/influxdb-1.7.7-static_linux_amd64.tar.gz
-wget https://graphviz.gitlab.io/pub/graphviz/stable/SOURCES/graphviz.tar.gz
+wget https://raw.githubusercontent.com/brendangregg/FlameGraph/master/stackcollapse-perf.pl
+wget https://raw.githubusercontent.com/brendangregg/FlameGraph/master/flamegraph.pl
+wget https://raw.githubusercontent.com/pingcap/tidb-inspect-tools/master/tracing_tools/perf/fold-tikv-threads-perf.pl
 
 tar xf influxdb-1.7.7-static_linux_amd64.tar.gz
 tar xf prometheus-2.8.1.linux-amd64.tar.gz
-tar xf graphviz.tar.gz
+chmod +x %{_sourcedir}/*.pl
 cp -r %{_sourcedir}/tidb-foresight %{_builddir}/
 mv %{_sourcedir}/influxdb-1.7.7-1 %{_builddir}/
 mv %{_sourcedir}/prometheus-2.8.1.linux-amd64 %{_builddir}/
-mv %{_sourcedir}/graphviz-2.40.1 %{_builddir}/
-mkdir -p %{_buildrootdir}/%{name}-%{version}-%{release}.%{_build_arch}/usr/local/
+cp %{_sourcedir}/stackcollapse-perf.pl %{_builddir}/
+cp %{_sourcedir}/flamegraph.pl %{_builddir}/
+cp %{_sourcedir}/fold-tikv-threads-perf.pl %{_builddir}/
 %build
 cd %{_builddir}/tidb-foresight
 make
 cd %{_builddir}/tidb-foresight/web
 yarn && yarn build
-cd %{_builddir}/graphviz-2.40.1
-./configure --prefix=%{_builddir}/graphviz --enable-static=yes
-make
-make install
 
 %install
 # install foresight
@@ -49,6 +50,9 @@ mkdir -p %{_buildrootdir}/%{name}-%{version}-%{release}.%{_build_arch}/etc/syste
 if [ -e %{_builddir}/tidb-foresight/tidb-foresight.toml ];then 
 	cp %{_builddir}/tidb-foresight/tidb-foresight.toml %{_buildrootdir}/%{name}-%{version}-%{release}.%{_build_arch}/usr/local/tidb-foresight/
 fi
+cp -r %{_builddir}/stackcollapse-perf.pl %{_buildrootdir}/%{name}-%{version}-%{release}.%{_build_arch}/usr/local/tidb-foresight/bin/
+cp -r %{_builddir}/flamegraph.pl %{_buildrootdir}/%{name}-%{version}-%{release}.%{_build_arch}/usr/local/tidb-foresight/bin/
+cp -r %{_builddir}/fold-tikv-threads-perf.pl %{_buildrootdir}/%{name}-%{version}-%{release}.%{_build_arch}/usr/local/tidb-foresight/bin/
 cp -r %{_builddir}/tidb-foresight/bin/* %{_buildrootdir}/%{name}-%{version}-%{release}.%{_build_arch}/usr/local/tidb-foresight/bin/
 cp -r %{_builddir}/tidb-foresight/collector %{_buildrootdir}/%{name}-%{version}-%{release}.%{_build_arch}/usr/local/tidb-foresight/script/
 cp -r %{_builddir}/tidb-foresight/pioneer/pioneer.py %{_buildrootdir}/%{name}-%{version}-%{release}.%{_build_arch}/usr/local/tidb-foresight/bin/pioneer
@@ -157,9 +161,6 @@ RestartSec=15s
 WantedBy=multi-user.target
 EOF
 
-# install graphviz
-cp -r %{_builddir}/graphviz %{_buildrootdir}/%{name}-%{version}-%{release}.%{_build_arch}/usr/local/graphviz
-
 %files
 # foresight
 /usr/local/
@@ -182,11 +183,6 @@ chown -R tidb:tidb /usr/local/tidb-foresight
 chown -R tidb:tidb /usr/local/prometheus
 chown -R influxdb:influxdb /usr/local/influxdb
 chown -R influxdb:influxdb /var/lib/influxdb
-echo 'export PATH=$PATH:/usr/local/graphviz/bin' >> /etc/profile
-echo 'export PATH=$PATH:/usr/local/graphviz/bin' >> ~/.bashrc
-echo '/usr/local/graphviz/lib' >> /etc/ld.so.conf
-ldconfig
-source ~/.bashrc
 %preun
 systemctl stop foresight.service
 systemctl stop prometheus.service
@@ -205,9 +201,6 @@ rm -rf /usr/local/influxdb
 rm -rf /etc/logrotate.d/influxdb
 rm -rf /var/lib/influxdb
 rm -rf /etc/systemd/system/influxd.service
-rm -rf /usr/local/graphviz
-sed -i '/graphviz/d' /etc/profile
-sed -i '/graphviz/d' ~/.bashrc
 
 %clean
 rm -rf %{_buildrootdir}/*
