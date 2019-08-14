@@ -1,14 +1,14 @@
 package bootstrap
 
 import (
-	"database/sql"
 	"os"
 	"path"
 
+	"github.com/pingcap/tidb-foresight/wraper/db"
 	log "github.com/sirupsen/logrus"
 )
 
-func MustInit(homepath, address string) (*ForesightConfig, *sql.DB) {
+func MustInit(homepath, address string) (*ForesightConfig, db.DB) {
 	if err := os.MkdirAll(homepath, os.ModePerm); err != nil {
 		log.Panic("can't access home: ", homepath)
 	}

@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"path"
 
 	"github.com/pingcap/tidb-foresight/server"
 	"github.com/pingcap/tidb-foresight/server/bootstrap"
@@ -21,7 +22,7 @@ func main() {
 	})
 
 	if *printVersion {
-		version.PrintReleaseInfo()
+		release.PrintReleaseInfo()
 		return
 	}
 

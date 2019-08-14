@@ -1,9 +1,9 @@
 package boot
 
 import (
-	"database/sql"
 	"path"
 
+	"github.com/pingcap/tidb-foresight/wraper/db"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -14,12 +14,12 @@ const (
 type bootstrapTask struct {
 	inspectionId string
 	home         string
-	db           *sql.DB
+	db           db.DB
 }
 
 // Generate config and connect database
 func Bootstrap(inspectionId, home string) *bootstrapTask {
-	db, err := sql.Open(SQLITE, path.Join(home, "sqlite.db"))
+	db, err := db.Open(path.Join(home, "sqlite.db"))
 	if err != nil {
 		log.Panic("connection database:", err)
 	}

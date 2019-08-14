@@ -9,7 +9,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/pingcap/tidb-foresight/api/utils"
+	"github.com/pingcap/tidb-foresight/utils"
 	log "github.com/sirupsen/logrus"
 )
 

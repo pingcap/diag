@@ -18,8 +18,8 @@ import (
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 	"github.com/pingcap/tidb-foresight/log/parser"
-	"github.com/pingcap/tidb-foresight/api/model"
-	"github.com/pingcap/tidb-foresight/api/utils"
+	"github.com/pingcap/tidb-foresight/model"
+	"github.com/pingcap/tidb-foresight/utils"
 	log "github.com/sirupsen/logrus"
 )
 

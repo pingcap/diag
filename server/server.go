@@ -2,7 +2,6 @@ package server
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"net/http"
 	"os"
@@ -10,10 +9,11 @@ import (
 	"path"
 
 	"github.com/pingcap/fn"
-	"github.com/pingcap/tidb-foresight/api/bootstrap"
-	"github.com/pingcap/tidb-foresight/api/model"
 	"github.com/pingcap/tidb-foresight/log/searcher"
-	"github.com/pingcap/tidb-foresight/api/utils"
+	"github.com/pingcap/tidb-foresight/model"
+	"github.com/pingcap/tidb-foresight/server/bootstrap"
+	"github.com/pingcap/tidb-foresight/utils"
+	"github.com/pingcap/tidb-foresight/wraper/db"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -29,7 +29,7 @@ type ErrorMessage struct {
 	Message string `json:"message"`
 }
 
-func NewServer(config *bootstrap.ForesightConfig, db *sql.DB) *Server {
+func NewServer(config *bootstrap.ForesightConfig, db db.DB) *Server {
 	s := &Server{
 		config:   config,
 		model:    model.NewModel(db),
