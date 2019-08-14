@@ -10,6 +10,7 @@ import (
 	"github.com/pingcap/tidb-foresight/analyzer/input/resource"
 	"github.com/pingcap/tidb-foresight/analyzer/input/status"
 	"github.com/pingcap/tidb-foresight/analyzer/input/topology"
+	"github.com/pingcap/tidb-foresight/analyzer/input/dmesg"
 )
 
 func Tasks() []interface{} {
@@ -24,6 +25,7 @@ func Tasks() []interface{} {
 	tasks = append(tasks, insight.ParseInsight())
 	tasks = append(tasks, alert.ParseAlert())
 	tasks = append(tasks, envs.ParseEnvs())
+	tasks = append(tasks, dmesg.ParseDmesg())
 
 	return tasks
 }
