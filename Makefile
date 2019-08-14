@@ -33,9 +33,11 @@ LDFLAGS += -X "github.com/pingcap/tidb-foresight/version.GitBranch=$(shell git r
 
 CHECK_LDFLAGS += $(LDFLAGS)
 
+.PHONY: all server analyzer spliter syncer
+
 default: all
 
-all: server analyze spliter syncer
+all: server analyzer spliter syncer
 
 build:
 	$(GOBUILD)
@@ -54,7 +56,7 @@ endif
 server:
 	$(GOBUILD) $(RACE_FLAG) -ldflags '$(LDFLAGS) $(CHECK_FLAG)' -o bin/tidb-foresight cmd/server/*.go
 
-analyze:
+analyzer:
 	$(GOBUILD) $(RACE_FLAG) -ldflags '$(LDFLAGS) $(CHECK_FLAG)' -o bin/analyzer cmd/analyzer/*.go
 
 spliter:
