@@ -115,6 +115,7 @@ cp -r %{_builddir}/influxdb-1.7.7-1/influx_inspect %{_buildrootdir}/%{name}-%{ve
 cp -r %{_builddir}/influxdb-1.7.7-1/influx_stress %{_buildrootdir}/%{name}-%{version}-%{release}.%{_build_arch}/usr/local/influxdb/bin/
 cp -r %{_builddir}/influxdb-1.7.7-1/influx_tsm %{_buildrootdir}/%{name}-%{version}-%{release}.%{_build_arch}/usr/local/influxdb/bin/
 cp -r %{_builddir}/influxdb-1.7.7-1/influxdb.conf %{_buildrootdir}/%{name}-%{version}-%{release}.%{_build_arch}/usr/local/influxdb/conf/
+sed -i 's/\# bind-address \= \"\:/bind-address = "127.0.0.1\:/g' %{_buildrootdir}/%{name}-%{version}-%{release}.%{_build_arch}/usr/local/influxdb/conf/influxdb.conf
 cat>%{_buildrootdir}/%{name}-%{version}-%{release}.%{_build_arch}/etc/logrotate.d/influxdb<<EOF
 /usr/local/influxdb/log/influxd.log {
     daily
@@ -153,7 +154,7 @@ LimitNOFILE=1000000
 #LimitCORE=infinity
 LimitSTACK=10485760
 User=tidb
-ExecStart=/usr/local/prometheus/bin/prometheus --web.listen-address=:8080 --storage.tsdb.path=/usr/local/prometheus/data --config.file=/usr/local/prometheus/conf/prometheus.yml
+ExecStart=/usr/local/prometheus/bin/prometheus --web.listen-address=127.0.0.1:8080 --storage.tsdb.path=/usr/local/prometheus/data --config.file=/usr/local/prometheus/conf/prometheus.yml
 Restart=always
 RestartSec=15s
 
