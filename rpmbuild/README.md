@@ -25,6 +25,9 @@
 # Install yarn
 [root@ip] curl -o- -L https://yarnpkg.com/install.sh | bash
 [root@ip] source ~/.bashrc
+
+# Install git
+[root@ip] yum install -y git
 ```
 
 ## Create build directory

@@ -1,17 +1,5 @@
-# go.sum
-*/go.sum
-
-# syncer
-syncer/syncer
-
-# spliter
-spliter/spliter
-
-# api
-api/tidb-foresight
-
-# analyzer
-analyzer/analyzer
+# api server
+bin/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

@@ -11,11 +11,10 @@ fi
 
 workdir=`dirname $0`
 cd $workdir
-mkdir temp
+mkdir -p temp/tidb-foresight
 currentdir=`pwd`
 debdir="$currentdir/tidb-foresight"
 tempdir="$currentdir/temp/"
-cd $tempdir
 
 mkdir -p $debdir/usr/local/tidb-foresight/bin
 mkdir -p $debdir/usr/local/tidb-foresight/web
@@ -34,7 +33,9 @@ mkdir -p $debdir/etc/logrotate.d
 
 rm -rf prometheus-2.8.1.linux-amd64.tar.gz influxdb-1.7.7-static_linux_amd64.tar.gz stackcollapse-perf.pl flamegraph.pl fold-tikv-threads-perf.pl
 
-cp -r ../../../tidb-foresight .
+cd ..
+cp -r `ls |grep -v debbuild | xargs` debbuild/temp/tidb-foresight/
+cd $tempdir
 wget https://github.com/prometheus/prometheus/releases/download/v2.8.1/prometheus-2.8.1.linux-amd64.tar.gz
 wget https://dl.influxdata.com/influxdb/releases/influxdb-1.7.7-static_linux_amd64.tar.gz
 wget https://raw.githubusercontent.com/brendangregg/FlameGraph/master/stackcollapse-perf.pl
@@ -45,16 +46,9 @@ tar xf influxdb-1.7.7-static_linux_amd64.tar.gz
 tar xf prometheus-2.8.1.linux-amd64.tar.gz
 chmod +x *.pl
 
-
 # Install foresight
-cd $tempdir/tidb-foresight/api
-go build
-cd $tempdir/tidb-foresight/analyzer
-go build
-cd $tempdir/tidb-foresight/spliter
-go build
-cd $tempdir/tidb-foresight/syncer
-go build
+cd $tempdir/tidb-foresight
+make
 cd $tempdir/tidb-foresight/web
 yarn && yarn build
 
@@ -63,10 +57,7 @@ if [ -e tidb-foresight.toml ];then
         cp tidb-foresight.toml $debdir/usr/local/tidb-foresight/
 fi
 
-cp -r $tempdir/tidb-foresight/api/tidb-foresight $debdir/usr/local/tidb-foresight/bin/
-cp -r $tempdir/tidb-foresight/analyzer/analyzer $debdir/usr/local/tidb-foresight/bin/
-cp -r $tempdir/tidb-foresight/spliter/spliter $debdir/usr/local/tidb-foresight/bin/
-cp -r $tempdir/tidb-foresight/syncer/syncer $debdir/usr/local/tidb-foresight/bin/
+cp -r $tempdir/tidb-foresight/bin/* $debdir/usr/local/tidb-foresight/bin/
 cp -r $tempdir/stackcollapse-perf.pl $debdir/usr/local/tidb-foresight/bin/
 cp -r $tempdir/flamegraph.pl $debdir/usr/local/tidb-foresight/bin/
 cp -r $tempdir/fold-tikv-threads-perf.pl $debdir/usr/local/tidb-foresight/bin/

@@ -35,14 +35,8 @@ cp %{_sourcedir}/stackcollapse-perf.pl %{_builddir}/
 cp %{_sourcedir}/flamegraph.pl %{_builddir}/
 cp %{_sourcedir}/fold-tikv-threads-perf.pl %{_builddir}/
 %build
-cd %{_builddir}/tidb-foresight/api
-go build
-cd %{_builddir}/tidb-foresight/analyzer
-go build
-cd %{_builddir}/tidb-foresight/spliter
-go build
-cd %{_builddir}/tidb-foresight/syncer
-go build
+cd %{_builddir}/tidb-foresight
+make
 cd %{_builddir}/tidb-foresight/web
 yarn && yarn build
 
@@ -56,13 +50,10 @@ mkdir -p %{_buildrootdir}/%{name}-%{version}-%{release}.%{_build_arch}/etc/syste
 if [ -e %{_builddir}/tidb-foresight/tidb-foresight.toml ];then 
 	cp %{_builddir}/tidb-foresight/tidb-foresight.toml %{_buildrootdir}/%{name}-%{version}-%{release}.%{_build_arch}/usr/local/tidb-foresight/
 fi
-cp -r %{_builddir}/tidb-foresight/api/tidb-foresight %{_buildrootdir}/%{name}-%{version}-%{release}.%{_build_arch}/usr/local/tidb-foresight/bin/
-cp -r %{_builddir}/tidb-foresight/analyzer/analyzer %{_buildrootdir}/%{name}-%{version}-%{release}.%{_build_arch}/usr/local/tidb-foresight/bin/
-cp -r %{_builddir}/tidb-foresight/spliter/spliter %{_buildrootdir}/%{name}-%{version}-%{release}.%{_build_arch}/usr/local/tidb-foresight/bin/
-cp -r %{_builddir}/tidb-foresight/syncer/syncer %{_buildrootdir}/%{name}-%{version}-%{release}.%{_build_arch}/usr/local/tidb-foresight/bin/
 cp -r %{_builddir}/stackcollapse-perf.pl %{_buildrootdir}/%{name}-%{version}-%{release}.%{_build_arch}/usr/local/tidb-foresight/bin/
 cp -r %{_builddir}/flamegraph.pl %{_buildrootdir}/%{name}-%{version}-%{release}.%{_build_arch}/usr/local/tidb-foresight/bin/
 cp -r %{_builddir}/fold-tikv-threads-perf.pl %{_buildrootdir}/%{name}-%{version}-%{release}.%{_build_arch}/usr/local/tidb-foresight/bin/
+cp -r %{_builddir}/tidb-foresight/bin/* %{_buildrootdir}/%{name}-%{version}-%{release}.%{_build_arch}/usr/local/tidb-foresight/bin/
 cp -r %{_builddir}/tidb-foresight/collector %{_buildrootdir}/%{name}-%{version}-%{release}.%{_build_arch}/usr/local/tidb-foresight/script/
 cp -r %{_builddir}/tidb-foresight/pioneer/pioneer.py %{_buildrootdir}/%{name}-%{version}-%{release}.%{_build_arch}/usr/local/tidb-foresight/bin/pioneer
 cp -r %{_builddir}/tidb-foresight/web/dist/* %{_buildrootdir}/%{name}-%{version}-%{release}.%{_build_arch}/usr/local/tidb-foresight/web/
