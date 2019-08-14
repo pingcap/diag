@@ -127,7 +127,7 @@ cp -r $tempdir/influxdb-1.7.7-1/influx_inspect $debdir/usr/local/influxdb/bin/
 cp -r $tempdir/influxdb-1.7.7-1/influx_stress $debdir/usr/local/influxdb/bin/
 cp -r $tempdir/influxdb-1.7.7-1/influx_tsm $debdir/usr/local/influxdb/bin/
 cp -r $tempdir/influxdb-1.7.7-1/influxdb.conf $debdir/usr/local/influxdb/conf/
-sed -r 's/\# bind-address \= \"\:/bind-address = "127.0.0.1\:/g' $debdir/usr/local/influxdb/conf/influxdb.conf
+sed -i 's/\# bind-address \= \"\:/bind-address = "127.0.0.1\:/g' $debdir/usr/local/influxdb/conf/influxdb.conf
 
 # Install prometheus
 cp -r $tempdir/prometheus-2.8.1.linux-amd64/prometheus $debdir/usr/local/prometheus/bin/
