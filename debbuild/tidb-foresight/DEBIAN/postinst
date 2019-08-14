@@ -1,0 +1,17 @@
+#!/bin/bash
+
+grep -w tidb /etc/shadow > /dev/null
+if [ $? != 0 ]; then
+        useradd tidb
+fi
+grep -w influxdb /etc/shadow > /dev/null
+if [ $? != 0 ]; then
+        useradd influxdb
+fi
+
+chown -R tidb:tidb /usr/local/tidb-foresight
+chown -R tidb:tidb /usr/local/prometheus
+chown -R influxdb:influxdb /usr/local/influxdb
+chown -R influxdb:influxdb /var/lib/influxdb
+
+systemctl daemon-reload

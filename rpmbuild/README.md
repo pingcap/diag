@@ -13,7 +13,7 @@
 [root@ip] cd ~
 [root@ip] wget https://dl.google.com/go/go1.12.7.linux-amd64.tar.gz
 [root@ip] tar xf go1.12.7.linux-amd64.tar.gz
-[root@ip] export PATH=$PATH:/root/go/bin # 或者加到 /etc/bashrc、~/.bashrc 等
+[root@ip] export PATH=$PATH:/root/go/bin # or add to /etc/bashrc、~/.bashrc
 
 # Install nvm
 [root@ip] curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.34.0/install.sh | bash
@@ -27,7 +27,7 @@
 [root@ip] source ~/.bashrc
 ```
 
-## Build directory
+## Create build directory
 
 ```
 [root@ip] cd ~
@@ -37,27 +37,14 @@
 ## Setting configuration
 1. git clone tidb-foresight and put it in `~/rpmbuild/SOURCES/` directory.
 2. Put the `tidb-foresight.spec` in the `tidb-foresight/rpmbuild` directory into the `~/rpmbuild/SPECS` directory.
+3. Modify the `Version` in `tidb-foresight.spec`.
 
-## Begin build RPM
+## Start build RPM package
 
 ```
 [root@ip] cd ~/rpmbuild
 [root@ip] rpmbuild -bb SPECS/tidb-foresight.spec
 ```
 
-## Get RPM
-When the build is complete, you can get the rpm package in the `~/rpmbuild/RPMS` directory.
-
-# Build DEB for ubuntu and debain
-
-## Install alien
-
-```
-sudo apt install -y alien
-```
-
-## Convert RPM to DEB
-
-```
-sudo alien -k --scripts tidb-foresight-xxx.x86_64.rpm
-```
+## Get RPM package
+After the build is complete, you can get the rpm package in the `~/rpmbuild/RPMS` directory.
