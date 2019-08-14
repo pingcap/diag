@@ -91,6 +91,17 @@ func (s *Server) CreateRouter() http.Handler {
 	r.Handle("/api/v1/inspections/{id}", fn.Wrap(s.getInspectionDetail)).Methods("GET")
 	r.Handle("/api/v1/inspections/{id}", fn.Wrap(s.uploadInspection)).Methods("PUT")
 	r.Handle("/api/v1/inspections/{id}", fn.Wrap(s.deleteInspection)).Methods("DELETE")
+	r.Handle("/api/v1/inspections/{id}/symptom", fn.Wrap(s.getInspectionSymptom)).Methods("GET")
+	r.Handle("/api/v1/inspections/{id}/basic", fn.Wrap(s.getInspectionBasicInfo)).Methods("GET")
+	r.Handle("/api/v1/inspections/{id}/alert", fn.Wrap(s.getInspectionAlertInfo)).Methods("GET")
+	r.Handle("/api/v1/inspections/{id}/config", fn.Wrap(s.getInspectionConfigInfo)).Methods("GET")
+	r.Handle("/api/v1/inspections/{id}/database", fn.Wrap(s.getInspectionDBInfo)).Methods("GET")
+	r.Handle("/api/v1/inspections/{id}/dmesg", fn.Wrap(s.getInspectionDmesgInfo)).Methods("GET")
+	r.Handle("/api/v1/inspections/{id}/hardware", fn.Wrap(s.getInspectionHardwareInfo)).Methods("GET")
+	r.Handle("/api/v1/inspections/{id}/network", fn.Wrap(s.getInspectionNetworkInfo)).Methods("GET")
+	r.Handle("/api/v1/inspections/{id}/resource", fn.Wrap(s.getInspectionResourceInfo)).Methods("GET")
+	r.Handle("/api/v1/inspections/{id}/slowlog", fn.Wrap(s.getInspectionSlowLogInfo)).Methods("GET")
+	//r.Handle("/api/v1/inspections/{id}/ntp", fn.Wrap(s.getInspectionNtpInfo)).Methods("GET")
 
 	// profiles
 	r.Handle("/api/v1/perfprofiles", fn.Wrap(s.listAllProfiles)).Methods("GET")
