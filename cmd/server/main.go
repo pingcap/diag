@@ -3,8 +3,8 @@ package main
 import (
 	"flag"
 
+	"github.com/pingcap/tidb-foresight/bootstrap"
 	"github.com/pingcap/tidb-foresight/server"
-	"github.com/pingcap/tidb-foresight/server/bootstrap"
 	"github.com/pingcap/tidb-foresight/version"
 	log "github.com/sirupsen/logrus"
 )
@@ -25,10 +25,10 @@ func main() {
 		return
 	}
 
-	config, db := bootstrap.MustInit(*homepath, *address)
+	config, db := bootstrap.MustInit(*homepath)
 	defer db.Close()
 
 	s := server.NewServer(config, db)
 
-	log.Panic(s.Run())
+	log.Panic(s.Run(*address))
 }

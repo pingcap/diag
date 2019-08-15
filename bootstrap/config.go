@@ -91,7 +91,7 @@ type ForesightConfig struct {
 	} `toml:"prometheus"`
 }
 
-func initConfig(home, address string) *ForesightConfig {
+func initConfig(home string) *ForesightConfig {
 	fpath := path.Join(home, "tidb-foresight.toml")
 	if _, err := os.Stat(fpath); os.IsNotExist(err) {
 		log.Warn("config file ", fpath, " not found, a default one will be generated")
@@ -113,7 +113,6 @@ func initConfig(home, address string) *ForesightConfig {
 
 	config := &ForesightConfig{
 		Home:      home,
-		Address:   address,
 		Pioneer:   path.Join(home, "bin", "pioneer"),
 		Collector: path.Join(home, "bin", "collector"),
 		Analyzer:  path.Join(home, "bin", "analyzer"),

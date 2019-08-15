@@ -1,7 +1,6 @@
 package model
 
 import (
-	"github.com/pingcap/tidb-foresight/model/report"
 	"github.com/pingcap/tidb-foresight/utils"
 	log "github.com/sirupsen/logrus"
 )
@@ -23,7 +22,6 @@ type Inspection struct {
 	Pd           string         `json:"pd"`
 	Grafana      string         `json:"grafana"`
 	Prometheus   string         `json:"prometheus"`
-	Report       interface{}    `json:"report,omitempty"`
 }
 
 func (m *Model) ListAllInspections(page, size int64) ([]*Inspection, int, error) {
@@ -121,7 +119,7 @@ func (m *Model) SetInspection(inspection *Inspection) error {
 	return nil
 }
 
-func (m *Model) GetInspectionDetail(inspectionId string) (*Inspection, error) {
+func (m *Model) GetInspection(inspectionId string) (*Inspection, error) {
 	inspection := Inspection{}
 	err := m.db.QueryRow(
 		`SELECT id,instance,instance_name,user,status,message,type,create_t,finish_t,scrape_bt,scrape_et,
@@ -136,15 +134,6 @@ func (m *Model) GetInspectionDetail(inspectionId string) (*Inspection, error) {
 		log.Error("db.Query:", err)
 		return nil, err
 	}
-
-	report := report.NewReport(m.db, inspection.Uuid)
-	err = report.Load()
-	if err != nil {
-		log.Error("load report:", err)
-		return nil, err
-	}
-
-	inspection.Report = report
 
 	return &inspection, nil
 }

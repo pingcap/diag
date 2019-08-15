@@ -57,11 +57,10 @@ func (m *Model) GetInstanceConfig(instanceId string) (*Config, error) {
 		instanceId,
 	)
 	var cHardw, cSoftw, cLog, cDemsg int64
-	err := row.Scan(
+	if err := row.Scan(
 		&config.InstanceId, &cHardw, &cSoftw, &cLog, &cDemsg,
 		&config.AutoSchedStart, &config.AutoSchedDuration, &config.ReportKeepDuration,
-	)
-	if err == nil {
+	); err == nil {
 		config.CollectHardwareInfo = cHardw != 0
 		config.CollectSoftwareInfo = cSoftw != 0
 		config.CollectLog = cLog != 0

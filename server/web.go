@@ -9,11 +9,9 @@ import (
 func WebServer(fs http.FileSystem) http.Handler {
 	fsh := http.FileServer(fs)
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		f, err := fs.Open(path.Clean(r.URL.Path))
-		if err == nil {
+		if f, err := fs.Open(path.Clean(r.URL.Path)); err == nil {
 			f.Close()
-		}
-		if os.IsNotExist(err) {
+		} else if os.IsNotExist(err) {
 			r.URL.Path = "/"
 		}
 		fsh.ServeHTTP(w, r)

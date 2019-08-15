@@ -11,37 +11,6 @@ type SoftwareInfo struct {
 	Version   string `json:"version"`
 }
 
-// deprecated
-func (r *Report) loadSoftwareInfo() error {
-	if !r.itemReady("basic") {
-		return nil
-	}
-
-	rows, err := r.db.Query(
-		`SELECT node_ip, component, version FROM software_version WHERE inspection = ?`,
-		r.inspectionId,
-	)
-	if err != nil {
-		log.Error("db.Query: ", err)
-		return err
-	}
-
-	infos := []*SoftwareInfo{}
-	for rows.Next() {
-		info := SoftwareInfo{}
-		err = rows.Scan(&info.NodeIp, &info.Component, &info.Version)
-		if err != nil {
-			log.Error("db.Query:", err)
-			return err
-		}
-
-		infos = append(infos, &info)
-	}
-
-	r.SoftwareInfo = infos
-	return nil
-}
-
 func GetSoftwareInfo(db db.DB, inspectionId string) ([]*SoftwareInfo, error) {
 	infos := []*SoftwareInfo{}
 

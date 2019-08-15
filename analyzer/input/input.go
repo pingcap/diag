@@ -4,13 +4,13 @@ import (
 	"github.com/pingcap/tidb-foresight/analyzer/input/alert"
 	"github.com/pingcap/tidb-foresight/analyzer/input/args"
 	"github.com/pingcap/tidb-foresight/analyzer/input/dbinfo"
+	"github.com/pingcap/tidb-foresight/analyzer/input/dmesg"
 	"github.com/pingcap/tidb-foresight/analyzer/input/envs"
 	"github.com/pingcap/tidb-foresight/analyzer/input/insight"
 	"github.com/pingcap/tidb-foresight/analyzer/input/meta"
 	"github.com/pingcap/tidb-foresight/analyzer/input/resource"
 	"github.com/pingcap/tidb-foresight/analyzer/input/status"
 	"github.com/pingcap/tidb-foresight/analyzer/input/topology"
-	"github.com/pingcap/tidb-foresight/analyzer/input/dmesg"
 )
 
 func Tasks() []interface{} {
