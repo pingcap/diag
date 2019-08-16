@@ -38,18 +38,18 @@ func ParseArgs() *parseArgsTask {
 //		"data_dir": "/home/tidb/tidb-foresight/inspection",
 //		"topology": "/home/tidb/tidb-foresight/topology/6478c40b-0190-49f8-b0e8-641016d5ff2f.json"
 //	}
-func (t *parseArgsTask) Run(c *boot.Config, db *boot.DB) *Args {
+func (t *parseArgsTask) Run(c *boot.Config, m *boot.Model) *Args {
 	content, err := ioutil.ReadFile(path.Join(c.Src, "args.json"))
 	if err != nil {
 		log.Error("read file:", err)
-		db.InsertSymptom(c.InspectionId, "exception", "parse args.json", "contact developer")
+		m.InsertSymptom("exception", "parse args.json", "contact developer")
 		return nil
 	}
 
 	args := &Args{}
 	if err = json.Unmarshal(content, args); err != nil {
 		log.Error("unmarshal:", err)
-		db.InsertSymptom(c.InspectionId, "exception", "parse args.json", "contact developer")
+		m.InsertSymptom("exception", "parse args.json", "contact developer")
 		return nil
 	}
 

@@ -16,19 +16,19 @@ func ParseStatus() *parseStatusTask {
 }
 
 // Parse status.json, which contains the collect status for each collect item.
-func (t *parseStatusTask) Run(c *boot.Config, db *boot.DB) *StatusMap {
+func (t *parseStatusTask) Run(c *boot.Config, m *boot.Model) *StatusMap {
 	status := &StatusMap{}
 
 	content, err := ioutil.ReadFile(path.Join(c.Src, "status.json"))
 	if err != nil {
 		log.Error("read file:", err)
-		db.InsertSymptom(c.InspectionId, "exception", "parse status.json", "contact developer")
+		m.InsertSymptom("exception", "parse status.json", "contact developer")
 		return nil
 	}
 
 	if err = json.Unmarshal(content, status); err != nil {
 		log.Error("unmarshal:", err)
-		db.InsertSymptom(c.InspectionId, "exception", "parse status.json", "contact developer")
+		m.InsertSymptom("exception", "parse status.json", "contact developer")
 		return nil
 	}
 

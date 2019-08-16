@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/pingcap/tidb-foresight/analyzer/boot"
+	"github.com/pingcap/tidb-foresight/model"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -20,7 +21,7 @@ func SaveSoftwareConfig() *saveSoftwareConfigTask {
 }
 
 // Save each component's config to database
-func (t *saveSoftwareConfigTask) Run(db *boot.DB, c *boot.Config) {
+func (t *saveSoftwareConfigTask) Run(m *boot.Model, c *boot.Config) {
 	configDir := path.Join(c.Src, "config")
 
 	configs, err := loadSoftwareConfigFiles(configDir)
@@ -31,11 +32,14 @@ func (t *saveSoftwareConfigTask) Run(db *boot.DB, c *boot.Config) {
 		return
 	}
 	for _, cfg := range configs {
-		if _, err := db.Exec(
-			`INSERT INTO software_config(inspection, node_ip, port, component, config) VALUES(?, ?, ?, ?, ?)`,
-			c.InspectionId, cfg.ip, cfg.port, cfg.component, cfg.config,
-		); err != nil {
-			log.Error("db.Exec:", err)
+		if err := m.InsertInspectionConfigInfo(&model.ConfigInfo{
+			InspectionId: c.InspectionId,
+			NodeIp:       cfg.ip,
+			Port:         strconv.Itoa(cfg.port),
+			Component:    cfg.component,
+			Config:       cfg.config,
+		}); err != nil {
+			log.Error("insert component config:", err)
 			return
 		}
 	}

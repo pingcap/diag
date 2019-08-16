@@ -6,6 +6,7 @@ import (
 
 	"github.com/pingcap/tidb-foresight/analyzer/boot"
 	"github.com/pingcap/tidb-foresight/analyzer/input/insight"
+	"github.com/pingcap/tidb-foresight/model"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -16,11 +17,8 @@ func SaveHardwareInfo() *saveHardwareInfoTask {
 }
 
 // Save hardware info to database, the hardware info comes from insight collector
-func (t *saveHardwareInfoTask) Run(db *boot.DB, c *boot.Config, insight *insight.Insight) {
+func (t *saveHardwareInfoTask) Run(m *boot.Model, c *boot.Config, insight *insight.Insight) {
 	for _, insight := range *insight {
-		nodeIp := insight.NodeIp
-		cpu := insight.Sysinfo.Cpu.Model
-		memory := insight.Sysinfo.Memory.Type
 		disks := []string{}
 		for _, disk := range insight.Sysinfo.Storage {
 			disks = append(disks, disk.Name)
@@ -29,11 +27,16 @@ func (t *saveHardwareInfoTask) Run(db *boot.DB, c *boot.Config, insight *insight
 		for _, network := range insight.Sysinfo.Network {
 			networks = append(networks, fmt.Sprintf("%s:%d", network.Name, network.Speed))
 		}
-		if _, err := db.Exec(
-			`INSERT INTO inspection_hardware(inspection, node_ip, cpu, memory, disk, network) VALUES(?, ?, ?, ?, ?, ?)`,
-			c.InspectionId, nodeIp, cpu, memory, strings.Join(disks, ","), strings.Join(networks, ","),
-		); err != nil {
-			log.Error("db.Exec:", err)
+
+		if err := m.InsertInspectionHardwareInfo(&model.HardwareInfo{
+			InspectionId: c.InspectionId,
+			NodeIp:       insight.NodeIp,
+			Cpu:          insight.Sysinfo.Cpu.Model,
+			Memory:       insight.Sysinfo.Memory.Type,
+			Disk:         strings.Join(disks, ","),
+			Network:      strings.Join(networks, ","),
+		}); err != nil {
+			log.Error("insert hardware info:", err)
 			return
 		}
 	}

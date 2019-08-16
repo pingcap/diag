@@ -27,7 +27,7 @@ type Config struct {
 	Profile string
 }
 
-func newConfig(inspectionId, home string) *Config {
+func NewConfig(inspectionId, home string) *Config {
 	return &Config{
 		inspectionId,
 		home,

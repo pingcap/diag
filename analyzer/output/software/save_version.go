@@ -3,6 +3,7 @@ package software
 import (
 	"github.com/pingcap/tidb-foresight/analyzer/boot"
 	"github.com/pingcap/tidb-foresight/analyzer/input/insight"
+	"github.com/pingcap/tidb-foresight/model"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -13,15 +14,17 @@ func SaveSoftwareVersion() *saveSoftwareVersionTask {
 }
 
 // Save each component's version to database
-func (t *saveSoftwareVersionTask) Run(c *boot.Config, db *boot.DB, insights *insight.Insight) {
+func (t *saveSoftwareVersionTask) Run(c *boot.Config, m *boot.Model, insights *insight.Insight) {
 	for _, insight := range *insights {
 		versions := loadSoftwareVersion(insight)
 		for _, v := range versions {
-			if _, err := db.Exec(
-				`INSERT INTO software_version(inspection, node_ip, component, version) VALUES(?, ?, ?, ?)`,
-				c.InspectionId, v.ip, v.component, v.version,
-			); err != nil {
-				log.Error("db.Exec:", err)
+			if err := m.InsertInspectionSoftwareInfo(&model.SoftwareInfo{
+				InspectionId: c.InspectionId,
+				NodeIp:       v.ip,
+				Component:    v.component,
+				Version:      v.version,
+			}); err != nil {
+				log.Error("insert inspection component version:", err)
 				return
 			}
 		}

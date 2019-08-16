@@ -1,38 +1,30 @@
 package report
 
 import (
-	"github.com/pingcap/tidb-foresight/wraper/db"
-	log "github.com/sirupsen/logrus"
+	"time"
 )
 
 type AlertInfo struct {
-	Name  string `json:"name"`
-	Value string `json:"value"`
-	Time  string `json:"time"`
+	InspectionId string
+	Name         string    `json:"name"`
+	Value        string    `json:"value"`
+	Time         time.Time `json:"time"`
 }
 
-func GetAlertInfo(db db.DB, inspectionId string) ([]*AlertInfo, error) {
-	alerts := []*AlertInfo{}
+func (m *report) GetInspectionAlertInfo(inspectionId string) ([]*AlertInfo, error) {
+	infos := []*AlertInfo{}
 
-	rows, err := db.Query(
-		`SELECT name, value, time FROM inspection_alerts WHERE inspection = ?`,
-		inspectionId,
-	)
-	if err != nil {
-		log.Error("db.Query: ", err)
-		return alerts, err
+	if err := m.db.Where(&AlertInfo{InspectionId: inspectionId}).Find(&infos).Error(); err != nil {
+		return nil, err
 	}
 
-	for rows.Next() {
-		alert := AlertInfo{}
-		err = rows.Scan(&alert.Name, &alert.Value, &alert.Time)
-		if err != nil {
-			log.Error("db.Query:", err)
-			return alerts, err
-		}
+	return infos, nil
+}
 
-		alerts = append(alerts, &alert)
-	}
+func (m *report) ClearInspectionAlertInfo(inspectionId string) error {
+	return m.db.Delete(&AlertInfo{InspectionId: inspectionId}).Error()
+}
 
-	return alerts, nil
+func (m *report) InsertInspectionAlertInfo(info *AlertInfo) error {
+	return m.db.Create(info).Error()
 }

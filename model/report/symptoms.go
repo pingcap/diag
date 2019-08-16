@@ -1,38 +1,26 @@
 package report
 
-import (
-	"github.com/pingcap/tidb-foresight/wraper/db"
-	log "github.com/sirupsen/logrus"
-)
-
 type Symptom struct {
-	Status      string `json:"status"`
-	Message     string `json:"message"`
-	Description string `json:"description"`
+	InspectionId string
+	Status       string `json:"status"`
+	Message      string `json:"message"`
+	Description  string `json:"description"`
 }
 
-func GetSymptomInfo(db db.DB, inspectionId string) ([]*Symptom, error) {
-	symptoms := []*Symptom{}
+func (m *report) GetInspectionSymptoms(inspectionId string) ([]*Symptom, error) {
+	infos := []*Symptom{}
 
-	rows, err := db.Query(
-		`SELECT status, message, description FROM inspection_symptoms WHERE inspection = ?`,
-		inspectionId,
-	)
-	if err != nil {
-		log.Error("db.Query:", err)
-		return symptoms, err
-	}
-	defer rows.Close()
-
-	for rows.Next() {
-		symptom := Symptom{}
-		err = rows.Scan(&symptom.Status, &symptom.Message, &symptom.Description)
-		if err != nil {
-			log.Error("db.Query:", err)
-			return symptoms, err
-		}
-		symptoms = append(symptoms, &symptom)
+	if err := m.db.Where(&Symptom{InspectionId: inspectionId}).Find(&infos).Error(); err != nil {
+		return nil, err
 	}
 
-	return symptoms, nil
+	return infos, nil
+}
+
+func (m *report) ClearInspectionSymptom(inspectionId string) error {
+	return m.db.Delete(&Symptom{InspectionId: inspectionId}).Error()
+}
+
+func (m *report) InsertInspectionSymptom(symptom *Symptom) error {
+	return m.db.Create(symptom).Error()
 }

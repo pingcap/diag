@@ -11,6 +11,7 @@ import (
 	"github.com/pingcap/tidb-foresight/analyzer/output/logs"
 	"github.com/pingcap/tidb-foresight/analyzer/output/metric"
 	"github.com/pingcap/tidb-foresight/analyzer/output/network"
+	"github.com/pingcap/tidb-foresight/analyzer/output/ntp"
 	"github.com/pingcap/tidb-foresight/analyzer/output/profile"
 	"github.com/pingcap/tidb-foresight/analyzer/output/resource"
 	"github.com/pingcap/tidb-foresight/analyzer/output/software"
@@ -34,6 +35,7 @@ func Tasks() []interface{} {
 	tasks = append(tasks, network.SaveNetwork())
 	tasks = append(tasks, items.SaveItems())
 	tasks = append(tasks, metric.SaveMetric())
+	tasks = append(tasks, ntp.SaveNtpInfo())
 
 	return tasks
 }

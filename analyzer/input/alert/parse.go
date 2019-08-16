@@ -36,7 +36,7 @@ func ParseAlert() *parseAlertTask {
 //			}]
 //		}
 //	}
-func (t *parseAlertTask) Run(c *boot.Config, db *boot.DB) *Alert {
+func (t *parseAlertTask) Run(c *boot.Config, m *boot.Model) *Alert {
 	r := struct {
 		Status string `json:"status"`
 		Data   struct {
@@ -55,12 +55,12 @@ func (t *parseAlertTask) Run(c *boot.Config, db *boot.DB) *Alert {
 
 	if err = json.NewDecoder(f).Decode(&r); err != nil {
 		log.Error("decode:", err)
-		db.InsertSymptom(c.InspectionId, "exception", "parse alert.json failed", "contact developer")
+		m.InsertSymptom("exception", "parse alert.json failed", "contact developer")
 		return nil
 	}
 
 	if r.Status != "success" {
-		db.InsertSymptom(c.InspectionId, "exception", "collect alert info failed", "check prometheus api")
+		m.InsertSymptom("exception", "collect alert info failed", "check prometheus api")
 		return nil
 	}
 

@@ -5,16 +5,16 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/pingcap/fn"
-	"github.com/pingcap/tidb-foresight/model/report"
+	"github.com/pingcap/tidb-foresight/model"
 	"github.com/pingcap/tidb-foresight/utils"
 	log "github.com/sirupsen/logrus"
 )
 
 type getResourceInfoHandler struct {
-	m ResourceInfoGeter
+	m model.Model
 }
 
-func ResourceInfo(m ResourceInfoGeter) http.Handler {
+func ResourceInfo(m model.Model) http.Handler {
 	return &getResourceInfoHandler{m}
 }
 
@@ -22,7 +22,7 @@ func (h *getResourceInfoHandler) ServeHTTP(w http.ResponseWriter, r *http.Reques
 	fn.Wrap(h.getInspectionResourceInfo).ServeHTTP(w, r)
 }
 
-func (h *getResourceInfoHandler) getInspectionResourceInfo(r *http.Request) ([]*report.ResourceInfo, utils.StatusError) {
+func (h *getResourceInfoHandler) getInspectionResourceInfo(r *http.Request) ([]*model.ResourceInfo, utils.StatusError) {
 	inspectionId := mux.Vars(r)["id"]
 	info, err := h.m.GetInspectionResourceInfo(inspectionId)
 	if err != nil {

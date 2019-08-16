@@ -1,37 +1,25 @@
 package report
 
-import (
-	"github.com/pingcap/tidb-foresight/wraper/db"
-	log "github.com/sirupsen/logrus"
-)
-
 type DmesgLog struct {
-	NodeIp string `json:"node_ip"`
-	Log    string `json:"log"`
+	InspectionId string
+	NodeIp       string `json:"node_ip"`
+	Log          string `json:"log"`
 }
 
-func GetDmesgLog(db db.DB, inspectionId string) ([]*DmesgLog, error) {
+func (m *report) GetInspectionDmesg(inspectionId string) ([]*DmesgLog, error) {
 	logs := []*DmesgLog{}
 
-	rows, err := db.Query(
-		`SELECT node_ip, log FROM inspection_dmesg WHERE inspection = ?`,
-		inspectionId,
-	)
-	if err != nil {
-		log.Error("db.Query: ", err)
-		return logs, err
-	}
-
-	for rows.Next() {
-		l := DmesgLog{}
-		err = rows.Scan(&l.NodeIp, &l.Log)
-		if err != nil {
-			log.Error("db.Query:", err)
-			return logs, err
-		}
-
-		logs = append(logs, &l)
+	if err := m.db.Where(&DmesgLog{InspectionId: inspectionId}).Find(&logs).Error(); err != nil {
+		return nil, err
 	}
 
 	return logs, nil
+}
+
+func (m *report) ClearInspectionDmesgLog(inspectionId string) error {
+	return m.db.Delete(&DmesgLog{InspectionId: inspectionId}).Error()
+}
+
+func (m *report) InsertInspectionDmesgLog(info *DmesgLog) error {
+	return m.db.Create(info).Error()
 }

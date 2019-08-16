@@ -19,7 +19,7 @@ import (
 
 type Server struct {
 	config   *bootstrap.ForesightConfig
-	model    *model.Model
+	model    model.Model
 	Router   http.Handler
 	searcher *searcher.Searcher
 }
@@ -32,7 +32,7 @@ type ErrorMessage struct {
 func NewServer(config *bootstrap.ForesightConfig, db db.DB) *Server {
 	s := &Server{
 		config:   config,
-		model:    model.NewModel(db),
+		model:    model.New(db),
 		searcher: searcher.NewSearcher(),
 	}
 

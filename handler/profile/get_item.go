@@ -7,7 +7,6 @@ import (
 	"path"
 
 	"github.com/gorilla/mux"
-	"github.com/pingcap/fn"
 	"github.com/pingcap/tidb-foresight/bootstrap"
 	log "github.com/sirupsen/logrus"
 )
@@ -21,7 +20,7 @@ func GetProfileItem(c *bootstrap.ForesightConfig) http.Handler {
 }
 
 func (h *getProfileItemHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	fn.Wrap(h.getProfileItem).ServeHTTP(w, r)
+	h.getProfileItem(w, r)
 }
 
 func (h *getProfileItemHandler) getProfileItem(w http.ResponseWriter, r *http.Request) {

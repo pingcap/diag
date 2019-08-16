@@ -14,28 +14,32 @@ func AnalyzeVersion() *analyzeVersionTask {
 }
 
 // Check if all software versions are same
-func (t *analyzeVersionTask) Run(db *boot.DB, c *boot.Config) {
-	rows, err := db.Query(
-		`SELECT component, COUNT(DISTINCT(version)) FROM software_version WHERE inspection = ? GROUP BY component`,
-		c.InspectionId,
-	)
+func (t *analyzeVersionTask) Run(m *boot.Model, c *boot.Config) {
+	versions, err := m.GetInspectionSoftwareInfo(c.InspectionId)
 	if err != nil {
-		log.Error("db.QueryRow:", err)
+		log.Error("get component version:", err)
+		m.InsertSymptom("exception", "error on get component version", "contact foresight developer")
 		return
 	}
-	defer rows.Close()
+	versionMap := make(map[string][]string)
+	for _, version := range versions {
+		versionMap[version.Component] = append(versionMap[version.Component], version.Version)
+	}
 
-	var name string
-	var count int
-	for rows.Next() {
-		if err := rows.Scan(&name, &count); err != nil {
-			return
+	for k, v := range versionMap {
+		t.checkComponentVersion(m, k, v)
+	}
+}
+
+func (t *analyzeVersionTask) checkComponentVersion(m *boot.Model, comp string, versions []string) {
+	for _, v1 := range versions {
+		for _, v2 := range versions {
+			if v1 != v2 {
+				msg := fmt.Sprintf("%s version is not identical", comp)
+				desc := fmt.Sprintf("make sure all %s have the same version", comp)
+				m.InsertSymptom("error", msg, desc)
+				return
+			}
 		}
-		if count == 1 {
-			continue
-		}
-		msg := fmt.Sprintf("%s versions are not identical", name)
-		desc := fmt.Sprintf("make sure all %s have the same version", name)
-		defer db.InsertSymptom(c.InspectionId, "error", msg, desc)
 	}
 }

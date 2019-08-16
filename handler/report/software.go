@@ -5,16 +5,16 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/pingcap/fn"
-	"github.com/pingcap/tidb-foresight/model/report"
+	"github.com/pingcap/tidb-foresight/model"
 	"github.com/pingcap/tidb-foresight/utils"
 	log "github.com/sirupsen/logrus"
 )
 
 type getSoftwareInfoHandler struct {
-	m SoftwareInfoGeter
+	m model.Model
 }
 
-func SoftwareInfo(m SoftwareInfoGeter) http.Handler {
+func SoftwareInfo(m model.Model) http.Handler {
 	return &getSoftwareInfoHandler{m}
 }
 
@@ -22,7 +22,7 @@ func (h *getSoftwareInfoHandler) ServeHTTP(w http.ResponseWriter, r *http.Reques
 	fn.Wrap(h.getInspectionSoftwareInfo).ServeHTTP(w, r)
 }
 
-func (h *getSoftwareInfoHandler) getInspectionSoftwareInfo(r *http.Request) ([]*report.SoftwareInfo, utils.StatusError) {
+func (h *getSoftwareInfoHandler) getInspectionSoftwareInfo(r *http.Request) ([]*model.SoftwareInfo, utils.StatusError) {
 	inspectionId := mux.Vars(r)["id"]
 	info, err := h.m.GetInspectionSoftwareInfo(inspectionId)
 	if err != nil {

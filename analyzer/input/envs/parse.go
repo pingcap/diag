@@ -21,19 +21,19 @@ func ParseEnvs() *parseEnvTask {
 //		"INSPECTION_TYPE": "manual",
 //		"FORESIGHT_USER": "foresight"
 //	}
-func (t *parseEnvTask) Run(c *boot.Config, db *boot.DB) *Env {
+func (t *parseEnvTask) Run(c *boot.Config, m *boot.Model) *Env {
 	e := &Env{}
 	f, err := os.Open(path.Join(c.Src, "env.json"))
 	if err != nil {
 		log.Error("open file:", err)
-		db.InsertSymptom(c.InspectionId, "exception", "parse env.json", "contact developer")
+		m.InsertSymptom("exception", "parse env.json", "contact developer")
 		return nil
 	}
 	defer f.Close()
 
 	if err = json.NewDecoder(f).Decode(e); err != nil {
 		log.Error("decode:", err)
-		db.InsertSymptom(c.InspectionId, "exception", "parse env.json", "contact developer")
+		m.InsertSymptom("exception", "parse env.json", "contact developer")
 		return nil
 	}
 

@@ -84,7 +84,7 @@ func (h *createInspectionHandler) collectInspection(instanceId, inspectionId str
 		to = config.ManualSchedRange[1]
 	}
 
-	items := []string{"metric", "basic", "dbinfo", "config", "profile"}
+	items := []string{"metric", "basic", "dbinfo", "config", "log"}
 	if config != nil {
 		if config.CollectHardwareInfo {
 			//	items = append(items, "hardware")
@@ -107,8 +107,8 @@ func (h *createInspectionHandler) collectInspection(instanceId, inspectionId str
 		fmt.Sprintf("--topology=%s", path.Join(h.c.Home, "topology", instanceId+".json")),
 		fmt.Sprintf("--data-dir=%s", path.Join(h.c.Home, "inspection")),
 		fmt.Sprintf("--collect=%s", strings.Join(items, ",")),
-		fmt.Sprintf("--log-spliter=%s", h.c.Spliter),
-		// TODO: use time range in config
+		fmt.Sprintf("--log-dir=%s", path.Join(h.c.Home, "remote-log", instanceId)),
+		fmt.Sprintf("--log-spliter=%s", path.Join(h.c.Home, "spliter")),
 		fmt.Sprintf("--begin=%s", from.Format(time.RFC3339)),
 		fmt.Sprintf("--end=%s", to.Format(time.RFC3339)),
 	)

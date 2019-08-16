@@ -12,19 +12,9 @@ func Summary() *summaryTask {
 }
 
 // Change the inspection status to success
-func (t *summaryTask) Run(db *boot.DB, c *boot.Config) {
-	if _, err := db.Exec(
-		`UPDATE inspection_items SET status = 'success' WHERE inspection = ? AND status = 'running'`,
-		c.InspectionId,
-	); err != nil {
-		log.Error("db.Exec:", err)
+func (t *summaryTask) Run(m *boot.Model, c *boot.Config) {
+	if err := m.UpdateInspectionStatus(c.InspectionId, "success"); err != nil {
+		log.Error("update inspection status:", err)
 		return
-	}
-
-	if _, err := db.Exec(
-		"UPDATE inspections SET status = ? WHERE id = ?",
-		"success", c.InspectionId,
-	); err != nil {
-		log.Panic("update inspection status:", err)
 	}
 }
