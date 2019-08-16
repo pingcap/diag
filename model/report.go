@@ -44,6 +44,6 @@ func (m *Model) GetInspectionSoftwareInfo(inspectionId string) ([]*report.Softwa
 	return report.GetSoftwareInfo(m.db, inspectionId)
 }
 
-func (m *Model) GetInspectionSymtoms(inspectionId string) ([]*report.Symptom, error) {
+func (m *Model) GetInspectionSymptoms(inspectionId string) ([]*report.Symptom, error) {
 	return report.GetSymptomInfo(m.db, inspectionId)
 }

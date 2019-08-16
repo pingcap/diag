@@ -8,6 +8,13 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/pingcap/fn"
+	"github.com/pingcap/tidb-foresight/handler/auth"
+	"github.com/pingcap/tidb-foresight/handler/config"
+	"github.com/pingcap/tidb-foresight/handler/inspection"
+	"github.com/pingcap/tidb-foresight/handler/instance"
+	"github.com/pingcap/tidb-foresight/handler/logs"
+	"github.com/pingcap/tidb-foresight/handler/profile"
+	"github.com/pingcap/tidb-foresight/handler/report"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -51,73 +58,71 @@ func (s *Server) CreateRouter() http.Handler {
 	r := mux.NewRouter()
 	AttachProfiler(r)
 
-	fn.Plugin(s.auth)
+	fn.Plugin(auth.Auth)
 
 	// auth
-	r.HandleFunc("/api/v1/login", s.login).Methods("POST")
-	r.Handle("/api/v1/me", fn.Wrap(s.me)).Methods("GET")
-	r.HandleFunc("/api/v1/logout", s.logout).Methods("GET", "POST", "DELETE")
+	//r.HandleFunc("/api/v1/login", s.login).Methods("POST")
+	r.Handle("/api/v1/login", auth.Login(s.config)).Methods("POST")
+	r.Handle("/api/v1/me", auth.Me(s.config)).Methods("GET")
+	r.HandleFunc("/api/v1/logout", auth.Logout).Methods("GET", "POST", "DELETE")
 
 	// instance
-	r.Handle("/api/v1/instances", fn.Wrap(s.listInstance)).Methods("GET")
-	r.Handle("/api/v1/instances", fn.Wrap(s.createInstance)).Methods("POST")
-	r.Handle("/api/v1/instances/{id}", fn.Wrap(s.getInstance)).Methods("GET")
-	r.Handle("/api/v1/instances/{id}", fn.Wrap(s.deleteInstance)).Methods("DELETE")
-	r.Handle("/api/v1/instances/{id}/config", fn.Wrap(s.getInstanceConfig)).Methods("GET")
-	r.Handle("/api/v1/instances/{id}/config", fn.Wrap(s.updateInstanceConfig)).Methods("PUT")
-	r.Handle("/api/v1/instances/{id}/inspections", fn.Wrap(s.listInspections)).Methods("GET")
-	r.Handle("/api/v1/instances/{id}/inspections", fn.Wrap(s.createInspection)).Methods("POST")
-	r.Handle("/api/v1/instances/{id}/perfprofiles", fn.Wrap(s.listProfiles)).Methods("GET")
-	r.Handle("/api/v1/instances/{id}/perfprofiles", fn.Wrap(s.createProfile)).Methods("POST")
+	r.Handle("/api/v1/instances", instance.ListInstance(s.model)).Methods("GET")
+	r.Handle("/api/v1/instances", instance.CreateInstance(s.config, s.model)).Methods("POST")
+	r.Handle("/api/v1/instances/{id}", instance.GetInstance(s.model)).Methods("GET")
+	r.Handle("/api/v1/instances/{id}", instance.DeleteInstance(s.config, s.model)).Methods("DELETE")
+	r.Handle("/api/v1/instances/{id}/config", config.GetConfig(s.model)).Methods("GET")
+	r.Handle("/api/v1/instances/{id}/inspections", inspection.ListInspection(s.model)).Methods("GET")
+	r.Handle("/api/v1/instances/{id}/inspections", inspection.CreateInspection(s.config, s.model)).Methods("POST")
+	r.Handle("/api/v1/instances/{id}/perfprofiles", profile.ListProfile(s.config, s.model)).Methods("GET")
+	r.Handle("/api/v1/instances/{id}/perfprofiles", profile.CreateProfile(s.config, s.model)).Methods("POST")
 
 	// logs
-	r.Handle("/api/v1/loginstances", fn.Wrap(s.listLogInstances)).Methods("GET")
-	r.Handle("/api/v1/logfiles", fn.Wrap(s.listLogFiles)).Methods("GET")
-	r.Handle("/api/v1/loginstances/{id}/logs", fn.Wrap(s.searchLog)).Methods("GET")
-	r.Handle("/api/v1/loginstances/{id}", fn.Wrap(s.uploadLog)).Methods("PUT")
-	r.Handle("/api/v1/logfiles/{id}/logs", fn.Wrap(s.searchLog)).Methods("GET")
-	// upload log inspection (dba)
-	r.Handle("/api/v1/logfiles", fn.Wrap(s.importLog)).Methods("POST")
-	// download log inspection (user)
-	r.HandleFunc("/api/v1/loginstances/{id}.tar.gz", s.exportLog).Methods("GET")
+	r.Handle("/api/v1/loginstances", logs.ListInstance(s.config, s.model)).Methods("GET")
+	r.Handle("/api/v1/logfiles", logs.ListFile(s.config, s.model)).Methods("GET")
+	r.Handle("/api/v1/loginstances/{id}/logs", logs.SearchLog(s.config, s.searcher)).Methods("GET")
+	r.Handle("/api/v1/loginstances/{id}", logs.UploadLog(s.config)).Methods("PUT")
+	r.Handle("/api/v1/logfiles/{id}/logs", logs.SearchLog(s.config, s.searcher)).Methods("GET")
+	r.Handle("/api/v1/logfiles", logs.ImportLog(s.config, s.model)).Methods("POST")
+	r.Handle("/api/v1/loginstances/{id}.tar.gz", logs.ExportLog(s.config)).Methods("GET")
+
+	// inspection
+	r.Handle("/api/v1/inspections", inspection.ListAllInspection(s.model)).Methods("GET")
+	r.Handle("/api/v1/inspections/{id}.tar.gz", inspection.ExportInspection(s.config)).Methods("GET")
+	r.Handle("/api/v1/inspections", inspection.ImportInspection(s.config, s.model)).Methods("POST")
+	r.Handle("/api/v1/inspections/{id}", inspection.GetInspection(s.model)).Methods("GET")
+	r.Handle("/api/v1/inspections/{id}", inspection.UploadInspection(s.config)).Methods("PUT")
+	r.Handle("/api/v1/inspections/{id}", inspection.DeleteInspection(s.config, s.model)).Methods("DELETE")
+
+	// report
+	r.Handle("/api/v1/inspections/{id}/symptom", report.Symptom(s.model)).Methods("GET")
+	r.Handle("/api/v1/inspections/{id}/basic", report.BasicInfo(s.model)).Methods("GET")
+	r.Handle("/api/v1/inspections/{id}/slowlog", report.SlowLog(s.model)).Methods("GET")
+	r.Handle("/api/v1/inspections/{id}/alert", report.AlertInfo(s.model)).Methods("GET")
+	r.Handle("/api/v1/inspections/{id}/config", report.ConfigInfo(s.model)).Methods("GET")
+	r.Handle("/api/v1/inspections/{id}/dmesg", report.Dmesg(s.model)).Methods("GET")
+	r.Handle("/api/v1/inspections/{id}/hardware", report.HardwareInfo(s.model)).Methods("GET")
+	r.Handle("/api/v1/inspections/{id}/network", report.NetworkInfo(s.model)).Methods("GET")
+	r.Handle("/api/v1/inspections/{id}/resource", report.ResourceInfo(s.model)).Methods("GET")
+	r.Handle("/api/v1/inspections/{id}/software", report.SoftwareInfo(s.model)).Methods("GET")
+
+	// profiles
+	r.Handle("/api/v1/perfprofiles", profile.ListAllProfile(s.config, s.model)).Methods("GET")
+	r.Handle("/api/v1/perfprofiles/{id}.tar.gz", inspection.ExportInspection(s.config)).Methods("GET")
+	r.Handle("/api/v1/perfprofiles/{id}", profile.GetProfile(s.config, s.model)).Methods("GET")
+	r.Handle("/api/v1/perfprofiles/{id}/{component}/{address}/{type}/{file}", profile.GetProfileItem(s.config)).Methods("GET")
+	r.Handle("/api/v1/perfprofiles/{id}", inspection.UploadInspection(s.config)).Methods("PUT")
+	r.Handle("/api/v1/perfprofiles", inspection.ImportInspection(s.config, s.model)).Methods("POST")
+	r.Handle("/api/v1/perfprofiles/{id}", inspection.DeleteInspection(s.config, s.model)).Methods("DELETE")
+
+	// web
+	r.PathPrefix("/").Handler(s.web("/", path.Join(s.config.Home, "web")))
 
 	// metric
 	r.PathPrefix("/api/v1/metric/").HandlerFunc(s.metric)
 
-	// inspection
-	r.Handle("/api/v1/inspections", fn.Wrap(s.listAllInspections)).Methods("GET")
-	r.HandleFunc("/api/v1/inspections/{id}.tar.gz", s.exportInspection).Methods("GET")
-	r.Handle("/api/v1/inspections", fn.Wrap(s.importInspection)).Methods("POST")
-	r.Handle("/api/v1/inspections/{id}", fn.Wrap(s.getInspectionDetail)).Methods("GET")
-	r.Handle("/api/v1/inspections/{id}", fn.Wrap(s.uploadInspection)).Methods("PUT")
-	r.Handle("/api/v1/inspections/{id}", fn.Wrap(s.deleteInspection)).Methods("DELETE")
-	r.Handle("/api/v1/inspections/{id}/symptom", fn.Wrap(s.getInspectionSymptom)).Methods("GET")
-	r.Handle("/api/v1/inspections/{id}/basic", fn.Wrap(s.getInspectionBasicInfo)).Methods("GET")
-	r.Handle("/api/v1/inspections/{id}/alert", fn.Wrap(s.getInspectionAlertInfo)).Methods("GET")
-	r.Handle("/api/v1/inspections/{id}/config", fn.Wrap(s.getInspectionConfigInfo)).Methods("GET")
-	r.Handle("/api/v1/inspections/{id}/database", fn.Wrap(s.getInspectionDBInfo)).Methods("GET")
-	r.Handle("/api/v1/inspections/{id}/dmesg", fn.Wrap(s.getInspectionDmesgInfo)).Methods("GET")
-	r.Handle("/api/v1/inspections/{id}/hardware", fn.Wrap(s.getInspectionHardwareInfo)).Methods("GET")
-	r.Handle("/api/v1/inspections/{id}/network", fn.Wrap(s.getInspectionNetworkInfo)).Methods("GET")
-	r.Handle("/api/v1/inspections/{id}/resource", fn.Wrap(s.getInspectionResourceInfo)).Methods("GET")
-	r.Handle("/api/v1/inspections/{id}/slowlog", fn.Wrap(s.getInspectionSlowLogInfo)).Methods("GET")
-	//r.Handle("/api/v1/inspections/{id}/ntp", fn.Wrap(s.getInspectionNtpInfo)).Methods("GET")
-
-	// profiles
-	r.Handle("/api/v1/perfprofiles", fn.Wrap(s.listAllProfiles)).Methods("GET")
-	r.HandleFunc("/api/v1/perfprofiles/{id}.tar.gz", s.exportInspection).Methods("GET")
-	r.Handle("/api/v1/perfprofiles/{id}", fn.Wrap(s.getProfileDetail)).Methods("GET")
-	r.HandleFunc("/api/v1/perfprofiles/{id}/{component}/{address}/{type}/{file}", s.getProfile).Methods("GET")
-	r.Handle("/api/v1/perfprofiles/{id}", fn.Wrap(s.uploadInspection)).Methods("PUT")
-	r.Handle("/api/v1/perfprofiles", fn.Wrap(s.importInspection)).Methods("POST")
-	r.Handle("/api/v1/perfprofiles/{id}", fn.Wrap(s.deleteInspection)).Methods("DELETE")
-
 	// all others are 404
 	r.PathPrefix("/api/v1/").HandlerFunc(http.NotFound)
-
-	// other
-	r.Handle("/ping", fn.Wrap(s.ping)).Methods("GET")
-	r.PathPrefix("/").Handler(s.web("/", path.Join(s.config.Home, "web")))
 
 	return httpRequestMiddleware(r)
 }

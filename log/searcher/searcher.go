@@ -40,7 +40,7 @@ var levelMap = map[string]parser.LevelType{
 	"ERROR":   parser.LevelERROR,
 }
 
-func (i *IterWithAccessTime) Next() (*parser.LogItem, error) {
+func (i *IterWithAccessTime) Next() (parser.Item, error) {
 	i.l.Lock()
 	defer i.l.Unlock()
 	i.access = time.Now()
@@ -125,7 +125,7 @@ func (s *Searcher) Gc(token string, iter *IterWithAccessTime) {
 	}
 }
 
-func (s *Searcher) Search(dir string, begin, end time.Time, level, text, token string) (*IterWithAccessTime, string, error) {
+func (s *Searcher) Search(dir string, begin, end time.Time, level, text, token string) (parser.Iterator, string, error) {
 	if token == "" {
 		token = uuid.New().String()
 		i, err := SearchLog(dir, begin, end)

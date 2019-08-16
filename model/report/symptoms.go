@@ -11,34 +11,6 @@ type Symptom struct {
 	Description string `json:"description"`
 }
 
-// deprecated
-func (r *Report) loadSymptoms() error {
-	symptoms := []*Symptom{}
-
-	rows, err := r.db.Query(
-		`SELECT status, message, description FROM inspection_symptoms WHERE inspection = ?`,
-		r.inspectionId,
-	)
-	if err != nil {
-		log.Error("db.Query:", err)
-		return err
-	}
-	defer rows.Close()
-
-	for rows.Next() {
-		symptom := Symptom{}
-		err = rows.Scan(&symptom.Status, &symptom.Message, &symptom.Description)
-		if err != nil {
-			log.Error("db.Query:", err)
-			return err
-		}
-		symptoms = append(symptoms, &symptom)
-	}
-
-	r.Symptoms = symptoms
-	return nil
-}
-
 func GetSymptomInfo(db db.DB, inspectionId string) ([]*Symptom, error) {
 	symptoms := []*Symptom{}
 

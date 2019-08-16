@@ -1,33 +1,41 @@
-package server
+package instance
 
 import (
 	"bytes"
 	"encoding/json"
 	"net/http"
-	"os"
 	"os/exec"
 	"path"
 	"strings"
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/gorilla/mux"
+	"github.com/pingcap/fn"
+	"github.com/pingcap/tidb-foresight/bootstrap"
 	"github.com/pingcap/tidb-foresight/model"
 	"github.com/pingcap/tidb-foresight/utils"
 	log "github.com/sirupsen/logrus"
 )
 
-func (s *Server) listInstance() ([]*model.Instance, error) {
-	instances, err := s.model.ListInstance()
-	if err != nil {
-		log.Error("Query instance list: ", err)
-		return nil, utils.NewForesightError(http.StatusInternalServerError, "DB_QUERY_ERROR", "error on query database")
-	}
-
-	return instances, nil
+type InstanceCreator interface {
+	CreateInstance(instance *model.Instance) error
+	UpdateInstance(instance *model.Instance) error
 }
 
-func (s *Server) createInstance(r *http.Request) (*model.Instance, error) {
+type createInstanceHandler struct {
+	c *bootstrap.ForesightConfig
+	m InstanceCreator
+}
+
+func CreateInstance(c *bootstrap.ForesightConfig, m InstanceCreator) http.Handler {
+	return &createInstanceHandler{c, m}
+}
+
+func (h *createInstanceHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	fn.Wrap(h.createInstance).ServeHTTP(w, r)
+}
+
+func (h *createInstanceHandler) createInstance(r *http.Request) (*model.Instance, utils.StatusError) {
 	uid := uuid.New().String()
 
 	const MAX_FILE_SIZE = 32 * 1024 * 1024
@@ -39,76 +47,26 @@ func (s *Server) createInstance(r *http.Request) (*model.Instance, error) {
 	}
 	defer file.Close()
 
-	inventoryPath := path.Join(s.config.Home, "inventory", uid+".ini")
+	inventoryPath := path.Join(h.c.Home, "inventory", uid+".ini")
 	err = utils.SaveFile(file, inventoryPath)
 	if err != nil {
 		log.Error("save file: ", err)
 		return nil, utils.NewForesightError(http.StatusInternalServerError, "SERVER_FS_ERROR", "error on save file")
 	}
 
-	err = s.model.SetInstanceConfig(model.DefaultInstanceConfig(uid))
-	if err != nil {
-		log.Error("create instance config: ", err)
-		return nil, utils.NewForesightError(http.StatusInternalServerError, "DB_INSERT_ERROR", "error on insert data")
-	}
-
-	instance := &model.Instance{Uuid: uid, User: s.config.User.Name, CreateTime: time.Now(), Status: "pending"}
-	err = s.model.CreateInstance(instance)
+	instance := &model.Instance{Uuid: uid, User: h.c.User.Name, CreateTime: time.Now(), Status: "pending"}
+	err = h.m.CreateInstance(instance)
 	if err != nil {
 		log.Error("create instance: ", err)
 		return nil, utils.NewForesightError(http.StatusInternalServerError, "DB_INSERT_ERROR", "error on insert data")
 	}
 
-	go s.importInstance(s.config.Pioneer, inventoryPath, uid)
+	go h.importInstance(h.c.Pioneer, inventoryPath, uid)
 
 	return instance, nil
 }
 
-func (s *Server) getInstance(r *http.Request) (*model.Instance, error) {
-	uuid := mux.Vars(r)["id"]
-
-	instance, err := s.model.GetInstance(uuid)
-	if err != nil {
-		log.Error("query instance: ", err)
-		return nil, utils.NewForesightError(http.StatusInternalServerError, "DB_QUERY_ERROR", "error on query database")
-	}
-
-	return instance, nil
-}
-
-func (s *Server) deleteInstance(r *http.Request) (*utils.SimpleResponse, error) {
-	uuid := mux.Vars(r)["id"]
-	var e error
-
-	if err := os.Remove(path.Join(s.config.Home, "inventory", uuid+".ini")); err != nil {
-		log.Error("delete inventory failed: ", err)
-		e = utils.NewForesightError(http.StatusInternalServerError, "FS_DELETE_ERROR", "error on delete file")
-	}
-
-	if err := os.Remove(path.Join(s.config.Home, "topology", uuid+".json")); err != nil {
-		log.Error("delete inventory failed: ", err)
-		// because topology.json may not exists since unsuccessful initial
-		// so do nothing here
-	}
-
-	if err := s.model.DeleteInstanceConfig(uuid); err != nil {
-		log.Error("delete instance config failed: ", err)
-		e = utils.NewForesightError(http.StatusInternalServerError, "DB_DELETE_ERROR", "error on delete data")
-	}
-
-	if err := s.model.DeleteInstance(uuid); err != nil {
-		log.Error("delete instance failed: ", err)
-		e = utils.NewForesightError(http.StatusInternalServerError, "DB_DELETE_ERROR", "error on delete data")
-	}
-
-	if e != nil {
-		return nil, e
-	} else {
-		return nil, nil
-	}
-}
-
-func (s *Server) importInstance(pioneerPath, inventoryPath, instanceId string) error {
+func (h *createInstanceHandler) importInstance(pioneerPath, inventoryPath, instanceId string) error {
 	cmd := exec.Command(pioneerPath, inventoryPath)
 	log.Info(cmd.Args)
 
@@ -120,7 +78,7 @@ func (s *Server) importInstance(pioneerPath, inventoryPath, instanceId string) e
 
 	instance := parseTopology(output)
 	if instance.Status == "success" {
-		err = utils.SaveFile(bytes.NewReader(output), path.Join(s.config.Home, "topology", instanceId+".json"))
+		err = utils.SaveFile(bytes.NewReader(output), path.Join(h.c.Home, "topology", instanceId+".json"))
 		if err != nil {
 			log.Error("save topology file: ", err)
 			return err
@@ -128,7 +86,7 @@ func (s *Server) importInstance(pioneerPath, inventoryPath, instanceId string) e
 	}
 
 	instance.Uuid = instanceId
-	return s.model.UpdateInstance(instance)
+	return h.m.UpdateInstance(instance)
 }
 
 func parseTopology(topo []byte) *model.Instance {

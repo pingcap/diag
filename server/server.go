@@ -9,9 +9,9 @@ import (
 	"path"
 
 	"github.com/pingcap/fn"
+	"github.com/pingcap/tidb-foresight/bootstrap"
 	"github.com/pingcap/tidb-foresight/log/searcher"
 	"github.com/pingcap/tidb-foresight/model"
-	"github.com/pingcap/tidb-foresight/server/bootstrap"
 	"github.com/pingcap/tidb-foresight/utils"
 	"github.com/pingcap/tidb-foresight/wraper/db"
 	log "github.com/sirupsen/logrus"
@@ -45,7 +45,7 @@ func NewServer(config *bootstrap.ForesightConfig, db db.DB) *Server {
 		} else {
 			return &ErrorMessage{
 				Status:  "UNKNOWN_ERROR",
-				Message: err.Error(),
+				Message: "make sure your request is valid",
 			}
 		}
 	})
@@ -55,7 +55,7 @@ func NewServer(config *bootstrap.ForesightConfig, db db.DB) *Server {
 	return s
 }
 
-func (s *Server) Run() error {
+func (s *Server) Run(address string) error {
 	// sync log from cluster
 	go func() {
 		log.Info("start sync log from cluster")
@@ -73,7 +73,7 @@ func (s *Server) Run() error {
 		}
 	}()
 
-	log.Info("start listen on ", s.config.Address)
+	log.Info("start listen on ", address)
 
-	return http.ListenAndServe(s.config.Address, s.Router)
+	return http.ListenAndServe(address, s.Router)
 }
