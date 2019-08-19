@@ -1,30 +1,20 @@
-import React, { useMemo, useState } from 'react';
+import React, { useState } from 'react';
 import { Table, Collapse } from 'antd';
+import { useReportItemQuery } from './use-report-item-query';
 
 const styles = require('./AutoTable.less');
 
 interface AutoTableProps {
   title?: string;
-  dataArr: object[];
   expand?: boolean;
+
+  apiUrl: string;
 }
 
-function AutoTable({ title, dataArr, expand = true }: AutoTableProps) {
+function AutoTable({ title, expand = true, apiUrl }: AutoTableProps) {
   const [collapsed, setCollapsed] = useState(!expand);
 
-  const tableColumns = useMemo(
-    () =>
-      Object.keys(dataArr[0] || {}).map(key => ({
-        title: key,
-        dataIndex: key,
-        key,
-        render: (text: any) => <pre>{text}</pre>,
-      })),
-    [dataArr],
-  );
-  const dataSource = useMemo(() => dataArr.map((item, index) => ({ ...item, key: `${index}` })), [
-    dataArr,
-  ]);
+  const [conclusion, tableColumns, dataSource] = useReportItemQuery(apiUrl);
 
   function handleCollapseChange(expandKeys: string[] | string) {
     setCollapsed(expandKeys.length === 0);
@@ -33,8 +23,24 @@ function AutoTable({ title, dataArr, expand = true }: AutoTableProps) {
   function renderHeader() {
     return (
       <strong>
-        {title} {collapsed && `(${dataArr.length})`}
+        {title} {collapsed && `(${dataSource.length})`}
       </strong>
+    );
+  }
+
+  function renderConclusion() {
+    return (
+      <ul style={{ listStyle: 'bullet' }}>
+        {conclusion.map(item => (
+          <li key={`${item.message}`}>
+            {item.status === 'abnormal' ? (
+              <p style={{ color: 'red', fontSize: '16px' }}>{item.message}</p>
+            ) : (
+              <p>{item.message}</p>
+            )}
+          </li>
+        ))}
+      </ul>
     );
   }
 
@@ -43,15 +49,18 @@ function AutoTable({ title, dataArr, expand = true }: AutoTableProps) {
       <Collapse defaultActiveKey={collapsed ? '' : 'panel'} onChange={handleCollapseChange}>
         <Collapse.Panel header={renderHeader()} key="panel">
           {!collapsed &&
-            (dataArr.length === 0 ? (
+            (tableColumns.length === 0 ? (
               'None'
             ) : (
-              <Table
-                dataSource={dataSource}
-                columns={tableColumns}
-                pagination={false}
-                scroll={{ x: true }}
-              />
+              <React.Fragment>
+                {renderConclusion()}
+                <Table
+                  dataSource={dataSource}
+                  columns={tableColumns}
+                  pagination={false}
+                  scroll={{ x: true }}
+                />
+              </React.Fragment>
             ))}
         </Collapse.Panel>
       </Collapse>

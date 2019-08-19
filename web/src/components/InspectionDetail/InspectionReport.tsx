@@ -2,7 +2,6 @@ import React from 'react';
 import moment from 'moment';
 import { IInspectionDetail } from '@/models/inspection';
 import AutoTable from './AutoTable';
-import AutoObjectTable from './AutoObjectTable';
 import {
   fillPromQLTemplate,
   RAW_METRICS_ARR,
@@ -21,9 +20,11 @@ interface InspectionReportProps {
 
 const CHART_SAMPLE_COUNT = 15;
 
-function InspectionReport({ inspection }: InspectionReportProps) {
-  const { report } = inspection;
+function genItemApiUrl(inspectionId: string, itemType: string) {
+  return `/inspections/${inspectionId}/${itemType}`;
+}
 
+function InspectionReport({ inspection }: InspectionReportProps) {
   const start = moment(inspection.scrape_begin).unix();
   const end = moment(inspection.scrape_end).unix();
   const step = Math.floor((end - start) / CHART_SAMPLE_COUNT);
@@ -55,21 +56,33 @@ function InspectionReport({ inspection }: InspectionReportProps) {
   return (
     <div style={{ marginTop: 20 }}>
       <h2>一、全局诊断</h2>
-      <AutoTable title="overview" dataArr={report.symptoms} />
+      <AutoTable title="overview" apiUrl={`/inspections/${inspection.uuid}/symptom`} />
 
       <h2>二、基本信息</h2>
-      <AutoObjectTable title="1、基本信息" data={report.basic || {}} />
-      <AutoTable title="2、数据库基本信息" dataArr={report.dbinfo || []} expand={false} />
-      <AutoTable title="3、资源信息" dataArr={report.resource || []} />
-      <AutoTable title="4、告警信息" dataArr={report.alert || []} />
-      <AutoTable title="5、慢查询信息" dataArr={report.slow_log || []} />
-      <AutoTable title="6、硬件信息" dataArr={report.hardware || []} />
-      <AutoTable title="7、软件信息" dataArr={report.software_version || []} />
-      <AutoTable title="8、软件配置信息" dataArr={report.software_config || []} expand={false} />
-      <AutoTable title="9、机器 NTP 时间同步信息" dataArr={[]} />
-      <AutoTable title="10、网络质量信息" dataArr={report.network || []} />
-      <AutoTable title="11、集群拓扑结构信息" dataArr={[]} />
-      <AutoTable title="12、demsg 信息" dataArr={report.demsg || []} expand={false} />
+      <AutoTable title="1、基本信息" apiUrl={`/inspections/${inspection.uuid}/basic`} />
+      <AutoTable
+        title="2、数据库基本信息"
+        apiUrl={genItemApiUrl(inspection.uuid, 'dbinfo')}
+        expand={false}
+      />
+      <AutoTable title="3、资源信息" apiUrl={genItemApiUrl(inspection.uuid, 'resource')} />
+      <AutoTable title="4、告警信息" apiUrl={genItemApiUrl(inspection.uuid, 'alert')} />
+      <AutoTable title="5、慢查询信息" apiUrl={genItemApiUrl(inspection.uuid, 'slowlog')} />
+      <AutoTable title="6、硬件信息" apiUrl={genItemApiUrl(inspection.uuid, 'hardware')} />
+      <AutoTable title="7、软件信息" apiUrl={genItemApiUrl(inspection.uuid, 'software')} />
+      <AutoTable
+        title="8、软件配置信息"
+        apiUrl={genItemApiUrl(inspection.uuid, 'config')}
+        expand={false}
+      />
+      <AutoTable title="9、机器 NTP 时间同步信息" apiUrl={genItemApiUrl(inspection.uuid, 'ntp')} />
+      <AutoTable title="10、网络质量信息" apiUrl={genItemApiUrl(inspection.uuid, 'network')} />
+      <AutoTable title="11、集群拓扑结构信息" apiUrl="" />
+      <AutoTable
+        title="12、dmesg 信息"
+        apiUrl={genItemApiUrl(inspection.uuid, 'dmesg')}
+        expand={false}
+      />
 
       <h2>三、监控信息</h2>
       <h3>1、全局监控</h3>
