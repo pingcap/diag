@@ -44,7 +44,7 @@ func (h *getNtpInfoHandler) getInspectionNtpInfo(r *http.Request) (map[string]in
 			})
 			data = append(data, map[string]interface{}{
 				"node_ip": ntp.NodeIp,
-				"value": map[string]interface{}{
+				"offset": map[string]interface{}{
 					"value":    ntp.Offset,
 					"abnormal": true,
 					"message":  "exceeded the threshold (500ms)",
@@ -53,7 +53,7 @@ func (h *getNtpInfoHandler) getInspectionNtpInfo(r *http.Request) (map[string]in
 		} else {
 			data = append(data, map[string]interface{}{
 				"node_ip": ntp.NodeIp,
-				"value":   ntp.Offset,
+				"offset":  ntp.Offset,
 			})
 		}
 	}

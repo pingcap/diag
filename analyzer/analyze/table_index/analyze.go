@@ -22,10 +22,12 @@ func (t *analyzeTask) Run(m *boot.Model, c *boot.Config) {
 	}
 
 	for _, tb := range tbs {
-		m.InsertSymptom(
-			"error",
-			fmt.Sprintf("table %s missing index in database %s", tb.Table, tb.DB),
-			"please add index for the table",
-		)
+		if tb.Index == 0 {
+			m.InsertSymptom(
+				"error",
+				fmt.Sprintf("table %s missing index in database %s", tb.Table, tb.DB),
+				"please add index for the table",
+			)
+		}
 	}
 }
