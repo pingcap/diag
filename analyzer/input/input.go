@@ -22,6 +22,7 @@ func Tasks() []interface{} {
 	tasks = append(tasks, status.ParseStatus())
 	tasks = append(tasks, resource.ParseResource())
 	tasks = append(tasks, meta.ParseMeta())
+	tasks = append(tasks, meta.CountComponent())
 	tasks = append(tasks, insight.ParseInsight())
 	tasks = append(tasks, alert.ParseAlert())
 	tasks = append(tasks, envs.ParseEnvs())
