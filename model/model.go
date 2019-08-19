@@ -7,7 +7,7 @@ import (
 	"github.com/pingcap/tidb-foresight/model/logs"
 	"github.com/pingcap/tidb-foresight/model/profile"
 	"github.com/pingcap/tidb-foresight/model/report"
-	"github.com/pingcap/tidb-foresight/wraper/db"
+	"github.com/pingcap/tidb-foresight/wrapper/db"
 )
 
 type ReportModel = report.Model

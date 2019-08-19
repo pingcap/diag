@@ -2,7 +2,7 @@ package profile
 
 import (
 	"github.com/pingcap/tidb-foresight/model/inspection"
-	"github.com/pingcap/tidb-foresight/wraper/db"
+	"github.com/pingcap/tidb-foresight/wrapper/db"
 )
 
 type Model interface {

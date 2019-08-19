@@ -2,7 +2,7 @@ package bootstrap
 
 import (
 	_ "github.com/mattn/go-sqlite3"
-	"github.com/pingcap/tidb-foresight/wraper/db"
+	"github.com/pingcap/tidb-foresight/wrapper/db"
 	log "github.com/sirupsen/logrus"
 )
 

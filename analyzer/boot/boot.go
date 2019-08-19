@@ -3,7 +3,7 @@ package boot
 import (
 	"github.com/pingcap/tidb-foresight/bootstrap"
 	"github.com/pingcap/tidb-foresight/model"
-	"github.com/pingcap/tidb-foresight/wraper/db"
+	"github.com/pingcap/tidb-foresight/wrapper/db"
 )
 
 const (
