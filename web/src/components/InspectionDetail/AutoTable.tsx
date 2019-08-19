@@ -30,7 +30,7 @@ function AutoTable({ title, expand = true, apiUrl }: AutoTableProps) {
 
   function renderConclusion() {
     return (
-      <ul style={{ listStyle: 'bullet' }}>
+      <ul className={styles.conclusion_list}>
         {conclusion.map(item => (
           <li key={`${item.message}`}>
             {item.status === 'abnormal' ? (
@@ -53,12 +53,12 @@ function AutoTable({ title, expand = true, apiUrl }: AutoTableProps) {
               'None'
             ) : (
               <React.Fragment>
-                {renderConclusion()}
+                {conclusion.length > 0 && renderConclusion()}
                 <Table
                   dataSource={dataSource}
                   columns={tableColumns}
                   pagination={false}
-                  scroll={{ x: true }}
+                  scroll={{ x: true, y: 600 }}
                 />
               </React.Fragment>
             ))}
