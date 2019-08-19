@@ -22,7 +22,7 @@ func (h *getSlowLogHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	fn.Wrap(h.getInspectionSlowLog).ServeHTTP(w, r)
 }
 
-func (h *getSlowLogHandler) getInspectionSlowLog(r *http.Request) ([]*model.SlowLogInfo, utils.StatusError) {
+func (h *getSlowLogHandler) getInspectionSlowLog(r *http.Request) (map[string]interface{}, utils.StatusError) {
 	inspectionId := mux.Vars(r)["id"]
 	info, err := h.m.GetInspectionSlowLog(inspectionId)
 	if err != nil {
@@ -30,5 +30,8 @@ func (h *getSlowLogHandler) getInspectionSlowLog(r *http.Request) ([]*model.Slow
 		return nil, utils.NewForesightError(http.StatusInternalServerError, "DB_QUERY_ERROR", "error on query data")
 	}
 
-	return info, nil
+	return map[string]interface{}{
+		"conclusion": []interface{}{},
+		"data":       info,
+	}, nil
 }

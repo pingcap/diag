@@ -1,7 +1,7 @@
 package report
 
 type DBInfo struct {
-	InspectionId string
+	InspectionId string `json:"-"`
 	DB           string `json:"schema"`
 	Table        string `json:"table"`
 	Index        int    `json:"index"`

@@ -7,14 +7,6 @@ import (
 	"github.com/pingcap/tidb-foresight/model"
 )
 
-type LogInstanceLister interface {
-	ListLogInstances(ids []string) ([]*model.LogEntity, error)
-}
-
-type LogFileLister interface {
-	ListLogFiles(ids []string) ([]*model.LogEntity, error)
-}
-
 type LogSearcher interface {
 	Search(dir string, begin, end time.Time, level, text, token string) (parser.Iterator, string, error)
 }

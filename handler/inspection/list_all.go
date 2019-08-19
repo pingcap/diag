@@ -5,15 +5,16 @@ import (
 	"strconv"
 
 	"github.com/pingcap/fn"
+	"github.com/pingcap/tidb-foresight/model"
 	"github.com/pingcap/tidb-foresight/utils"
 	log "github.com/sirupsen/logrus"
 )
 
 type listAllInspectionHandler struct {
-	m AllInspectionLister
+	m model.Model
 }
 
-func ListAllInspection(m AllInspectionLister) http.Handler {
+func ListAllInspection(m model.Model) http.Handler {
 	return &listAllInspectionHandler{m}
 }
 

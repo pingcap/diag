@@ -8,16 +8,17 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/pingcap/fn"
 	"github.com/pingcap/tidb-foresight/bootstrap"
+	"github.com/pingcap/tidb-foresight/model"
 	"github.com/pingcap/tidb-foresight/utils"
 	log "github.com/sirupsen/logrus"
 )
 
 type listProfileHandler struct {
 	c *bootstrap.ForesightConfig
-	m ProfileLister
+	m model.Model
 }
 
-func ListProfile(c *bootstrap.ForesightConfig, m ProfileLister) http.Handler {
+func ListProfile(c *bootstrap.ForesightConfig, m model.Model) http.Handler {
 	return &listProfileHandler{c, m}
 }
 

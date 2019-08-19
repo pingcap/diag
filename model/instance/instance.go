@@ -21,7 +21,7 @@ type Instance struct {
 func (m *instance) ListInstance() ([]*Instance, error) {
 	insts := []*Instance{}
 
-	if err := m.db.Find(&insts).Error(); err != nil {
+	if err := m.db.Order("create_time desc").Find(&insts).Error(); err != nil {
 		return nil, err
 	}
 

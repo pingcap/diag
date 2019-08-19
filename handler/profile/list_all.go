@@ -7,16 +7,17 @@ import (
 
 	"github.com/pingcap/fn"
 	"github.com/pingcap/tidb-foresight/bootstrap"
+	"github.com/pingcap/tidb-foresight/model"
 	"github.com/pingcap/tidb-foresight/utils"
 	log "github.com/sirupsen/logrus"
 )
 
 type listAllProfileHandler struct {
 	c *bootstrap.ForesightConfig
-	m AllProfileLister
+	m model.Model
 }
 
-func ListAllProfile(c *bootstrap.ForesightConfig, m AllProfileLister) http.Handler {
+func ListAllProfile(c *bootstrap.ForesightConfig, m model.Model) http.Handler {
 	return &listAllProfileHandler{c, m}
 }
 

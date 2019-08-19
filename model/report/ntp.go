@@ -2,8 +2,8 @@ package report
 
 type NtpInfo struct {
 	InspectionId string
-	NodeIp       string  `json:"node_ip"`
-	Offset       float64 `json:"offset"`
+	NodeIp       string
+	Offset       float64
 }
 
 func (m *report) GetInspectionNtpInfo(inspectionId string) ([]*NtpInfo, error) {

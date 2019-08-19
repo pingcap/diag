@@ -22,7 +22,7 @@ func (h *getConfigInfoHandler) ServeHTTP(w http.ResponseWriter, r *http.Request)
 	fn.Wrap(h.getInspectionConfigInfo).ServeHTTP(w, r)
 }
 
-func (h *getConfigInfoHandler) getInspectionConfigInfo(r *http.Request) ([]*model.ConfigInfo, utils.StatusError) {
+func (h *getConfigInfoHandler) getInspectionConfigInfo(r *http.Request) (map[string]interface{}, utils.StatusError) {
 	inspectionId := mux.Vars(r)["id"]
 	info, err := h.m.GetInspectionConfigInfo(inspectionId)
 	if err != nil {
@@ -30,5 +30,8 @@ func (h *getConfigInfoHandler) getInspectionConfigInfo(r *http.Request) ([]*mode
 		return nil, utils.NewForesightError(http.StatusInternalServerError, "DB_QUERY_ERROR", "error on query data")
 	}
 
-	return info, nil
+	return map[string]interface{}{
+		"conclusion": []interface{}{},
+		"data":       info,
+	}, nil
 }

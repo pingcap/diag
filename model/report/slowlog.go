@@ -5,7 +5,7 @@ import (
 )
 
 type SlowLogInfo struct {
-	InspectionId string
+	InspectionId string    `json:"-"`
 	Time         time.Time `json:"time"`
 	Query        string    `json:"query"`
 }

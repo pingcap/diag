@@ -1,7 +1,7 @@
 package report
 
 type NetworkInfo struct {
-	InspectionId string
+	InspectionId string `json:"-"`
 	NodeIp       string `json:"node_ip"`
 	Connections  int64  `json:"connections"`
 	Recv         int64  `json:"recv"`

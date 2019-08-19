@@ -2,9 +2,10 @@ package report
 
 type ResourceInfo struct {
 	InspectionId string
-	Name         string  `json:"resource"`
-	Duration     string  `json:"duration"`
-	Value        float64 `json:"value"`
+	Name         string
+	Duration     string
+	Value        float64
+	Status       string
 }
 
 func (m *report) GetInspectionResourceInfo(inspectionId string) ([]*ResourceInfo, error) {

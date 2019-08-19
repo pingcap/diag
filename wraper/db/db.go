@@ -27,6 +27,7 @@ type DB interface {
 	Offset(offset interface{}) DB
 	Limit(limit interface{}) DB
 	Count(value interface{}) DB
+	Order(value interface{}, reorder ...bool) DB
 	Update(attrs ...interface{}) DB
 	Updates(values interface{}, ignoreProtectedAttrs ...bool) DB
 	Model(value interface{}) DB
@@ -69,6 +70,10 @@ func (db *wrapedDB) Offset(offset interface{}) DB {
 
 func (db *wrapedDB) Limit(limit interface{}) DB {
 	return wrap(db.DB.Limit(limit))
+}
+
+func (db *wrapedDB) Order(value interface{}, reorder ...bool) DB {
+	return wrap(db.DB.Order(value, reorder...))
 }
 
 func (db *wrapedDB) Update(attrs ...interface{}) DB {

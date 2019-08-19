@@ -1,7 +1,7 @@
 package report
 
 type Item struct {
-	InspectionId string
+	InspectionId string `json:"-"`
 	Name         string `json:"name"`
 	Status       string `json:"status"`
 	Messages     string `json:"messages"`

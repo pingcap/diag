@@ -1,7 +1,7 @@
 package report
 
 type SoftwareInfo struct {
-	InspectionId string
+	InspectionId string `json:"-"`
 	NodeIp       string `json:"node_ip"`
 	Component    string `json:"component"`
 	Version      string `json:"version"`

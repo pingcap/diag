@@ -1,7 +1,7 @@
 package report
 
 type DmesgLog struct {
-	InspectionId string
+	InspectionId string `json:"-"`
 	NodeIp       string `json:"node_ip"`
 	Log          string `json:"log"`
 }

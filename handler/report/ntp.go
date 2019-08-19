@@ -2,6 +2,7 @@ package report
 
 import (
 	"fmt"
+	"math"
 	"net/http"
 
 	"github.com/gorilla/mux"
@@ -29,14 +30,14 @@ func (h *getNtpInfoHandler) getInspectionNtpInfo(r *http.Request) (map[string]in
 	inspectionId := mux.Vars(r)["id"]
 	ntps, err := h.m.GetInspectionNtpInfo(inspectionId)
 	if err != nil {
-		log.Error("get inspection slow log:", err)
+		log.Error("get inspection ntp info:", err)
 		return nil, utils.NewForesightError(http.StatusInternalServerError, "DB_QUERY_ERROR", "error on query data")
 	}
 
 	conclusions := make([]map[string]interface{}, 0)
 	data := make([]map[string]interface{}, 0)
 	for _, ntp := range ntps {
-		if ntp.Offset > NTP_TRESHHOLD {
+		if math.Abs(ntp.Offset) > NTP_TRESHHOLD {
 			conclusions = append(conclusions, map[string]interface{}{
 				"status":  "abnormal",
 				"message": fmt.Sprintf("ntp offset of node %s exceeded the threshold (500ms)", ntp.NodeIp),

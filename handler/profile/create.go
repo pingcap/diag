@@ -18,10 +18,10 @@ import (
 
 type createProfileHandler struct {
 	c *bootstrap.ForesightConfig
-	m ProfileCreator
+	m model.Model
 }
 
-func CreateProfile(c *bootstrap.ForesightConfig, m ProfileCreator) http.Handler {
+func CreateProfile(c *bootstrap.ForesightConfig, m model.Model) http.Handler {
 	return &createProfileHandler{c, m}
 }
 
