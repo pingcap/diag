@@ -98,6 +98,7 @@ func (s *Server) CreateRouter() http.Handler {
 	// report
 	r.Handle("/api/v1/inspections/{id}/symptom", report.Symptom(s.model)).Methods("GET")
 	r.Handle("/api/v1/inspections/{id}/basic", report.BasicInfo(s.model)).Methods("GET")
+	r.Handle("/api/v1/inspections/{id}/dbinfo", report.DBInfo(s.model)).Methods("GET")
 	r.Handle("/api/v1/inspections/{id}/slowlog", report.SlowLog(s.model)).Methods("GET")
 	r.Handle("/api/v1/inspections/{id}/alert", report.AlertInfo(s.model)).Methods("GET")
 	r.Handle("/api/v1/inspections/{id}/config", report.ConfigInfo(s.model)).Methods("GET")

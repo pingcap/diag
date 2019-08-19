@@ -22,7 +22,7 @@ type profile struct {
 func (m *profile) ListAllProfiles(page, size int64, profDir string) ([]*Profile, int, error) {
 	profs := []*Profile{}
 	insps := []*inspection.Inspection{}
-	query := m.db.Model(&inspection.Inspection{}).Where(PROF_FILTER)
+	query := m.db.Model(&inspection.Inspection{}).Where(PROF_FILTER).Order("create_time desc")
 
 	if err := query.Offset((page - 1) * size).Limit(size).Find(&insps).Error(); err != nil {
 		return nil, 0, err
@@ -48,7 +48,10 @@ func (m *profile) ListAllProfiles(page, size int64, profDir string) ([]*Profile,
 func (m *profile) ListProfiles(instanceId string, page, size int64, profDir string) ([]*Profile, int, error) {
 	profs := []*Profile{}
 	insps := []*inspection.Inspection{}
-	query := m.db.Model(&inspection.Inspection{}).Where(PROF_FILTER).Where(&inspection.Inspection{InstanceId: instanceId})
+	query := m.db.Model(&inspection.Inspection{}).
+		Where(PROF_FILTER).
+		Where(&inspection.Inspection{InstanceId: instanceId}).
+		Order("create_time desc")
 
 	if err := query.Offset((page - 1) * size).Limit(size).Find(&insps).Error(); err != nil {
 		return nil, 0, err

@@ -22,7 +22,7 @@ func (h *getSymptomHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	fn.Wrap(h.getInspectionSymptom).ServeHTTP(w, r)
 }
 
-func (h *getSymptomHandler) getInspectionSymptom(r *http.Request) ([]*model.Symptom, utils.StatusError) {
+func (h *getSymptomHandler) getInspectionSymptom(r *http.Request) (map[string]interface{}, utils.StatusError) {
 	inspectionId := mux.Vars(r)["id"]
 	info, err := h.m.GetInspectionSymptoms(inspectionId)
 	if err != nil {
@@ -30,5 +30,8 @@ func (h *getSymptomHandler) getInspectionSymptom(r *http.Request) ([]*model.Symp
 		return nil, utils.NewForesightError(http.StatusInternalServerError, "DB_QUERY_ERROR", "error on query data")
 	}
 
-	return info, nil
+	return map[string]interface{}{
+		"conclusion": []interface{}{},
+		"data":       info,
+	}, nil
 }

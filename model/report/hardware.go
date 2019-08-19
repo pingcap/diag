@@ -1,7 +1,7 @@
 package report
 
 type HardwareInfo struct {
-	InspectionId string
+	InspectionId string `json:"-"`
 	NodeIp       string `json:"node_ip"`
 	Cpu          string `json:"cpu"`
 	Memory       string `json:"memory"`

@@ -5,7 +5,7 @@ import (
 )
 
 type AlertInfo struct {
-	InspectionId string
+	InspectionId string    `json:"-"`
 	Name         string    `json:"name"`
 	Value        string    `json:"value"`
 	Time         time.Time `json:"time"`

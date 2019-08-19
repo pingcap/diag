@@ -9,6 +9,8 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+const THRESHOLD = 20
+
 type saveResourceTask struct {
 }
 
@@ -35,10 +37,15 @@ func (t *saveResourceTask) Run(c *boot.Config, r *resource.Resource, args *args.
 }
 
 func (t *saveResourceTask) insertData(m *boot.Model, inspectionId, resource, duration string, value float64) error {
+	status := "normal"
+	if value > THRESHOLD {
+		status = "abnormal"
+	}
 	return m.InsertInspectionResourceInfo(&model.ResourceInfo{
 		InspectionId: inspectionId,
 		Name:         resource,
 		Duration:     duration,
 		Value:        value,
+		Status:       status,
 	})
 }

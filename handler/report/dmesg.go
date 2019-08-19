@@ -22,13 +22,16 @@ func (h *getDmesgHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	fn.Wrap(h.getInspectionDmesg).ServeHTTP(w, r)
 }
 
-func (h *getDmesgHandler) getInspectionDmesg(r *http.Request) ([]*model.DmesgLog, utils.StatusError) {
+func (h *getDmesgHandler) getInspectionDmesg(r *http.Request) (map[string]interface{}, utils.StatusError) {
 	inspectionId := mux.Vars(r)["id"]
 	info, err := h.m.GetInspectionDmesg(inspectionId)
 	if err != nil {
-		log.Error("get inspection slow log:", err)
+		log.Error("get inspection dmesg:", err)
 		return nil, utils.NewForesightError(http.StatusInternalServerError, "DB_QUERY_ERROR", "error on query data")
 	}
 
-	return info, nil
+	return map[string]interface{}{
+		"conclusion": []interface{}{},
+		"data":       info,
+	}, nil
 }

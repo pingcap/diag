@@ -12,10 +12,10 @@ import (
 
 type importInspectionHandler struct {
 	c *bootstrap.ForesightConfig
-	m InspectionImportor
+	m model.Model
 }
 
-func ImportInspection(c *bootstrap.ForesightConfig, m InspectionImportor) http.Handler {
+func ImportInspection(c *bootstrap.ForesightConfig, m model.Model) http.Handler {
 	return &importInspectionHandler{c, m}
 }
 

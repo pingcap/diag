@@ -1,6 +1,7 @@
 package report
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/gorilla/mux"
@@ -22,13 +23,42 @@ func (h *getResourceInfoHandler) ServeHTTP(w http.ResponseWriter, r *http.Reques
 	fn.Wrap(h.getInspectionResourceInfo).ServeHTTP(w, r)
 }
 
-func (h *getResourceInfoHandler) getInspectionResourceInfo(r *http.Request) ([]*model.ResourceInfo, utils.StatusError) {
+func (h *getResourceInfoHandler) getInspectionResourceInfo(r *http.Request) (map[string]interface{}, utils.StatusError) {
 	inspectionId := mux.Vars(r)["id"]
 	info, err := h.m.GetInspectionResourceInfo(inspectionId)
 	if err != nil {
-		log.Error("get inspection slow log:", err)
+		log.Error("get inspection resource info:", err)
 		return nil, utils.NewForesightError(http.StatusInternalServerError, "DB_QUERY_ERROR", "error on query data")
 	}
 
-	return info, nil
+	conclusions := make([]map[string]interface{}, 0)
+	data := make([]map[string]interface{}, 0)
+	for _, res := range info {
+		if res.Status == "abnormal" {
+			conclusions = append(conclusions, map[string]interface{}{
+				"status":  "abnormal",
+				"message": fmt.Sprintf("%s Resource utilization/%s too high", res.Name, res.Duration),
+			})
+			data = append(data, map[string]interface{}{
+				"name":     res.Name,
+				"duration": res.Duration,
+				"value": map[string]interface{}{
+					"value":    res.Value,
+					"abnormal": true,
+					"message":  "too high",
+				},
+			})
+		} else {
+			data = append(data, map[string]interface{}{
+				"name":     res.Name,
+				"duration": res.Duration,
+				"value":    res.Value,
+			})
+		}
+	}
+
+	return map[string]interface{}{
+		"conclusion": conclusions,
+		"data":       data,
+	}, nil
 }

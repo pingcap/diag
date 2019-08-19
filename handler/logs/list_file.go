@@ -14,10 +14,10 @@ import (
 
 type listFileHandler struct {
 	c *bootstrap.ForesightConfig
-	m LogFileLister
+	m model.Model
 }
 
-func ListFile(c *bootstrap.ForesightConfig, m LogFileLister) http.Handler {
+func ListFile(c *bootstrap.ForesightConfig, m model.Model) http.Handler {
 	return &listFileHandler{c, m}
 }
 

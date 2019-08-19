@@ -22,13 +22,16 @@ func (h *getHardwareInfoHandler) ServeHTTP(w http.ResponseWriter, r *http.Reques
 	fn.Wrap(h.getInspectionHardwareInfo).ServeHTTP(w, r)
 }
 
-func (h *getHardwareInfoHandler) getInspectionHardwareInfo(r *http.Request) ([]*model.HardwareInfo, utils.StatusError) {
+func (h *getHardwareInfoHandler) getInspectionHardwareInfo(r *http.Request) (map[string]interface{}, utils.StatusError) {
 	inspectionId := mux.Vars(r)["id"]
 	info, err := h.m.GetInspectionHardwareInfo(inspectionId)
 	if err != nil {
-		log.Error("get inspection slow log:", err)
+		log.Error("get inspection hardware info:", err)
 		return nil, utils.NewForesightError(http.StatusInternalServerError, "DB_QUERY_ERROR", "error on query data")
 	}
 
-	return info, nil
+	return map[string]interface{}{
+		"conclusion": []interface{}{},
+		"data":       info,
+	}, nil
 }

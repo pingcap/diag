@@ -14,10 +14,10 @@ import (
 
 type getProfileHandler struct {
 	c *bootstrap.ForesightConfig
-	m ProfileGeter
+	m model.Model
 }
 
-func GetProfile(c *bootstrap.ForesightConfig, m ProfileGeter) http.Handler {
+func GetProfile(c *bootstrap.ForesightConfig, m model.Model) http.Handler {
 	return &getProfileHandler{c, m}
 }
 

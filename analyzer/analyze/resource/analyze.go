@@ -7,8 +7,6 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-const THRESHOLD = 20
-
 type analyzeTask struct{}
 
 func Analyze() *analyzeTask {
@@ -24,8 +22,8 @@ func (t *analyzeTask) Run(m *boot.Model, c *boot.Config) {
 	}
 
 	for _, res := range resources {
-		if res.Value > THRESHOLD {
-			msg := fmt.Sprintf("%s Resource utilization/%s exceeds %d%%", res.Name, res.Duration, THRESHOLD)
+		if res.Status == "abnormal" {
+			msg := fmt.Sprintf("%s Resource utilization/%s too high", res.Name, res.Duration)
 			defer m.InsertSymptom(
 				"error",
 				msg,

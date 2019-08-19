@@ -5,7 +5,7 @@ import (
 )
 
 type BasicInfo struct {
-	InspectionId      string
+	InspectionId      string    `json:"-"`
 	ClusterName       string    `json:"cluster_name"`
 	ClusterCreateTime time.Time `json:"cluster_create_time"`
 	InspectTime       time.Time `json:"inspect_time"`

@@ -14,10 +14,10 @@ import (
 
 type listInstanceHandler struct {
 	c *bootstrap.ForesightConfig
-	m LogInstanceLister
+	m model.Model
 }
 
-func ListInstance(c *bootstrap.ForesightConfig, m LogInstanceLister) http.Handler {
+func ListInstance(c *bootstrap.ForesightConfig, m model.Model) http.Handler {
 	return &listInstanceHandler{c, m}
 }
 

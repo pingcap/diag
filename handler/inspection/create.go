@@ -20,10 +20,10 @@ import (
 
 type createInspectionHandler struct {
 	c *bootstrap.ForesightConfig
-	m InspectionCreator
+	m model.Model
 }
 
-func CreateInspection(c *bootstrap.ForesightConfig, m InspectionCreator) http.Handler {
+func CreateInspection(c *bootstrap.ForesightConfig, m model.Model) http.Handler {
 	return &createInspectionHandler{c, m}
 }
 

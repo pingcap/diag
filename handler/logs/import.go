@@ -12,10 +12,10 @@ import (
 
 type importLogHandler struct {
 	c *bootstrap.ForesightConfig
-	m LogImportor
+	m model.Model
 }
 
-func ImportLog(c *bootstrap.ForesightConfig, m LogImportor) http.Handler {
+func ImportLog(c *bootstrap.ForesightConfig, m model.Model) http.Handler {
 	return &importLogHandler{c, m}
 }
 

@@ -1,7 +1,7 @@
 package report
 
 type Symptom struct {
-	InspectionId string
+	InspectionId string `json:"-"`
 	Status       string `json:"status"`
 	Message      string `json:"message"`
 	Description  string `json:"description"`

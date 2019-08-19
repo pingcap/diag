@@ -1,7 +1,7 @@
 package report
 
 type ConfigInfo struct {
-	InspectionId string
+	InspectionId string `json:"-"`
 	NodeIp       string `json:"node_ip"`
 	Port         string `json:"port"`
 	Component    string `json:"component"`

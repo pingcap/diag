@@ -11,10 +11,10 @@ import (
 )
 
 type getInspectionHandler struct {
-	m InspectionGeter
+	m model.Model
 }
 
-func GetInspection(m InspectionGeter) http.Handler {
+func GetInspection(m model.Model) http.Handler {
 	return &getInspectionHandler{m}
 }
 

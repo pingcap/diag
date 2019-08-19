@@ -15,10 +15,10 @@ import (
 
 type deleteInspectionHandler struct {
 	c *bootstrap.ForesightConfig
-	m InspectionDeletor
+	m model.Model
 }
 
-func DeleteInspection(c *bootstrap.ForesightConfig, m InspectionDeletor) http.Handler {
+func DeleteInspection(c *bootstrap.ForesightConfig, m model.Model) http.Handler {
 	return &deleteInspectionHandler{c, m}
 }
 

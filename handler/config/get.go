@@ -11,10 +11,10 @@ import (
 )
 
 type getConfigHandler struct {
-	m ConfigGeter
+	m model.Model
 }
 
-func GetConfig(m ConfigGeter) http.Handler {
+func GetConfig(m model.Model) http.Handler {
 	return &getConfigHandler{m}
 }
 
