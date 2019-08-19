@@ -5,16 +5,16 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/pingcap/fn"
-	"github.com/pingcap/tidb-foresight/model/report"
+	"github.com/pingcap/tidb-foresight/model"
 	"github.com/pingcap/tidb-foresight/utils"
 	log "github.com/sirupsen/logrus"
 )
 
 type getSymptomHandler struct {
-	m SymptomGeter
+	m model.Model
 }
 
-func Symptom(m SymptomGeter) http.Handler {
+func Symptom(m model.Model) http.Handler {
 	return &getSymptomHandler{m}
 }
 
@@ -22,7 +22,7 @@ func (h *getSymptomHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	fn.Wrap(h.getInspectionSymptom).ServeHTTP(w, r)
 }
 
-func (h *getSymptomHandler) getInspectionSymptom(r *http.Request) ([]*report.Symptom, utils.StatusError) {
+func (h *getSymptomHandler) getInspectionSymptom(r *http.Request) ([]*model.Symptom, utils.StatusError) {
 	inspectionId := mux.Vars(r)["id"]
 	info, err := h.m.GetInspectionSymptoms(inspectionId)
 	if err != nil {

@@ -17,7 +17,7 @@ func ParseMeta() *parseMetaTask {
 }
 
 // Parse meta information from meta.json
-func (t *parseMetaTask) Run(c *boot.Config, db *boot.DB) *Meta {
+func (t *parseMetaTask) Run(c *boot.Config, m *boot.Model) *Meta {
 	content, err := ioutil.ReadFile(path.Join(c.Src, "meta.json"))
 	if err != nil {
 		if !os.IsNotExist(err) {
@@ -29,7 +29,7 @@ func (t *parseMetaTask) Run(c *boot.Config, db *boot.DB) *Meta {
 	meta := &Meta{}
 	if err = json.Unmarshal(content, meta); err != nil {
 		log.Error("unmarshal:", err)
-		db.InsertSymptom(c.InspectionId, "exception", "parse meta.json", "contact developer")
+		m.InsertSymptom("exception", "parse meta.json", "contact developer")
 		return nil
 	}
 

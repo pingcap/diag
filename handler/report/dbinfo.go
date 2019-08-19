@@ -5,16 +5,16 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/pingcap/fn"
-	"github.com/pingcap/tidb-foresight/model/report"
+	"github.com/pingcap/tidb-foresight/model"
 	"github.com/pingcap/tidb-foresight/utils"
 	log "github.com/sirupsen/logrus"
 )
 
 type getDBInfoHandler struct {
-	m DBInfoGeter
+	m model.Model
 }
 
-func DBInfo(m DBInfoGeter) http.Handler {
+func DBInfo(m model.Model) http.Handler {
 	return &getDBInfoHandler{m}
 }
 
@@ -22,7 +22,7 @@ func (h *getDBInfoHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	fn.Wrap(h.getInspectionDBInfo).ServeHTTP(w, r)
 }
 
-func (h *getDBInfoHandler) getInspectionDBInfo(r *http.Request) ([]*report.DBInfo, utils.StatusError) {
+func (h *getDBInfoHandler) getInspectionDBInfo(r *http.Request) ([]*model.DBInfo, utils.StatusError) {
 	inspectionId := mux.Vars(r)["id"]
 	info, err := h.m.GetInspectionDBInfo(inspectionId)
 	if err != nil {

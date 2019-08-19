@@ -5,16 +5,16 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/pingcap/fn"
-	"github.com/pingcap/tidb-foresight/model/report"
+	"github.com/pingcap/tidb-foresight/model"
 	"github.com/pingcap/tidb-foresight/utils"
 	log "github.com/sirupsen/logrus"
 )
 
 type getHardwareInfoHandler struct {
-	m HardwareInfoGeter
+	m model.Model
 }
 
-func HardwareInfo(m HardwareInfoGeter) http.Handler {
+func HardwareInfo(m model.Model) http.Handler {
 	return &getHardwareInfoHandler{m}
 }
 
@@ -22,7 +22,7 @@ func (h *getHardwareInfoHandler) ServeHTTP(w http.ResponseWriter, r *http.Reques
 	fn.Wrap(h.getInspectionHardwareInfo).ServeHTTP(w, r)
 }
 
-func (h *getHardwareInfoHandler) getInspectionHardwareInfo(r *http.Request) ([]*report.HardwareInfo, utils.StatusError) {
+func (h *getHardwareInfoHandler) getInspectionHardwareInfo(r *http.Request) ([]*model.HardwareInfo, utils.StatusError) {
 	inspectionId := mux.Vars(r)["id"]
 	info, err := h.m.GetInspectionHardwareInfo(inspectionId)
 	if err != nil {

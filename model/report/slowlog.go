@@ -2,39 +2,28 @@ package report
 
 import (
 	"time"
-
-	"github.com/pingcap/tidb-foresight/wraper/db"
-	log "github.com/sirupsen/logrus"
 )
 
 type SlowLogInfo struct {
-	Time  time.Time `json:"time"`
-	Query string    `json:"query"`
+	InspectionId string
+	Time         time.Time `json:"time"`
+	Query        string    `json:"query"`
 }
 
-func GetSlowLogInfo(db db.DB, inspectionId string) ([]*SlowLogInfo, error) {
-	logs := []*SlowLogInfo{}
+func (m *report) GetInspectionSlowLog(inspectionId string) ([]*SlowLogInfo, error) {
+	infos := []*SlowLogInfo{}
 
-	rows, err := db.Query(
-		`SELECT time, query, COUNT(time) as c FROM inspection_slow_log WHERE inspection = ? GROUP BY query ORDER BY c LIMIT 0, 20`,
-		inspectionId,
-	)
-	if err != nil {
-		log.Error("db.Query: ", err)
-		return logs, err
+	if err := m.db.Where(&SlowLogInfo{InspectionId: inspectionId}).Find(&infos).Error(); err != nil {
+		return nil, err
 	}
 
-	for rows.Next() {
-		info := SlowLogInfo{}
-		count := 0
-		err = rows.Scan(&info.Time, &info.Query, &count)
-		if err != nil {
-			log.Error("db.Query:", err)
-			return logs, err
-		}
+	return infos, nil
+}
 
-		logs = append(logs, &info)
-	}
+func (m *report) ClearInspectionSlowLog(inspectionId string) error {
+	return m.db.Delete(&SlowLogInfo{InspectionId: inspectionId}).Error()
+}
 
-	return logs, nil
+func (m *report) InsertInspectionSlowLog(info *SlowLogInfo) error {
+	return m.db.Create(info).Error()
 }

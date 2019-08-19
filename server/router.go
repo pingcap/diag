@@ -72,6 +72,7 @@ func (s *Server) CreateRouter() http.Handler {
 	r.Handle("/api/v1/instances/{id}", instance.GetInstance(s.model)).Methods("GET")
 	r.Handle("/api/v1/instances/{id}", instance.DeleteInstance(s.config, s.model)).Methods("DELETE")
 	r.Handle("/api/v1/instances/{id}/config", config.GetConfig(s.model)).Methods("GET")
+	r.Handle("/api/v1/instances/{id}/config", config.SetConfig(s.model)).Methods("PUT")
 	r.Handle("/api/v1/instances/{id}/inspections", inspection.ListInspection(s.model)).Methods("GET")
 	r.Handle("/api/v1/instances/{id}/inspections", inspection.CreateInspection(s.config, s.model)).Methods("POST")
 	r.Handle("/api/v1/instances/{id}/perfprofiles", profile.ListProfile(s.config, s.model)).Methods("GET")
@@ -105,6 +106,7 @@ func (s *Server) CreateRouter() http.Handler {
 	r.Handle("/api/v1/inspections/{id}/network", report.NetworkInfo(s.model)).Methods("GET")
 	r.Handle("/api/v1/inspections/{id}/resource", report.ResourceInfo(s.model)).Methods("GET")
 	r.Handle("/api/v1/inspections/{id}/software", report.SoftwareInfo(s.model)).Methods("GET")
+	r.Handle("/api/v1/inspections/{id}/ntp", report.NtpInfo(s.model)).Methods("GET")
 
 	// profiles
 	r.Handle("/api/v1/perfprofiles", profile.ListAllProfile(s.config, s.model)).Methods("GET")
@@ -115,14 +117,14 @@ func (s *Server) CreateRouter() http.Handler {
 	r.Handle("/api/v1/perfprofiles", inspection.ImportInspection(s.config, s.model)).Methods("POST")
 	r.Handle("/api/v1/perfprofiles/{id}", inspection.DeleteInspection(s.config, s.model)).Methods("DELETE")
 
-	// web
-	r.PathPrefix("/").Handler(s.web("/", path.Join(s.config.Home, "web")))
-
 	// metric
 	r.PathPrefix("/api/v1/metric/").HandlerFunc(s.metric)
 
-	// all others are 404
+	// all others starts with /api/v1/ are 404
 	r.PathPrefix("/api/v1/").HandlerFunc(http.NotFound)
+
+	// web
+	r.PathPrefix("/").Handler(s.web("/", path.Join(s.config.Home, "web")))
 
 	return httpRequestMiddleware(r)
 }

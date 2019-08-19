@@ -12,19 +12,13 @@ func Analyze() *analyzeTask {
 }
 
 // Check if there is any alert from prometheus
-func (t *analyzeTask) Run(db *boot.DB, c *boot.Config) {
-	var count int
-	if err := db.QueryRow(
-		`SELECT count(*) FROM inspection_alerts WHERE inspection = ?`,
-		c.InspectionId,
-	).Scan(&count); err != nil {
-		log.Error("db.QueryRow:", err)
+func (t *analyzeTask) Run(m *boot.Model, c *boot.Config) {
+	if alerts, err := m.GetInspectionAlertInfo(c.InspectionId); err != nil {
+		log.Error("count alert info:", err)
 		return
+	} else if len(alerts) > 0 {
+		msg := "there are alert information in the cluster"
+		desc := "please check the alert information"
+		m.InsertSymptom("warning", msg, desc)
 	}
-	if count == 0 {
-		return
-	}
-	msg := "there are alert information in the cluster"
-	desc := "please check the alert information"
-	db.InsertSymptom(c.InspectionId, "warning", msg, desc)
 }

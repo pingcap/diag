@@ -17,7 +17,7 @@ import (
 type saveProfileTask struct {
 	inspectionId string
 	bin          string
-	db           *boot.DB
+	m            *boot.Model
 }
 
 func SaveProfile() *saveProfileTask {
@@ -25,11 +25,11 @@ func SaveProfile() *saveProfileTask {
 }
 
 // Save and make svg of each profile collected
-func (t *saveProfileTask) Run(c *boot.Config, db *boot.DB) {
+func (t *saveProfileTask) Run(c *boot.Config, m *boot.Model) {
 	// Setup config
 	t.inspectionId = c.InspectionId
 	t.bin = c.Bin
-	t.db = db
+	t.m = m
 
 	// eg. pd -> 172.16.5.7:2379 -> cpu.pb.gz
 	comps, err := ioutil.ReadDir(path.Join(c.Src, "profile"))
@@ -124,8 +124,7 @@ func (t *saveProfileTask) flame(src, dst string) {
 		if strings.HasSuffix(profile.Name(), ".pb.gz") {
 			if err := t.flameGo(path.Join(src, profile.Name()), path.Join(dst, profile.Name()+".svg")); err != nil {
 				log.Error("make flame:", err)
-				t.db.InsertSymptom(
-					t.inspectionId,
+				t.m.InsertSymptom(
 					"exception",
 					fmt.Sprintf("making flame for %s", profile.Name()),
 					"this error is not about the tidb cluster you are running, it's about tidb-foresight itself",
@@ -134,8 +133,7 @@ func (t *saveProfileTask) flame(src, dst string) {
 		} else if profile.Name() == "perf.data" {
 			if err := t.flameRust(path.Join(src, profile.Name()), path.Join(dst, profile.Name()+".svg")); err != nil {
 				log.Error("make flame:", err)
-				t.db.InsertSymptom(
-					t.inspectionId,
+				t.m.InsertSymptom(
 					"exception",
 					fmt.Sprintf("making flame for %s", profile.Name()),
 					"this error is not about the tidb cluster you are running, it's about tidb-foresight itself",

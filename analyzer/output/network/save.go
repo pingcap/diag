@@ -9,6 +9,7 @@ import (
 	"strconv"
 
 	"github.com/pingcap/tidb-foresight/analyzer/boot"
+	"github.com/pingcap/tidb-foresight/model"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -27,7 +28,7 @@ type netstat struct {
 }
 
 // Parse and save network information from output of netstat -s
-func (t *saveNetworkTask) Run(db *boot.DB, c *boot.Config) {
+func (t *saveNetworkTask) Run(m *boot.Model, c *boot.Config) {
 	netDir := path.Join(c.Src, "net")
 	ls, err := ioutil.ReadDir(netDir)
 	if err != nil {
@@ -46,11 +47,17 @@ func (t *saveNetworkTask) Run(db *boot.DB, c *boot.Config) {
 		if err != nil {
 			return
 		}
-		if _, err := db.Exec(
-			`INSERT INTO inspection_network(inspection, node_ip, connections, recv, send, bad_seg, retrans)
-		  VALUES(?, ?, ?, ?, ?, ?, ?)`, c.InspectionId, host, ns.connections, ns.recv, ns.send, ns.bad_seg, ns.retrans,
-		); err != nil {
-			log.Error("db.Exec:", err)
+
+		if err := m.InsertInspectionNetworkInfo(&model.NetworkInfo{
+			InspectionId: c.InspectionId,
+			NodeIp:       host,
+			Connections:  ns.connections,
+			Recv:         ns.recv,
+			Send:         ns.send,
+			BadSeg:       ns.bad_seg,
+			Retrans:      ns.retrans,
+		}); err != nil {
+			log.Error("insert network info:", err)
 			return
 		}
 	}

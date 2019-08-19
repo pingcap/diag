@@ -66,14 +66,14 @@ func (h *createInstanceHandler) createInstance(r *http.Request) (*model.Instance
 	return instance, nil
 }
 
-func (h *createInstanceHandler) importInstance(pioneerPath, inventoryPath, instanceId string) error {
+func (h *createInstanceHandler) importInstance(pioneerPath, inventoryPath, instanceId string) {
 	cmd := exec.Command(pioneerPath, inventoryPath)
 	log.Info(cmd.Args)
 
 	output, err := cmd.Output()
 	if err != nil {
 		log.Error("error run pioneer: ", err)
-		return err
+		return
 	}
 
 	instance := parseTopology(output)
@@ -81,12 +81,15 @@ func (h *createInstanceHandler) importInstance(pioneerPath, inventoryPath, insta
 		err = utils.SaveFile(bytes.NewReader(output), path.Join(h.c.Home, "topology", instanceId+".json"))
 		if err != nil {
 			log.Error("save topology file: ", err)
-			return err
+			return
 		}
 	}
 
 	instance.Uuid = instanceId
-	return h.m.UpdateInstance(instance)
+	if err := h.m.UpdateInstance(instance); err != nil {
+		log.Error("update instance:", err)
+		return
+	}
 }
 
 func parseTopology(topo []byte) *model.Instance {

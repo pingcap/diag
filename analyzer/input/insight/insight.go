@@ -55,21 +55,21 @@ type InsightInfo struct {
 			// The speed of network card
 			Speed int `json:"speed"`
 		} `json:"network"`
-		Ntp struct {
-			// Tpical value is "sync_ntp"
-			Sync string `json:"sync"`
-			// The offset between this server and ntp server
-			Offset float64 `json:"offset"`
-			// Status code of ntp
-			Status string `json:"status"`
-		} `json:"ntp"`
-		Partitions []struct {
-			// eg. sda
-			Name   string `json:"name"`
-			Subdev []struct {
-				// eg. sda1
-				Name string `json:"name"`
-			} `json:"subdev"`
-		} `json:"partitions"`
 	} `json:"sysinfo"`
+	Ntp struct {
+		// Tpical value is "sync_ntp"
+		Sync string `json:"sync"`
+		// The offset between this server and ntp server
+		Offset float64 `json:"offset"`
+		// Status code of ntp
+		Status string `json:"status"`
+	} `json:"ntp"`
+	Partitions []struct {
+		// eg. sda
+		Name   string `json:"name"`
+		Subdev []struct {
+			// eg. sda1
+			Name string `json:"name"`
+		} `json:"subdev"`
+	} `json:"partitions"`
 }

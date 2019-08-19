@@ -13,64 +13,69 @@ func ClearHistory() *clearHistoryTask {
 }
 
 // Delete records having the same inspection id for idempotency
-func (t *clearHistoryTask) Run(c *boot.Config, db *boot.DB) {
-	if _, err := db.Exec("DELETE FROM inspection_items WHERE inspection = ?", c.InspectionId); err != nil {
-		log.Error("delete inspection_items:", err)
+func (t *clearHistoryTask) Run(c *boot.Config, m *boot.Model) {
+	if err := m.ClearInspectionItem(c.InspectionId); err != nil {
+		log.Error("clear inspection item:", err)
 		return
 	}
 
-	if _, err := db.Exec("DELETE FROM inspection_symptoms WHERE inspection = ?", c.InspectionId); err != nil {
-		log.Error("delete inspection_symptoms:", err)
+	if err := m.ClearInspectionSymptom(c.InspectionId); err != nil {
+		log.Error("clear inspection symptom:", err)
 		return
 	}
 
-	if _, err := db.Exec("DELETE FROM inspection_basic_info WHERE inspection = ?", c.InspectionId); err != nil {
-		log.Error("delete inspection_basic_info:", err)
+	if err := m.ClearInspectionBasicInfo(c.InspectionId); err != nil {
+		log.Error("clear inspection basic info:", err)
 		return
 	}
 
-	if _, err := db.Exec("DELETE FROM inspection_db_info WHERE inspection = ?", c.InspectionId); err != nil {
-		log.Error("delete inspection_db_info:", err)
+	if err := m.ClearInspectionDBInfo(c.InspectionId); err != nil {
+		log.Error("clear inspection dbinfo:", err)
 		return
 	}
 
-	if _, err := db.Exec("DELETE FROM inspection_slow_log WHERE inspection = ?", c.InspectionId); err != nil {
-		log.Error("delete inspection_slow_log:", err)
+	if err := m.ClearInspectionSlowLog(c.InspectionId); err != nil {
+		log.Error("clear inspection slow log:", err)
 		return
 	}
 
-	if _, err := db.Exec("DELETE FROM inspection_network WHERE inspection = ?", c.InspectionId); err != nil {
-		log.Error("delete inspection_network:", err)
+	if err := m.ClearInspectionNetworkInfo(c.InspectionId); err != nil {
+		log.Error("clear inspection network info:", err)
 		return
 	}
 
-	if _, err := db.Exec("DELETE FROM inspection_alerts WHERE inspection = ?", c.InspectionId); err != nil {
-		log.Error("delete inspection_alerts:", err)
+	if err := m.ClearInspectionAlertInfo(c.InspectionId); err != nil {
+		log.Error("clear inspection alert info:", err)
 		return
 	}
 
-	if _, err := db.Exec("DELETE FROM inspection_hardware WHERE inspection = ?", c.InspectionId); err != nil {
-		log.Error("delete inspection_hardware:", err)
+	if err := m.ClearInspectionHardwareInfo(c.InspectionId); err != nil {
+		log.Error("clear inspection hardware info:", err)
 		return
 	}
 
-	if _, err := db.Exec("DELETE FROM inspection_dmesg WHERE inspection = ?", c.InspectionId); err != nil {
-		log.Error("delete inspection_dmesg:", err)
+	if err := m.ClearInspectionDmesgLog(c.InspectionId); err != nil {
+		log.Error("clear inspection dmesg log:", err)
 		return
 	}
 
-	if _, err := db.Exec("DELETE FROM software_version WHERE inspection = ?", c.InspectionId); err != nil {
-		log.Error("delete software_version:", err)
+	if err := m.ClearInspectionSoftwareInfo(c.InspectionId); err != nil {
+		log.Error("clear inspection software info:", err)
 		return
 	}
 
-	if _, err := db.Exec("DELETE FROM software_config WHERE inspection = ?", c.InspectionId); err != nil {
-		log.Error("delete software_config:", err)
+	if err := m.ClearInspectionConfigInfo(c.InspectionId); err != nil {
+		log.Error("clear inspection config info:", err)
 		return
 	}
 
-	if _, err := db.Exec("DELETE FROM inspection_resource WHERE inspection = ?", c.InspectionId); err != nil {
-		log.Error("delete inspection_resource:", err)
+	if err := m.ClearInspectionResourceInfo(c.InspectionId); err != nil {
+		log.Error("clear inspection resource info:", err)
+		return
+	}
+
+	if err := m.ClearInspectionNtpInfo(c.InspectionId); err != nil {
+		log.Error("clear inspection ntp info:", err)
 		return
 	}
 }

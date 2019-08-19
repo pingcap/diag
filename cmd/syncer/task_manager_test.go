@@ -1,4 +1,4 @@
-package main_test
+package main
 
 import (
 	"fmt"
@@ -23,8 +23,8 @@ func (s *taskManagerTestSuit) TestRunTasks(c *C) {
 		Cfg: RsyncConfig{
 			Args: []string{"-avz", fmt.Sprintf("--bwlimit=%d", 1000)},
 		},
-		TodoTaskCh: make(chan SyncTask, 1),
-		StopCh:     make(chan struct{}),
+		StopCh: make(chan struct{}),
+		cancel: func() {},
 	}
 	task := SyncTask{
 		Key:     "tikv_1",
@@ -51,7 +51,6 @@ func (s *taskManagerTestSuit) TestRunTasks(c *C) {
 		time.Sleep(7 * time.Second)
 		manager.Stop()
 	}()
-	manager.Start()
 }
 
 func createLogFiles(deployDir string, c *C) {

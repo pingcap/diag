@@ -3,6 +3,7 @@ package dmesg
 import (
 	"github.com/pingcap/tidb-foresight/analyzer/boot"
 	"github.com/pingcap/tidb-foresight/analyzer/input/dmesg"
+	"github.com/pingcap/tidb-foresight/model"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -13,13 +14,14 @@ func SaveDmesg() *saveDmesgTask {
 }
 
 // Save parsed dmesg logs to database
-func (t *saveDmesgTask) Run(db *boot.DB, logs *dmesg.Dmesg, c *boot.Config) {
+func (t *saveDmesgTask) Run(m *boot.Model, logs *dmesg.Dmesg, c *boot.Config) {
 	for _, dmesg := range *logs {
-		if _, err := db.Exec(
-			`INSERT INTO inspection_dmesg(inspection, node_ip, log) VALUES(?, ?, ?)`,
-			c.InspectionId, dmesg.Ip, dmesg.Log,
-		); err != nil {
-			log.Error("db.Exec:", err)
+		if err := m.InsertInspectionDmesgLog(&model.DmesgLog{
+			InspectionId: c.InspectionId,
+			NodeIp:       dmesg.Ip,
+			Log:          dmesg.Log,
+		}); err != nil {
+			log.Error("insert dmesg:", err)
 			return
 		}
 	}

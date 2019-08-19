@@ -1,7 +1,9 @@
 package db
 
 import (
-	"database/sql"
+	"github.com/jinzhu/gorm"
+
+	_ "github.com/jinzhu/gorm/dialects/sqlite"
 )
 
 const (
@@ -10,37 +12,105 @@ const (
 
 // For decoupling with sql.DB to be friendly with unit test
 type DB interface {
-	Exec(query string, args ...interface{}) (Result, error)
-	Query(query string, args ...interface{}) (Rows, error)
-	QueryRow(query string, args ...interface{}) Row
+	Where(query interface{}, args ...interface{}) DB
+	CreateTable(models ...interface{}) DB
+	Table(name string) DB
+	Take(out interface{}, where ...interface{}) DB
+	Create(value interface{}) DB
+	Find(out interface{}, where ...interface{}) DB
+	Save(value interface{}) DB
+	Error() error
+	RecordNotFound() bool
+	HasTable(value interface{}) bool
+	FirstOrCreate(out interface{}, where ...interface{}) DB
+	Delete(value interface{}, where ...interface{}) DB
+	Offset(offset interface{}) DB
+	Limit(limit interface{}) DB
+	Count(value interface{}) DB
+	Update(attrs ...interface{}) DB
+	Updates(values interface{}, ignoreProtectedAttrs ...bool) DB
+	Model(value interface{}) DB
 	Close() error
 }
 
 // Open sqlite.db and return DB interface instead of a struct
 func Open(fp string) (DB, error) {
-	if ins, err := sql.Open(SQLITE, fp); err == nil {
-		return &wrapedDB{ins}, nil
+	if ins, err := gorm.Open(SQLITE, fp); err == nil {
+		ins.LogMode(true)
+		return wrap(ins), nil
 	} else {
 		return nil, err
 	}
 }
 
+func wrap(ins *gorm.DB) DB {
+	return &wrapedDB{ins}
+}
+
 type wrapedDB struct {
-	instance *sql.DB
+	*gorm.DB
 }
 
-func (db *wrapedDB) Exec(query string, args ...interface{}) (Result, error) {
-	return db.instance.Exec(query, args...)
+func (db *wrapedDB) Model(value interface{}) DB {
+	return wrap(db.DB.Model(value))
 }
 
-func (db *wrapedDB) Query(query string, args ...interface{}) (Rows, error) {
-	return db.instance.Query(query, args...)
+func (db *wrapedDB) Table(name string) DB {
+	return wrap(db.DB.Table(name))
 }
 
-func (db *wrapedDB) QueryRow(query string, args ...interface{}) Row {
-	return db.instance.QueryRow(query, args...)
+func (db *wrapedDB) Where(query interface{}, args ...interface{}) DB {
+	return wrap(db.DB.Where(query, args...))
 }
 
-func (db *wrapedDB) Close() error {
-	return db.Close()
+func (db *wrapedDB) Offset(offset interface{}) DB {
+	return wrap(db.DB.Offset(offset))
+}
+
+func (db *wrapedDB) Limit(limit interface{}) DB {
+	return wrap(db.DB.Limit(limit))
+}
+
+func (db *wrapedDB) Update(attrs ...interface{}) DB {
+	return wrap(db.DB.Update(attrs...))
+}
+
+func (db *wrapedDB) Updates(values interface{}, ignoreProtectedAttrs ...bool) DB {
+	return wrap(db.DB.Updates(values, ignoreProtectedAttrs...))
+}
+
+func (db *wrapedDB) Count(value interface{}) DB {
+	return wrap(db.DB.Count(value))
+}
+
+func (db *wrapedDB) Take(out interface{}, where ...interface{}) DB {
+	return wrap(db.DB.Take(out, where...))
+}
+
+func (db *wrapedDB) FirstOrCreate(out interface{}, where ...interface{}) DB {
+	return wrap(db.DB.FirstOrCreate(out, where...))
+}
+
+func (db *wrapedDB) Find(out interface{}, where ...interface{}) DB {
+	return wrap(db.DB.Find(out, where...))
+}
+
+func (db *wrapedDB) Save(value interface{}) DB {
+	return wrap(db.DB.Save(value))
+}
+
+func (db *wrapedDB) Delete(value interface{}, where ...interface{}) DB {
+	return wrap(db.DB.Delete(value, where...))
+}
+
+func (db *wrapedDB) CreateTable(models ...interface{}) DB {
+	return wrap(db.DB.CreateTable(models...))
+}
+
+func (db *wrapedDB) Create(value interface{}) DB {
+	return wrap(db.DB.Create(value))
+}
+
+func (db *wrapedDB) Error() error {
+	return db.DB.Error
 }

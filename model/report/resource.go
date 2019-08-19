@@ -1,38 +1,26 @@
 package report
 
-import (
-	"github.com/pingcap/tidb-foresight/wraper/db"
-	log "github.com/sirupsen/logrus"
-)
-
 type ResourceInfo struct {
-	Name     string  `json:"resource"`
-	Duration string  `json:"duration"`
-	Value    float64 `json:"value"`
+	InspectionId string
+	Name         string  `json:"resource"`
+	Duration     string  `json:"duration"`
+	Value        float64 `json:"value"`
 }
 
-func GetResourceInfo(db db.DB, inspectionId string) ([]*ResourceInfo, error) {
-	resources := []*ResourceInfo{}
+func (m *report) GetInspectionResourceInfo(inspectionId string) ([]*ResourceInfo, error) {
+	infos := []*ResourceInfo{}
 
-	rows, err := db.Query(
-		`SELECT resource, duration, value from inspection_resource WHERE inspection = ?`,
-		inspectionId,
-	)
-	if err != nil {
-		log.Error("db.Query: ", err)
-		return resources, err
+	if err := m.db.Where(&ResourceInfo{InspectionId: inspectionId}).Find(&infos).Error(); err != nil {
+		return nil, err
 	}
 
-	for rows.Next() {
-		info := ResourceInfo{}
-		err = rows.Scan(&info.Name, &info.Duration, &info.Value)
-		if err != nil {
-			log.Error("db.Query:", err)
-			return resources, err
-		}
+	return infos, nil
+}
 
-		resources = append(resources, &info)
-	}
+func (m *report) ClearInspectionResourceInfo(inspectionId string) error {
+	return m.db.Delete(&ResourceInfo{InspectionId: inspectionId}).Error()
+}
 
-	return resources, nil
+func (m *report) InsertInspectionResourceInfo(info *ResourceInfo) error {
+	return m.db.Create(info).Error()
 }

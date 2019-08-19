@@ -12,19 +12,13 @@ func Analyze() *analyzeTask {
 }
 
 // Check if there is any slow query
-func (t *analyzeTask) Run(db *boot.DB, c *boot.Config) {
-	var count int
-	if err := db.QueryRow(
-		`SELECT count(*) FROM inspection_slow_log WHERE inspection = ?`,
-		c.InspectionId,
-	).Scan(&count); err != nil {
-		log.Error("db.QueryRow:", err)
+func (t *analyzeTask) Run(m *boot.Model, c *boot.Config) {
+	if querys, err := m.GetInspectionSlowLog(c.InspectionId); err != nil {
+		log.Error("get slow log:", err)
 		return
+	} else if len(querys) > 0 {
+		msg := "there are slow logs in the cluster"
+		desc := "please check the slow log"
+		m.InsertSymptom("warning", msg, desc)
 	}
-	if count == 0 {
-		return
-	}
-	msg := "there are slow logs in the cluster"
-	desc := "please check the slow log"
-	db.InsertSymptom(c.InspectionId, "warning", msg, desc)
 }

@@ -6,6 +6,7 @@ import (
 	"github.com/pingcap/tidb-foresight/analyzer/boot"
 	"github.com/pingcap/tidb-foresight/analyzer/input/args"
 	"github.com/pingcap/tidb-foresight/analyzer/input/status"
+	"github.com/pingcap/tidb-foresight/model"
 )
 
 const (
@@ -24,7 +25,7 @@ func SaveItems() *saveItemsTask {
 }
 
 // Save the items and their result collector collected
-func (t *saveItemsTask) Run(args *args.Args, c *boot.Config, db *boot.DB, s *status.StatusMap) {
+func (t *saveItemsTask) Run(args *args.Args, c *boot.Config, m *boot.Model, s *status.StatusMap) {
 	items := []string{
 		ITEM_BASIC, ITEM_DBINFO, ITEM_METRIC, ITEM_CONFIG, ITEM_PROFILE, ITEM_LOG,
 	}
@@ -33,19 +34,21 @@ func (t *saveItemsTask) Run(args *args.Args, c *boot.Config, db *boot.DB, s *sta
 		message := ""
 		if args.Collect(item) {
 			if s.Get(item).Status == "success" {
-				status = "running"
+				status = "success"
 			} else {
 				status = "exception"
 				message = s.Get(item).Message
 			}
 		}
 
-		if _, err := db.Exec(
-			"REPLACE INTO inspection_items(inspection, name, status, message) VALUES(?, ?, ?, ?)",
-			c.InspectionId, item, status, message,
-		); err != nil {
-			log.Error("db.Exec:", err)
-			db.InsertSymptom(c.InspectionId, "exception", "write database", "contact developer")
+		if err := m.InsertInspectionItem(&model.Item{
+			InspectionId: c.InspectionId,
+			Name:         item,
+			Status:       status,
+			Messages:     message,
+		}); err != nil {
+			log.Error("insert inspection item:", err)
+			return
 		}
 	}
 }

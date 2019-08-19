@@ -5,6 +5,7 @@ import (
 
 	"github.com/pingcap/tidb-foresight/analyzer/boot"
 	"github.com/pingcap/tidb-foresight/analyzer/input/alert"
+	"github.com/pingcap/tidb-foresight/model"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -15,7 +16,7 @@ func SaveAlert() *saveAlertTask {
 }
 
 // Save alert information to database for future presentation
-func (t *saveAlertTask) Run(c *boot.Config, alert *alert.Alert, db *boot.DB) {
+func (t *saveAlertTask) Run(c *boot.Config, alert *alert.Alert, m *boot.Model) {
 	for _, alert := range *alert {
 		if len(alert.Value) != 2 {
 			continue
@@ -30,11 +31,14 @@ func (t *saveAlertTask) Run(c *boot.Config, alert *alert.Alert, db *boot.DB) {
 			log.Error("parse value from alert failed")
 			continue
 		}
-		if _, err := db.Exec(
-			`INSERT INTO inspection_alerts(inspection, name, value, time) VALUES(?, ?, ?, ?)`,
-			c.InspectionId, alert.Metric.Name, v, time.Unix(int64(ts), 0),
-		); err != nil {
-			log.Error("db.Exec:", err)
+		info := &model.AlertInfo{
+			InspectionId: c.InspectionId,
+			Name:         alert.Metric.Name,
+			Value:        v,
+			Time:         time.Unix(int64(ts), 0),
+		}
+		if err := m.InsertInspectionAlertInfo(info); err != nil {
+			log.Error("insert alert info:", err)
 			return
 		}
 	}

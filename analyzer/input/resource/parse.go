@@ -28,14 +28,21 @@ func (t *parseResourceTask) Run(args *args.Args, c *boot.Config, m *metric.Metri
 	resource.MaxCPU = cpu.Max()
 
 	mem := t.resourceUtil(
-		fmt.Sprintf(`100 - (sum(node_memory_MemAvailable{inspectionid="%s"}) / sum(node_memory_MemTotal{inspectionid="%s"})) * 100`, c.InspectionId),
+		fmt.Sprintf(
+			`100 - (sum(node_memory_MemAvailable{inspectionid="%s"}) / sum(node_memory_MemTotal{inspectionid="%s"})) * 100`,
+			c.InspectionId,
+			c.InspectionId,
+		),
 		args.ScrapeBegin, args.ScrapeEnd,
 	)
 	resource.AvgMem = mem.Avg()
 	resource.MaxMem = mem.Max()
 
 	ioutil := t.resourceUtil(
-		fmt.Sprintf(`100 * (avg(max(rate(node_disk_io_time_ms{inspectionid="%s"}[1m]) / 1000) by (instance)))`, c.InspectionId),
+		fmt.Sprintf(
+			`100 * (avg(max(rate(node_disk_io_time_ms{inspectionid="%s"}[1m]) / 1000) by (instance)))`,
+			c.InspectionId,
+		),
 		args.ScrapeBegin, args.ScrapeEnd,
 	)
 	resource.AvgIoUtil = ioutil.Avg()
@@ -44,6 +51,7 @@ func (t *parseResourceTask) Run(args *args.Args, c *boot.Config, m *metric.Metri
 	disk := t.resourceUtil(
 		fmt.Sprintf(
 			`100 - (sum(node_filesystem_avail{fstype="ext4",inspectionid="%s"}) / sum(node_filesystem_size{fstype="ext4",inspectionid="%s"})) * 100`,
+			c.InspectionId,
 			c.InspectionId,
 		),
 		args.ScrapeBegin, args.ScrapeEnd,

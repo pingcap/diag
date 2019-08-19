@@ -17,7 +17,7 @@ func CopyLogs() *copyLogTask {
 
 // Copy logs from inspection directory to remote-log directory.
 // Because the log searcher only search remote-log directory.
-func (t *copyLogTask) Run(c *boot.Config, db *boot.DB) {
+func (t *copyLogTask) Run(c *boot.Config, m *boot.Model) {
 	if _, err := os.Stat(path.Join(c.Src, "log")); err != nil {
 		if !os.IsNotExist(err) {
 			log.Error("read log dir:", err)
@@ -30,6 +30,6 @@ func (t *copyLogTask) Run(c *boot.Config, db *boot.DB) {
 		path.Join(c.Home, "remote-log", c.InspectionId),
 	).Run(); err != nil {
 		log.Error("copy logs:", err)
-		db.InsertSymptom(c.InspectionId, "exception", "failed to copy logs", "check your disk and filesystem please.")
+		m.InsertSymptom("exception", "failed to copy logs", "check your disk and filesystem please.")
 	}
 }

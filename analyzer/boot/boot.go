@@ -1,10 +1,9 @@
 package boot
 
 import (
-	"path"
-
+	"github.com/pingcap/tidb-foresight/bootstrap"
+	"github.com/pingcap/tidb-foresight/model"
 	"github.com/pingcap/tidb-foresight/wraper/db"
-	log "github.com/sirupsen/logrus"
 )
 
 const (
@@ -19,14 +18,11 @@ type bootstrapTask struct {
 
 // Generate config and connect database
 func Bootstrap(inspectionId, home string) *bootstrapTask {
-	db, err := db.Open(path.Join(home, "sqlite.db"))
-	if err != nil {
-		log.Panic("connection database:", err)
-	}
+	_, db := bootstrap.MustInit(home)
 
 	return &bootstrapTask{inspectionId, home, db}
 }
 
-func (t *bootstrapTask) Run() (*Config, *DB) {
-	return newConfig(t.inspectionId, t.home), newDB(t.db)
+func (t *bootstrapTask) Run() (*Config, *Model) {
+	return NewConfig(t.inspectionId, t.home), NewModel(t.inspectionId, model.New(t.db))
 }

@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/pingcap/tidb-foresight/analyzer/boot"
+	"github.com/pingcap/tidb-foresight/model"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -129,7 +130,7 @@ func SaveSlowQuery() *saveSlowQueryTask {
 }
 
 // Save slow query into database.
-func (t *saveSlowQueryTask) Run(c *boot.Config, db *boot.DB) {
+func (t *saveSlowQueryTask) Run(c *boot.Config, m *boot.Model) {
 	logDir := filepath.Join(c.Src, "log")
 
 	files, err := loadSlowQueryLogFiles(logDir)
@@ -144,34 +145,32 @@ func (t *saveSlowQueryTask) Run(c *boot.Config, db *boot.DB) {
 		return
 	}
 	for _, file := range files {
-		if err := t.InsertSlowQuery(db, c.InspectionId, file, tz); err != nil {
-			return
-		}
+		t.InsertSlowQuery(m, c.InspectionId, file, tz)
 	}
 }
 
-func (t *saveSlowQueryTask) InsertSlowQuery(db *boot.DB, inspectionId string, file SlowQueryLogFile, tz *time.Location) error {
+func (t *saveSlowQueryTask) InsertSlowQuery(m *boot.Model, inspectionId string, file SlowQueryLogFile, tz *time.Location) {
 	f, err := os.Open(file.path)
 	if err != nil {
-		return err
+		log.Error("open log file:", err)
+		return
 	}
 	defer f.Close()
 	r := bufio.NewReader(f)
 	querys, err := ParseSlowQuery(tz, r)
 	if err != nil {
-		return err
+		log.Error("parse slow log:", err)
+		return
 	}
 	for _, q := range querys {
-		if _, err := db.Exec(
-			`INSERT INTO inspection_slow_log(inspection, instance, time, txn_start_ts, user, conn_id, query_time, db, digest, query, node_ip) 
-		VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, inspectionId, file.instance, q.time, q.txnStartTs, q.user, q.connID, q.queryTime, q.db, q.digest, q.sql, file.host,
-		); err != nil {
-			fmt.Printf("t.inspectionId=%s,file.instance=%s,q.digest=%s\n", inspectionId, file.instance, q.digest)
-			log.Error("db.Exec:", err)
-			return err
+		if err := m.InsertInspectionSlowLog(&model.SlowLogInfo{
+			InspectionId: inspectionId,
+			Time:         q.time,
+			Query:        q.sql,
+		}); err != nil {
+			log.Error("insert slow log info:", err)
 		}
 	}
-	return nil
 }
 
 type SlowQueryLogFile struct {

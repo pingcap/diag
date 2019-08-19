@@ -1,38 +1,26 @@
 package report
 
-import (
-	"github.com/pingcap/tidb-foresight/wraper/db"
-	log "github.com/sirupsen/logrus"
-)
-
 type SoftwareInfo struct {
-	NodeIp    string `json:"node_ip"`
-	Component string `json:"component"`
-	Version   string `json:"version"`
+	InspectionId string
+	NodeIp       string `json:"node_ip"`
+	Component    string `json:"component"`
+	Version      string `json:"version"`
 }
 
-func GetSoftwareInfo(db db.DB, inspectionId string) ([]*SoftwareInfo, error) {
+func (m *report) GetInspectionSoftwareInfo(inspectionId string) ([]*SoftwareInfo, error) {
 	infos := []*SoftwareInfo{}
 
-	rows, err := db.Query(
-		`SELECT node_ip, component, version FROM software_version WHERE inspection = ?`,
-		inspectionId,
-	)
-	if err != nil {
-		log.Error("db.Query: ", err)
-		return infos, err
-	}
-
-	for rows.Next() {
-		info := SoftwareInfo{}
-		err = rows.Scan(&info.NodeIp, &info.Component, &info.Version)
-		if err != nil {
-			log.Error("db.Query:", err)
-			return infos, err
-		}
-
-		infos = append(infos, &info)
+	if err := m.db.Where(&SoftwareInfo{InspectionId: inspectionId}).Find(&infos).Error(); err != nil {
+		return nil, err
 	}
 
 	return infos, nil
+}
+
+func (m *report) ClearInspectionSoftwareInfo(inspectionId string) error {
+	return m.db.Delete(&SoftwareInfo{InspectionId: inspectionId}).Error()
+}
+
+func (m *report) InsertInspectionSoftwareInfo(info *SoftwareInfo) error {
+	return m.db.Create(info).Error()
 }

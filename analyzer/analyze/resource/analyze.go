@@ -16,31 +16,21 @@ func Analyze() *analyzeTask {
 }
 
 // Check if the avg resource useage exceed 20%
-func (t *analyzeTask) Run(db *boot.DB, c *boot.Config) {
-	rows, err := db.Query(
-		`SELECT resource, duration FROM inspection_resource WHERE inspection = ? AND value > ?`,
-		c.InspectionId, THRESHOLD,
-	)
+func (t *analyzeTask) Run(m *boot.Model, c *boot.Config) {
+	resources, err := m.GetInspectionResourceInfo(c.InspectionId)
 	if err != nil {
-		log.Error("db.Query:", err)
+		log.Error("get resource info:", err)
 		return
 	}
-	defer rows.Close()
 
-	var resource, duration string
-	for rows.Next() {
-		if err := rows.Scan(&resource, &duration); err != nil {
-			log.Error("db.Query:", err)
-			return
+	for _, res := range resources {
+		if res.Value > THRESHOLD {
+			msg := fmt.Sprintf("%s Resource utilization/%s exceeds %d%%", res.Name, res.Duration, THRESHOLD)
+			defer m.InsertSymptom(
+				"error",
+				msg,
+				"please increase resources appropriately",
+			)
 		}
-		msg := fmt.Sprintf("%s Resource utilization/%s exceeds %d%%",
-			resource, duration, THRESHOLD)
-
-		defer db.InsertSymptom(
-			c.InspectionId,
-			"error",
-			msg,
-			"please increase resources appropriately",
-		)
 	}
 }

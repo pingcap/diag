@@ -1,38 +1,36 @@
 package report
 
-import (
-	"github.com/pingcap/tidb-foresight/wraper/db"
-	log "github.com/sirupsen/logrus"
-)
-
 type DBInfo struct {
-	DB    string `json:"schema"`
-	Table string `json:"table"`
-	Index int    `json:"index"`
+	InspectionId string
+	DB           string `json:"schema"`
+	Table        string `json:"table"`
+	Index        int    `json:"index"`
 }
 
-func GetDBInfo(db db.DB, inspectionId string) ([]*DBInfo, error) {
-	dbinfo := []*DBInfo{}
+func (m *report) GetInspectionDBInfo(inspectionId string) ([]*DBInfo, error) {
+	infos := []*DBInfo{}
 
-	rows, err := db.Query(
-		`SELECT db, tb, idx from inspection_db_info WHERE inspection = ?`,
-		inspectionId,
-	)
-	if err != nil {
-		log.Error("db.Query: ", err)
-		return dbinfo, err
+	if err := m.db.Where(&DBInfo{InspectionId: inspectionId}).Find(&infos).Error(); err != nil {
+		return nil, err
 	}
 
-	for rows.Next() {
-		info := DBInfo{}
-		err = rows.Scan(&info.DB, &info.Table, &info.Index)
-		if err != nil {
-			log.Error("db.Query:", err)
-			return dbinfo, err
-		}
+	return infos, nil
+}
 
-		dbinfo = append(dbinfo, &info)
+func (m *report) GetTablesWithoutIndex(inspectionId string) ([]*DBInfo, error) {
+	infos := []*DBInfo{}
+
+	if err := m.db.Where(&DBInfo{InspectionId: inspectionId, Index: 0}).Find(&infos).Error(); err != nil {
+		return nil, err
 	}
 
-	return dbinfo, nil
+	return infos, nil
+}
+
+func (m *report) ClearInspectionDBInfo(inspectionId string) error {
+	return m.db.Delete(&DBInfo{InspectionId: inspectionId}).Error()
+}
+
+func (m *report) InsertInspectionDBInfo(info *DBInfo) error {
+	return m.db.Create(info).Error()
 }
