@@ -36,7 +36,7 @@ func (h *createProfileHandler) createProfile(r *http.Request) (*model.Profile, u
 	instance, err := h.m.GetInstance(instanceId)
 	if err != nil {
 		log.Error("get instance:", err)
-		return nil, utils.NewForesightError(http.StatusInternalServerError, "DB_QUERY_ERROR", "error on query data")
+		return nil, utils.DatabaseQueryError
 	}
 	inspection := &model.Inspection{
 		Uuid:         inspectionId,
@@ -49,7 +49,7 @@ func (h *createProfileHandler) createProfile(r *http.Request) (*model.Profile, u
 	err = h.m.SetInspection(inspection)
 	if err != nil {
 		log.Error("set inpsection: ", err)
-		return nil, utils.NewForesightError(http.StatusInternalServerError, "DB_INSERT_ERROR", "error on insert data")
+		return nil, utils.DatabaseInsertError
 	}
 
 	go func() {

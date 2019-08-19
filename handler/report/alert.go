@@ -27,7 +27,7 @@ func (h *getAlertInfoHandler) getInspectionAlertInfo(r *http.Request) (map[strin
 	info, err := h.m.GetInspectionAlertInfo(inspectionId)
 	if err != nil {
 		log.Error("get inspection alert info:", err)
-		return nil, utils.NewForesightError(http.StatusInternalServerError, "DB_QUERY_ERROR", "error on query data")
+		return nil, utils.DatabaseQueryError
 	}
 
 	return map[string]interface{}{

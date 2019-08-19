@@ -32,7 +32,7 @@ func (h *getInstanceHandler) getInstance(r *http.Request) (*model.Instance, util
 	instance, err := h.m.GetInstance(uuid)
 	if err != nil {
 		log.Error("query instance: ", err)
-		return nil, utils.NewForesightError(http.StatusInternalServerError, "DB_QUERY_ERROR", "error on query database")
+		return nil, utils.DatabaseQueryError
 	}
 
 	return instance, nil

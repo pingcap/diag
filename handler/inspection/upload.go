@@ -35,24 +35,24 @@ func (h *uploadInspectionHandler) uploadInspection(ctx context.Context, r *http.
 		err = utils.PackInspection(h.c.Home, uuid)
 		if err != nil {
 			log.Error("pack: ", err)
-			return nil, utils.NewForesightError(http.StatusInternalServerError, "SERVER_FS_ERROR", "error on pack file")
+			return nil, utils.FileOpError
 		}
 	}
 
 	localFile, err := os.Open(path.Join(h.c.Home, "package", uuid+".tar.gz"))
 	if err != nil {
 		log.Error("read file: ", err)
-		return nil, utils.NewForesightError(http.StatusInternalServerError, "SERVER_FS_ERROR", "error on read file")
+		return nil, utils.FileOpError
 	}
 	defer localFile.Close()
 
 	if err := os.Setenv("AWS_ACCESS_KEY_ID", h.c.Aws.AccessKey); err != nil {
 		log.Error("set env: ", err)
-		return nil, utils.NewForesightError(http.StatusInternalServerError, "SERVER_ENV_ERROR", "error on set env")
+		return nil, utils.SystemOpError
 	}
 	if err := os.Setenv("AWS_SECRET_ACCESS_KEY", h.c.Aws.AccessSecret); err != nil {
 		log.Error("set env: ", err)
-		return nil, utils.NewForesightError(http.StatusInternalServerError, "SERVER_ENV_ERROR", "error on set env")
+		return nil, utils.SystemOpError
 	}
 
 	sess := session.Must(session.NewSession(&aws.Config{
@@ -67,7 +67,7 @@ func (h *uploadInspectionHandler) uploadInspection(ctx context.Context, r *http.
 	})
 	if err != nil {
 		log.Error("upload: ", err)
-		return nil, utils.NewForesightError(http.StatusInternalServerError, "SERVER_ERROR", "error on upload")
+		return nil, utils.NetworkError
 	}
 
 	return nil, nil

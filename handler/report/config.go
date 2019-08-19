@@ -27,7 +27,7 @@ func (h *getConfigInfoHandler) getInspectionConfigInfo(r *http.Request) (map[str
 	info, err := h.m.GetInspectionConfigInfo(inspectionId)
 	if err != nil {
 		log.Error("get inspection slow log:", err)
-		return nil, utils.NewForesightError(http.StatusInternalServerError, "DB_QUERY_ERROR", "error on query data")
+		return nil, utils.DatabaseQueryError
 	}
 
 	return map[string]interface{}{

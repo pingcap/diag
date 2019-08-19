@@ -57,7 +57,7 @@ func UploadInspection(home string, r *http.Request) (string, StatusError) {
 	file, handler, err := r.FormFile("file")
 	if err != nil {
 		log.Error("retrieving file: ", err)
-		return "", NewForesightError(http.StatusBadRequest, "BAD_REQUEST", "error on retrieving file")
+		return "", InvalidFile
 	}
 	defer file.Close()
 	log.Infof("file name: %+v", handler.Filename)
@@ -66,7 +66,7 @@ func UploadInspection(home string, r *http.Request) (string, StatusError) {
 
 	re := regexp.MustCompile("^([a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}).tar.gz$")
 	if !re.MatchString(handler.Filename) {
-		return "", NewForesightError(http.StatusBadRequest, "BAD_REQUEST", "invalid file name")
+		return "", InvalidFile
 	}
 	ms := re.FindStringSubmatch(handler.Filename)
 	inspectionId := ms[1]
@@ -74,14 +74,14 @@ func UploadInspection(home string, r *http.Request) (string, StatusError) {
 	localFile, err := os.Create(path.Join(home, "package", handler.Filename))
 	if err != nil {
 		log.Error("create file: ", err)
-		return "", NewForesightError(http.StatusInternalServerError, "SERVER_FS_ERROR", "error on write file")
+		return "", FileOpError
 	}
 	defer localFile.Close()
 
 	_, err = io.Copy(localFile, file)
 	if err != nil {
 		log.Error("write file", err)
-		return "", NewForesightError(http.StatusInternalServerError, "SERVER_ERROR", "error on upload file")
+		return "", FileOpError
 	}
 
 	log.Info("upload successfully")

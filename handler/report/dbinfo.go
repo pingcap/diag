@@ -27,7 +27,7 @@ func (h *getDBInfoHandler) getInspectionDBInfo(r *http.Request) (map[string]inte
 	info, err := h.m.GetInspectionDBInfo(inspectionId)
 	if err != nil {
 		log.Error("get inspection db info:", err)
-		return nil, utils.NewForesightError(http.StatusInternalServerError, "DB_QUERY_ERROR", "error on query data")
+		return nil, utils.DatabaseQueryError
 	}
 
 	return map[string]interface{}{

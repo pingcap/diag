@@ -29,7 +29,7 @@ func (h *listInstanceHandler) listLogInstance(r *http.Request) ([]*model.LogEnti
 	ls, err := ioutil.ReadDir(path.Join(h.c.Home, "remote-log"))
 	if err != nil {
 		log.Error("read dir: ", err)
-		return nil, utils.NewForesightError(http.StatusInternalServerError, "SERVER_FS_ERROR", "error on read dir")
+		return nil, utils.FileOpError
 	}
 	logs := []string{}
 	for _, l := range ls {
@@ -38,7 +38,7 @@ func (h *listInstanceHandler) listLogInstance(r *http.Request) ([]*model.LogEnti
 
 	entities, err := h.m.ListLogInstances(logs)
 	if err != nil {
-		return nil, utils.NewForesightError(http.StatusInternalServerError, "SERVER_DB_ERROR", "error on query database")
+		return nil, utils.DatabaseQueryError
 	}
 	return entities, nil
 }

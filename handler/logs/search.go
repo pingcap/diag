@@ -52,17 +52,17 @@ func (h *searchLogHandler) searchLog(r *http.Request) (*LogResult, utils.StatusE
 	)
 	if err != nil {
 		log.Error("open log: ", err)
-		return nil, utils.NewForesightError(http.StatusInternalServerError, "SERVER_FS_ERROR", "error on open file")
+		return nil, utils.FileOpError
 	}
 	if iter == nil {
-		return nil, utils.NewForesightError(http.StatusNotFound, "NOT_FOUND", "token not found")
+		return nil, utils.TargetObjectNotFound
 	}
 
 	logs := []*LogItem{}
 	for i := 0; i < int(limit); i++ {
 		if l, err := iter.Next(); err != nil {
 			log.Error("search log: ", err)
-			return nil, utils.NewForesightError(http.StatusNotFound, "SERVER_FS_ERROR", "error on read log file")
+			return nil, utils.FileOpError
 		} else if l == nil {
 			// no more logs
 			log.Info("search to end")

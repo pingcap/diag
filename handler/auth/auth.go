@@ -27,20 +27,20 @@ func Auth(ctx context.Context, r *http.Request) (context.Context, error) {
 	cookie, err := r.Cookie("tidb-foresight-auth")
 	if err != nil {
 		log.Error("parse cookie in self identity: ", err)
-		return ctx, utils.NewForesightError(http.StatusUnauthorized, "COOKIE_MISSING", "access denied since no cookie")
+		return ctx, utils.AuthWithoutCookie
 	}
 
 	decoded, err := base64.StdEncoding.DecodeString(cookie.Value)
 	if err != nil {
 		log.Error("decode cookie failed: ", err)
-		return ctx, utils.NewForesightError(http.StatusUnauthorized, "DECODE_B64_ERROR", "invalid cookie")
+		return ctx, utils.AuthWithInvalidCookie
 	}
 
 	authInfo := AuthInfo{}
 	err = json.Unmarshal(decoded, &authInfo)
 	if err != nil {
 		log.Error("unmarshal json failed: ", err)
-		return ctx, utils.NewForesightError(http.StatusUnauthorized, "DECODE_JSON_ERROR", "invalid cookie")
+		return ctx, utils.AuthWithInvalidCookie
 	}
 
 	ctx = context.WithValue(ctx, "user_name", authInfo.UserName)

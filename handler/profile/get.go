@@ -30,7 +30,7 @@ func (h *getProfileHandler) getProfile(r *http.Request) (*model.Profile, utils.S
 
 	if profile, err := h.m.GetProfile(profileId, path.Join(h.c.Home, "profile")); err != nil {
 		log.Error("get profile detail:", err)
-		return nil, utils.NewForesightError(http.StatusInternalServerError, "DB_SELECT_ERROR", "error on query database")
+		return nil, utils.DatabaseQueryError
 	} else {
 		return profile, nil
 	}

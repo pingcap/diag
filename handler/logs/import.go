@@ -27,12 +27,12 @@ func (h *importLogHandler) importLog(r *http.Request) (*model.LogEntity, utils.S
 	inspectionId, err := utils.UploadInspection(h.c.Home, r)
 	if err != nil {
 		log.Error("upload inspection:", err)
-		return nil, utils.NewForesightError(http.StatusInternalServerError, "SERVER_ERROR", "error on upload file")
+		return nil, utils.FileOpError
 	}
 
 	if err := utils.UnpackInspection(h.c.Home, inspectionId); err != nil {
 		log.Error("unpack: ", err)
-		return nil, utils.NewForesightError(http.StatusInternalServerError, "SERVER_ERROR", "error on unpack file")
+		return nil, utils.FileOpError
 	}
 
 	inspection := &model.Inspection{
@@ -41,7 +41,7 @@ func (h *importLogHandler) importLog(r *http.Request) (*model.LogEntity, utils.S
 	}
 	if err := h.m.SetInspection(inspection); err != nil {
 		log.Error("create inspection: ", err)
-		return nil, utils.NewForesightError(http.StatusInternalServerError, "DB_INSERT_ERROR", "error on insert data")
+		return nil, utils.DatabaseInsertError
 	}
 
 	if err := utils.Analyze(h.c.Analyzer, h.c.Home, h.c.Influx.Endpoint, h.c.Prometheus.Endpoint, inspectionId); err != nil {
@@ -49,15 +49,12 @@ func (h *importLogHandler) importLog(r *http.Request) (*model.LogEntity, utils.S
 		inspection.Status = "exception"
 		inspection.Message = "analyze failed"
 		h.m.SetInspection(inspection)
-		return nil, utils.NewForesightError(http.StatusInternalServerError, "SERVER_ERROR", "error on import log")
+		return nil, utils.SystemOpError
 	}
 
 	if inspection, err := h.m.GetInspection(inspectionId); err != nil {
 		log.Error("get inspection detail:", err)
-		return nil, utils.NewForesightError(http.StatusInternalServerError, "DB_QUERY_ERROR", "error on query data")
-	} else if inspection == nil {
-		log.Error("not found inspection after import log")
-		return nil, utils.NewForesightError(http.StatusInternalServerError, "SERVER_ERROR", "inspection not found")
+		return nil, utils.DatabaseQueryError
 	} else {
 		return &model.LogEntity{Id: inspection.Uuid, InstanceName: inspection.InstanceName}, nil
 	}

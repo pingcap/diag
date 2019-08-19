@@ -27,7 +27,7 @@ func (h *getDmesgHandler) getInspectionDmesg(r *http.Request) (map[string]interf
 	info, err := h.m.GetInspectionDmesg(inspectionId)
 	if err != nil {
 		log.Error("get inspection dmesg:", err)
-		return nil, utils.NewForesightError(http.StatusInternalServerError, "DB_QUERY_ERROR", "error on query data")
+		return nil, utils.DatabaseQueryError
 	}
 
 	return map[string]interface{}{

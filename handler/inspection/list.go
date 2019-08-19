@@ -37,7 +37,7 @@ func (h *listInspectionHandler) listInspection(r *http.Request) (*utils.Paginati
 	inspections, total, err := h.m.ListInspections(instanceId, page, size)
 	if err != nil {
 		log.Error("list inspections: ", err)
-		return nil, utils.NewForesightError(http.StatusInternalServerError, "DB_SELECT_ERROR", "error on query database")
+		return nil, utils.DatabaseQueryError
 	}
 
 	return utils.NewPaginationResponse(total, inspections), nil
