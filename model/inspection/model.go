@@ -2,7 +2,7 @@ package inspection
 
 import (
 	"github.com/pingcap/tidb-foresight/utils"
-	"github.com/pingcap/tidb-foresight/wraper/db"
+	"github.com/pingcap/tidb-foresight/wrapper/db"
 )
 
 type Model interface {

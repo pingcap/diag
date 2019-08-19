@@ -1,7 +1,7 @@
 package utils
 
 import (
-	"github.com/pingcap/tidb-foresight/wraper/db"
+	"github.com/pingcap/tidb-foresight/wrapper/db"
 	log "github.com/sirupsen/logrus"
 )
 
