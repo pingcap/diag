@@ -36,7 +36,7 @@ func (h *deleteInstanceHandler) deleteInstance(r *http.Request) (*model.Instance
 	var e utils.StatusError
 	if err := os.Remove(path.Join(h.c.Home, "inventory", uuid+".ini")); err != nil {
 		log.Error("delete inventory failed: ", err)
-		e = utils.NewForesightError(http.StatusInternalServerError, "FS_DELETE_ERROR", "error on delete file")
+		e = utils.DatabaseDeleteError
 	}
 
 	if err := os.Remove(path.Join(h.c.Home, "topology", uuid+".json")); err != nil {
@@ -47,7 +47,7 @@ func (h *deleteInstanceHandler) deleteInstance(r *http.Request) (*model.Instance
 
 	if err := h.m.DeleteInstance(uuid); err != nil {
 		log.Error("delete instance failed: ", err)
-		e = utils.NewForesightError(http.StatusInternalServerError, "DB_DELETE_ERROR", "error on delete data")
+		e = utils.DatabaseDeleteError
 	}
 
 	if e != nil {

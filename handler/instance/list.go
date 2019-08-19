@@ -29,7 +29,7 @@ func (h *listInstanceHandler) listInstance() ([]*model.Instance, utils.StatusErr
 	instances, err := h.m.ListInstance()
 	if err != nil {
 		log.Error("Query instance list: ", err)
-		return nil, utils.NewForesightError(http.StatusInternalServerError, "DB_QUERY_ERROR", "error on query database")
+		return nil, utils.DatabaseQueryError
 	}
 
 	return instances, nil

@@ -25,13 +25,13 @@ func (h *setConfigHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 func (h *setConfigHandler) setInstanceConfig(c *model.Config, r *http.Request) (*utils.SimpleResponse, utils.StatusError) {
 	instanceId := mux.Vars(r)["id"]
 	if instanceId != c.InstanceId {
-		return nil, utils.NewForesightError(http.StatusBadRequest, "BAD_REQUEST", "instance id mismatch")
+		return nil, utils.ParamsMismatch
 	}
 
 	err := h.m.SetInstanceConfig(c)
 	if err != nil {
 		log.Error("set instance config: ", err)
-		return nil, utils.NewForesightError(http.StatusInternalServerError, "DB_UPDATE_ERROR", "error on update database")
+		return nil, utils.DatabaseUpdateError
 	}
 
 	return nil, nil

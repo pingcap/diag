@@ -44,7 +44,7 @@ func (h *createInspectionHandler) createInspection(r *http.Request, c *model.Con
 	err := h.m.SetInspection(inspection)
 	if err != nil {
 		log.Error("set inpsection: ", err)
-		return nil, utils.NewForesightError(http.StatusInternalServerError, "DB_INSERT_ERROR", "error on insert data")
+		return nil, utils.DatabaseInsertError
 	}
 
 	go func() {

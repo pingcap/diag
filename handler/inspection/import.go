@@ -31,7 +31,7 @@ func (h *importInspectionHandler) importInspection(r *http.Request) (*model.Insp
 
 	if err := utils.UnpackInspection(h.c.Home, inspectionId); err != nil {
 		log.Error("unpack: ", err)
-		return nil, utils.NewForesightError(http.StatusInternalServerError, "SERVER_ERROR", "error on unpack file")
+		return nil, utils.FileOpError
 	}
 
 	inspection := &model.Inspection{
@@ -40,7 +40,7 @@ func (h *importInspectionHandler) importInspection(r *http.Request) (*model.Insp
 	}
 	if err := h.m.SetInspection(inspection); err != nil {
 		log.Error("create inspection: ", err)
-		return nil, utils.NewForesightError(http.StatusInternalServerError, "DB_INSERT_ERROR", "error on insert data")
+		return nil, utils.DatabaseInsertError
 	}
 
 	go func() {

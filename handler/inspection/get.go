@@ -27,7 +27,7 @@ func (h *getInspectionHandler) getInspection(r *http.Request) (*model.Inspection
 
 	if inspection, err := h.m.GetInspection(inspectionId); err != nil {
 		log.Error("get inspection:", err)
-		return nil, utils.NewForesightError(http.StatusInternalServerError, "DB_SELECT_ERROR", "error on query database")
+		return nil, utils.DatabaseQueryError
 	} else {
 		return inspection, nil
 	}

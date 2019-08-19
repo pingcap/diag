@@ -37,7 +37,7 @@ func (h *deleteInspectionHandler) deleteInspection(r *http.Request) (*model.Insp
 
 	if err := h.m.DeleteInspection(uuid); err != nil {
 		log.Error("delete inspection: ", err)
-		return nil, utils.NewForesightError(http.StatusInternalServerError, "DB_DELETE_ERROR", "error on delete data")
+		return nil, utils.DatabaseDeleteError
 	}
 
 	return nil, nil

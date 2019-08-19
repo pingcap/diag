@@ -40,7 +40,7 @@ func (h *listProfileHandler) listProfile(r *http.Request) (*utils.PaginationResp
 	profiles, total, err := h.m.ListProfiles(instanceId, page, size, path.Join(h.c.Home, "profile"))
 	if err != nil {
 		log.Error("list profiles: ", err)
-		return nil, utils.NewForesightError(http.StatusInternalServerError, "DB_SELECT_ERROR", "error on query database")
+		return nil, utils.DatabaseQueryError
 	}
 
 	return utils.NewPaginationResponse(total, profiles), nil

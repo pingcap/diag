@@ -43,7 +43,7 @@ func (h *createInstanceHandler) createInstance(r *http.Request) (*model.Instance
 	file, _, err := r.FormFile("file")
 	if err != nil {
 		log.Error("retrieving file: ", err)
-		return nil, utils.NewForesightError(http.StatusBadRequest, "BAD_REQUEST", "error on retrieving file")
+		return nil, utils.NetworkError
 	}
 	defer file.Close()
 
@@ -51,14 +51,14 @@ func (h *createInstanceHandler) createInstance(r *http.Request) (*model.Instance
 	err = utils.SaveFile(file, inventoryPath)
 	if err != nil {
 		log.Error("save file: ", err)
-		return nil, utils.NewForesightError(http.StatusInternalServerError, "SERVER_FS_ERROR", "error on save file")
+		return nil, utils.FileOpError
 	}
 
 	instance := &model.Instance{Uuid: uid, User: h.c.User.Name, CreateTime: time.Now(), Status: "pending"}
 	err = h.m.CreateInstance(instance)
 	if err != nil {
 		log.Error("create instance: ", err)
-		return nil, utils.NewForesightError(http.StatusInternalServerError, "DB_INSERT_ERROR", "error on insert data")
+		return nil, utils.DatabaseInsertError
 	}
 
 	go h.importInstance(h.c.Pioneer, inventoryPath, uid)

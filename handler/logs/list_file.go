@@ -29,7 +29,7 @@ func (h *listFileHandler) listLogFile(r *http.Request) ([]*model.LogEntity, util
 	ls, err := ioutil.ReadDir(path.Join(h.c.Home, "remote-log"))
 	if err != nil {
 		log.Error("read dir: ", err)
-		return nil, utils.NewForesightError(http.StatusInternalServerError, "SERVER_FS_ERROR", "error on read dir")
+		return nil, utils.FileOpError
 	}
 	logs := []string{}
 	for _, l := range ls {
@@ -38,7 +38,7 @@ func (h *listFileHandler) listLogFile(r *http.Request) ([]*model.LogEntity, util
 
 	entities, err := h.m.ListLogFiles(logs)
 	if err != nil {
-		return nil, utils.NewForesightError(http.StatusInternalServerError, "SERVER_DB_ERROR", "error on query database")
+		return nil, utils.DatabaseQueryError
 	}
 	return entities, nil
 }

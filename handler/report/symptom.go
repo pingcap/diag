@@ -27,7 +27,7 @@ func (h *getSymptomHandler) getInspectionSymptom(r *http.Request) (map[string]in
 	info, err := h.m.GetInspectionSymptoms(inspectionId)
 	if err != nil {
 		log.Error("get inspection symptoms:", err)
-		return nil, utils.NewForesightError(http.StatusInternalServerError, "DB_QUERY_ERROR", "error on query data")
+		return nil, utils.DatabaseQueryError
 	}
 
 	return map[string]interface{}{

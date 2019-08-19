@@ -27,7 +27,7 @@ func (h *getHardwareInfoHandler) getInspectionHardwareInfo(r *http.Request) (map
 	info, err := h.m.GetInspectionHardwareInfo(inspectionId)
 	if err != nil {
 		log.Error("get inspection hardware info:", err)
-		return nil, utils.NewForesightError(http.StatusInternalServerError, "DB_QUERY_ERROR", "error on query data")
+		return nil, utils.DatabaseQueryError
 	}
 
 	return map[string]interface{}{

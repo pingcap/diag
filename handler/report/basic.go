@@ -27,7 +27,7 @@ func (h *getBasicInfoHandler) getInspectionBasicInfo(r *http.Request) (*model.Ba
 	info, err := h.m.GetInspectionBasicInfo(inspectionId)
 	if err != nil {
 		log.Error("get inspection basic info:", err)
-		return nil, utils.NewForesightError(http.StatusInternalServerError, "DB_QUERY_ERROR", "error on query data")
+		return nil, utils.DatabaseQueryError
 	}
 
 	return info, nil

@@ -29,7 +29,7 @@ func (h *getSoftwareInfoHandler) getInspectionSoftwareInfo(r *http.Request) (map
 	info, err := h.m.GetInspectionSoftwareInfo(inspectionId)
 	if err != nil {
 		log.Error("get inspection software version:", err)
-		return nil, utils.NewForesightError(http.StatusInternalServerError, "DB_QUERY_ERROR", "error on query data")
+		return nil, utils.DatabaseQueryError
 	}
 
 	conclusions := make([]map[string]interface{}, 0)

@@ -31,7 +31,7 @@ func (h *getNtpInfoHandler) getInspectionNtpInfo(r *http.Request) (map[string]in
 	ntps, err := h.m.GetInspectionNtpInfo(inspectionId)
 	if err != nil {
 		log.Error("get inspection ntp info:", err)
-		return nil, utils.NewForesightError(http.StatusInternalServerError, "DB_QUERY_ERROR", "error on query data")
+		return nil, utils.DatabaseQueryError
 	}
 
 	conclusions := make([]map[string]interface{}, 0)

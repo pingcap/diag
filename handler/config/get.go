@@ -27,12 +27,12 @@ func (h *getConfigHandler) getInstanceConfig(r *http.Request) (*model.Config, ut
 
 	if config, err := h.m.GetInstanceConfig(instanceId); err == nil {
 		if config == nil {
-			return nil, utils.NewForesightError(http.StatusNotFound, "NOT_FOUND", "target instance config not found")
+			return nil, utils.TargetObjectNotFound
 		} else {
 			return config, nil
 		}
 	} else {
 		log.Error("get instance config: ", err)
-		return nil, utils.NewForesightError(http.StatusInternalServerError, "DB_QUERY_ERROR", "error on query db")
+		return nil, utils.DatabaseQueryError
 	}
 }

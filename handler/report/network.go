@@ -27,7 +27,7 @@ func (h *getNetworkInfoHandler) getInspectionNetworkInfo(r *http.Request) (map[s
 	info, err := h.m.GetInspectionNetworkInfo(inspectionId)
 	if err != nil {
 		log.Error("get inspection network info:", err)
-		return nil, utils.NewForesightError(http.StatusInternalServerError, "DB_QUERY_ERROR", "error on query data")
+		return nil, utils.DatabaseQueryError
 	}
 
 	return map[string]interface{}{
