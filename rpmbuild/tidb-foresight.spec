@@ -6,7 +6,7 @@ License: GPL
 Group: Applications/Server
 Distribution: Linux
 Vendor: PingCAP
-Requires: graphviz = 2.30.1, perf = 3.10.0, rsync = 3.1.2
+Requires: graphviz = 2.30.1, perf = 3.10.0, rsync = 3.1.2, golang
 #BuildRequires: go>=1.12.7, yarn>=1.17.3, node>=v12.8.0
 %description
 tidb-foresight is a web-based tidb cluster diagnostic tool
