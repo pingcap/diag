@@ -13,5 +13,8 @@ chown -R tidb:tidb /usr/local/tidb-foresight
 chown -R tidb:tidb /usr/local/prometheus
 chown -R influxdb:influxdb /usr/local/influxdb
 chown -R influxdb:influxdb /var/lib/influxdb
+ln -s /usr/local/go/bin/go /usr/bin/go
+ln -s /usr/local/go/bin/godoc /usr/bin/godoc
+ln -s /usr/local/go/bin/gofmt /usr/bin/gofmt
 
 systemctl daemon-reload

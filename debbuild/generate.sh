@@ -31,7 +31,7 @@ mkdir -p $debdir/usr/local/prometheus/conf
 mkdir -p $debdir/usr/local/prometheus/data
 mkdir -p $debdir/etc/logrotate.d
 
-rm -rf prometheus-2.8.1.linux-amd64.tar.gz influxdb-1.7.7-static_linux_amd64.tar.gz stackcollapse-perf.pl flamegraph.pl fold-tikv-threads-perf.pl
+rm -rf prometheus-2.8.1.linux-amd64.tar.gz influxdb-1.7.7-static_linux_amd64.tar.gz go1.12.9.linux-amd64.tar.gz stackcollapse-perf.pl flamegraph.pl fold-tikv-threads-perf.pl
 
 cd ..
 cp -r `ls |grep -v debbuild | xargs` debbuild/temp/tidb-foresight/
@@ -41,9 +41,11 @@ wget https://dl.influxdata.com/influxdb/releases/influxdb-1.7.7-static_linux_amd
 wget https://raw.githubusercontent.com/brendangregg/FlameGraph/master/stackcollapse-perf.pl
 wget https://raw.githubusercontent.com/brendangregg/FlameGraph/master/flamegraph.pl
 wget https://raw.githubusercontent.com/pingcap/tidb-inspect-tools/master/tracing_tools/perf/fold-tikv-threads-perf.pl
+wget https://dl.google.com/go/go1.12.9.linux-amd64.tar.gz
 
 tar xf influxdb-1.7.7-static_linux_amd64.tar.gz
 tar xf prometheus-2.8.1.linux-amd64.tar.gz
+tar xf go1.12.9.linux-amd64.tar.gz
 chmod +x *.pl
 
 # Install foresight
@@ -161,5 +163,9 @@ RestartSec=15s
 WantedBy=multi-user.target
 EOF
 
+# Install golang
+cp -r $tempdir/go /$debdir/usr/local/
+
+rm -rf $tempdir
 cd $currentdir
 sudo dpkg -b ./tidb-foresight $1

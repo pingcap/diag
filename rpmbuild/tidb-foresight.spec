@@ -14,7 +14,7 @@ tidb-foresight is a web-based tidb cluster diagnostic tool
 rm -rf %{_builddir}/*
 rm -rf %{_buildrootdir}/*
 cd %{_sourcedir}/
-rm -rf prometheus-2.8.1.linux-amd64.tar.gz influxdb-1.7.7-static_linux_amd64.tar.gz stackcollapse-perf.pl flamegraph.pl fold-tikv-threads-perf.pl
+rm -rf prometheus-2.8.1.linux-amd64.tar.gz influxdb-1.7.7-static_linux_amd64.tar.gz go1.12.9.linux-amd64.tar.gz stackcollapse-perf.pl flamegraph.pl fold-tikv-threads-perf.pl
 if [ ! -d './tidb-foresight' ];then
 	echo "There is no tidb-foresight in ~/rpmbuild/SOURCES/"
 	exit 2
@@ -24,13 +24,16 @@ wget https://dl.influxdata.com/influxdb/releases/influxdb-1.7.7-static_linux_amd
 wget https://raw.githubusercontent.com/brendangregg/FlameGraph/master/stackcollapse-perf.pl
 wget https://raw.githubusercontent.com/brendangregg/FlameGraph/master/flamegraph.pl
 wget https://raw.githubusercontent.com/pingcap/tidb-inspect-tools/master/tracing_tools/perf/fold-tikv-threads-perf.pl
+wget https://dl.google.com/go/go1.12.9.linux-amd64.tar.gz
 
 tar xf influxdb-1.7.7-static_linux_amd64.tar.gz
 tar xf prometheus-2.8.1.linux-amd64.tar.gz
+tar xf go1.12.9.linux-amd64.tar.gz
 chmod +x %{_sourcedir}/*.pl
 cp -r %{_sourcedir}/tidb-foresight %{_builddir}/
 mv %{_sourcedir}/influxdb-1.7.7-1 %{_builddir}/
 mv %{_sourcedir}/prometheus-2.8.1.linux-amd64 %{_builddir}/
+mv %{_sourcedir}/go %{_builddir}/
 cp %{_sourcedir}/stackcollapse-perf.pl %{_builddir}/
 cp %{_sourcedir}/flamegraph.pl %{_builddir}/
 cp %{_sourcedir}/fold-tikv-threads-perf.pl %{_builddir}/
@@ -41,12 +44,12 @@ cd %{_builddir}/tidb-foresight/web
 yarn && yarn build
 
 %install
-# install foresight
+# Install foresight
 mkdir -p %{_buildrootdir}/%{name}-%{version}-%{release}.%{_build_arch}/usr/local/tidb-foresight/bin
 mkdir -p %{_buildrootdir}/%{name}-%{version}-%{release}.%{_build_arch}/usr/local/tidb-foresight/web
 mkdir -p %{_buildrootdir}/%{name}-%{version}-%{release}.%{_build_arch}/usr/local/tidb-foresight/script
 mkdir -p %{_buildrootdir}/%{name}-%{version}-%{release}.%{_build_arch}/etc/systemd/system/
-# if there is config file, cp it
+# If there is config file, cp it
 if [ -e %{_builddir}/tidb-foresight/tidb-foresight.toml ];then 
 	cp %{_builddir}/tidb-foresight/tidb-foresight.toml %{_buildrootdir}/%{name}-%{version}-%{release}.%{_build_arch}/usr/local/tidb-foresight/
 fi
@@ -78,7 +81,7 @@ RestartSec=15s
 WantedBy=multi-user.target
 EOF
 
-# install influxdb
+# Install influxdb
 mkdir -p %{_buildrootdir}/%{name}-%{version}-%{release}.%{_build_arch}/usr/local/influxdb/bin
 mkdir -p %{_buildrootdir}/%{name}-%{version}-%{release}.%{_build_arch}/usr/local/influxdb/log
 mkdir -p %{_buildrootdir}/%{name}-%{version}-%{release}.%{_build_arch}/usr/local/influxdb/conf
@@ -127,7 +130,7 @@ cat>%{_buildrootdir}/%{name}-%{version}-%{release}.%{_build_arch}/etc/logrotate.
 }
 EOF
 
-# install prometheus
+# Install prometheus
 mkdir -p %{_buildrootdir}/%{name}-%{version}-%{release}.%{_build_arch}/usr/local/prometheus/bin
 mkdir -p %{_buildrootdir}/%{name}-%{version}-%{release}.%{_build_arch}/usr/local/prometheus/conf
 mkdir -p %{_buildrootdir}/%{name}-%{version}-%{release}.%{_build_arch}/usr/local/prometheus/data
@@ -162,6 +165,9 @@ RestartSec=15s
 WantedBy=multi-user.target
 EOF
 
+# Install golang
+mv %{_builddir}/go %{_buildrootdir}/%{name}-%{version}-%{release}.%{_build_arch}/usr/local/
+
 %files
 # foresight
 /usr/local/
@@ -179,6 +185,9 @@ if [ $? != 0 ]; then
 fi
 %post
 ln -s /usr/local/tidb-foresight/script/collector/collector /usr/local/tidb-foresight/bin/collector
+ln -s /usr/local/go/bin/go /usr/bin/go
+ln -s /usr/local/go/bin/godoc /usr/bin/godoc
+ln -s /usr/local/go/bin/gofmt /usr/bin/gofmt
 systemctl daemon-reload
 chown -R tidb:tidb /usr/local/tidb-foresight
 chown -R tidb:tidb /usr/local/prometheus
@@ -189,19 +198,25 @@ systemctl stop foresight.service
 systemctl stop prometheus.service
 systemctl stop influxd.service
 %postun
-# uninstall foresight
+# Uninstall foresight
 rm -rf /usr/local/tidb-foresight/
 rm -rf /etc/systemd/system/foresight.service
 
-# uninstall prometheus
+# Uninstall prometheus
 rm -rf /usr/local/prometheus
 rm -rf /etc/systemd/system/prometheus.service
 
-# uninstall influxdb
+# Uninstall influxdb
 rm -rf /usr/local/influxdb
 rm -rf /etc/logrotate.d/influxdb
 rm -rf /var/lib/influxdb
 rm -rf /etc/systemd/system/influxd.service
+
+# Uninstall golang
+rm -rf /usr/bin/go
+rm -rf /usr/bin/godoc
+rm -rf /usr/bin/gofmt
+rm -rf /usr/local/go
 
 %clean
 rm -rf %{_buildrootdir}/*

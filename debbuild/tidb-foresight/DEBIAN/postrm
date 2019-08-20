@@ -1,15 +1,21 @@
 #!/bin/bash
 
-# uninstall foresight
+# Uninstall foresight
 rm -rf /usr/local/tidb-foresight/
 rm -rf /etc/systemd/system/foresight.service
 
-# uninstall prometheus
+# Uninstall prometheus
 rm -rf /usr/local/prometheus
 rm -rf /etc/systemd/system/prometheus.service
 
-# uninstall influxdb
+# Uninstall influxdb
 rm -rf /usr/local/influxdb
 rm -rf /etc/logrotate.d/influxdb
 rm -rf /var/lib/influxdb
 rm -rf /etc/systemd/system/influxd.service
+
+# Uninstall golang
+rm -rf /usr/bin/go
+rm -rf /usr/bin/godoc
+rm -rf /usr/bin/gofmt
+rm -rf /usr/local/go
