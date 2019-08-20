@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Table, Collapse } from 'antd';
+import _ from 'lodash';
 import { useReportItemQuery } from './use-report-item-query';
 
 const styles = require('./AutoTable.less');
@@ -58,7 +59,7 @@ function AutoTable({ title, expand = true, apiUrl }: AutoTableProps) {
                   dataSource={dataSource}
                   columns={tableColumns}
                   pagination={false}
-                  scroll={{ x: true, y: 600 }}
+                  scroll={_.endsWith(apiUrl, '/dmesg') ? { x: true, y: 600 } : { x: true }}
                 />
               </React.Fragment>
             ))}
