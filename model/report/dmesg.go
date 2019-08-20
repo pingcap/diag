@@ -17,7 +17,7 @@ func (m *report) GetInspectionDmesg(inspectionId string) ([]*DmesgLog, error) {
 }
 
 func (m *report) ClearInspectionDmesgLog(inspectionId string) error {
-	return m.db.Delete(&DmesgLog{InspectionId: inspectionId}).Error()
+	return m.db.Delete(&DmesgLog{}, "inspection_id = ?", inspectionId).Error()
 }
 
 func (m *report) InsertInspectionDmesgLog(info *DmesgLog) error {

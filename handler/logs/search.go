@@ -51,11 +51,12 @@ func (h *searchLogHandler) searchLog(r *http.Request) (*LogResult, utils.StatusE
 		begin, end, level, search, token,
 	)
 	if err != nil {
-		log.Error("open log: ", err)
-		return nil, utils.FileOpError
-	}
-	if iter == nil {
-		return nil, utils.TargetObjectNotFound
+		if err == utils.TargetObjectNotFound {
+			return nil, utils.TargetObjectNotFound
+		} else {
+			log.Error("open log: ", err)
+			return nil, utils.FileOpError
+		}
 	}
 
 	logs := []*LogItem{}

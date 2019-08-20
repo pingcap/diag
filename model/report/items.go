@@ -8,7 +8,7 @@ type Item struct {
 }
 
 func (m *report) ClearInspectionItem(inspectionId string) error {
-	return m.db.Delete(&Item{InspectionId: inspectionId}).Error()
+	return m.db.Delete(&Item{}, "inspection_id = ?", inspectionId).Error()
 }
 
 func (m *report) InsertInspectionItem(item *Item) error {

@@ -8,6 +8,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/pingcap/tidb-foresight/log/parser"
+	"github.com/pingcap/tidb-foresight/utils"
 )
 
 type Searcher struct {
@@ -136,6 +137,10 @@ func (s *Searcher) Search(dir string, begin, end time.Time, level, text, token s
 		go s.Gc(token, iter)
 		return iter, token, err
 	} else {
-		return s.GetIter(token), token, nil
+		if iter := s.GetIter(token); iter == nil {
+			return nil, token, utils.TargetObjectNotFound
+		} else {
+			return iter, token, nil
+		}
 	}
 }

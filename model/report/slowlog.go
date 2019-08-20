@@ -21,7 +21,7 @@ func (m *report) GetInspectionSlowLog(inspectionId string) ([]*SlowLogInfo, erro
 }
 
 func (m *report) ClearInspectionSlowLog(inspectionId string) error {
-	return m.db.Delete(&SlowLogInfo{InspectionId: inspectionId}).Error()
+	return m.db.Delete(&SlowLogInfo{}, "inspection_id = ?", inspectionId).Error()
 }
 
 func (m *report) InsertInspectionSlowLog(info *SlowLogInfo) error {
