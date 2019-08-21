@@ -243,16 +243,17 @@ def setup_pprof_ops(addr='127.0.0.1:6060', basedir='pprof'):
     ]
     return ops
 
+def failed():
+    raise Exception("prepare to collect dbinfo/metric failed")
 
 def setup_metric_ops(addr, basedir, start, end):
     try:
         metrics = get_metrics(addr)
     except Exception as e:
         logging.error('get metrics failed, error:%s', e)
-        def f(): raise e
         # return an Op with an exception, when it is executed
         # the execption will be raised and recored by status.json
-        return [Op(None, None, f)]
+        return [Op(None, None, failed)]
 
     if metrics['status'] != 'success':
         logging.error('get metrics failed, status:%s', metrics['status'])
@@ -288,10 +289,9 @@ def setup_db_ops(addr='127.0.0.1:10080', basedir='dbinfo'):
         dbs = get_databases(addr)
     except Exception as e:
         logging.error('get database failed, error:%s', e)
-        def f(): raise e
         # return an Op with an exception, when it is executed
         # the execption will be raised and recored by status.json
-        return [Op(None, None, f)]
+        return [Op(None, None, failed)]
     join = os.path.join
 
     def op(name):
