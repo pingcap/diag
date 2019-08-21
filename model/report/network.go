@@ -21,7 +21,7 @@ func (m *report) GetInspectionNetworkInfo(inspectionId string) ([]*NetworkInfo, 
 }
 
 func (m *report) ClearInspectionNetworkInfo(inspectionId string) error {
-	return m.db.Delete(&NetworkInfo{InspectionId: inspectionId}).Error()
+	return m.db.Delete(&NetworkInfo{}, "inspection_id = ?", inspectionId).Error()
 }
 
 func (m *report) InsertInspectionNetworkInfo(info *NetworkInfo) error {

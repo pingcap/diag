@@ -19,7 +19,7 @@ func (m *report) GetInspectionConfigInfo(inspectionId string) ([]*ConfigInfo, er
 }
 
 func (m *report) ClearInspectionConfigInfo(inspectionId string) error {
-	return m.db.Delete(&ConfigInfo{InspectionId: inspectionId}).Error()
+	return m.db.Delete(&ConfigInfo{}, "inspection_id = ?", inspectionId).Error()
 }
 
 func (m *report) InsertInspectionConfigInfo(info *ConfigInfo) error {

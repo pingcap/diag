@@ -1,11 +1,13 @@
 package resource
 
 import (
+	"fmt"
+
 	"github.com/pingcap/tidb-foresight/analyzer/boot"
 	"github.com/pingcap/tidb-foresight/analyzer/input/args"
 	"github.com/pingcap/tidb-foresight/analyzer/input/resource"
-	"github.com/pingcap/tidb-foresight/analyzer/utils"
 	"github.com/pingcap/tidb-foresight/model"
+	"github.com/pingcap/tidb-foresight/utils"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -37,15 +39,16 @@ func (t *saveResourceTask) Run(c *boot.Config, r *resource.Resource, args *args.
 }
 
 func (t *saveResourceTask) insertData(m *boot.Model, inspectionId, resource, duration string, value float64) error {
-	status := "normal"
-	if value > THRESHOLD {
-		status = "abnormal"
+	v := utils.NewTagdFloat64(value, nil)
+	if v.V > THRESHOLD {
+		v.Tags.Set("status", "abnormal")
+		v.Tags.Set("message", fmt.Sprintf("%s Resource utilization/%s too high", resource, duration))
 	}
+
 	return m.InsertInspectionResourceInfo(&model.ResourceInfo{
 		InspectionId: inspectionId,
 		Name:         resource,
 		Duration:     duration,
-		Value:        value,
-		Status:       status,
+		Value:        v,
 	})
 }

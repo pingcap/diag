@@ -1,11 +1,14 @@
 package report
 
+import (
+	"github.com/pingcap/tidb-foresight/utils"
+)
+
 type ResourceInfo struct {
 	InspectionId string
 	Name         string
 	Duration     string
-	Value        float64
-	Status       string
+	Value        utils.TagdFloat64
 }
 
 func (m *report) GetInspectionResourceInfo(inspectionId string) ([]*ResourceInfo, error) {
@@ -19,7 +22,7 @@ func (m *report) GetInspectionResourceInfo(inspectionId string) ([]*ResourceInfo
 }
 
 func (m *report) ClearInspectionResourceInfo(inspectionId string) error {
-	return m.db.Delete(&ResourceInfo{InspectionId: inspectionId}).Error()
+	return m.db.Delete(&ResourceInfo{}, "inspection_id = ?", inspectionId).Error()
 }
 
 func (m *report) InsertInspectionResourceInfo(info *ResourceInfo) error {

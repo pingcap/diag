@@ -18,7 +18,7 @@ func (m *report) GetInspectionSoftwareInfo(inspectionId string) ([]*SoftwareInfo
 }
 
 func (m *report) ClearInspectionSoftwareInfo(inspectionId string) error {
-	return m.db.Delete(&SoftwareInfo{InspectionId: inspectionId}).Error()
+	return m.db.Delete(&SoftwareInfo{}, "inspection_id = ?", inspectionId).Error()
 }
 
 func (m *report) InsertInspectionSoftwareInfo(info *SoftwareInfo) error {

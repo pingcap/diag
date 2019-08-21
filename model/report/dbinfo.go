@@ -28,7 +28,7 @@ func (m *report) GetTablesWithoutIndex(inspectionId string) ([]*DBInfo, error) {
 }
 
 func (m *report) ClearInspectionDBInfo(inspectionId string) error {
-	return m.db.Delete(&DBInfo{InspectionId: inspectionId}).Error()
+	return m.db.Delete(&DBInfo{}, "inspection_id = ?", inspectionId).Error()
 }
 
 func (m *report) InsertInspectionDBInfo(info *DBInfo) error {

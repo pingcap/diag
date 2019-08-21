@@ -1,8 +1,6 @@
 package report
 
 import (
-	"fmt"
-	"math"
 	"net/http"
 
 	"github.com/gorilla/mux"
@@ -11,8 +9,6 @@ import (
 	"github.com/pingcap/tidb-foresight/utils"
 	log "github.com/sirupsen/logrus"
 )
-
-const NTP_TRESHHOLD = 500.0
 
 type getNtpInfoHandler struct {
 	m model.Model
@@ -37,23 +33,23 @@ func (h *getNtpInfoHandler) getInspectionNtpInfo(r *http.Request) (map[string]in
 	conclusions := make([]map[string]interface{}, 0)
 	data := make([]map[string]interface{}, 0)
 	for _, ntp := range ntps {
-		if math.Abs(ntp.Offset) > NTP_TRESHHOLD {
+		if ntp.Offset.Tags.Get("status") == "abnormal" {
 			conclusions = append(conclusions, map[string]interface{}{
 				"status":  "abnormal",
-				"message": fmt.Sprintf("ntp offset of node %s exceeded the threshold (500ms)", ntp.NodeIp),
+				"message": ntp.Offset.Tags.Get("message"),
 			})
 			data = append(data, map[string]interface{}{
 				"node_ip": ntp.NodeIp,
 				"offset": map[string]interface{}{
-					"value":    ntp.Offset,
+					"value":    ntp.Offset.V,
 					"abnormal": true,
-					"message":  "exceeded the threshold (500ms)",
+					"message":  "exceeded the threshold",
 				},
 			})
 		} else {
 			data = append(data, map[string]interface{}{
 				"node_ip": ntp.NodeIp,
-				"offset":  ntp.Offset,
+				"offset":  ntp.Offset.V,
 			})
 		}
 	}

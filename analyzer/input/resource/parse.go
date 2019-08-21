@@ -7,7 +7,7 @@ import (
 	"github.com/pingcap/tidb-foresight/analyzer/boot"
 	"github.com/pingcap/tidb-foresight/analyzer/input/args"
 	"github.com/pingcap/tidb-foresight/analyzer/output/metric"
-	"github.com/pingcap/tidb-foresight/analyzer/utils"
+	"github.com/pingcap/tidb-foresight/utils"
 )
 
 type parseResourceTask struct{}
@@ -50,7 +50,7 @@ func (t *parseResourceTask) Run(args *args.Args, c *boot.Config, m *metric.Metri
 
 	disk := t.resourceUtil(
 		fmt.Sprintf(
-			`100 - (sum(node_filesystem_avail{fstype="ext4",inspectionid="%s"}) / sum(node_filesystem_size{fstype="ext4",inspectionid="%s"})) * 100`,
+			`100 - (sum(node_filesystem_avail{inspectionid="%s"}) / sum(node_filesystem_size{inspectionid="%s"})) * 100`,
 			c.InspectionId,
 			c.InspectionId,
 		),

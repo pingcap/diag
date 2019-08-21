@@ -18,7 +18,7 @@ func (m *report) GetInspectionSymptoms(inspectionId string) ([]*Symptom, error) 
 }
 
 func (m *report) ClearInspectionSymptom(inspectionId string) error {
-	return m.db.Delete(&Symptom{InspectionId: inspectionId}).Error()
+	return m.db.Delete(&Symptom{}, "inspection_id = ?", inspectionId).Error()
 }
 
 func (m *report) InsertInspectionSymptom(symptom *Symptom) error {

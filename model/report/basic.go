@@ -25,7 +25,7 @@ func (m *report) GetInspectionBasicInfo(inspectionId string) (*BasicInfo, error)
 }
 
 func (m *report) ClearInspectionBasicInfo(inspectionId string) error {
-	return m.db.Delete(&BasicInfo{InspectionId: inspectionId}).Error()
+	return m.db.Delete(&BasicInfo{}, "inspection_id = ?", inspectionId).Error()
 }
 
 func (m *report) InsertInspectionBasicInfo(info *BasicInfo) error {

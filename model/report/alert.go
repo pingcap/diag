@@ -22,7 +22,7 @@ func (m *report) GetInspectionAlertInfo(inspectionId string) ([]*AlertInfo, erro
 }
 
 func (m *report) ClearInspectionAlertInfo(inspectionId string) error {
-	return m.db.Delete(&AlertInfo{InspectionId: inspectionId}).Error()
+	return m.db.Delete(&AlertInfo{}, "inspection_id = ?", inspectionId).Error()
 }
 
 func (m *report) InsertInspectionAlertInfo(info *AlertInfo) error {

@@ -1,9 +1,13 @@
 package report
 
+import (
+	"github.com/pingcap/tidb-foresight/utils"
+)
+
 type NtpInfo struct {
 	InspectionId string
 	NodeIp       string
-	Offset       float64
+	Offset       utils.TagdFloat64
 }
 
 func (m *report) GetInspectionNtpInfo(inspectionId string) ([]*NtpInfo, error) {
@@ -17,7 +21,7 @@ func (m *report) GetInspectionNtpInfo(inspectionId string) ([]*NtpInfo, error) {
 }
 
 func (m *report) ClearInspectionNtpInfo(inspectionId string) error {
-	return m.db.Delete(&NtpInfo{InspectionId: inspectionId}).Error()
+	return m.db.Delete(&NtpInfo{}, "inspection_id = ?", inspectionId).Error()
 }
 
 func (m *report) InsertInspectionNtpInfo(info *NtpInfo) error {
