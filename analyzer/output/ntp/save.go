@@ -23,9 +23,9 @@ func SaveNtpInfo() *saveNtpInfoTask {
 func (t *saveNtpInfoTask) Run(m *boot.Model, c *boot.Config, insight *insight.Insight) {
 	for _, insight := range *insight {
 		offset := utils.NewTagdFloat64(insight.Ntp.Offset, nil)
-		if math.Abs(offset.V) > NTP_TRESHHOLD {
-			offset.Tags.Set("status", "abnormal")
-			offset.Tags.Set("message", fmt.Sprintf("ntp offset of node %s exceeded the threshold (500ms)", insight.NodeIp))
+		if math.Abs(offset.GetValue()) > NTP_TRESHHOLD {
+			offset.SetTag("status", "abnormal")
+			offset.SetTag("message", fmt.Sprintf("ntp offset of node %s exceeded the threshold (500ms)", insight.NodeIp))
 		}
 
 		if err := m.InsertInspectionNtpInfo(&model.NtpInfo{

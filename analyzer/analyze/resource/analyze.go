@@ -22,7 +22,7 @@ func (t *analyzeTask) Run(m *boot.Model, c *boot.Config) {
 	}
 
 	for _, res := range resources {
-		if res.Value.Tags.Get("status") == "abnormal" {
+		if res.Value.GetTag("status") == "abnormal" {
 			msg := fmt.Sprintf("%s Resource utilization/%s too high", res.Name, res.Duration)
 			defer m.InsertSymptom(
 				"error",

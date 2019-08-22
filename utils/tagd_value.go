@@ -6,19 +6,37 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+
+	log "github.com/sirupsen/logrus"
 )
 
 type TagdString struct {
-	V    string
-	Tags url.Values
+	value string
+	tags  url.Values
 }
 
 func NewTagdString(value string, tags map[string]string) TagdString {
-	tv := TagdString{V: value, Tags: url.Values{}}
+	tv := TagdString{value: value, tags: url.Values{}}
 	for k, v := range tags {
-		tv.Tags.Set(k, v)
+		tv.tags.Set(k, v)
 	}
 	return tv
+}
+
+func (tv *TagdString) GetValue() string {
+	return tv.value
+}
+
+func (tv *TagdString) SetValue(value string) {
+	tv.value = value
+}
+
+func (tv *TagdString) GetTag(key string) string {
+	return tv.tags.Get(key)
+}
+
+func (tv *TagdString) SetTag(key, value string) {
+	tv.tags.Set(key, value)
 }
 
 // Scan implements the Scanner interface.
@@ -34,7 +52,12 @@ func (tv *TagdString) Scan(value interface{}) error {
 	if len(tags) < 1 {
 		return nil
 	}
-	tv.V = tags[0]
+
+	if v, err := url.QueryUnescape(tags[0]); err != nil {
+		return err
+	} else {
+		tv.value = v
+	}
 
 	if len(tags) < 2 {
 		return nil
@@ -43,47 +66,37 @@ func (tv *TagdString) Scan(value interface{}) error {
 	if ts, err := url.ParseQuery(tags[1]); err != nil {
 		return err
 	} else {
-		tv.Tags = ts
+		tv.tags = ts
 		return nil
 	}
 }
 
 // Value implements the driver Valuer interface.
 func (tv TagdString) Value() (driver.Value, error) {
-	vs := []string{tv.V, tv.Tags.Encode()}
+	vs := []string{url.QueryEscape(tv.value), tv.tags.Encode()}
 
 	return strings.Join(vs, ","), nil
 }
 
 type TagdFloat64 struct {
 	TagdString
-	V float64
 }
 
 func NewTagdFloat64(value float64, tags map[string]string) TagdFloat64 {
 	return TagdFloat64{
 		NewTagdString(fmt.Sprintf("%f", value), tags),
-		value,
 	}
 }
 
-// Scan implements the Scanner interface.
-func (tv *TagdFloat64) Scan(value interface{}) error {
-	if err := tv.TagdString.Scan(value); err != nil {
-		return err
-	}
-
-	if v, err := strconv.ParseFloat(tv.TagdString.V, 64); err != nil {
-		return err
+func (tv *TagdFloat64) GetValue() float64 {
+	if v, err := strconv.ParseFloat(tv.TagdString.GetValue(), 64); err != nil {
+		log.Error("parse float64 value:", err)
+		return 0
 	} else {
-		tv.V = v
-		return nil
+		return v
 	}
 }
 
-// Value implements the driver Valuer interface.
-func (tv TagdFloat64) Value() (driver.Value, error) {
-	tv.TagdString.V = fmt.Sprintf("%f", tv.V)
-
-	return tv.TagdString.Value()
+func (tv *TagdFloat64) SetValue(value float64) {
+	tv.TagdString.SetValue(fmt.Sprintf("%f", value))
 }

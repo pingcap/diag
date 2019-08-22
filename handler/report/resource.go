@@ -34,7 +34,7 @@ func (h *getResourceInfoHandler) getInspectionResourceInfo(r *http.Request) (map
 	conclusions := make([]map[string]interface{}, 0)
 	data := make([]map[string]interface{}, 0)
 	for _, res := range info {
-		if res.Value.Tags.Get("status") == "abnormal" {
+		if res.Value.GetTag("status") == "abnormal" {
 			conclusions = append(conclusions, map[string]interface{}{
 				"status":  "abnormal",
 				"message": fmt.Sprintf("%s Resource utilization/%s too high", res.Name, res.Duration),
@@ -43,7 +43,7 @@ func (h *getResourceInfoHandler) getInspectionResourceInfo(r *http.Request) (map
 				"name":     res.Name,
 				"duration": res.Duration,
 				"value": map[string]interface{}{
-					"value":    res.Value.V,
+					"value":    res.Value.GetValue(),
 					"abnormal": true,
 					"message":  "too high",
 				},
@@ -52,7 +52,7 @@ func (h *getResourceInfoHandler) getInspectionResourceInfo(r *http.Request) (map
 			data = append(data, map[string]interface{}{
 				"name":     res.Name,
 				"duration": res.Duration,
-				"value":    res.Value.V,
+				"value":    res.Value.GetValue(),
 			})
 		}
 	}
