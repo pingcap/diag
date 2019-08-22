@@ -40,9 +40,9 @@ func (t *saveResourceTask) Run(c *boot.Config, r *resource.Resource, args *args.
 
 func (t *saveResourceTask) insertData(m *boot.Model, inspectionId, resource, duration string, value float64) error {
 	v := utils.NewTagdFloat64(value, nil)
-	if v.V > THRESHOLD {
-		v.Tags.Set("status", "abnormal")
-		v.Tags.Set("message", fmt.Sprintf("%s Resource utilization/%s too high", resource, duration))
+	if v.GetValue() > THRESHOLD {
+		v.SetTag("status", "abnormal")
+		v.SetTag("message", fmt.Sprintf("%s Resource utilization/%s too high", resource, duration))
 	}
 
 	return m.InsertInspectionResourceInfo(&model.ResourceInfo{
