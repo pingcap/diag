@@ -309,14 +309,6 @@ def setup_os_ops(addr='127.0.0.1', basedir=''):
            FileOutput(join(basedir, 'dmesg', addr, 'dmesg'))),
         Op(CommandCollector(addr=addr, command='netstat -s'),
            FileOutput(join(basedir, 'net', addr, 'netstat'))),
-        Op(CommandCollector(addr=addr, command='iostat 1 60'),
-           FileOutput(join(basedir, 'proc', addr, 'iostat_1_60'))),
-        Op(CommandCollector(addr=addr, command='mpstat -P ALL 1 60'),
-           FileOutput(join(basedir, 'proc', addr, 'mpstat_1_60'))),
-        Op(CommandCollector(addr=addr, command='vmstat 1 60'),
-           FileOutput(join(basedir, 'proc', addr, 'vmstat_1_60'))),
-        Op(CommandCollector(addr=addr, command='pidstat -u -p ALL 1 60'),
-           FileOutput(join(basedir, 'proc', addr, 'pidstat_1_60'))),
     ]
     return ops
 
