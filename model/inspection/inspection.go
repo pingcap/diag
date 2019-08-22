@@ -30,7 +30,7 @@ const DIAG_FILTER = "type in ('auto', 'manual')"
 func (m *inspection) ListAllInspections(page, size int64) ([]*Inspection, int, error) {
 	insps := []*Inspection{}
 	count := 0
-	query := m.db.Where(DIAG_FILTER).Order("create_time desc")
+	query := m.db.Model(&Inspection{}).Where(DIAG_FILTER).Order("create_time desc")
 
 	if err := query.Offset((page - 1) * size).Limit(size).Find(&insps).Error(); err != nil {
 		return nil, 0, err
