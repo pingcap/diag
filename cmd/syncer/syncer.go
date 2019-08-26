@@ -35,7 +35,7 @@ func Sync(topoDir string, targetDir string, interval time.Duration, bwlimit int)
 		Cfg: RsyncConfig{
 			Args: []string{
 				"-az",
-				"--append",
+				"--inplace",
 				"--update",
 				fmt.Sprintf("--bwlimit=%d", bwlimit),
 			},

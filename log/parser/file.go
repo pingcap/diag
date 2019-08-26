@@ -8,6 +8,8 @@ import (
 	"strings"
 )
 
+// Mapped from a file path, which is in the format
+// of /{root}/{ip}/{component}:{port}/{xxx}.log
 type FileWrapper struct {
 	Root     string
 	Host     string
@@ -15,12 +17,14 @@ type FileWrapper struct {
 	Filename string
 }
 
-func (fw *FileWrapper) open() (*os.File, error) {
+// Open the file fw represent.
+func (fw *FileWrapper) Open() (*os.File, error) {
 	filePath := path.Join(fw.Root, fw.Host, fw.Folder, fw.Filename)
 	return os.OpenFile(filePath, os.O_RDONLY, os.ModePerm)
 }
 
-func (fw *FileWrapper) parseFolderName() (string, string, error) {
+// Return the component name and port it listening on.
+func (fw *FileWrapper) ParseFolderName() (string, string, error) {
 	s := strings.Split(fw.Folder, "-")
 	if len(s) < 2 {
 		return "", "", fmt.Errorf("unexpect folder name: %s", s)
@@ -37,6 +41,8 @@ func NewFileWrapper(root, host, folder, filename string) *FileWrapper {
 	}
 }
 
+// Traversing a folder and parse it's struct, generating
+// a list of file wrapper.
 func ResolveDir(src string) ([]*FileWrapper, error) {
 	var wrappers []*FileWrapper
 	dir, err := ioutil.ReadDir(src) // {cluster_uuid}

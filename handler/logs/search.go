@@ -1,6 +1,7 @@
 package logs
 
 import (
+	"io"
 	"net/http"
 	"path"
 	"strconv"
@@ -9,7 +10,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/pingcap/fn"
 	"github.com/pingcap/tidb-foresight/bootstrap"
-	"github.com/pingcap/tidb-foresight/log/parser"
+	"github.com/pingcap/tidb-foresight/log/item"
 	"github.com/pingcap/tidb-foresight/utils"
 	log "github.com/sirupsen/logrus"
 )
@@ -62,18 +63,20 @@ func (h *searchLogHandler) searchLog(r *http.Request) (*LogResult, utils.StatusE
 	logs := []*LogItem{}
 	for i := 0; i < int(limit); i++ {
 		if l, err := iter.Next(); err != nil {
-			log.Error("search log: ", err)
-			return nil, utils.FileOpError
-		} else if l == nil {
-			// no more logs
-			log.Info("search to end")
-			token = ""
-			if err := iter.Close(); err != nil {
-				log.Error("close log:", err)
+			if err == io.EOF {
+				// no more logs
+				log.Info("search to end")
+				token = ""
+				if err := iter.Close(); err != nil {
+					log.Error("close log:", err)
+				}
+				break
+			} else {
+				log.Error("search log: ", err)
+				return nil, utils.FileOpError
 			}
-			break
 		} else {
-			logs = append(logs, logFromSearch(l.Get()))
+			logs = append(logs, logFromSearch(l))
 		}
 	}
 
@@ -83,30 +86,30 @@ func (h *searchLogHandler) searchLog(r *http.Request) (*LogResult, utils.StatusE
 	}, nil
 }
 
-func logFromSearch(l *parser.LogItem) *LogItem {
-	item := &LogItem{
-		Host:      l.Host,
-		Port:      l.Port,
-		Component: l.Component,
-		File:      l.File,
-		Time:      l.Time,
-		Content:   string(l.Line),
+func logFromSearch(l item.Item) *LogItem {
+	it := &LogItem{
+		Host:      l.GetHost(),
+		Port:      l.GetPort(),
+		Component: l.GetComponent(),
+		File:      l.GetFileName(),
+		Time:      l.GetTime(),
+		Content:   string(l.GetContent()),
 	}
 
-	switch l.Level {
+	switch l.GetLevel() {
 	case -1:
-		item.Level = "SLOWLOG"
-	case parser.LevelFATAL:
-		item.Level = "FATAL"
-	case parser.LevelERROR:
-		item.Level = "ERROR"
-	case parser.LevelWARN:
-		item.Level = "WARN"
-	case parser.LevelINFO:
-		item.Level = "INFO"
-	case parser.LevelDEBUG:
-		item.Level = "DEBUG"
+		it.Level = "SLOWLOG"
+	case item.LevelFATAL:
+		it.Level = "FATAL"
+	case item.LevelERROR:
+		it.Level = "ERROR"
+	case item.LevelWARN:
+		it.Level = "WARN"
+	case item.LevelINFO:
+		it.Level = "INFO"
+	case item.LevelDEBUG:
+		it.Level = "DEBUG"
 	}
 
-	return item
+	return it
 }

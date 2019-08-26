@@ -4,8 +4,10 @@ import (
 	"io"
 	"os"
 	"path"
+	"sync"
 	"time"
 
+	"github.com/pingcap/tidb-foresight/log/iterator"
 	"github.com/pingcap/tidb-foresight/log/parser"
 	log "github.com/sirupsen/logrus"
 )
@@ -15,23 +17,25 @@ func copy(src, dest string, begin, end time.Time) error {
 	if err != nil {
 		return err
 	}
+
+	wg := sync.WaitGroup{}
+	wg.Add(len(files))
 	for _, fw := range files {
-		iter, err := parser.NewIterator(fw, begin, end)
-		if err != nil {
-			if err != io.EOF {
-				log.Warnf("create log iterator err: %s", err)
+		go func(fw *parser.FileWrapper) {
+			if iter, err := iterator.New(fw, begin, end); err != nil {
+				if err != io.EOF {
+					log.Warnf("create log iterator err: %s", err)
+				}
+			} else if f, err := createFile(dest, fw); err != nil {
+				log.Error("create file:", err)
+			} else if err := copyToFile(f, iter); err != nil {
+				log.Error("copy file:", err)
 			}
-			continue
-		}
-		f, err := createFile(dest, fw)
-		if err != nil {
-			return err
-		}
-		err = copyToFile(f, iter)
-		if err != nil {
-			return err
-		}
+			wg.Done()
+		}(fw)
 	}
+	wg.Wait()
+
 	return nil
 }
 
@@ -44,7 +48,7 @@ func createFile(dest string, fw *parser.FileWrapper) (*os.File, error) {
 	return os.Create(path.Join(dest, fw.Filename))
 }
 
-func copyToFile(f *os.File, iterator parser.Iterator) error {
+func copyToFile(f *os.File, iterator iterator.Iterator) error {
 	defer f.Close()
 	for {
 		item, err := iterator.Next()

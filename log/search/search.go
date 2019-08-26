@@ -1,4 +1,4 @@
-package searcher
+package search
 
 import (
 	"bytes"
@@ -7,11 +7,17 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/pingcap/tidb-foresight/log/item"
+	"github.com/pingcap/tidb-foresight/log/iterator"
 	"github.com/pingcap/tidb-foresight/log/parser"
 	"github.com/pingcap/tidb-foresight/utils"
 )
 
-type Searcher struct {
+type Searcher interface {
+	Search(dir string, begin, end time.Time, level, text, token string) (iterator.Iterator, string, error)
+}
+
+type searcher struct {
 	m map[string]*IterWithAccessTime
 	l sync.Mutex
 }
@@ -33,15 +39,7 @@ func NewIter(iter *Sequence, search, level string) *IterWithAccessTime {
 	}
 }
 
-var levelMap = map[string]parser.LevelType{
-	"OTHERES": -1,
-	"INFO":    parser.LevelINFO,
-	"DEBUG":   parser.LevelDEBUG,
-	"WARNING": parser.LevelWARN,
-	"ERROR":   parser.LevelERROR,
-}
-
-func (i *IterWithAccessTime) Next() (parser.Item, error) {
+func (i *IterWithAccessTime) Next() (item.Item, error) {
 	i.l.Lock()
 	defer i.l.Unlock()
 	i.access = time.Now()
@@ -52,14 +50,13 @@ func (i *IterWithAccessTime) Next() (parser.Item, error) {
 			if err != nil {
 				return nil, err
 			}
-			logItem := item.Get()
-			if !bytes.Contains(logItem.Line, i.search) {
+			if !bytes.Contains(item.GetContent(), i.search) {
 				continue
 			}
-			if i.level != "" && logItem.Level != levelMap[i.level] {
+			if i.level != "" && item.GetLevel() != parser.ParseLogLevel([]byte(i.level)) {
 				continue
 			}
-			return logItem, nil
+			return item, nil
 		}
 	} else {
 		return nil, errors.New("log file closed")
@@ -86,31 +83,31 @@ func (i *IterWithAccessTime) GetAccessTime() time.Time {
 	return i.access
 }
 
-func NewSearcher() *Searcher {
-	return &Searcher{
+func NewSearcher() Searcher {
+	return &searcher{
 		m: make(map[string]*IterWithAccessTime),
 	}
 }
 
-func (s *Searcher) SetIter(token string, iter *IterWithAccessTime) {
+func (s *searcher) SetIter(token string, iter *IterWithAccessTime) {
 	s.l.Lock()
 	defer s.l.Unlock()
 	s.m[token] = iter
 }
 
-func (s *Searcher) GetIter(token string) *IterWithAccessTime {
+func (s *searcher) GetIter(token string) *IterWithAccessTime {
 	s.l.Lock()
 	defer s.l.Unlock()
 	return s.m[token]
 }
 
-func (s *Searcher) DelIter(token string) {
+func (s *searcher) DelIter(token string) {
 	s.l.Lock()
 	defer s.l.Unlock()
 	delete(s.m, token)
 }
 
-func (s *Searcher) Gc(token string, iter *IterWithAccessTime) {
+func (s *searcher) Gc(token string, iter *IterWithAccessTime) {
 	const DURATION = 60 * time.Second
 
 	s.SetIter(token, iter)
@@ -126,10 +123,10 @@ func (s *Searcher) Gc(token string, iter *IterWithAccessTime) {
 	}
 }
 
-func (s *Searcher) Search(dir string, begin, end time.Time, level, text, token string) (parser.Iterator, string, error) {
+func (s *searcher) Search(dir string, begin, end time.Time, level, text, token string) (iterator.Iterator, string, error) {
 	if token == "" {
 		token = uuid.New().String()
-		i, err := SearchLog(dir, begin, end)
+		i, err := NewSequence(dir, begin, end)
 		if err != nil {
 			return nil, token, err
 		}

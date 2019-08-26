@@ -10,7 +10,7 @@ import (
 
 	"github.com/pingcap/fn"
 	"github.com/pingcap/tidb-foresight/bootstrap"
-	"github.com/pingcap/tidb-foresight/log/searcher"
+	"github.com/pingcap/tidb-foresight/log/search"
 	"github.com/pingcap/tidb-foresight/model"
 	"github.com/pingcap/tidb-foresight/utils"
 	"github.com/pingcap/tidb-foresight/wrapper/db"
@@ -21,7 +21,7 @@ type Server struct {
 	config   *bootstrap.ForesightConfig
 	model    model.Model
 	Router   http.Handler
-	searcher *searcher.Searcher
+	searcher search.Searcher
 }
 
 type ErrorMessage struct {
@@ -33,7 +33,7 @@ func NewServer(config *bootstrap.ForesightConfig, db db.DB) *Server {
 	s := &Server{
 		config:   config,
 		model:    model.New(db),
-		searcher: searcher.NewSearcher(),
+		searcher: search.NewSearcher(),
 	}
 
 	fn.SetErrorEncoder(func(ctx context.Context, err error) interface{} {
