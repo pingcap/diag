@@ -65,6 +65,7 @@ func (s *Server) Run(address string) error {
 			fmt.Sprintf("--target=%s", path.Join(s.config.Home, "remote-log")),
 			fmt.Sprintf("--interval=%d", s.config.Log.Interval),
 			fmt.Sprintf("--bwlimit=%d", s.config.Log.Bwlimit),
+			fmt.Sprintf("--threshold=%d", s.config.Log.Threshold),
 		)
 		cmd.Stdout = os.Stdout
 		cmd.Stderr = os.Stderr

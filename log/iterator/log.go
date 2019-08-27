@@ -11,9 +11,9 @@ import (
 	"github.com/pingcap/tidb-foresight/log/parser"
 )
 
-// Only enable seek when position range is more than SEEK_TRESHHOLD.
-// The suggested value of SEEK_TRESHHOLD is the biggest log size.
-const SEEK_TRESHHOLD = 1024 * 1024
+// Only enable seek when position range is more than SEEK_THRESHOLD.
+// The suggested value of SEEK_THRESHOLD is the biggest log size.
+const SEEK_THRESHOLD = 1024 * 1024
 
 // Define the slow query file name
 const SlowLogQueryFileName = "tidb_slow_query.log"
@@ -146,15 +146,15 @@ func (iter *LogIterator) Seek(point time.Time) error {
 // The implemention of Seek method, recursive call itself until found
 // target log.
 func (iter *LogIterator) seek(bpos, epos int64, point time.Time) error {
-	if epos-bpos < SEEK_TRESHHOLD {
+	if epos-bpos < SEEK_THRESHOLD {
 		err := iter.carpet(bpos, epos, point)
 		return err
 	}
 
 	begin := (bpos + epos) / 2
 	end := epos
-	if begin+SEEK_TRESHHOLD < epos {
-		end = begin + SEEK_TRESHHOLD
+	if begin+SEEK_THRESHOLD < epos {
+		end = begin + SEEK_THRESHOLD
 	}
 
 	err := iter.seek(begin, end, point)

@@ -37,6 +37,7 @@ func Sync(topoDir string, targetDir string, interval time.Duration, bwlimit int)
 				"-az",
 				"--inplace",
 				"--update",
+				"--delete",
 				fmt.Sprintf("--bwlimit=%d", bwlimit),
 			},
 		},
@@ -110,6 +111,10 @@ func (c *Cluster) LoadTasks(targetDir, uuid string) []SyncTask {
 			continue
 		}
 		for _, component := range host.Components {
+			// only handle pd, tidb and tikv currently
+			if !shouldCollect(component.Name) {
+				continue
+			}
 			// {cluster_uuid}_{host_ip}_{component_name}_{component_port}
 			key := fmt.Sprintf("%s_%s_%s_%s", uuid, host.Ip, component.Name, component.Port)
 			// {user}@{host_ip}:{deploy_dir}/log
@@ -138,7 +143,18 @@ func (c *Cluster) LoadTasks(targetDir, uuid string) []SyncTask {
 
 // PatternStr return the pattern string used by rsync parameter: --filter
 func PatternStr(filename string) string {
-	return filename + "*"
+	return filename + ".log*"
+}
+
+// Only collect logs from specific components
+func shouldCollect(component string) bool {
+	whiteList := []string{"pd", "tidb", "tikv"}
+	for _, c := range whiteList {
+		if component == c {
+			return true
+		}
+	}
+	return false
 }
 
 // syncTask inform a pair of folder path
