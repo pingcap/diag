@@ -5,7 +5,6 @@ import { connect } from 'dva';
 import { ConnectProps, Dispatch, ConnectState } from '@/models/connect';
 import { CurrentUser } from '@/models/user';
 import UploadRemoteReportModal from '@/components/UploadRemoteReportModal';
-import AutoTable from '@/components/InspectionDetail/AutoTable';
 import { IInspectionDetail } from '@/models/inspection';
 import { queryInspection } from '@/services/inspection';
 import InspectionReport from '@/components/InspectionDetail/InspectionReport';
