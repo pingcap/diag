@@ -281,75 +281,30 @@ func (s *SyncTestSuit) TestClusterLoadTasks(c *C) {
 	targetDir := "."
 	tasks := clusterSample.LoadTasks(targetDir, s.uuid)
 	expect := []SyncTask{{
-		Key:     "_10.0.1.8_node_exporter_39100",
-		From:    "tidb@10.0.1.8:/data1/liubo/deploy/log/",
-		To:      "10.0.1.8/node_exporter-39100",
-		Filters: []string{"node_exporter*"},
-	}, {
-		Key:     "_10.0.1.8_blackbox_exporter_39115",
-		From:    "tidb@10.0.1.8:/data1/liubo/deploy/log/",
-		To:      "10.0.1.8/blackbox_exporter-39115",
-		Filters: []string{"blackbox_exporter*"},
-	}, {
-		Key:     "_10.0.1.8_prometheus_39090",
-		From:    "tidb@10.0.1.8:/data1/liubo/deploy/log/",
-		To:      "10.0.1.8/prometheus-39090",
-		Filters: []string{"prometheus*", "alertmanager*"},
-	}, {
-		Key:     "_10.0.1.8_pushgateway_39091",
-		From:    "tidb@10.0.1.8:/data1/liubo/deploy/log/",
-		To:      "10.0.1.8/pushgateway-39091",
-		Filters: []string{"pushgateway*"},
-	}, {
 		Key:     "_10.0.1.8_pd_32379",
 		From:    "tidb@10.0.1.8:/data1/liubo/deploy/log/",
 		To:      "10.0.1.8/pd-32379",
-		Filters: []string{"pd*"},
+		Filters: []string{"pd.log*"},
 	}, {
 		Key:     "_10.0.1.8_tidb_14000",
 		From:    "tidb@10.0.1.8:/data1/liubo/deploy/log/",
 		To:      "10.0.1.8/tidb-14000",
-		Filters: []string{"tidb*"},
-	}, {
-		Key:     "_10.0.1.8_grafana_12325",
-		From:    "tidb@10.0.1.8:/data1/liubo/deploy/log/",
-		To:      "10.0.1.8/grafana-12325",
-		Filters: []string{"grafana*"},
+		Filters: []string{"tidb.log*"},
 	}, {
 		Key:     "_10.0.1.8_tikv_30160",
 		From:    "tidb@10.0.1.8:/data1/liubo/deploy/log/",
 		To:      "10.0.1.8/tikv-30160",
-		Filters: []string{"tikv*"},
-	}, {
-		Key:     "_10.0.1.9_node_exporter_39100",
-		From:    "tidb@10.0.1.9:/data1/liubo/deploy/log/",
-		To:      "10.0.1.9/node_exporter-39100",
-		Filters: []string{"node_exporter*"},
-	}, {
-		Key:     "_10.0.1.9_blackbox_exporter_39115",
-		From:    "tidb@10.0.1.9:/data1/liubo/deploy/log/",
-		To:      "10.0.1.9/blackbox_exporter-39115",
-		Filters: []string{"blackbox_exporter*"},
+		Filters: []string{"tikv.log*"},
 	}, {
 		Key:     "_10.0.1.9_tikv_30160",
 		From:    "tidb@10.0.1.9:/data1/liubo/deploy/log/",
 		To:      "10.0.1.9/tikv-30160",
-		Filters: []string{"tikv*"},
-	}, {
-		Key:     "_10.0.1.11_node_exporter_39100",
-		From:    "tidb@10.0.1.11:/data1/liubo/deploy/log/",
-		To:      "10.0.1.11/node_exporter-39100",
-		Filters: []string{"node_exporter*"},
-	}, {
-		Key:     "_10.0.1.11_blackbox_exporter_39115",
-		From:    "tidb@10.0.1.11:/data1/liubo/deploy/log/",
-		To:      "10.0.1.11/blackbox_exporter-39115",
-		Filters: []string{"blackbox_exporter*"},
+		Filters: []string{"tikv.log*"},
 	}, {
 		Key:     "_10.0.1.11_tikv_30160",
 		From:    "tidb@10.0.1.11:/data1/liubo/deploy/log/",
 		To:      "10.0.1.11/tikv-30160",
-		Filters: []string{"tikv*"},
+		Filters: []string{"tikv.log*"},
 	}}
 
 	if !reflect.DeepEqual(tasks, expect) {

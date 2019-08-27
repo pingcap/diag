@@ -11,7 +11,7 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-const NTP_TRESHHOLD = 500.0
+const NTP_THRESHOLD = 500.0
 
 type saveNtpInfoTask struct{}
 
@@ -23,7 +23,7 @@ func SaveNtpInfo() *saveNtpInfoTask {
 func (t *saveNtpInfoTask) Run(m *boot.Model, c *boot.Config, insight *insight.Insight) {
 	for _, insight := range *insight {
 		offset := utils.NewTagdFloat64(insight.Ntp.Offset, nil)
-		if math.Abs(offset.GetValue()) > NTP_TRESHHOLD {
+		if math.Abs(offset.GetValue()) > NTP_THRESHOLD {
 			offset.SetTag("status", "abnormal")
 			offset.SetTag("message", fmt.Sprintf("ntp offset of node %s exceeded the threshold (500ms)", insight.NodeIp))
 		}

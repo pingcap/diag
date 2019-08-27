@@ -49,7 +49,7 @@ func (l *LogItem) GetContent() []byte {
 
 func (l *LogItem) AppendContent(content []byte) error {
 	if len(l.Content) > MAX_LOG_SIZE {
-		return fmt.Errorf("log size exceeds limit, log content:\n", string(l.Content))
+		return fmt.Errorf("log size exceeds limit, log content:\n%s\n", string(l.Content))
 	}
 	l.Content = append(l.Content, byte('\n'))
 	l.Content = append(l.Content, content...)
