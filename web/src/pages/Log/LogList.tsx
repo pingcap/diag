@@ -3,7 +3,7 @@ import { Table, Button, DatePicker, Input, Select } from 'antd';
 import { connect } from 'dva';
 import { RangePickerValue } from 'antd/lib/date-picker/interface';
 import { ConnectState, ConnectProps, Dispatch } from '@/models/connect';
-import { LogModelState, ILogFile } from '@/models/log';
+import { LogModelState, ILogFile, IFormatLog } from '@/models/log';
 import UploadRemoteReportModal from '@/components/UploadRemoteReportModal';
 import { CurrentUser } from '@/models/user';
 import UploadLocalReportModal from '@/components/UploadLocalReportModal';
@@ -27,6 +27,10 @@ const tableColumns = [
     title: '内容',
     dataIndex: 'content',
     key: 'content',
+    width: 800,
+    render: (text: any, record: IFormatLog) => (
+      <span style={{ whiteSpace: 'pre-wrap' }}>{text}</span>
+    ),
   },
 ];
 
