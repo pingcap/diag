@@ -7,6 +7,9 @@
 ## Installation dependency package
 
 ```
+# Install make
+[ubuntu@ip] sudo apt-get install make
+
 # Install golang
 [ubuntu@ip] cd ~
 [ubuntu@ip] wget https://dl.google.com/go/go1.12.7.linux-amd64.tar.gz
