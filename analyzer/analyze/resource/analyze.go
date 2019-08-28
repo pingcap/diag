@@ -22,13 +22,14 @@ func (t *analyzeTask) Run(m *boot.Model, c *boot.Config) {
 	}
 
 	for _, res := range resources {
-		if res.Value.GetTag("status") == "abnormal" {
-			msg := fmt.Sprintf("%s Resource utilization/%s too high", res.Name, res.Duration)
-			defer m.InsertSymptom(
-				"error",
-				msg,
-				"please increase resources appropriately",
-			)
+		desc := "please increase resources appropriately"
+		if res.Max.GetTag("status") == "abnormal" {
+			msg := fmt.Sprintf("%s/max resource utilization/%s too high", res.Name, res.Duration)
+			defer m.InsertSymptom("error", msg, desc)
+		}
+		if res.Avg.GetTag("status") == "abnormal" {
+			msg := fmt.Sprintf("%s/avg resource utilization/%s too high", res.Name, res.Duration)
+			defer m.InsertSymptom("error", msg, desc)
 		}
 	}
 }

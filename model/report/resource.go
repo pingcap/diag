@@ -8,7 +8,8 @@ type ResourceInfo struct {
 	InspectionId string
 	Name         string
 	Duration     string
-	Value        utils.TagdFloat64
+	Avg          utils.TagdFloat64
+	Max          utils.TagdFloat64
 }
 
 func (m *report) GetInspectionResourceInfo(inspectionId string) ([]*ResourceInfo, error) {
