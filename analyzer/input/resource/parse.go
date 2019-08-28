@@ -8,6 +8,7 @@ import (
 	"github.com/pingcap/tidb-foresight/analyzer/input/args"
 	"github.com/pingcap/tidb-foresight/analyzer/output/metric"
 	"github.com/pingcap/tidb-foresight/utils"
+	log "github.com/sirupsen/logrus"
 )
 
 type parseResourceTask struct{}
@@ -63,6 +64,9 @@ func (t *parseResourceTask) Run(args *args.Args, c *boot.Config, m *metric.Metri
 }
 
 func (t *parseResourceTask) resourceUtil(query string, begin, end time.Time) utils.FloatArray {
-	v, _ := utils.QueryPromRange(query, begin, end, time.Minute)
+	v, e := utils.QueryPromRange(query, begin, end, time.Minute)
+	if e != nil {
+		log.Error("query prometheus:", e)
+	}
 	return v
 }

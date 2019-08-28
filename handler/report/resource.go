@@ -34,27 +34,42 @@ func (h *getResourceInfoHandler) getInspectionResourceInfo(r *http.Request) (map
 	conclusions := make([]map[string]interface{}, 0)
 	data := make([]map[string]interface{}, 0)
 	for _, res := range info {
-		if res.Value.GetTag("status") == "abnormal" {
+		var max, avg interface{}
+
+		if res.Max.GetTag("status") == "abnormal" {
 			conclusions = append(conclusions, map[string]interface{}{
 				"status":  "abnormal",
-				"message": fmt.Sprintf("%s Resource utilization/%s too high", res.Name, res.Duration),
+				"message": fmt.Sprintf("%s/max resource utilization/%s too high", res.Name, res.Duration),
 			})
-			data = append(data, map[string]interface{}{
-				"name":     res.Name,
-				"duration": res.Duration,
-				"value": map[string]interface{}{
-					"value":    res.Value.GetValue(),
-					"abnormal": true,
-					"message":  "too high",
-				},
-			})
+			max = map[string]interface{}{
+				"value":    res.Max.GetValue(),
+				"abnormal": true,
+				"message":  "too high",
+			}
 		} else {
-			data = append(data, map[string]interface{}{
-				"name":     res.Name,
-				"duration": res.Duration,
-				"value":    res.Value.GetValue(),
-			})
+			max = res.Max.GetValue()
 		}
+
+		if res.Avg.GetTag("status") == "abnormal" {
+			conclusions = append(conclusions, map[string]interface{}{
+				"status":  "abnormal",
+				"message": fmt.Sprintf("%s/avg resource utilization/%s too high", res.Name, res.Duration),
+			})
+			avg = map[string]interface{}{
+				"value":    res.Avg.GetValue(),
+				"abnormal": true,
+				"message":  "too high",
+			}
+		} else {
+			avg = res.Avg.GetValue()
+		}
+
+		data = append(data, map[string]interface{}{
+			"name":     res.Name,
+			"duration": res.Duration,
+			"max":      max,
+			"avg":      avg,
+		})
 	}
 
 	return map[string]interface{}{
