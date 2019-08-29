@@ -49,6 +49,7 @@ const UserModel: UserModelType = {
           }),
         );
       }
+      return res;
     },
     *logout(_, { call, put }) {
       yield call(accountLogout);

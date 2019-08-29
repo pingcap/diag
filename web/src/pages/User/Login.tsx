@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Form, Input, Icon, Button } from 'antd';
 import { WrappedFormUtils } from 'antd/lib/form/Form';
 import { connect } from 'dva';
@@ -13,15 +13,19 @@ interface LoginProps extends ConnectProps {
 }
 
 function Login({ form, dispatch, logging }: LoginProps) {
+  const [loginFailed, setLoginFailed] = useState(false);
   const { getFieldDecorator } = form;
 
   function handleSubmit(e: any) {
+    // setLoginFailed(false);
     e.preventDefault();
     form.validateFields((err, values) => {
       if (!err) {
         dispatch({
           type: 'user/login',
           payload: values,
+        }).then((res: any) => {
+          setLoginFailed(res === undefined);
         });
       }
     });
@@ -35,7 +39,7 @@ function Login({ form, dispatch, logging }: LoginProps) {
         })(
           <Input
             prefix={<Icon type="user" style={{ color: 'rgba(0,0,0,.25)' }} />}
-            placeholder="username (foresight or admin)"
+            placeholder="username"
           />,
         )}
       </Form.Item>
@@ -46,9 +50,10 @@ function Login({ form, dispatch, logging }: LoginProps) {
           <Input
             prefix={<Icon type="lock" style={{ color: 'rgba(0,0,0,.25)' }} />}
             type="password"
-            placeholder="password (foresight or admin)"
+            placeholder="password"
           />,
         )}
+        {loginFailed && <span className={styles.error}>* 用户名或密码错误，请联系后台管理员</span>}
       </Form.Item>
       <Form.Item>
         <Button type="primary" htmlType="submit" className={styles.action_btn} loading={logging}>
