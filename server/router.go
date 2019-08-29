@@ -70,13 +70,14 @@ func (s *Server) CreateRouter() http.Handler {
 	r.Handle("/api/v1/instances", instance.ListInstance(s.model)).Methods("GET")
 	r.Handle("/api/v1/instances", instance.CreateInstance(s.config, s.model)).Methods("POST")
 	r.Handle("/api/v1/instances/{id}", instance.GetInstance(s.model)).Methods("GET")
-	r.Handle("/api/v1/instances/{id}", instance.DeleteInstance(s.config, s.model)).Methods("DELETE")
+	r.Handle("/api/v1/instances/{id}", instance.DeleteInstance(s.config, s.model, s.scheduler)).Methods("DELETE")
+	r.Handle("/api/v1/inspections/{id}/components", instance.ListComponent(s.model)).Methods("GET")
 	r.Handle("/api/v1/instances/{id}/config", config.GetConfig(s.model)).Methods("GET")
-	r.Handle("/api/v1/instances/{id}/config", config.SetConfig(s.model)).Methods("PUT")
+	r.Handle("/api/v1/instances/{id}/config", config.SetConfig(s.model, s.scheduler)).Methods("PUT")
 	r.Handle("/api/v1/instances/{id}/inspections", inspection.ListInspection(s.model)).Methods("GET")
-	r.Handle("/api/v1/instances/{id}/inspections", inspection.CreateInspection(s.config, s.model)).Methods("POST")
+	r.Handle("/api/v1/instances/{id}/inspections", inspection.CreateInspection(s.config, s.model, s.worker)).Methods("POST")
 	r.Handle("/api/v1/instances/{id}/perfprofiles", profile.ListProfile(s.config, s.model)).Methods("GET")
-	r.Handle("/api/v1/instances/{id}/perfprofiles", profile.CreateProfile(s.config, s.model)).Methods("POST")
+	r.Handle("/api/v1/instances/{id}/perfprofiles", profile.CreateProfile(s.config, s.model, s.worker)).Methods("POST")
 
 	// logs
 	r.Handle("/api/v1/loginstances", logs.ListInstance(s.config, s.model)).Methods("GET")
@@ -84,13 +85,13 @@ func (s *Server) CreateRouter() http.Handler {
 	r.Handle("/api/v1/loginstances/{id}/logs", logs.SearchLog(s.config, s.searcher)).Methods("GET")
 	r.Handle("/api/v1/loginstances/{id}", logs.UploadLog(s.config)).Methods("PUT")
 	r.Handle("/api/v1/logfiles/{id}/logs", logs.SearchLog(s.config, s.searcher)).Methods("GET")
-	r.Handle("/api/v1/logfiles", logs.ImportLog(s.config, s.model)).Methods("POST")
+	r.Handle("/api/v1/logfiles", logs.ImportLog(s.config, s.model, s.worker)).Methods("POST")
 	r.Handle("/api/v1/loginstances/{id}.tar.gz", logs.ExportLog(s.config)).Methods("GET")
 
 	// inspection
 	r.Handle("/api/v1/inspections", inspection.ListAllInspection(s.model)).Methods("GET")
 	r.Handle("/api/v1/inspections/{id}.tar.gz", inspection.ExportInspection(s.config)).Methods("GET")
-	r.Handle("/api/v1/inspections", inspection.ImportInspection(s.config, s.model)).Methods("POST")
+	r.Handle("/api/v1/inspections", inspection.ImportInspection(s.config, s.model, s.worker)).Methods("POST")
 	r.Handle("/api/v1/inspections/{id}", inspection.GetInspection(s.model)).Methods("GET")
 	r.Handle("/api/v1/inspections/{id}", inspection.UploadInspection(s.config)).Methods("PUT")
 	r.Handle("/api/v1/inspections/{id}", inspection.DeleteInspection(s.config, s.model)).Methods("DELETE")
@@ -115,7 +116,7 @@ func (s *Server) CreateRouter() http.Handler {
 	r.Handle("/api/v1/perfprofiles/{id}", profile.GetProfile(s.config, s.model)).Methods("GET")
 	r.Handle("/api/v1/perfprofiles/{id}/{component}/{address}/{type}/{file}", profile.GetProfileItem(s.config)).Methods("GET")
 	r.Handle("/api/v1/perfprofiles/{id}", inspection.UploadInspection(s.config)).Methods("PUT")
-	r.Handle("/api/v1/perfprofiles", inspection.ImportInspection(s.config, s.model)).Methods("POST")
+	r.Handle("/api/v1/perfprofiles", inspection.ImportInspection(s.config, s.model, s.worker)).Methods("POST")
 	r.Handle("/api/v1/perfprofiles/{id}", inspection.DeleteInspection(s.config, s.model)).Methods("DELETE")
 
 	// metric

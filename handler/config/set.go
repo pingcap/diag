@@ -10,12 +10,17 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-type setConfigHandler struct {
-	m model.Model
+type Scheduler interface {
+	Reload() error
 }
 
-func SetConfig(m model.Model) http.Handler {
-	return &setConfigHandler{m}
+type setConfigHandler struct {
+	m model.Model
+	s Scheduler
+}
+
+func SetConfig(m model.Model, s Scheduler) http.Handler {
+	return &setConfigHandler{m, s}
 }
 
 func (h *setConfigHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -28,10 +33,14 @@ func (h *setConfigHandler) setInstanceConfig(c *model.Config, r *http.Request) (
 		return nil, utils.ParamsMismatch
 	}
 
-	err := h.m.SetInstanceConfig(c)
-	if err != nil {
+	if err := h.m.SetInstanceConfig(c); err != nil {
 		log.Error("set instance config: ", err)
 		return nil, utils.DatabaseUpdateError
+	}
+
+	if err := h.s.Reload(); err != nil {
+		log.Error("reload auto sched task:", err)
+		return nil, utils.SystemOpError
 	}
 
 	return nil, nil

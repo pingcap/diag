@@ -1,7 +1,6 @@
 package utils
 
 import (
-	"fmt"
 	"io"
 	"net/http"
 	"os"
@@ -86,26 +85,4 @@ func UploadInspection(home string, r *http.Request) (string, StatusError) {
 
 	log.Info("upload successfully")
 	return inspectionId, nil
-}
-
-func Analyze(analyzer, home, influx, prom, inspectionId string) error {
-	cmd := exec.Command(
-		analyzer,
-		fmt.Sprintf("--home=%s", home),
-		fmt.Sprintf("--inspection-id=%s", inspectionId),
-	)
-	cmd.Env = append(
-		os.Environ(),
-		"INFLUX_ADDR="+influx,
-		"PROM_ADDR="+prom,
-	)
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	log.Info(cmd.Args)
-	err := cmd.Run()
-	if err != nil {
-		log.Error("run ", analyzer, ": ", err)
-		return err
-	}
-	return nil
 }

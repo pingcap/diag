@@ -9,15 +9,11 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-type InstanceLister interface {
-	ListInstance() ([]*model.Instance, error)
-}
-
 type listInstanceHandler struct {
-	m InstanceLister
+	m model.Model
 }
 
-func ListInstance(m InstanceLister) http.Handler {
+func ListInstance(m model.Model) http.Handler {
 	return &listInstanceHandler{m}
 }
 

@@ -19,7 +19,7 @@ func CollectLog(collector, home, user, instanceId, inspectionId string, begin, e
 		fmt.Sprintf("--data-dir=%s", path.Join(home, "inspection")),
 		"--collect=log",
 		fmt.Sprintf("--log-dir=%s", path.Join(home, "remote-log", instanceId)),
-		fmt.Sprintf("--log-spliter=%s", path.Join(home, "spliter")),
+		fmt.Sprintf("--log-spliter=%s", path.Join(home, "bin", "spliter")),
 		fmt.Sprintf("--begin=%s", begin.Format(time.RFC3339)),
 		fmt.Sprintf("--end=%s", end.Format(time.RFC3339)),
 	)

@@ -26,12 +26,16 @@ type Config struct {
 	// auto schedule start time, eg. 00:00, 00:30, 01:00, 01:30
 	AutoSchedStart string `json:"auto_sched_start"`
 
+	// auto schedule day, eg. SUN, MON, TUE, WED, THU, FRI, SAT
+	// if mutile ones specified, join them with comma.
+	AutoSchedDay string `json:"auto_sched_day"`
+
 	// auto schedule duration, minutes
 	AutoSchedDuration int64 `json:"auto_sched_duration"`
 
 	// when user click diagnose button, he will chose a time range
 	// for collecting metric and log infomation.
-	ManualSchedRange []time.Time `json:"manual_sched_range"`
+	SchedRange []time.Time `json:"manual_sched_range"`
 
 	// how long before the foresight gc remove a report
 	ReportKeepDuration int64 `json:"report_keep_duration"`
@@ -54,6 +58,16 @@ func (m *config) GetInstanceConfig(instanceId string) (*Config, error) {
 	}
 
 	return c, nil
+}
+
+func (m *config) ListInstanceConfig() ([]*Config, error) {
+	configs := []*Config{}
+
+	if err := m.db.Find(&configs).Error(); err != nil {
+		return nil, err
+	}
+
+	return configs, nil
 }
 
 func (m *config) SetInstanceConfig(c *Config) error {

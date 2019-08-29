@@ -7,6 +7,7 @@ import (
 
 type Model interface {
 	GetInstanceConfig(instanceId string) (*Config, error)
+	ListInstanceConfig() ([]*Config, error)
 	SetInstanceConfig(c *Config) error
 	DeleteInstanceConfig(instanceId string) error
 }

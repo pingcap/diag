@@ -13,17 +13,18 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-type InstanceDeletor interface {
-	DeleteInstance(uuid string) error
+type Scheduler interface {
+	Reload() error
 }
 
 type deleteInstanceHandler struct {
 	c *bootstrap.ForesightConfig
-	m InstanceDeletor
+	m model.Model
+	s Scheduler
 }
 
-func DeleteInstance(c *bootstrap.ForesightConfig, m InstanceDeletor) http.Handler {
-	return &deleteInstanceHandler{c, m}
+func DeleteInstance(c *bootstrap.ForesightConfig, m model.Model, s Scheduler) http.Handler {
+	return &deleteInstanceHandler{c, m, s}
 }
 
 func (h *deleteInstanceHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -45,8 +46,18 @@ func (h *deleteInstanceHandler) deleteInstance(r *http.Request) (*model.Instance
 		// so do nothing here
 	}
 
+	if err := h.m.DeleteInstanceConfig(uuid); err != nil {
+		log.Error("delete instance config failed:", err)
+		return nil, utils.DatabaseDeleteError
+	}
+
+	if err := h.s.Reload(); err != nil {
+		log.Error("reload auto sched task:", err)
+		return nil, utils.SystemOpError
+	}
+
 	if err := h.m.DeleteInstance(uuid); err != nil {
-		log.Error("delete instance failed: ", err)
+		log.Error("delete instance failed:", err)
 		e = utils.DatabaseDeleteError
 	}
 
