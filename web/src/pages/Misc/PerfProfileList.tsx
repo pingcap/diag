@@ -15,7 +15,7 @@ const styles = require('../style.less');
 
 const tableColumns = (curUser: CurrentUser, onDelete: any, onUpload: any) => [
   {
-    title: 'Profile 报告 ID',
+    title: '报告 ID',
     dataIndex: 'uuid',
     key: 'uuid',
   },
@@ -132,8 +132,8 @@ function PerfProfileList({
 
   function deletePerfProfile(record: IPerfProfile) {
     Modal.confirm({
-      title: '删除 Profile 报告？',
-      content: '你确定要删除这个 Profile 报告吗？删除后不可恢复',
+      title: '删除报告？',
+      content: '你确定要删除这个报告吗？删除后不可恢复',
       okText: '删除',
       okButtonProps: { type: 'danger' },
       onOk() {
@@ -182,7 +182,7 @@ function PerfProfileList({
   return (
     <div className={styles.container}>
       <div className={styles.list_header}>
-        <h2>Perf Profile 报告列表</h2>
+        <h2>火焰图 &amp; Profile 报告列表</h2>
         {curUser.role === 'admin' && (
           <Button type="primary" onClick={showAddReportModal}>
             + 获取

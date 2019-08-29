@@ -54,9 +54,9 @@ export default {
   'menu.inspection.report_detail': '诊断报告详情',
 
   'menu.misc': '其它管理',
-  'menu.misc.flame_graph': '火焰图',
-  'menu.misc.perf_profile': 'Perf Profile',
-  'menu.misc.flame_graph_detail': '火焰图详情',
-  'menu.misc.perf_profile_detail': 'Perf Profile 详情',
+  // 'menu.misc.flame_graph': '火焰图',
+  'menu.misc.perf_profile': '火焰图 & Profile',
+  // 'menu.misc.flame_graph_detail': '火焰图详情',
+  'menu.misc.perf_profile_detail': '火焰图 & Profile 详情',
   'menu.logs': '日志管理',
 };
