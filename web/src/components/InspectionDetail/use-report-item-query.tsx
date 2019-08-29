@@ -38,16 +38,16 @@ export function useReportItemQuery(apiUrl: string) {
               if (text.abnormal) {
                 return (
                   <div style={{ display: 'flex' }}>
-                    <pre style={{ color: 'red', marginRight: '8px' }}>
+                    <span style={{ color: 'red', marginRight: '8px', whiteSpace: 'pre-wrap' }}>
                       {(text as IAbnormalValue).value}
-                    </pre>
+                    </span>
                     <Tooltip title={(text as IAbnormalValue).message}>
                       <Icon style={{ paddingTop: '2px' }} type="question-circle" />
                     </Tooltip>
                   </div>
                 );
               }
-              return <pre>{text}</pre>;
+              return <span style={{ whiteSpace: 'pre-wrap' }}>{text}</span>;
             },
           }));
           const dataArr = (res as IResConclusionWithData).data.map((item, index) => ({
@@ -63,13 +63,13 @@ export function useReportItemQuery(apiUrl: string) {
               title: '信息',
               dataIndex: 'field',
               key: 'field',
-              render: (text: any) => <pre>{text}</pre>,
+              render: (text: any) => <span style={{ whiteSpace: 'pre-wrap' }}>{text}</span>,
             },
             {
               title: '值',
               dataIndex: 'value',
               key: 'value',
-              render: (text: any) => <pre>{text}</pre>,
+              render: (text: any) => <span style={{ whiteSpace: 'pre-wrap' }}>{text}</span>,
             },
           ];
           const dataArr = Object.keys(res).map(key => ({
