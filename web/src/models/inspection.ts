@@ -40,6 +40,8 @@ export interface IInstanceConfig {
 
   auto_sched_start: string; // 开始时间
   auto_sched_duration: number; // 统计信息时长
+  auto_sched_day: string;
+
   manual_sched_range: [string, string]; // 手动诊断时的统计信息时间段
 
   report_keep_duration: number; // 保存时长
