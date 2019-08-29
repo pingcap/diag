@@ -10,15 +10,11 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-type InstanceGeter interface {
-	GetInstance(instanceId string) (*model.Instance, error)
-}
-
 type getInstanceHandler struct {
-	m InstanceGeter
+	m model.Model
 }
 
-func GetInstance(m InstanceGeter) http.Handler {
+func GetInstance(m model.Model) http.Handler {
 	return &getInstanceHandler{m}
 }
 

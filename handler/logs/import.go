@@ -10,13 +10,18 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+type ImportWorker interface {
+	Analyze(inspectionId string) error
+}
+
 type importLogHandler struct {
 	c *bootstrap.ForesightConfig
 	m model.Model
+	w ImportWorker
 }
 
-func ImportLog(c *bootstrap.ForesightConfig, m model.Model) http.Handler {
-	return &importLogHandler{c, m}
+func ImportLog(c *bootstrap.ForesightConfig, m model.Model, w ImportWorker) http.Handler {
+	return &importLogHandler{c, m, w}
 }
 
 func (h *importLogHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -44,7 +49,7 @@ func (h *importLogHandler) importLog(r *http.Request) (*model.LogEntity, utils.S
 		return nil, utils.DatabaseInsertError
 	}
 
-	if err := utils.Analyze(h.c.Analyzer, h.c.Home, h.c.Influx.Endpoint, h.c.Prometheus.Endpoint, inspectionId); err != nil {
+	if err := h.w.Analyze(inspectionId); err != nil {
 		log.Error("analyze ", inspectionId, ": ", err)
 		inspection.Status = "exception"
 		inspection.Message = "analyze failed"

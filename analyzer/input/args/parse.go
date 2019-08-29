@@ -14,7 +14,7 @@ import (
 func (a *Args) Collect(iname string) bool {
 	items := strings.Split(a.Collects, ",")
 	for _, item := range items {
-		if iname == item {
+		if iname == strings.Split(item, ":")[0] {
 			return true
 		}
 	}

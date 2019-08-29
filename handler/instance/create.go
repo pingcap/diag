@@ -17,17 +17,12 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-type InstanceCreator interface {
-	CreateInstance(instance *model.Instance) error
-	UpdateInstance(instance *model.Instance) error
-}
-
 type createInstanceHandler struct {
 	c *bootstrap.ForesightConfig
-	m InstanceCreator
+	m model.Model
 }
 
-func CreateInstance(c *bootstrap.ForesightConfig, m InstanceCreator) http.Handler {
+func CreateInstance(c *bootstrap.ForesightConfig, m model.Model) http.Handler {
 	return &createInstanceHandler{c, m}
 }
 

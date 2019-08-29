@@ -2,6 +2,7 @@ package profile
 
 import (
 	"github.com/pingcap/tidb-foresight/model/inspection"
+	"github.com/pingcap/tidb-foresight/model/report"
 	"github.com/pingcap/tidb-foresight/wrapper/db"
 )
 
@@ -12,11 +13,12 @@ type Model interface {
 }
 
 func New(db db.DB) Model {
-	return &profile{db}
+	return &profile{db, report.New(db)}
 }
 
 type profile struct {
 	db db.DB
+	r  report.Model
 }
 
 func (m *profile) ListAllProfiles(page, size int64, profDir string) ([]*Profile, int, error) {
@@ -37,6 +39,12 @@ func (m *profile) ListAllProfiles(page, size int64, profDir string) ([]*Profile,
 	for _, insp := range insps {
 		if prof, err := fromInspection(insp, profDir); err != nil {
 			return nil, 0, err
+		} else if symptoms, err := m.r.GetInspectionSymptoms(insp.Uuid); err != nil {
+			return nil, 0, err
+		} else if len(symptoms) != 0 {
+			prof.Status = "exception"
+			prof.Message = "collect failed"
+			profs = append(profs, prof)
 		} else {
 			profs = append(profs, prof)
 		}
@@ -64,6 +72,12 @@ func (m *profile) ListProfiles(instanceId string, page, size int64, profDir stri
 
 	// transform inspection to profile
 	for _, insp := range insps {
+		if symptoms, err := m.r.GetInspectionSymptoms(insp.Uuid); err != nil {
+			return nil, 0, err
+		} else if len(symptoms) != 0 {
+			insp.Status = "exception"
+			insp.Message = "collect failed"
+		}
 		if prof, err := fromInspection(insp, profDir); err != nil {
 			return nil, 0, err
 		} else {

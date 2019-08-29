@@ -16,6 +16,7 @@ type Profile struct {
 	InstanceName string         `json:"instance_name"`
 	User         string         `json:"user"`
 	Status       string         `json:"status"`
+	Message      string         `json:"message"`
 	CreateTime   utils.NullTime `json:"create_time"`
 	FinishTime   utils.NullTime `json:"finish_time"`
 	Items        []ProfileItem  `json:"items"`
@@ -34,6 +35,7 @@ func fromInspection(insp *inspection.Inspection, profDir string) (*Profile, erro
 		InstanceName: insp.InstanceName,
 		User:         insp.User,
 		Status:       insp.Status,
+		Message:      insp.Message,
 		CreateTime:   insp.CreateTime,
 		FinishTime:   insp.FinishTime,
 	}

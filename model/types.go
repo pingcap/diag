@@ -11,6 +11,12 @@ import (
 
 type Instance = instance.Instance
 
+type Component struct {
+	Name string `json:"name"`
+	Ip   string `json:"ip"`
+	Port string `json:"port"`
+}
+
 type Config = config.Config
 
 type Inspection = inspection.Inspection

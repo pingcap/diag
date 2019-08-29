@@ -1,13 +1,7 @@
 package inspection
 
 import (
-	"fmt"
 	"net/http"
-	"os"
-	"os/exec"
-	"path"
-	"strings"
-	"time"
 
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
@@ -18,13 +12,19 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+type DiagnoseWorker interface {
+	Collect(inspectionId, inspectionType string, config *model.Config) error
+	Analyze(inspectionId string) error
+}
+
 type createInspectionHandler struct {
 	c *bootstrap.ForesightConfig
 	m model.Model
+	w DiagnoseWorker
 }
 
-func CreateInspection(c *bootstrap.ForesightConfig, m model.Model) http.Handler {
-	return &createInspectionHandler{c, m}
+func CreateInspection(c *bootstrap.ForesightConfig, m model.Model, w DiagnoseWorker) http.Handler {
+	return &createInspectionHandler{c, m, w}
 }
 
 func (h *createInspectionHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -34,6 +34,7 @@ func (h *createInspectionHandler) ServeHTTP(w http.ResponseWriter, r *http.Reque
 func (h *createInspectionHandler) createInspection(r *http.Request, c *model.Config) (*model.Inspection, utils.StatusError) {
 	instanceId := mux.Vars(r)["id"]
 	inspectionId := uuid.New().String()
+	c.InstanceId = instanceId
 
 	inspection := &model.Inspection{
 		Uuid:       inspectionId,
@@ -48,7 +49,7 @@ func (h *createInspectionHandler) createInspection(r *http.Request, c *model.Con
 	}
 
 	go func() {
-		if err := h.collectInspection(instanceId, inspectionId, c); err != nil {
+		if err := h.w.Collect(inspectionId, "manual", c); err != nil {
 			log.Error("collect ", inspectionId, ": ", err)
 			inspection.Status = "exception"
 			inspection.Message = "collect failed"
@@ -56,7 +57,7 @@ func (h *createInspectionHandler) createInspection(r *http.Request, c *model.Con
 			return
 		}
 
-		if err := utils.Analyze(h.c.Analyzer, h.c.Home, h.c.Influx.Endpoint, h.c.Prometheus.Endpoint, inspectionId); err != nil {
+		if err := h.w.Analyze(inspectionId); err != nil {
 			log.Error("analyze ", inspectionId, ": ", err)
 			inspection.Status = "exception"
 			inspection.Message = "analyze failed"
@@ -66,65 +67,4 @@ func (h *createInspectionHandler) createInspection(r *http.Request, c *model.Con
 	}()
 
 	return inspection, nil
-}
-
-func (h *createInspectionHandler) collectInspection(instanceId, inspectionId string, config *model.Config) error {
-	instance, err := h.m.GetInstance(instanceId)
-	if err != nil {
-		log.Error("get instance:", err)
-		return err
-	}
-
-	from := time.Now().Add(time.Duration(-10) * time.Minute)
-	to := time.Now()
-	if len(config.ManualSchedRange) > 0 {
-		from = config.ManualSchedRange[0]
-	}
-	if len(config.ManualSchedRange) > 1 {
-		to = config.ManualSchedRange[1]
-	}
-
-	items := []string{"metric", "basic", "dbinfo", "config", "log"}
-	if config != nil {
-		if config.CollectHardwareInfo {
-			//	items = append(items, "hardware")
-		}
-		if config.CollectSoftwareInfo {
-			//	items = append(items, "software")
-		}
-		if config.CollectLog {
-			//	items = append(items, "log")
-		}
-		if config.CollectDemsg {
-			//	items = append(items, "demsg")
-		}
-	}
-
-	cmd := exec.Command(
-		h.c.Collector,
-		fmt.Sprintf("--instance-id=%s", instanceId),
-		fmt.Sprintf("--inspection-id=%s", inspectionId),
-		fmt.Sprintf("--topology=%s", path.Join(h.c.Home, "topology", instanceId+".json")),
-		fmt.Sprintf("--data-dir=%s", path.Join(h.c.Home, "inspection")),
-		fmt.Sprintf("--collect=%s", strings.Join(items, ",")),
-		fmt.Sprintf("--log-dir=%s", path.Join(h.c.Home, "remote-log", instanceId)),
-		fmt.Sprintf("--log-spliter=%s", path.Join(h.c.Home, "spliter")),
-		fmt.Sprintf("--begin=%s", from.Format(time.RFC3339)),
-		fmt.Sprintf("--end=%s", to.Format(time.RFC3339)),
-	)
-	cmd.Env = append(
-		os.Environ(),
-		"FORESIGHT_USER="+h.c.User.Name,
-		"CLUSTER_CREATE_TIME="+instance.CreateTime.Format(time.RFC3339),
-		"INSPECTION_TYPE=manual",
-	)
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	log.Info(cmd.Args)
-	err = cmd.Run()
-	if err != nil {
-		log.Error("run ", h.c.Collector, ": ", err)
-		return err
-	}
-	return nil
 }

@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/exec"
 	"path"
+	"strings"
 
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
@@ -16,13 +17,18 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+type ProfileWorker interface {
+	Analyze(inspectionId string) error
+}
+
 type createProfileHandler struct {
 	c *bootstrap.ForesightConfig
 	m model.Model
+	w ProfileWorker
 }
 
-func CreateProfile(c *bootstrap.ForesightConfig, m model.Model) http.Handler {
-	return &createProfileHandler{c, m}
+func CreateProfile(c *bootstrap.ForesightConfig, m model.Model, w ProfileWorker) http.Handler {
+	return &createProfileHandler{c, m, w}
 }
 
 func (h *createProfileHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -32,6 +38,7 @@ func (h *createProfileHandler) ServeHTTP(w http.ResponseWriter, r *http.Request)
 func (h *createProfileHandler) createProfile(r *http.Request) (*model.Profile, utils.StatusError) {
 	instanceId := mux.Vars(r)["id"]
 	inspectionId := uuid.New().String()
+	component := r.URL.Query().Get("node")
 
 	instance, err := h.m.GetInstance(instanceId)
 	if err != nil {
@@ -53,14 +60,14 @@ func (h *createProfileHandler) createProfile(r *http.Request) (*model.Profile, u
 	}
 
 	go func() {
-		if err := h.collectProfile(instanceId, inspectionId); err != nil {
+		if err := h.collectProfile(instanceId, inspectionId, strings.Trim(component, " ")); err != nil {
 			log.Error("profile ", inspectionId, ": ", err)
 			inspection.Status = "exception"
 			inspection.Message = "profile failed"
 			h.m.SetInspection(inspection)
 			return
 		}
-		if err := utils.Analyze(h.c.Analyzer, h.c.Home, h.c.Influx.Endpoint, h.c.Prometheus.Endpoint, inspectionId); err != nil {
+		if err := h.w.Analyze(inspectionId); err != nil {
 			log.Error("analyze ", inspectionId, ": ", err)
 			inspection.Status = "exception"
 			inspection.Message = "analyze failed"
@@ -76,14 +83,18 @@ func (h *createProfileHandler) createProfile(r *http.Request) (*model.Profile, u
 	}, nil
 }
 
-func (h *createProfileHandler) collectProfile(instanceId, inspectionId string) error {
+func (h *createProfileHandler) collectProfile(instanceId, inspectionId, component string) error {
+	option := "profile"
+	if component != "" {
+		option += ":" + component
+	}
 	cmd := exec.Command(
 		h.c.Collector,
 		fmt.Sprintf("--instance-id=%s", inspectionId),
 		fmt.Sprintf("--inspection-id=%s", inspectionId),
 		fmt.Sprintf("--topology=%s", path.Join(h.c.Home, "topology", instanceId+".json")),
 		fmt.Sprintf("--data-dir=%s", path.Join(h.c.Home, "inspection")),
-		"--collect=profile",
+		fmt.Sprintf("--collect=%s", option),
 	)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr

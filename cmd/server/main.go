@@ -28,7 +28,7 @@ func main() {
 	config, db := bootstrap.MustInit(*homepath)
 	defer db.Close()
 
-	s := server.NewServer(config, db)
+	s := server.New(config, db)
 
 	log.Panic(s.Run(*address))
 }
