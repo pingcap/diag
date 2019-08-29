@@ -39,20 +39,22 @@ function PrometheusChart({ title, promMetrics, promParams }: PrometheusChartProp
       ).then(results => {
         let labels: string[] = [];
         let data: number[][] = [];
-        results.forEach((result, idx) => {
-          if (idx === 0) {
-            labels = result.metricLabels;
-            data = result.metricValues;
-          } else {
-            labels = labels.concat(result.metricLabels.slice(1));
-            const emtpyPlacehoder: number[] = Array(result.metricLabels.length).fill(0);
-            data = data.map((item, index) =>
-              // the result.metricValues may have different length
-              // so result.metricValues[index] may undefined
-              item.concat((result.metricValues[index] || emtpyPlacehoder).slice(1)),
-            );
-          }
-        });
+        results
+          .filter(result => result.metricValues.length > 0)
+          .forEach((result, idx) => {
+            if (idx === 0) {
+              labels = result.metricLabels;
+              data = result.metricValues;
+            } else {
+              labels = labels.concat(result.metricLabels.slice(1));
+              const emtpyPlacehoder: number[] = Array(result.metricLabels.length).fill(0);
+              data = data.map((item, index) =>
+                // the result.metricValues may have different length
+                // so result.metricValues[index] may undefined
+                item.concat((result.metricValues[index] || emtpyPlacehoder).slice(1)),
+              );
+            }
+          });
         setChartLabels(labels);
         setOriChartData(data);
         setLoading(false);
