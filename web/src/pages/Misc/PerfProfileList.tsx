@@ -150,11 +150,11 @@ function PerfProfileList({
     setUploadRemoteUrl(`/perfprofiles/${record.uuid}`);
   }
 
-  function handleAddPerfProfile(instanceId: string): Promise<any> {
+  function handleAddPerfProfile(instanceId: string, node: string): Promise<any> {
     return new Promise((resolve, reject) => {
       dispatch({
         type: 'misc/addPerfProfile',
-        payload: instanceId,
+        payload: { instanceId, node },
       }).then((val: any) => resolve());
     });
   }

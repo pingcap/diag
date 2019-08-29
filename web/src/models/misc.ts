@@ -154,8 +154,8 @@ const MiscModel: MiscModelType = {
       }
     },
     *addPerfProfile({ payload }, { call, put }) {
-      const instanceId = payload;
-      const res = yield call(addPerfProfile, instanceId);
+      const { instanceId, node } = payload;
+      const res = yield call(addPerfProfile, instanceId, node);
       if (res !== undefined) {
         yield put({
           type: 'savePerfProfile',
