@@ -142,6 +142,12 @@ def setup_op_groups(topology, args):
             groups['profile'].add_ops(
                 setup_pprof_ops(addr,
                                 os.path.join(datadir, inspection_id, 'profile', name, addr)))
+        if name == 'tikv':
+            groups['profile'].add_ops(
+                setup_perf_ops(ip,
+                               os.path.join(datadir, inspection_id, 'profile',
+                                            name, addr))
+            )
         has_profiled = True
     for host in hosts:
         status = host['status']
@@ -243,8 +249,10 @@ def setup_pprof_ops(addr='127.0.0.1:6060', basedir='pprof'):
     ]
     return ops
 
+
 def failed():
     raise Exception("prepare to collect dbinfo/metric failed")
+
 
 def setup_metric_ops(addr, basedir, start, end):
     try:
