@@ -71,7 +71,7 @@ func (s *Server) CreateRouter() http.Handler {
 	r.Handle("/api/v1/instances", instance.CreateInstance(s.config, s.model)).Methods("POST")
 	r.Handle("/api/v1/instances/{id}", instance.GetInstance(s.model)).Methods("GET")
 	r.Handle("/api/v1/instances/{id}", instance.DeleteInstance(s.config, s.model, s.scheduler)).Methods("DELETE")
-	r.Handle("/api/v1/inspections/{id}/components", instance.ListComponent(s.model)).Methods("GET")
+	r.Handle("/api/v1/instances/{id}/components", instance.ListComponent(s.model)).Methods("GET")
 	r.Handle("/api/v1/instances/{id}/config", config.GetConfig(s.model)).Methods("GET")
 	r.Handle("/api/v1/instances/{id}/config", config.SetConfig(s.model, s.scheduler)).Methods("PUT")
 	r.Handle("/api/v1/instances/{id}/inspections", inspection.ListInspection(s.model)).Methods("GET")
@@ -107,6 +107,7 @@ func (s *Server) CreateRouter() http.Handler {
 	r.Handle("/api/v1/inspections/{id}/hardware", report.HardwareInfo(s.model)).Methods("GET")
 	r.Handle("/api/v1/inspections/{id}/network", report.NetworkInfo(s.model)).Methods("GET")
 	r.Handle("/api/v1/inspections/{id}/resource", report.ResourceInfo(s.model)).Methods("GET")
+	r.Handle("/api/v1/inspections/{id}/topology", report.TopologyInfo(s.model)).Methods("GET")
 	r.Handle("/api/v1/inspections/{id}/software", report.SoftwareInfo(s.model)).Methods("GET")
 	r.Handle("/api/v1/inspections/{id}/ntp", report.NtpInfo(s.model)).Methods("GET")
 

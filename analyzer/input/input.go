@@ -19,6 +19,7 @@ func Tasks() []interface{} {
 	tasks = append(tasks, args.ParseArgs())
 	tasks = append(tasks, dbinfo.ParseDBInfo())
 	tasks = append(tasks, topology.ParseTopology())
+	tasks = append(tasks, topology.ParseStatus())
 	tasks = append(tasks, status.ParseStatus())
 	tasks = append(tasks, resource.ParseResource())
 	tasks = append(tasks, meta.ParseMeta())

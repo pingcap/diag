@@ -24,7 +24,7 @@ func (t *saveNtpInfoTask) Run(m *boot.Model, c *boot.Config, insight *insight.In
 	for _, insight := range *insight {
 		offset := utils.NewTagdFloat64(insight.Ntp.Offset, nil)
 		if math.Abs(offset.GetValue()) > NTP_THRESHOLD {
-			offset.SetTag("status", "abnormal")
+			offset.SetTag("status", "error")
 			offset.SetTag("message", fmt.Sprintf("ntp offset of node %s exceeded the threshold (500ms)", insight.NodeIp))
 		}
 

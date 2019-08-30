@@ -1,7 +1,6 @@
 package report
 
 import (
-	"fmt"
 	"net/http"
 
 	"github.com/gorilla/mux"
@@ -32,48 +31,24 @@ func (h *getResourceInfoHandler) getInspectionResourceInfo(r *http.Request) (map
 	}
 
 	conclusions := make([]map[string]interface{}, 0)
-	data := make([]map[string]interface{}, 0)
 	for _, res := range info {
-		var max, avg interface{}
-
-		if res.Max.GetTag("status") == "abnormal" {
+		if res.Max.GetTag("status") != "" {
 			conclusions = append(conclusions, map[string]interface{}{
-				"status":  "abnormal",
-				"message": fmt.Sprintf("%s/max resource utilization/%s too high", res.Name, res.Duration),
+				"status":  res.Max.GetTag("status"),
+				"message": res.Max.GetTag("message"),
 			})
-			max = map[string]interface{}{
-				"value":    res.Max.GetValue(),
-				"abnormal": true,
-				"message":  "too high",
-			}
-		} else {
-			max = res.Max.GetValue()
 		}
 
-		if res.Avg.GetTag("status") == "abnormal" {
+		if res.Avg.GetTag("status") != "" {
 			conclusions = append(conclusions, map[string]interface{}{
-				"status":  "abnormal",
-				"message": fmt.Sprintf("%s/avg resource utilization/%s too high", res.Name, res.Duration),
+				"status":  res.Avg.GetTag("status"),
+				"message": res.Avg.GetTag("message"),
 			})
-			avg = map[string]interface{}{
-				"value":    res.Avg.GetValue(),
-				"abnormal": true,
-				"message":  "too high",
-			}
-		} else {
-			avg = res.Avg.GetValue()
 		}
-
-		data = append(data, map[string]interface{}{
-			"name":     res.Name,
-			"duration": res.Duration,
-			"max":      max,
-			"avg":      avg,
-		})
 	}
 
 	return map[string]interface{}{
 		"conclusion": conclusions,
-		"data":       data,
+		"data":       info,
 	}, nil
 }

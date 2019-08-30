@@ -6,6 +6,7 @@ import (
 	"github.com/pingcap/tidb-foresight/analyzer/boot"
 	"github.com/pingcap/tidb-foresight/analyzer/input/alert"
 	"github.com/pingcap/tidb-foresight/model"
+	"github.com/pingcap/tidb-foresight/utils"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -31,10 +32,13 @@ func (t *saveAlertTask) Run(c *boot.Config, alert *alert.Alert, m *boot.Model) {
 			log.Error("parse value from alert failed")
 			continue
 		}
+		tv := utils.NewTagdString(v, map[string]string{
+			"status": "error",
+		})
 		info := &model.AlertInfo{
 			InspectionId: c.InspectionId,
 			Name:         alert.Metric.Name,
-			Value:        v,
+			Value:        tv,
 			Time:         time.Unix(int64(ts), 0),
 		}
 		if err := m.InsertInspectionAlertInfo(info); err != nil {

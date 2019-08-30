@@ -31,31 +31,17 @@ func (h *getNtpInfoHandler) getInspectionNtpInfo(r *http.Request) (map[string]in
 	}
 
 	conclusions := make([]map[string]interface{}, 0)
-	data := make([]map[string]interface{}, 0)
 	for _, ntp := range ntps {
-		if ntp.Offset.GetTag("status") == "abnormal" {
+		if ntp.Offset.GetTag("status") != "" {
 			conclusions = append(conclusions, map[string]interface{}{
-				"status":  "abnormal",
+				"status":  ntp.Offset.GetTag("status"),
 				"message": ntp.Offset.GetTag("message"),
-			})
-			data = append(data, map[string]interface{}{
-				"node_ip": ntp.NodeIp,
-				"offset": map[string]interface{}{
-					"value":    ntp.Offset.GetValue(),
-					"abnormal": true,
-					"message":  "exceeded the threshold",
-				},
-			})
-		} else {
-			data = append(data, map[string]interface{}{
-				"node_ip": ntp.NodeIp,
-				"offset":  ntp.Offset.GetValue(),
 			})
 		}
 	}
 
 	return map[string]interface{}{
 		"conclusion": conclusions,
-		"data":       data,
+		"data":       ntps,
 	}, nil
 }

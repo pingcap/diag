@@ -7,6 +7,7 @@ import (
 
 	"github.com/pingcap/tidb-foresight/model/inspection"
 	"github.com/pingcap/tidb-foresight/utils"
+	log "github.com/sirupsen/logrus"
 )
 
 const PROF_FILTER = "type = 'profile'"
@@ -29,7 +30,7 @@ type ProfileItem struct {
 	Metas     []string `json:"metas"`
 }
 
-func fromInspection(insp *inspection.Inspection, profDir string) (*Profile, error) {
+func fromInspection(insp *inspection.Inspection, profDir string) *Profile {
 	prof := Profile{
 		Uuid:         insp.Uuid,
 		InstanceName: insp.InstanceName,
@@ -38,19 +39,22 @@ func fromInspection(insp *inspection.Inspection, profDir string) (*Profile, erro
 		Message:      insp.Message,
 		CreateTime:   insp.CreateTime,
 		FinishTime:   insp.FinishTime,
+		Items:        []ProfileItem{},
 	}
 
-	return &prof, prof.loadItems(profDir)
+	prof.loadItems(profDir)
+	return &prof
 }
 
-func (p *Profile) loadItems(dir string) error {
+func (p *Profile) loadItems(dir string) {
 	if p.Status != "success" {
-		return nil
+		return
 	}
 
 	flist, err := ioutil.ReadDir(path.Join(dir, p.Uuid))
 	if err != nil {
-		return err
+		log.Error("read profile directory:", err)
+		return
 	}
 
 	for _, f := range flist {
@@ -63,7 +67,8 @@ func (p *Profile) loadItems(dir string) error {
 
 		ms, err := p.listFileNames(path.Join(dir, p.Uuid, f.Name(), "meta"))
 		if err != nil {
-			return err
+			log.Error("read profile meta:", err)
+			continue
 		}
 
 		metas := []string{}
@@ -73,7 +78,8 @@ func (p *Profile) loadItems(dir string) error {
 
 		fs, err := p.listFileNames(path.Join(dir, p.Uuid, f.Name(), "flame"))
 		if err != nil {
-			return err
+			log.Error("read profile flame:", err)
+			continue
 		}
 
 		flames := []string{}
@@ -88,8 +94,6 @@ func (p *Profile) loadItems(dir string) error {
 			Flames:    flames,
 		})
 	}
-
-	return nil
 }
 
 func (p *Profile) listFileNames(dir string) ([]string, error) {

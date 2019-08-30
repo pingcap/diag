@@ -6,8 +6,8 @@ import (
 
 type NtpInfo struct {
 	InspectionId string
-	NodeIp       string
-	Offset       utils.TagdFloat64
+	NodeIp       string            `json:"node_ip"`
+	Offset       utils.TagdFloat64 `json:"offset"`
 }
 
 func (m *report) GetInspectionNtpInfo(inspectionId string) ([]*NtpInfo, error) {

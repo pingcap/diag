@@ -19,6 +19,7 @@ type Model interface {
 	GetTablesWithoutIndex(inspectionId string) ([]*DBInfo, error)
 	GetInspectionDBInfo(inspectionId string) ([]*DBInfo, error)
 	GetInspectionNtpInfo(inspectionId string) ([]*NtpInfo, error)
+	GetInspectionTopologyInfo(inspectionId string) ([]*TopologyInfo, error)
 	ClearInspectionItem(inspectionId string) error
 	ClearInspectionSymptom(inspectionId string) error
 	ClearInspectionBasicInfo(inspectionId string) error
@@ -31,6 +32,7 @@ type Model interface {
 	ClearInspectionSoftwareInfo(inspectionId string) error
 	ClearInspectionConfigInfo(inspectionId string) error
 	ClearInspectionResourceInfo(inspectionId string) error
+	ClearInspectionTopologyInfo(inspectionId string) error
 	ClearInspectionNtpInfo(inspectionId string) error
 	InsertInspectionItem(*Item) error
 	InsertInspectionSymptom(*Symptom) error
@@ -44,6 +46,7 @@ type Model interface {
 	InsertInspectionSoftwareInfo(*SoftwareInfo) error
 	InsertInspectionConfigInfo(*ConfigInfo) error
 	InsertInspectionResourceInfo(*ResourceInfo) error
+	InsertInspectionTopologyInfo(*TopologyInfo) error
 	InsertInspectionNtpInfo(info *NtpInfo) error
 }
 
@@ -62,6 +65,7 @@ func New(db db.DB) Model {
 		&SlowLogInfo{},
 		&NtpInfo{},
 		&SoftwareInfo{},
+		&TopologyInfo{},
 		&Symptom{},
 	)
 	return &report{db}

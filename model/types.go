@@ -49,4 +49,6 @@ type SoftwareInfo = report.SoftwareInfo
 
 type NtpInfo = report.NtpInfo
 
+type TopologyInfo = report.TopologyInfo
+
 type Symptom = report.Symptom

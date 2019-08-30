@@ -2,6 +2,7 @@ package utils
 
 import (
 	"database/sql/driver"
+	"encoding/json"
 	"fmt"
 	"net/url"
 	"strconv"
@@ -78,6 +79,23 @@ func (tv TagdString) Value() (driver.Value, error) {
 	return strings.Join(vs, ","), nil
 }
 
+// MarshalJSON implements the json.Marshaler
+func (tv TagdString) MarshalJSON() ([]byte, error) {
+	if len(tv.tags) == 0 {
+		return json.Marshal(tv.value)
+	}
+
+	m := make(map[string]interface{}, 0)
+	for k, vs := range tv.tags {
+		if len(vs) > 0 {
+			m[k] = vs[0]
+		}
+	}
+	m["value"] = tv.value
+	m["abnormal"] = true // TODO: remove this
+	return json.Marshal(m)
+}
+
 type TagdFloat64 struct {
 	TagdString
 }
@@ -99,4 +117,21 @@ func (tv *TagdFloat64) GetValue() float64 {
 
 func (tv *TagdFloat64) SetValue(value float64) {
 	tv.TagdString.SetValue(fmt.Sprintf("%f", value))
+}
+
+// MarshalJSON implements the json.Marshaler
+func (tv TagdFloat64) MarshalJSON() ([]byte, error) {
+	if len(tv.tags) == 0 {
+		return json.Marshal(tv.value)
+	}
+
+	m := make(map[string]interface{}, 0)
+	for k, vs := range tv.tags {
+		if len(vs) > 0 {
+			m[k] = vs[0]
+		}
+	}
+	m["value"] = tv.value
+	m["abnormal"] = true // TODO: remove this
+	return json.Marshal(m)
 }

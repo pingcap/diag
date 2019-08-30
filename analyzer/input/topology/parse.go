@@ -2,11 +2,11 @@ package topology
 
 import (
 	"encoding/json"
-	log "github.com/sirupsen/logrus"
 	"io/ioutil"
 	"path"
 
 	"github.com/pingcap/tidb-foresight/analyzer/boot"
+	log "github.com/sirupsen/logrus"
 )
 
 type parseTopologyTask struct{}
@@ -28,6 +28,12 @@ func (t *parseTopologyTask) Run(c *boot.Config) *Topology {
 	if err = json.Unmarshal(content, &topo); err != nil {
 		log.Error("unmarshal:", err)
 		return nil
+	}
+
+	for i, host := range topo.Hosts {
+		for j := range host.Components {
+			topo.Hosts[i].Components[j].Status = "unknown"
+		}
 	}
 
 	return &topo
