@@ -67,6 +67,25 @@ def collect_args(args):
     return d
 
 
+def index_by_net_addr(topology):
+    d = {}
+    hosts = topology['hosts']
+    for host in hosts:
+        status = host['status']
+        ip = host['ip']
+        if status != "success":
+            continue
+        services = host['components']
+        for svc in services:
+            status = svc['status']
+            if status != 'success':
+                continue
+            port = svc['port']
+            addr = "%s:%s" % (ip, port)
+            d[addr] = svc
+    return d
+
+
 def setup_op_groups(topology, args):
     # TODO this function is too complex to understand, design a phase
     # engine to string all things together.
@@ -131,17 +150,32 @@ def setup_op_groups(topology, args):
     for i in range(len(ips)):
         deploydirs[ips[i]] = hosts[i]['components'][0]['deploy_dir']
 
+    services = index_by_net_addr(topology)
     has_profiled = False
     if options.has_key('profile'):
         # profile a single service
         option = options['profile']
-        name, ip = option[0], option[1]
-        if name in ('tidb', 'pd'):
-            port = option[2]
-            addr = "%s:%s" % (ip, port)
+        name, ip, port = option[0], option[1], option[2]
+        addr = "%s:%s" % (ip, port)
+        if name == 'pd':
             groups['profile'].add_ops(
                 setup_pprof_ops(addr,
                                 os.path.join(datadir, inspection_id, 'profile', name, addr)))
+        if name == 'tidb':
+            # look up its status port
+            status_port = services[addr]['status_port']
+            pprof_addr = "%s:%s" % (ip, status_port)
+            groups['profile'].add_ops(
+                setup_pprof_ops(pprof_addr,
+                                os.path.join(datadir, inspection_id, 'profile', name, addr)))
+        if name == 'tikv':
+            # look up its deploy dir
+            deploydir = services[addr]['deploy_dir']
+            groups['profile'].add_ops(
+                setup_perf_ops(ip,
+                               os.path.join(datadir, inspection_id, 'profile',
+                                            name, addr),
+                               deploydir))
         has_profiled = True
     for host in hosts:
         status = host['status']
@@ -243,8 +277,10 @@ def setup_pprof_ops(addr='127.0.0.1:6060', basedir='pprof'):
     ]
     return ops
 
+
 def failed():
     raise Exception("prepare to collect dbinfo/metric failed")
+
 
 def setup_metric_ops(addr, basedir, start, end):
     try:
