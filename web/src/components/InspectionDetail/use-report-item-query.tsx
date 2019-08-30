@@ -51,9 +51,11 @@ export function useReportItemQuery(apiUrl: string) {
                     <span style={{ color: 'red', marginRight: '8px', whiteSpace: 'pre-wrap' }}>
                       {(text as IAbnormalValue).value}
                     </span>
-                    <Tooltip title={(text as IAbnormalValue).message}>
-                      <Icon style={{ paddingTop: '2px' }} type="question-circle" />
-                    </Tooltip>
+                    {(text as IAbnormalValue).message && (
+                      <Tooltip title={(text as IAbnormalValue).message}>
+                        <Icon style={{ paddingTop: '2px' }} type="question-circle" />
+                      </Tooltip>
+                    )}
                   </div>
                 );
               }

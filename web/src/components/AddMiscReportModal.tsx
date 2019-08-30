@@ -85,12 +85,12 @@ function AddMiscReportModal({ visible, onClose, instances, onData }: Props) {
       <div className={styles.modal_item}>
         <span>选择节点</span>
         <Select style={{ width: 200 }} onChange={handleNodeChange}>
+          <Option value="all">ALL</Option>
           {nodeList.map(item => (
             <Option value={`${item.name}:${item.ip}:${item.port}`} key={JSON.stringify(item)}>
               {item.name}-{item.ip}:{item.port}
             </Option>
           ))}
-          <Option value="all">ALL</Option>
         </Select>
       </div>
     </Modal>
