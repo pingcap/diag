@@ -90,7 +90,7 @@ func (h *createProfileHandler) collectProfile(instanceId, inspectionId, componen
 	}
 	cmd := exec.Command(
 		h.c.Collector,
-		fmt.Sprintf("--instance-id=%s", inspectionId),
+		fmt.Sprintf("--instance-id=%s", instanceId),
 		fmt.Sprintf("--inspection-id=%s", inspectionId),
 		fmt.Sprintf("--topology=%s", path.Join(h.c.Home, "topology", instanceId+".json")),
 		fmt.Sprintf("--data-dir=%s", path.Join(h.c.Home, "inspection")),
