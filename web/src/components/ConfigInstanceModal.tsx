@@ -3,7 +3,7 @@ import { Modal, Form, Checkbox, Divider, Select, message, Spin, DatePicker, Row,
 import moment from 'moment';
 import { RangePickerValue } from 'antd/lib/date-picker/interface';
 import { CheckboxValueType } from 'antd/lib/checkbox/Group';
-import { formatMessage } from 'umi-plugin-locale';
+import { formatMessage } from 'umi-plugin-react/locale';
 import { queryInstanceConfig, updateInstanceConfig } from '@/services/inspection';
 import { IInstanceConfig } from '@/models/inspection';
 import { Dispatch } from '@/models/connect';
