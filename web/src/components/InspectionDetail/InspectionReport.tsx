@@ -77,7 +77,7 @@ function InspectionReport({ inspection }: InspectionReportProps) {
       />
       <AutoTable title="9、机器 NTP 时间同步信息" apiUrl={genItemApiUrl(inspection.uuid, 'ntp')} />
       <AutoTable title="10、网络质量信息" apiUrl={genItemApiUrl(inspection.uuid, 'network')} />
-      <AutoTable title="11、集群拓扑结构信息" apiUrl="" />
+      <AutoTable title="11、集群拓扑结构信息" apiUrl={genItemApiUrl(inspection.uuid, 'topology')} />
       <AutoTable
         title="12、dmesg 信息"
         apiUrl={genItemApiUrl(inspection.uuid, 'dmesg')}
