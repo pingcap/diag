@@ -27,7 +27,7 @@ const tableColumns = (onDelete: any, onConfig: any) => [
     },
   },
   {
-    title: 'PD 址址:端口',
+    title: 'PD 地址:端口',
     dataIndex: 'pd',
     key: 'pd',
     render: (text: any, record: IFormatInstance) => <span>{text || '获取中...'}</span>,
