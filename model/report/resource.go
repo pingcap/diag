@@ -5,11 +5,11 @@ import (
 )
 
 type ResourceInfo struct {
-	InspectionId string
-	Name         string
-	Duration     string
-	Avg          utils.TagdFloat64
-	Max          utils.TagdFloat64
+	InspectionId string           `json:"-"`
+	Name         string           `json:"name"`
+	Duration     string           `json:"duration"`
+	Avg          utils.TagdString `json:"avg"`
+	Max          utils.TagdString `json:"max"`
 }
 
 func (m *report) GetInspectionResourceInfo(inspectionId string) ([]*ResourceInfo, error) {

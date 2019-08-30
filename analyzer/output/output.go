@@ -15,6 +15,7 @@ import (
 	"github.com/pingcap/tidb-foresight/analyzer/output/profile"
 	"github.com/pingcap/tidb-foresight/analyzer/output/resource"
 	"github.com/pingcap/tidb-foresight/analyzer/output/software"
+	"github.com/pingcap/tidb-foresight/analyzer/output/topology"
 )
 
 func Tasks() []interface{} {
@@ -36,6 +37,7 @@ func Tasks() []interface{} {
 	tasks = append(tasks, items.SaveItems())
 	tasks = append(tasks, metric.SaveMetric())
 	tasks = append(tasks, ntp.SaveNtpInfo())
+	tasks = append(tasks, topology.SaveTopologyInfo())
 
 	return tasks
 }

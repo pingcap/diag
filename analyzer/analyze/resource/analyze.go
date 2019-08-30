@@ -1,8 +1,6 @@
 package resource
 
 import (
-	"fmt"
-
 	"github.com/pingcap/tidb-foresight/analyzer/boot"
 	log "github.com/sirupsen/logrus"
 )
@@ -23,13 +21,11 @@ func (t *analyzeTask) Run(m *boot.Model, c *boot.Config) {
 
 	for _, res := range resources {
 		desc := "please increase resources appropriately"
-		if res.Max.GetTag("status") == "abnormal" {
-			msg := fmt.Sprintf("%s/max resource utilization/%s too high", res.Name, res.Duration)
-			defer m.InsertSymptom("error", msg, desc)
+		if res.Max.GetTag("status") != "" {
+			m.InsertSymptom(res.Max.GetTag("status"), res.Max.GetTag("message"), desc)
 		}
-		if res.Avg.GetTag("status") == "abnormal" {
-			msg := fmt.Sprintf("%s/avg resource utilization/%s too high", res.Name, res.Duration)
-			defer m.InsertSymptom("error", msg, desc)
+		if res.Avg.GetTag("status") != "" {
+			m.InsertSymptom(res.Avg.GetTag("status"), res.Avg.GetTag("message"), desc)
 		}
 	}
 }

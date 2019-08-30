@@ -37,9 +37,8 @@ func (m *profile) ListAllProfiles(page, size int64, profDir string) ([]*Profile,
 
 	// transform inspection to profile
 	for _, insp := range insps {
-		if prof, err := fromInspection(insp, profDir); err != nil {
-			return nil, 0, err
-		} else if symptoms, err := m.r.GetInspectionSymptoms(insp.Uuid); err != nil {
+		prof := fromInspection(insp, profDir)
+		if symptoms, err := m.r.GetInspectionSymptoms(insp.Uuid); err != nil {
 			return nil, 0, err
 		} else if len(symptoms) != 0 {
 			prof.Status = "exception"
@@ -78,11 +77,7 @@ func (m *profile) ListProfiles(instanceId string, page, size int64, profDir stri
 			insp.Status = "exception"
 			insp.Message = "collect failed"
 		}
-		if prof, err := fromInspection(insp, profDir); err != nil {
-			return nil, 0, err
-		} else {
-			profs = append(profs, prof)
-		}
+		profs = append(profs, fromInspection(insp, profDir))
 	}
 
 	return profs, count, nil
@@ -95,5 +90,5 @@ func (m *profile) GetProfile(profId, profDir string) (*Profile, error) {
 		return nil, err
 	}
 
-	return fromInspection(&insp, profDir)
+	return fromInspection(&insp, profDir), nil
 }

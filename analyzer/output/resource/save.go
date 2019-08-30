@@ -39,14 +39,14 @@ func (t *saveResourceTask) Run(c *boot.Config, r *resource.Resource, args *args.
 }
 
 func (t *saveResourceTask) insertData(m *boot.Model, inspectionId, resource, duration string, max float64, avg float64) error {
-	mv := utils.NewTagdFloat64(max, nil)
-	av := utils.NewTagdFloat64(avg, nil)
-	if mv.GetValue() > THRESHOLD {
-		mv.SetTag("status", "abnormal")
+	mv := utils.NewTagdString(fmt.Sprintf("%.2f%%", max), nil)
+	av := utils.NewTagdString(fmt.Sprintf("%.2f%%", avg), nil)
+	if max > THRESHOLD {
+		mv.SetTag("status", "error")
 		mv.SetTag("message", fmt.Sprintf("%s/max resource utilization/%s too high", resource, duration))
 	}
-	if av.GetValue() > THRESHOLD {
-		av.SetTag("status", "abnormal")
+	if avg > THRESHOLD {
+		av.SetTag("status", "error")
 		av.SetTag("message", fmt.Sprintf("%s/avg resource utilization/%s too high", resource, duration))
 	}
 

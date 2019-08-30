@@ -48,7 +48,7 @@ func (s *scheduler) Reload() error {
 			continue
 		}
 		config.SchedRange = []time.Time{
-			time.Now().Add(time.Duration(-config.AutoSchedDuration) * time.Hour),
+			time.Now().Add(time.Duration(-config.AutoSchedDuration) * time.Minute),
 			time.Now(),
 		}
 		if err := s.c.AddFunc(spec, func() {
