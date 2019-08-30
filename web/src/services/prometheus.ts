@@ -177,6 +177,12 @@ const RAW_METRICS: { [key: string]: IRawMetric } = {
     labelTemplate: 'store-{{store}}',
     valConverter: val => bytesSizeFormatter(val, true, 2),
   },
+  store_available_ratio: {
+    promQLTemplate:
+      'sum(pd_scheduler_store_status{inspectionid="{{inspectionId}}", type="store_available"}) by (address, store) / sum(pd_scheduler_store_status{inspectionid="{{inspectionId}}", type="store_capacity"}) by (address, store)',
+    labelTemplate: '{{address}}-store-{{store}}',
+    valConverter: val => toPercent(val, 3),
+  },
   store_leader_score: {
     promQLTemplate:
       'pd_scheduler_store_status{inspectionid="{{inspectionId}}", type="leader_score"}',
@@ -258,6 +264,13 @@ const RAW_METRICS: { [key: string]: IRawMetric } = {
     valConverter: val => toAnyUnit(val, 1000, 1, 'ms'),
   },
 
+  grpc_completed_commands_duration_99: {
+    promQLTemplate:
+      'histogram_quantile(0.99, sum(rate(grpc_server_handling_seconds_bucket{inspectionid="{{inspectionId}}"}[5m])) by (grpc_method, le))',
+    labelTemplate: '{{grpc_method}}',
+    valConverter: val => toAnyUnit(val, 1000, 1, 'ms'),
+  },
+
   // ///////////////////////
   // TiDB
   // Query Summary: QPS, QPS By Instance, Duration, Failed Query OPM
@@ -317,8 +330,43 @@ const RAW_METRICS: { [key: string]: IRawMetric } = {
     labelTemplate: '{{type}}-{{instance}}',
   },
 
+  // slow query
+  slow_query_process: {
+    title: 'Slow query',
+    promQLTemplate:
+      'histogram_quantile(0.90, sum(rate(tidb_server_slow_query_process_duration_seconds_bucket{inspectionid="{{inspectionId}}"}[1m])) by (le))',
+    labelTemplate: 'all_proc',
+    valConverter: val => toAnyUnit(val, 1, 0, 's'),
+  },
+  slow_query_cop: {
+    title: 'Slow query',
+    promQLTemplate:
+      'histogram_quantile(0.90, sum(rate(tidb_server_slow_query_cop_duration_seconds_bucket{inspectionid="{{inspectionId}}"}[1m])) by (le))',
+    labelTemplate: 'all_cop_proc',
+  },
+  slow_query_wait: {
+    title: 'Slow query',
+    promQLTemplate:
+      'histogram_quantile(0.90, sum(rate(tidb_server_slow_query_wait_duration_seconds_bucket{inspectionid="{{inspectionId}}"}[1m])) by (le))',
+    labelTemplate: 'all_cop_wait',
+  },
+
   // ////
   // Server Panel
+  // uptime
+  uptime: {
+    title: 'Uptime',
+    promQLTemplate: '(time() - process_start_time_seconds{job="tidb"})',
+    labelTemplate: '{{instance}}',
+    valConverter: val => toAnyUnit(val, 1 / 3600, 0, 'hour'),
+  },
+  // cpu usage
+  tidb_cpu_usage: {
+    title: 'CPU Usage',
+    promQLTemplate: 'rate(process_cpu_seconds_total{job="tidb"}[1m])',
+    labelTemplate: '{{instance}}',
+    valConverter: val => toPercent(val, 3),
+  },
   // Connection Count
   connection_count: {
     promQLTemplate: 'tidb_server_connections{inspectionid="{{inspectionId}}"}',
@@ -524,11 +572,17 @@ const RAW_METRICS: { [key: string]: IRawMetric } = {
       'sum(rate(tikv_grpc_msg_fail_total{inspectionid="{{inspectionId}}"}[1m])) by (job, type)',
     labelTemplate: '{{job}}-{{type}}',
   },
-  tikv_leader_drop: {
+  tikv_leader_drop_2: {
     title: 'Leader drop',
     promQLTemplate:
       'sum(delta(tikv_pd_heartbeat_tick_total{type="leader", inspectionid="{{inspectionId}}"}[1m])) by (job)',
     labelTemplate: '{{job}}',
+  },
+  tikv_leader_drop_3: {
+    title: 'Leader drop',
+    promQLTemplate:
+      'sum(delta(tikv_raftstore_region_count{type="leader", inspectionid="{{inspectionId}}"}[1m])) by (instance)',
+    labelTemplate: '{{instance}}',
   },
   tikv_leader_missing: {
     title: 'Leader missing',
@@ -1147,6 +1201,18 @@ const RAW_METRICS: { [key: string]: IRawMetric } = {
       'histogram_quantile(0.90, avg(rate(tikv_coprocessor_scan_keys_bucket{inspectionid="{{inspectionId}}"}[1m])) by (le, req))',
     labelTemplate: '{{req}}-90%',
   },
+  coprocessor_total_ops_details_table_scan: {
+    title: 'Total Ops Details (Table Scan)',
+    promQLTemplate:
+      'sum(rate(tikv_coprocessor_scan_details{inspectionid="{{inspectionId}}", req="select"}[1m])) by (tag)',
+    labelTemplate: '{{tag}}',
+  },
+  coprocessor_total_ops_details_index_scan: {
+    title: 'Total Ops Details (Index Scan)',
+    promQLTemplate:
+      'sum(rate(tikv_coprocessor_scan_details{inspectionid="{{inspectionId}}", req="index"}[1m])) by (tag)',
+    labelTemplate: '{{tag}}',
+  },
 
   // 95% Coprocessor wait duration by store
   coprocessor_wait_duration_by_store_95: {
@@ -1167,12 +1233,12 @@ const RAW_METRICS: { [key: string]: IRawMetric } = {
   },
   handle_snapshot_duration_99_apply: {
     promQLTemplate:
-      'histogram_quantile(0.99, sum(rate(tikv_server_send_snapshot_duration_seconds_bucket{type="apply", inspectionid="{{inspectionId}}"}[1m])) by (le))',
+      'histogram_quantile(0.99, sum(rate(tikv_raftstore_snapshot_duration_seconds_bucket{type="apply", inspectionid="{{inspectionId}}"}[1m])) by (le))',
     labelTemplate: 'apply',
   },
   handle_snapshot_duration_99_generate: {
     promQLTemplate:
-      'histogram_quantile(0.99, sum(rate(tikv_server_send_snapshot_duration_seconds_bucket{type="generate", inspectionid="{{inspectionId}}"}[1m])) by (le))',
+      'histogram_quantile(0.99, sum(rate(tikv_raftstore_snapshot_duration_seconds_bucket{type="generate", inspectionid="{{inspectionId}}"}[1m])) by (le))',
     labelTemplate: 'generate',
   },
 
@@ -1206,7 +1272,7 @@ const RAW_METRICS: { [key: string]: IRawMetric } = {
     valConverter: val => toPercent(val, 4),
   },
   split_check_cpu: {
-    title: 'Split check CUP',
+    title: 'Split check CPU',
     promQLTemplate:
       'sum(rate(tikv_thread_cpu_seconds_total{name=~"split_check", inspectionid="{{inspectionId}}"}[1m])) by (job)',
     labelTemplate: '{{job}}',
@@ -1430,6 +1496,12 @@ export const RAW_METRICS_ARR: { [key: string]: IRawMetric[] } = {
   ],
 
   tikv_leader: [RAW_METRICS.tikv_leader_2, RAW_METRICS.tikv_leader_3],
+  tikv_leader_drop: [RAW_METRICS.tikv_leader_drop_2, RAW_METRICS.tikv_leader_drop_3],
+  slow_query: [
+    RAW_METRICS.slow_query_process,
+    RAW_METRICS.slow_query_cop,
+    RAW_METRICS.slow_query_wait,
+  ],
 };
 
 export interface IPanel {
@@ -1445,8 +1517,10 @@ export const PANELS: { [key: string]: IPanel } = {
     charts: [
       'coprocessor_request_duration',
       'coprocessor_wait_duration',
-      'coprocessor_scan_keys',
+      // 'coprocessor_scan_keys',
       'coprocessor_wait_duration_by_store_95',
+      'coprocessor_total_ops_details_table_scan',
+      'coprocessor_total_ops_details_index_scan',
     ],
   },
   tikv_snapshot: {
