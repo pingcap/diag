@@ -13,6 +13,7 @@ import {
 } from '@/services/prometheus';
 import CollpasePanel from './CollapsePanel';
 import PrometheusChart from './PrometheusChart';
+import PrometheusTable from './PrometheusTable';
 
 interface InspectionReportProps {
   inspection: IInspectionDetail;
@@ -36,6 +37,25 @@ function InspectionReport({ inspection }: InspectionReportProps) {
     const finalTitle = title || metrics[0].title;
     return (
       <PrometheusChart
+        key={rawMetricKey}
+        title={finalTitle}
+        promMetrics={metrics}
+        promParams={promParams}
+      />
+    );
+  }
+
+  function renderPromethuesTable(
+    rawMetricKey: string,
+    tableColumns: [string, string],
+    title?: string,
+  ) {
+    const rawMetrics: IRawMetric[] = RAW_METRICS_ARR[rawMetricKey];
+    const metrics: IMetric[] = fillPromQLTemplate(rawMetrics, inspection.uuid);
+    const finalTitle = title || metrics[0].title;
+    return (
+      <PrometheusTable
+        tableColumns={tableColumns}
         key={rawMetricKey}
         title={finalTitle}
         promMetrics={metrics}
@@ -89,8 +109,12 @@ function InspectionReport({ inspection }: InspectionReportProps) {
 
       <h2>三、监控信息</h2>
       <h3>1、全局监控</h3>
-      <CollpasePanel title="Vcores">{renderPromethuesChart('vcores')}</CollpasePanel>
-      <CollpasePanel title="Memory">{renderPromethuesChart('memory')}</CollpasePanel>
+      <CollpasePanel title="Vcores">
+        {renderPromethuesTable('vcores', ['Host', 'CPU Num'])}
+      </CollpasePanel>
+      <CollpasePanel title="Memory">
+        {renderPromethuesTable('memory', ['Host', 'Memory'])}
+      </CollpasePanel>
       <CollpasePanel title="CPU Usage">{renderPromethuesChart('cpu_usage')}</CollpasePanel>
       <CollpasePanel title="Load">{renderPromethuesChart('load')}</CollpasePanel>
       <CollpasePanel title="Memorey Available">
