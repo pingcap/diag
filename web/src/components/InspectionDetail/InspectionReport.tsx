@@ -65,7 +65,10 @@ function InspectionReport({ inspection }: InspectionReportProps) {
         apiUrl={genItemApiUrl(inspection.uuid, 'dbinfo')}
         expand={false}
       />
-      <AutoTable title="3、资源信息" apiUrl={genItemApiUrl(inspection.uuid, 'resource')} />
+      <AutoTable
+        title="3、资源信息 (使用率%)"
+        apiUrl={genItemApiUrl(inspection.uuid, 'resource')}
+      />
       <AutoTable title="4、告警信息" apiUrl={genItemApiUrl(inspection.uuid, 'alert')} />
       <AutoTable title="5、慢查询信息" apiUrl={genItemApiUrl(inspection.uuid, 'slowlog')} />
       <AutoTable title="6、硬件信息" apiUrl={genItemApiUrl(inspection.uuid, 'hardware')} />

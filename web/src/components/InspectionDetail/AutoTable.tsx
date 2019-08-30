@@ -23,7 +23,7 @@ function AutoTable({ title, expand = true, apiUrl }: AutoTableProps) {
 
   function renderHeader() {
     return (
-      <strong style={{ color: hasAbnormal ? 'red' : 'inherit' }}>
+      <strong style={{ color: hasAbnormal || title === 'overview' ? 'red' : 'inherit' }}>
         {title} {collapsed && `(${dataSource.length})`}
       </strong>
     );
