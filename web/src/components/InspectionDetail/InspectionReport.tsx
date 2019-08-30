@@ -110,6 +110,7 @@ function InspectionReport({ inspection }: InspectionReportProps) {
       </CollpasePanel>
       <CollpasePanel title="Balance" expand={false}>
         {renderPromethuesChart('store_available', 'Store Available')}
+        {renderPromethuesChart('store_available_ratio', 'Store available ratio')}
         {renderPromethuesChart('store_leader_score', 'Store Leader Score')}
         {renderPromethuesChart('store_region_score', 'Store Region Score')}
         {renderPromethuesChart('store_leader_count', 'Store Leader Count')}
@@ -133,17 +134,20 @@ function InspectionReport({ inspection }: InspectionReportProps) {
         {renderPromethuesChart('schedule_operator_timeout', 'Schedule Operator Timeout')}
       </CollpasePanel>
       <CollpasePanel title="Etcd" expand={false}>
-        {renderPromethuesChart('handle_txn_count', 'handle txn count')}
-        {renderPromethuesChart('wal_fsync_duration_seconds_99', '99% wal fsync duration seconds')}
+        {renderPromethuesChart('handle_txn_count', 'handle transactions count')}
+        {renderPromethuesChart('wal_fsync_duration_seconds_99', '99% WAL fsync duration')}
       </CollpasePanel>
       <CollpasePanel title="TiDB" expand={false}>
-        {renderPromethuesChart(
-          'handle_request_duration_seconds',
-          'handle request duration seconds',
-        )}
+        {renderPromethuesChart('handle_request_duration_seconds', 'handle requests duration')}
       </CollpasePanel>
       <CollpasePanel title="Heartbeat" expand={false}>
         {renderPromethuesChart('region_heartbeat_latency_99', '99% region heartbeat latency')}
+      </CollpasePanel>
+      <CollpasePanel title="gPRC" expand={false}>
+        {renderPromethuesChart(
+          'grpc_completed_commands_duration_99',
+          '99% completed commands duration',
+        )}
       </CollpasePanel>
 
       <h3>3、TiDB</h3>
@@ -152,11 +156,14 @@ function InspectionReport({ inspection }: InspectionReportProps) {
         {renderPromethuesChart('qps_by_instance', 'QPS By Instance')}
         {renderPromethuesChart('duration', 'Duration')}
         {renderPromethuesChart('failed_query_opm', 'Failed Query OPM')}
+        {renderPromethuesChart('slow_query', 'Slow query')}
       </CollpasePanel>
       <CollpasePanel title="Server" expand={false}>
+        {renderPromethuesChart('uptime')}
+        {renderPromethuesChart('tidb_cpu_usage')}
         {renderPromethuesChart('connection_count_all', 'Connection Count')}
         {renderPromethuesChart('goroutine_count', 'Goroutine Count')}
-        {renderPromethuesChart('heap_memory_usage', 'Heap Memory Usage')}
+        {renderPromethuesChart('heap_memory_usage', 'Memory Usage')}
       </CollpasePanel>
       <CollpasePanel title="Distsql" expand={false}>
         {renderPromethuesChart('distsql_duration', 'Distsql Duration')}
@@ -174,7 +181,7 @@ function InspectionReport({ inspection }: InspectionReportProps) {
         {renderPromethuesChart('schema_lease_error_opm', 'Schema Lease Error OPM')}
       </CollpasePanel>
       <CollpasePanel title="DDL" expand={false}>
-        {renderPromethuesChart('ddl_opm', 'DDL OPM')}
+        {renderPromethuesChart('ddl_opm', 'DDL META OPM')}
       </CollpasePanel>
 
       <h3>4、TiKV</h3>
@@ -224,7 +231,7 @@ function InspectionReport({ inspection }: InspectionReportProps) {
         {renderPromethuesChart('tikv_storage_async_write_duration')}
         {renderPromethuesChart('tikv_storage_async_snapshot_duration')}
       </CollpasePanel>
-      <CollpasePanel title="Scheduler pending commands" expand={false}>
+      <CollpasePanel title="Scheduler" expand={false}>
         {renderPromethuesChart('scheduler_pending_commands')}
       </CollpasePanel>
       <CollpasePanel title="RocksDB - raft" expand={false}>
