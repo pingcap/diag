@@ -15,7 +15,7 @@ interface AutoTableProps {
 function AutoTable({ title, expand = true, apiUrl }: AutoTableProps) {
   const [collapsed, setCollapsed] = useState(!expand);
 
-  const [conclusion, tableColumns, dataSource] = useReportItemQuery(apiUrl);
+  const [conclusion, tableColumns, dataSource, hasAbnormal] = useReportItemQuery(apiUrl);
 
   function handleCollapseChange(expandKeys: string[] | string) {
     setCollapsed(expandKeys.length === 0);
@@ -23,7 +23,7 @@ function AutoTable({ title, expand = true, apiUrl }: AutoTableProps) {
 
   function renderHeader() {
     return (
-      <strong>
+      <strong style={{ color: hasAbnormal ? 'red' : 'inherit' }}>
         {title} {collapsed && `(${dataSource.length})`}
       </strong>
     );
