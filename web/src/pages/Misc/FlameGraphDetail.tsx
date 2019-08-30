@@ -1,12 +1,11 @@
-import React, { useState, useEffect } from 'react';
-import { Button, Modal, Table } from 'antd';
+import React, { useState } from 'react';
+import { Button, Modal } from 'antd';
 import { router } from 'umi';
 import { connect } from 'dva';
 import { ConnectProps, Dispatch, ConnectState } from '@/models/connect';
 import { CurrentUser } from '@/models/user';
 import UploadRemoteReportModal from '@/components/UploadRemoteReportModal';
-import { IFlameGraph } from '@/models/misc';
-import { queryFlamegraph } from '@/services/misc';
+import FlameGraphTable from '@/components/FlameGraphTable';
 
 const styles = require('../style.less');
 
@@ -16,72 +15,10 @@ interface ReportDetailProps extends ConnectProps {
   curUser: CurrentUser;
 }
 
-interface IFlame {
-  component: string;
-  address: string;
-  svgFullPath: string;
-  svgFileName: string;
-}
-
-const tableColumns = [
-  {
-    title: '组件',
-    dataIndex: 'component',
-    key: 'component',
-  },
-  {
-    title: '机器',
-    dataIndex: 'address',
-    key: 'address',
-  },
-  {
-    title: '图片',
-    dataIndex: 'url',
-    key: 'url',
-    render: (text: any, record: IFlame) => (
-      <a target="_blank" rel="noopener noreferrer" href={record.svgFullPath}>
-        {record.svgFileName}
-      </a>
-    ),
-  },
-];
-
-function genFlames(detail: IFlameGraph): IFlame[] {
-  const flames: IFlame[] = [];
-  detail.items.forEach(item => {
-    item.flames.forEach(flame => {
-      flames.push({
-        component: item.component,
-        address: item.address,
-        svgFullPath: flame,
-        svgFileName: flame.split('/').pop() || '',
-      });
-    });
-  });
-  return flames;
-}
-
 function FlameGraphDetail({ dispatch, match, curUser }: ReportDetailProps) {
   const reportId: string | undefined = match && match.params && (match.params as any).id;
 
-  const [loading, setLoading] = useState(false);
-  const [flames, setFlames] = useState<IFlame[]>([]);
-
   const [uploadRemoteModalVisible, setUploadRemoteModalVisible] = useState(false);
-
-  useEffect(() => {
-    async function fetchDetail() {
-      if (reportId) {
-        setLoading(true);
-        const res: IFlameGraph | undefined = await queryFlamegraph(reportId);
-        setLoading(false);
-        if (res) {
-          setFlames(genFlames(res));
-        }
-      }
-    }
-    fetchDetail();
-  }, []);
 
   function deleteFlamegraph() {
     Modal.confirm({
@@ -123,7 +60,7 @@ function FlameGraphDetail({ dispatch, match, curUser }: ReportDetailProps) {
           删除
         </Button>
       </div>
-      <Table dataSource={flames} columns={tableColumns} pagination={false} loading={loading} />
+      <FlameGraphTable reportId={reportId || ''} />
       <UploadRemoteReportModal
         visible={uploadRemoteModalVisible}
         onClose={() => setUploadRemoteModalVisible(false)}

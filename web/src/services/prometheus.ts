@@ -454,11 +454,17 @@ const RAW_METRICS: { [key: string]: IRawMetric } = {
     labelTemplate: '{{job}} - {{type}}',
     valConverter: val => toAnyUnit(val, 1, 1, 'ops'),
   },
-  tikv_leader: {
+  tikv_leader_2: {
     title: 'Leader',
     promQLTemplate:
       'sum(tikv_pd_heartbeat_tick_total{type="leader", inspectionid="{{inspectionId}}"}) by (job)',
     labelTemplate: '{{job}}',
+  },
+  tikv_leader_3: {
+    title: 'Leader',
+    promQLTemplate:
+      'sum(tikv_raftstore_region_count{type="leader", inspectionid="{{inspectionId}}"}) by (instance)',
+    labelTemplate: '{{instance}}',
   },
 
   // ///////////
@@ -1422,6 +1428,8 @@ export const RAW_METRICS_ARR: { [key: string]: IRawMetric[] } = {
     RAW_METRICS.handle_snapshot_duration_99_apply,
     RAW_METRICS.handle_snapshot_duration_99_generate,
   ],
+
+  tikv_leader: [RAW_METRICS.tikv_leader_2, RAW_METRICS.tikv_leader_3],
 };
 
 export interface IPanel {

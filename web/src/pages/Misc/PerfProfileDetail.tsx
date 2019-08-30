@@ -6,6 +6,7 @@ import { connect } from 'dva';
 import { ConnectProps, Dispatch, ConnectState } from '@/models/connect';
 import { CurrentUser } from '@/models/user';
 import UploadRemoteReportModal from '@/components/UploadRemoteReportModal';
+import FlameGraphTable from '@/components/FlameGraphTable';
 
 const styles = require('../style.less');
 
@@ -59,8 +60,9 @@ function PerfProfileDetail({ dispatch, match, curUser }: ReportDetailProps) {
         </Button>
       </div>
       <section className={styles.report_detail_body}>
-        <p>如需分析请点击 &quot;下载&quot; 按钮将报告下载到本地分析。</p>
+        <p>如需更进一步的分析请点击 &quot;下载&quot; 按钮将报告下载到本地分析。</p>
       </section>
+      <FlameGraphTable reportId={reportId || ''} />
       <UploadRemoteReportModal
         visible={uploadRemoteModalVisible}
         onClose={() => setUploadRemoteModalVisible(false)}

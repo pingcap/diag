@@ -63,18 +63,7 @@ export default [
         routes: [
           {
             path: '/misc',
-            redirect: '/misc/flamegraphs',
-          },
-          {
-            path: '/misc/flamegraphs',
-            name: 'flame_graph',
-            component: './Misc/FlameGraphList',
-          },
-          {
-            path: '/misc/flamegraphs/:id',
-            name: 'flame_graph_detail',
-            component: './Misc/FlameGraphDetail',
-            hideInMenu: true,
+            redirect: '/misc/perfprofiles',
           },
           {
             path: '/misc/perfprofiles',

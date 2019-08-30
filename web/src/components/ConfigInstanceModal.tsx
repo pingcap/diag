@@ -1,7 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { Modal, Form, Checkbox, Divider, Select, message, Spin, DatePicker } from 'antd';
+import { Modal, Form, Checkbox, Divider, Select, message, Spin, DatePicker, Row, Col } from 'antd';
 import moment from 'moment';
 import { RangePickerValue } from 'antd/lib/date-picker/interface';
+import { CheckboxValueType } from 'antd/lib/checkbox/Group';
+import { formatMessage } from 'umi-plugin-locale';
 import { queryInstanceConfig, updateInstanceConfig } from '@/services/inspection';
 import { IInstanceConfig } from '@/models/inspection';
 import { Dispatch } from '@/models/connect';
@@ -47,6 +49,8 @@ const oneDayTimes: string[] = Array(48)
   );
 
 const endOfToday = moment().endOf('day');
+
+const weekDays = 'MON,TUE,WED,THU,FRI,SAT,SUN'.split(',');
 
 function ConfigInstanceModal({ visible, onClose, dispatch, manual, instanceId }: Props) {
   const [loading, setLoading] = useState(false);
@@ -111,6 +115,13 @@ function ConfigInstanceModal({ visible, onClose, dispatch, manual, instanceId }:
   function disableDate(current: moment.Moment | undefined) {
     // Can not select days before today
     return (current && current > endOfToday) || false;
+  }
+
+  function handleWeekdaysChange(checkedValues: CheckboxValueType[]) {
+    setConfig({
+      ...(config as IInstanceConfig),
+      auto_sched_day: checkedValues.join(','),
+    });
   }
 
   async function submit() {
@@ -254,6 +265,21 @@ function ConfigInstanceModal({ visible, onClose, dispatch, manual, instanceId }:
                   <Option value={60 * 4}>4 小时</Option>
                 </Select>
               </Form.Item>
+              <Form.Item label="报告收集频率">
+                <Checkbox.Group
+                  style={{ paddingTop: 10 }}
+                  defaultValue={config.auto_sched_day.split(',')}
+                  onChange={handleWeekdaysChange}
+                >
+                  <Row>
+                    {weekDays.map(day => (
+                      <Col span={8} key={day}>
+                        <Checkbox value={day}>{formatMessage({ id: `days.${day}` })}</Checkbox>
+                      </Col>
+                    ))}
+                  </Row>
+                </Checkbox.Group>
+              </Form.Item>
               <Divider />
             </React.Fragment>
           )}
@@ -271,11 +297,6 @@ function ConfigInstanceModal({ visible, onClose, dispatch, manual, instanceId }:
               </Form.Item>
               <Divider />
             </React.Fragment>
-          )}
-          {!manual && (
-            <Form.Item label="报告收集频率">
-              <span>每日 1 次</span>
-            </Form.Item>
           )}
           <Form.Item label="报告保存时长">
             <span>30 天</span>

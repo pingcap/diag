@@ -26,10 +26,19 @@ export async function queryPerfProfiles(page: number) {
   return request(`/perfprofiles?page=${page}`);
 }
 
-export async function addPerfProfile(instanceId: string) {
-  return request.post(`/instances/${instanceId}/perfprofiles`);
+export async function addPerfProfile(instanceId: string, node: string) {
+  if (node === 'all') {
+    return request.post(`/instances/${instanceId}/perfprofiles`);
+  }
+  return request.post(`/instances/${instanceId}/perfprofiles?node=${node}`);
 }
 
 export async function deletePerfProfile(uuid: string) {
   return request.delete(`/perfprofiles/${uuid}`);
+}
+
+// /////////////////////
+
+export async function queryInstanceComponents(instanceId: string) {
+  return request(`/instances/${instanceId}/components`);
 }

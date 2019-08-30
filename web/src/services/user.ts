@@ -1,7 +1,14 @@
 import request from '@/utils/request';
 
 export async function accountLogin(loginInfo: { username: string; password: string }) {
-  return request.post('/login', { data: loginInfo });
+  const res = await request.post('/login', {
+    data: loginInfo,
+    errorHandler: error => {
+      const { response } = error;
+      console.log(response.status);
+    },
+  });
+  return res;
 }
 
 export async function accountLogout() {
