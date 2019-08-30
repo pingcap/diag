@@ -7,8 +7,13 @@ interface IResObj {
   [key: string]: any;
 }
 
+interface IConclusion {
+  status: 'abnormal' | 'normal';
+  message: string;
+}
+
 interface IResConclusionWithData {
-  conclusion: any[];
+  conclusion: IConclusion[];
   data: any[];
 }
 
@@ -21,21 +26,26 @@ interface IAbnormalValue {
 }
 
 export function useReportItemQuery(apiUrl: string) {
-  const [conclusion, setConclusion] = useState<any[]>([]);
+  const [conclusion, setConclusion] = useState<IConclusion[]>([]);
   const [tableColumns, setTableColumns] = useState<any[]>([]);
   const [dataSource, setDataSource] = useState<any[]>([]);
+  const [hasAbnormal, setHasAbnormal] = useState(false);
 
   useEffect(() => {
     async function fetchData() {
       const res: IResReportItem = await request(apiUrl);
       if (res !== undefined) {
         if (res.data) {
+          let containsAbnormal =
+            (res.conclusion as IConclusion[]).find(item => item.status === 'abnormal') !==
+            undefined;
           const columns = Object.keys(res.data[0] || {}).map(key => ({
             title: key,
             dataIndex: key,
             key,
             render: (text: any) => {
               if (text.abnormal) {
+                containsAbnormal = true;
                 return (
                   <div style={{ display: 'flex' }}>
                     <span style={{ color: 'red', marginRight: '8px', whiteSpace: 'pre-wrap' }}>
@@ -57,6 +67,7 @@ export function useReportItemQuery(apiUrl: string) {
           setTableColumns(columns);
           setDataSource(dataArr);
           setConclusion(res.conclusion);
+          setHasAbnormal(containsAbnormal);
         } else {
           const columns = [
             {
@@ -88,5 +99,5 @@ export function useReportItemQuery(apiUrl: string) {
     }
   }, [apiUrl]);
 
-  return [conclusion, tableColumns, dataSource];
+  return [conclusion, tableColumns, dataSource, hasAbnormal];
 }
