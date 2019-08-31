@@ -7,7 +7,7 @@ import (
 	"github.com/pingcap/tidb-foresight/analyzer/boot"
 	"github.com/pingcap/tidb-foresight/analyzer/input/insight"
 	"github.com/pingcap/tidb-foresight/model"
-	"github.com/pingcap/tidb-foresight/utils"
+	tf "github.com/pingcap/tidb-foresight/utils/tagd-value/float64"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -22,7 +22,7 @@ func SaveNtpInfo() *saveNtpInfoTask {
 // Save hardware info to database, the hardware info comes from insight collector
 func (t *saveNtpInfoTask) Run(m *boot.Model, c *boot.Config, insight *insight.Insight) {
 	for _, insight := range *insight {
-		offset := utils.NewTagdFloat64(insight.Ntp.Offset, nil)
+		offset := tf.New(insight.Ntp.Offset, nil)
 		if math.Abs(offset.GetValue()) > NTP_THRESHOLD {
 			offset.SetTag("status", "error")
 			offset.SetTag("message", fmt.Sprintf("ntp offset of node %s exceeded the threshold (500ms)", insight.NodeIp))

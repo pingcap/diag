@@ -1,15 +1,15 @@
 package report
 
 import (
-	"github.com/pingcap/tidb-foresight/utils"
+	ts "github.com/pingcap/tidb-foresight/utils/tagd-value/string"
 )
 
 type ResourceInfo struct {
-	InspectionId string           `json:"-"`
-	Name         string           `json:"name"`
-	Duration     string           `json:"duration"`
-	Avg          utils.TagdString `json:"avg"`
-	Max          utils.TagdString `json:"max"`
+	InspectionId string    `json:"-"`
+	Name         string    `json:"name"`
+	Duration     string    `json:"duration"`
+	Avg          ts.String `json:"avg"`
+	Max          ts.String `json:"max"`
 }
 
 func (m *report) GetInspectionResourceInfo(inspectionId string) ([]*ResourceInfo, error) {

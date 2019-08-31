@@ -1,13 +1,13 @@
 package report
 
 import (
-	"github.com/pingcap/tidb-foresight/utils"
+	tf "github.com/pingcap/tidb-foresight/utils/tagd-value/float64"
 )
 
 type NtpInfo struct {
 	InspectionId string
-	NodeIp       string            `json:"node_ip"`
-	Offset       utils.TagdFloat64 `json:"offset"`
+	NodeIp       string     `json:"node_ip"`
+	Offset       tf.Float64 `json:"offset"`
 }
 
 func (m *report) GetInspectionNtpInfo(inspectionId string) ([]*NtpInfo, error) {

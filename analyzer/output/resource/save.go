@@ -8,6 +8,7 @@ import (
 	"github.com/pingcap/tidb-foresight/analyzer/input/resource"
 	"github.com/pingcap/tidb-foresight/model"
 	"github.com/pingcap/tidb-foresight/utils"
+	ts "github.com/pingcap/tidb-foresight/utils/tagd-value/string"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -39,8 +40,8 @@ func (t *saveResourceTask) Run(c *boot.Config, r *resource.Resource, args *args.
 }
 
 func (t *saveResourceTask) insertData(m *boot.Model, inspectionId, resource, duration string, max float64, avg float64) error {
-	mv := utils.NewTagdString(fmt.Sprintf("%.2f%%", max), nil)
-	av := utils.NewTagdString(fmt.Sprintf("%.2f%%", avg), nil)
+	mv := ts.New(fmt.Sprintf("%.2f%%", max), nil)
+	av := ts.New(fmt.Sprintf("%.2f%%", avg), nil)
 	if max > THRESHOLD {
 		mv.SetTag("status", "error")
 		mv.SetTag("message", fmt.Sprintf("%s/max resource utilization/%s too high", resource, duration))

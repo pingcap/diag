@@ -4,6 +4,7 @@ import (
 	"github.com/pingcap/tidb-foresight/analyzer/boot"
 	"github.com/pingcap/tidb-foresight/analyzer/input/dbinfo"
 	"github.com/pingcap/tidb-foresight/model"
+	ti "github.com/pingcap/tidb-foresight/utils/tagd-value/int64"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -17,11 +18,16 @@ func SaveDBInfo() *saveDBInfoTask {
 func (t *saveDBInfoTask) Run(m *boot.Model, schemas *dbinfo.DBInfo, c *boot.Config) {
 	for _, schema := range *schemas {
 		for _, tb := range schema.Tables {
+			idxnum := ti.New(int64(len(tb.Indexes)), nil)
+			if len(tb.Indexes) == 0 {
+				idxnum.SetTag("status", "error")
+				idxnum.SetTag("message", "please add index for this table")
+			}
 			if err := m.InsertInspectionDBInfo(&model.DBInfo{
 				InspectionId: c.InspectionId,
 				DB:           schema.Name,
 				Table:        tb.Name.L,
-				Index:        len(tb.Indexes),
+				Index:        idxnum,
 			}); err != nil {
 				log.Error("insert db info:", err)
 				return

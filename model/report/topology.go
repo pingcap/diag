@@ -1,15 +1,15 @@
 package report
 
 import (
-	"github.com/pingcap/tidb-foresight/utils"
+	ts "github.com/pingcap/tidb-foresight/utils/tagd-value/string"
 )
 
 type TopologyInfo struct {
-	InspectionId string           `json:"-"`
-	Name         string           `json:"name"`
-	NodeIp       string           `json:"node_ip"`
-	Port         string           `json:"port"`
-	Status       utils.TagdString `json:"status"`
+	InspectionId string    `json:"-"`
+	Name         string    `json:"name"`
+	NodeIp       string    `json:"node_ip"`
+	Port         string    `json:"port"`
+	Status       ts.String `json:"status"`
 }
 
 func (m *report) GetInspectionTopologyInfo(inspectionId string) ([]*TopologyInfo, error) {

@@ -16,7 +16,6 @@ type Model interface {
 	GetInspectionSlowLog(inspectionId string) ([]*SlowLogInfo, error)
 	GetInspectionSoftwareInfo(inspectionId string) ([]*SoftwareInfo, error)
 	GetInspectionSymptoms(inspectionId string) ([]*Symptom, error)
-	GetTablesWithoutIndex(inspectionId string) ([]*DBInfo, error)
 	GetInspectionDBInfo(inspectionId string) ([]*DBInfo, error)
 	GetInspectionNtpInfo(inspectionId string) ([]*NtpInfo, error)
 	GetInspectionTopologyInfo(inspectionId string) ([]*TopologyInfo, error)

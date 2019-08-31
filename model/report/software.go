@@ -1,14 +1,14 @@
 package report
 
 import (
-	"github.com/pingcap/tidb-foresight/utils"
+	ts "github.com/pingcap/tidb-foresight/utils/tagd-value/string"
 )
 
 type SoftwareInfo struct {
-	InspectionId string           `json:"-"`
-	NodeIp       string           `json:"node_ip"`
-	Component    string           `json:"component"`
-	Version      utils.TagdString `json:"version"`
+	InspectionId string    `json:"-"`
+	NodeIp       string    `json:"node_ip"`
+	Component    string    `json:"component"`
+	Version      ts.String `json:"version"`
 }
 
 func (m *report) GetInspectionSoftwareInfo(inspectionId string) ([]*SoftwareInfo, error) {
