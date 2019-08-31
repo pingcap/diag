@@ -8,7 +8,7 @@ interface IResObj {
 }
 
 interface IConclusion {
-  status: 'abnormal' | 'normal';
+  status: 'error' | 'warning' | 'info';
   message: string;
 }
 
@@ -20,7 +20,7 @@ interface IResConclusionWithData {
 type IResReportItem = IResObj | IResConclusionWithData | undefined;
 
 interface IAbnormalValue {
-  abnormal: boolean;
+  status: 'error' | 'warning' | 'info';
   message: string;
   value: string | number;
 }
@@ -37,14 +37,13 @@ export function useReportItemQuery(apiUrl: string) {
       if (res !== undefined) {
         if (res.data) {
           let containsAbnormal =
-            (res.conclusion as IConclusion[]).find(item => item.status === 'abnormal') !==
-            undefined;
+            (res.conclusion as IConclusion[]).find(item => item.status === 'error') !== undefined;
           const columns = Object.keys(res.data[0] || {}).map(key => ({
             title: key,
             dataIndex: key,
             key,
             render: (text: any) => {
-              if (text.abnormal) {
+              if (text.status === 'error') {
                 containsAbnormal = true;
                 return (
                   <div style={{ display: 'flex' }}>
