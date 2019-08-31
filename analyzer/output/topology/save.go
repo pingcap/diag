@@ -24,7 +24,8 @@ func (t *saveTopologyTask) Run(c *boot.Config, topo *topology.Topology, args *ar
 			case "offline":
 				status.SetTag("status", "error")
 			case "unknown":
-				status.SetTag("status", "warning")
+				// TODO: use warning
+				status.SetTag("status", "error")
 			}
 			if err := m.InsertInspectionTopologyInfo(&model.TopologyInfo{
 				InspectionId: c.InspectionId,

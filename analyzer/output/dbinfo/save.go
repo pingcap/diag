@@ -17,6 +17,9 @@ func SaveDBInfo() *saveDBInfoTask {
 // Save table indexes information to db, a record for a table
 func (t *saveDBInfoTask) Run(m *boot.Model, schemas *dbinfo.DBInfo, c *boot.Config) {
 	for _, schema := range *schemas {
+		if schema.Name == "mysql" {
+			continue
+		}
 		for _, tb := range schema.Tables {
 			idxnum := ti.New(int64(len(tb.Indexes)), nil)
 			if len(tb.Indexes) == 0 {
