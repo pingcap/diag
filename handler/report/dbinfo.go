@@ -1,6 +1,7 @@
 package report
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/gorilla/mux"
@@ -30,8 +31,22 @@ func (h *getDBInfoHandler) getInspectionDBInfo(r *http.Request) (map[string]inte
 		return nil, utils.DatabaseQueryError
 	}
 
+	count := 0
+	for _, tb := range info {
+		if tb.Index.GetTag("status") != "" {
+			count++
+		}
+	}
+	conclusions := make([]map[string]interface{}, 0)
+	if count != 0 {
+		conclusions = append(conclusions, map[string]interface{}{
+			"status":  "error",
+			"message": fmt.Sprintf("there are %d tables are abnormal", count),
+		})
+	}
+
 	return map[string]interface{}{
-		"conclusion": []interface{}{},
+		"conclusion": conclusions,
 		"data":       info,
 	}, nil
 }

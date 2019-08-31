@@ -6,7 +6,7 @@ import (
 	"github.com/pingcap/tidb-foresight/analyzer/boot"
 	"github.com/pingcap/tidb-foresight/analyzer/input/insight"
 	"github.com/pingcap/tidb-foresight/model"
-	"github.com/pingcap/tidb-foresight/utils"
+	ts "github.com/pingcap/tidb-foresight/utils/tagd-value/string"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -26,7 +26,7 @@ func (t *saveSoftwareVersionTask) Run(c *boot.Config, m *boot.Model, insights *i
 				InspectionId: c.InspectionId,
 				NodeIp:       v.ip,
 				Component:    v.component,
-				Version:      utils.NewTagdString(v.version, nil),
+				Version:      ts.New(v.version, nil),
 			})
 		}
 	}

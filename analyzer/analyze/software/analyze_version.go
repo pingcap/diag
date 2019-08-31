@@ -25,7 +25,7 @@ func (t *analyzeVersionTask) Run(m *boot.Model, c *boot.Config) {
 	for _, comp := range comps {
 		if comp.Version.GetTag("status") != "" {
 			msg := comp.Version.GetTag("message")
-			desc := fmt.Sprintf("make sure all %s have the correct", comp)
+			desc := fmt.Sprintf("make sure all %s have the correct version", comp.Component)
 			m.InsertSymptom("error", msg, desc)
 		}
 	}

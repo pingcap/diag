@@ -15,19 +15,23 @@ func Analyze() *analyzeTask {
 
 // Check if any table doest not have index
 func (t *analyzeTask) Run(m *boot.Model, c *boot.Config) {
-	tbs, err := m.GetTablesWithoutIndex(c.InspectionId)
+	tbs, err := m.GetInspectionDBInfo(c.InspectionId)
 	if err != nil {
-		log.Error("get tables without index:", err)
+		log.Error("get tables index:", err)
 		return
 	}
 
+	cm := make(map[string]int, 0)
 	for _, tb := range tbs {
-		if tb.Index == 0 {
-			m.InsertSymptom(
-				"error",
-				fmt.Sprintf("table %s missing index in database %s", tb.Table, tb.DB),
-				"please add index for the table",
-			)
+		if tb.Index.GetValue() == 0 {
+			cm[tb.DB]++
 		}
+	}
+	for db, count := range cm {
+		m.InsertSymptom(
+			"error",
+			fmt.Sprintf("there are %d tables missing index in database %s", count, db),
+			"please add index for these tables",
+		)
 	}
 }

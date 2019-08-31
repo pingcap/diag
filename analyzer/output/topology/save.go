@@ -5,7 +5,7 @@ import (
 	"github.com/pingcap/tidb-foresight/analyzer/input/args"
 	"github.com/pingcap/tidb-foresight/analyzer/input/topology"
 	"github.com/pingcap/tidb-foresight/model"
-	"github.com/pingcap/tidb-foresight/utils"
+	ts "github.com/pingcap/tidb-foresight/utils/tagd-value/string"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -19,7 +19,7 @@ func SaveTopologyInfo() *saveTopologyTask {
 func (t *saveTopologyTask) Run(c *boot.Config, topo *topology.Topology, args *args.Args, m *boot.Model) {
 	for _, host := range topo.Hosts {
 		for _, comp := range host.Components {
-			status := utils.NewTagdString(comp.Status, nil)
+			status := ts.New(comp.Status, nil)
 			switch comp.Status {
 			case "offline":
 				status.SetTag("status", "error")

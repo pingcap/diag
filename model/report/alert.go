@@ -3,14 +3,14 @@ package report
 import (
 	"time"
 
-	"github.com/pingcap/tidb-foresight/utils"
+	ts "github.com/pingcap/tidb-foresight/utils/tagd-value/string"
 )
 
 type AlertInfo struct {
-	InspectionId string           `json:"-"`
-	Name         string           `json:"name"`
-	Value        utils.TagdString `json:"value"`
-	Time         time.Time        `json:"time"`
+	InspectionId string    `json:"-"`
+	Name         string    `json:"name"`
+	Value        ts.String `json:"value"`
+	Time         time.Time `json:"time"`
 }
 
 func (m *report) GetInspectionAlertInfo(inspectionId string) ([]*AlertInfo, error) {
