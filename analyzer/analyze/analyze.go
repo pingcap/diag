@@ -5,6 +5,7 @@ import (
 	"github.com/pingcap/tidb-foresight/analyzer/analyze/resource"
 	"github.com/pingcap/tidb-foresight/analyzer/analyze/slow_query"
 	"github.com/pingcap/tidb-foresight/analyzer/analyze/software"
+	"github.com/pingcap/tidb-foresight/analyzer/analyze/status"
 	"github.com/pingcap/tidb-foresight/analyzer/analyze/summary"
 	index "github.com/pingcap/tidb-foresight/analyzer/analyze/table_index"
 )
@@ -18,6 +19,7 @@ func Tasks() []interface{} {
 	tasks = append(tasks, software.AnalyzeConfig())
 	tasks = append(tasks, software.AnalyzeVersion())
 	tasks = append(tasks, slow_query.Analyze())
+	tasks = append(tasks, status.Analyze())
 
 	// Keep this the last one
 	tasks = append(tasks, summary.Summary())
