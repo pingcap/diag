@@ -30,6 +30,23 @@ const tableColumns = (curUser: CurrentUser, onDelete: any, onUpload: any) => [
     key: 'instance_name',
   },
   {
+    title: '节点',
+    dataIndex: 'no-need',
+    key: 'node',
+    render: (text: any, record: IPerfProfile) => {
+      let content = '';
+      if (record.items === null || record.items.length === 0) {
+        content = '获取中...';
+      } else if (record.items.length > 1) {
+        content = 'all';
+      } else {
+        // record.items.length === 1
+        content = `${record.items[0].component}-${record.items[0].address}`;
+      }
+      return <span>{content}</span>;
+    },
+  },
+  {
     title: '开始时间',
     dataIndex: 'format_create_time',
     key: 'format_create_time',
