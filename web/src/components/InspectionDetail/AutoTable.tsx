@@ -34,7 +34,7 @@ function AutoTable({ title, expand = true, apiUrl }: AutoTableProps) {
       <ul className={styles.conclusion_list}>
         {conclusion.map(item => (
           <li key={`${item.message}`}>
-            {item.status === 'abnormal' ? (
+            {item.status === 'error' ? (
               <p style={{ color: 'red', fontSize: '16px' }}>{item.message}</p>
             ) : (
               <p>{item.message}</p>
