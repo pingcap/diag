@@ -39,43 +39,78 @@ _.templateSettings.interpolate = /{{([\s\S]+?)}}/g;
 const RAW_METRICS: { [key: string]: IRawMetric } = {
   // ////////////////////////////
   // Overview
-  vcores: {
+  vcores_2: {
     promQLTemplate: 'count(node_cpu{mode="user", inspectionid="{{inspectionId}}"}) by (instance)',
     labelTemplate: '{{instance}}',
   },
+  vcores_3: {
+    promQLTemplate:
+      'count(node_cpu_seconds_total{mode="user", inspectionid="{{inspectionId}}"}) by (instance)',
+    labelTemplate: '{{instance}}',
+  },
 
-  memory: {
+  memory_2: {
     promQLTemplate: 'node_memory_MemTotal{inspectionid="{{inspectionId}}"}',
     labelTemplate: '{{instance}}',
     valConverter: bytesSizeFormatter,
   },
+  memory_3: {
+    promQLTemplate: 'node_memory_MemTotal_bytes{inspectionid="{{inspectionId}}"}',
+    labelTemplate: '{{ instance }}',
+    valConverter: bytesSizeFormatter,
+  },
 
-  cpu_usage: {
+  cpu_usage_2: {
     promQLTemplate:
       '100 - avg by (instance) (irate(node_cpu{mode="idle", inspectionid="{{inspectionId}}"}[1m]) ) * 100',
     labelTemplate: '{{instance}}',
     valConverter: val => toPercentUnit(val, 1),
   },
+  cpu_usage_3: {
+    promQLTemplate:
+      '100 - avg by (instance) (irate(node_cpu_seconds_total{mode="idle", inspectionid="{{inspectionId}}"}[1m]) ) * 100',
+    labelTemplate: '{{instance}}',
+    valConverter: val => toPercentUnit(val, 1),
+  },
+
   load: {
     promQLTemplate: 'node_load1{inspectionid="{{inspectionId}}"}',
     labelTemplate: '{{instance}}',
     valConverter: val => toFixed(val, 1),
   },
-  memory_available: {
+
+  memory_available_2: {
     promQLTemplate: 'node_memory_MemAvailable{inspectionid="{{inspectionId}}"}',
     labelTemplate: '{{instance}}',
     valConverter: bytesSizeFormatter,
   },
+  memory_available_3: {
+    promQLTemplate: 'node_memory_MemAvailable_bytes{inspectionid="{{inspectionId}}"}',
+    labelTemplate: '{{instance}}',
+    valConverter: bytesSizeFormatter,
+  },
 
-  network_traffic_receive: {
+  network_traffic_receive_2: {
     promQLTemplate:
       'irate(node_network_receive_bytes{device!="lo", inspectionid="{{inspectionId}}"}[5m]) * 8',
     labelTemplate: 'Inbound: {{instance}}',
     valConverter: networkBitSizeFormatter,
   },
-  network_traffic_transmit: {
+  network_traffic_transmit_2: {
     promQLTemplate:
       'irate(node_network_transmit_bytes{device!="lo", inspectionid="{{inspectionId}}"}[5m]) * 8',
+    labelTemplate: 'Outbound: {{instance}}',
+    valConverter: networkBitSizeFormatter,
+  },
+  network_traffic_receive_3: {
+    promQLTemplate:
+      'irate(node_network_receive_bytes_total{device!="lo", inspectionid="{{inspectionId}}"}[5m])',
+    labelTemplate: 'Inbound: {{instance}}',
+    valConverter: networkBitSizeFormatter,
+  },
+  network_traffic_transmit_3: {
+    promQLTemplate:
+      'irate(node_network_transmit_bytes_total{device!="lo", inspectionid="{{inspectionId}}"}[5m])',
     labelTemplate: 'Outbound: {{instance}}',
     valConverter: networkBitSizeFormatter,
   },
@@ -97,9 +132,19 @@ const RAW_METRICS: { [key: string]: IRawMetric } = {
     labelTemplate: '{{instance}} - TCPForwardRetrans',
     valConverter: toFixed2,
   },
+  tcp_retrans_3: {
+    promQLTemplate: 'irate(node_netstat_Tcp_RetransSegs{inspectionid="{{inspectionId}}"}[1m])',
+    labelTemplate: '{{instance}} - TCPSlowStartRetrans',
+    valConverter: toFixed2,
+  },
 
-  io_util: {
+  io_util_2: {
     promQLTemplate: 'rate(node_disk_io_time_ms{inspectionid="{{inspectionId}}"}[1m]) / 1000',
+    labelTemplate: '{{instance}} - {{device}}',
+    valConverter: val => toPercent(val, 4),
+  },
+  io_util_3: {
+    promQLTemplate: 'irate(node_disk_io_time_seconds_total{inspectionid="{{inspectionId}}"}[1m])',
     labelTemplate: '{{instance}} - {{device}}',
     valConverter: val => toPercent(val, 4),
   },
@@ -1309,11 +1354,17 @@ export const RAW_METRICS_ARR: { [key: string]: IRawMetric[] } = {
     return accu;
   }, {}),
 
-  network_traffic: [RAW_METRICS.network_traffic_receive, RAW_METRICS.network_traffic_transmit],
+  network_traffic: [
+    RAW_METRICS.network_traffic_receive_2,
+    RAW_METRICS.network_traffic_transmit_2,
+    RAW_METRICS.network_traffic_receive_3,
+    RAW_METRICS.network_traffic_transmit_3,
+  ],
   tcp_retrans: [
     RAW_METRICS.tcp_retrans_syn,
     RAW_METRICS.tcp_retrans_slow_start,
     RAW_METRICS.tcp_retrans_forward,
+    RAW_METRICS.tcp_retrans_3,
   ],
   stores_status: [
     RAW_METRICS.disconnect_stores,
@@ -1495,13 +1546,19 @@ export const RAW_METRICS_ARR: { [key: string]: IRawMetric[] } = {
     RAW_METRICS.handle_snapshot_duration_99_generate,
   ],
 
-  tikv_leader: [RAW_METRICS.tikv_leader_2, RAW_METRICS.tikv_leader_3],
-  tikv_leader_drop: [RAW_METRICS.tikv_leader_drop_2, RAW_METRICS.tikv_leader_drop_3],
   slow_query: [
     RAW_METRICS.slow_query_process,
     RAW_METRICS.slow_query_cop,
     RAW_METRICS.slow_query_wait,
   ],
+
+  tikv_leader: [RAW_METRICS.tikv_leader_2, RAW_METRICS.tikv_leader_3],
+  tikv_leader_drop: [RAW_METRICS.tikv_leader_drop_2, RAW_METRICS.tikv_leader_drop_3],
+  vcores: [RAW_METRICS.vcores_2, RAW_METRICS.vcores_3],
+  memory: [RAW_METRICS.memory_2, RAW_METRICS.memory_3],
+  cpu_usage: [RAW_METRICS.cpu_usage_2, RAW_METRICS.cpu_usage_3],
+  memory_available: [RAW_METRICS.memory_available_2, RAW_METRICS.memory_available_3],
+  io_util: [RAW_METRICS.io_util_2, RAW_METRICS.io_util_3],
 };
 
 export interface IPanel {
