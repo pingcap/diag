@@ -65,12 +65,18 @@ function PrometheusTable({ title, tableColumns, promMetrics, promParams }: Prome
           });
         setLoading(false);
 
-        setDataSource([
-          {
-            label: labels[1],
-            val: promMetrics[0].valConverter ? promMetrics[0].valConverter(data[0][1]) : data[0][1],
-          },
-        ]);
+        if (data.length > 0) {
+          setDataSource([
+            {
+              label: labels[1],
+              val: promMetrics[0].valConverter
+                ? promMetrics[0].valConverter(data[0][1])
+                : data[0][1],
+            },
+          ]);
+        } else {
+          setDataSource([]);
+        }
       });
     }
 
