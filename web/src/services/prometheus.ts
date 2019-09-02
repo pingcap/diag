@@ -535,11 +535,17 @@ const RAW_METRICS: { [key: string]: IRawMetric } = {
     labelTemplate: '{{job}}',
     valConverter: bytesSizeFormatter,
   },
-  tikv_io_utilization: {
+  tikv_io_utilization_2: {
     promQLTemplate: 'rate(node_disk_io_time_ms{inspectionid="{{inspectionId}}"}[1m]) / 1000',
     labelTemplate: '{{instance}} - {{device}}',
     valConverter: val => toPercent(val, 1),
   },
+  tikv_io_utilization_3: {
+    promQLTemplate: 'rate(node_disk_io_time_seconds_total{inspectionid="{{inspectionId}}"}[1m])',
+    labelTemplate: '{{instance}} - {{device}}',
+    valConverter: val => toPercent(val, 1),
+  },
+
   tikv_qps: {
     title: 'QPS',
     promQLTemplate:
@@ -1295,11 +1301,18 @@ const RAW_METRICS: { [key: string]: IRawMetric } = {
     labelTemplate: '{{job}}',
     valConverter: val => toPercent(val, 4),
   },
-  async_apply_cpu: {
+  async_apply_cpu_2: {
     title: 'Async apply CPU',
     promQLTemplate:
       'sum(rate(tikv_thread_cpu_seconds_total{name=~"apply_worker", inspectionid="{{inspectionId}}"}[1m])) by (job, name)',
     labelTemplate: '{{job}}',
+    valConverter: val => toPercent(val, 4),
+  },
+  async_apply_cpu_3: {
+    title: 'Async apply CPU',
+    promQLTemplate:
+      'sum(rate(tikv_thread_cpu_seconds_total{name=~"apply_[0-9]+", inspectionid="{{inspectionId}}"}[1m])) by (instance)',
+    labelTemplate: '{{instance}}',
     valConverter: val => toPercent(val, 4),
   },
   coprocessor_cpu: {
@@ -1559,6 +1572,8 @@ export const RAW_METRICS_ARR: { [key: string]: IRawMetric[] } = {
   cpu_usage: [RAW_METRICS.cpu_usage_2, RAW_METRICS.cpu_usage_3],
   memory_available: [RAW_METRICS.memory_available_2, RAW_METRICS.memory_available_3],
   io_util: [RAW_METRICS.io_util_2, RAW_METRICS.io_util_3],
+  tikv_io_utilization: [RAW_METRICS.tikv_io_utilization_2, RAW_METRICS.tikv_io_utilization_3],
+  async_apply_cpu: [RAW_METRICS.async_apply_cpu_2, RAW_METRICS.async_apply_cpu_3],
 };
 
 export interface IPanel {
