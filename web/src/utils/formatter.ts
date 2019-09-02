@@ -67,6 +67,31 @@ export const networkBitSizeFormatter = (bits = 0, fixed = 0) => {
   return `${toFixed(bits, fixed)} ${units[u]}`;
 };
 
+export const timeSecondsFormatter = (seconds = 0, fixed = 0) => {
+  if (seconds >= 60) {
+    const mins = seconds / 60;
+    if (mins < 60) {
+      return `${toFixed(mins, fixed)} min`;
+    }
+    const hours = mins / 60;
+    if (hours < 24) {
+      return `${toFixed(hours, fixed)} hour`;
+    }
+    const days = hours / 24;
+    return `${toFixed(days, fixed)} day`;
+  }
+  if (seconds < 1 && seconds > 0) {
+    const units = ['ms', 'us', 'ns'];
+    let u = -1;
+    do {
+      seconds *= 1000;
+      u += 1;
+    } while (seconds < 1 && u < units.length - 1);
+    return `${toFixed(seconds, fixed)} ${units[u]}`;
+  }
+  return `${toFixed(seconds, fixed)} s`;
+};
+
 export const toPercent = (size: number, decimals: number = 2) => {
   if (size === null || size === undefined) {
     return '';

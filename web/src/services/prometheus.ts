@@ -10,6 +10,7 @@ import {
   toPercent,
   toAnyUnit,
   toFixed1,
+  timeSecondsFormatter,
 } from '@/utils/formatter';
 
 export interface IRawMetric {
@@ -284,7 +285,7 @@ const RAW_METRICS: { [key: string]: IRawMetric } = {
     promQLTemplate:
       'histogram_quantile(0.99, sum(rate(etcd_disk_wal_fsync_duration_seconds_bucket{inspectionid="{{inspectionId}}"}[5m])) by (instance, le))',
     labelTemplate: '{{instance}}',
-    valConverter: val => toAnyUnit(val, 1000 * 1000, 2, 'us'),
+    valConverter: val => timeSecondsFormatter(val, 2),
   },
 
   // tidb
@@ -292,13 +293,13 @@ const RAW_METRICS: { [key: string]: IRawMetric } = {
     promQLTemplate:
       'histogram_quantile(0.98, sum(rate(pd_client_request_handle_requests_duration_seconds_bucket{inspectionid="{{inspectionId}}"}[30s])) by (type, le))',
     labelTemplate: '{{type}} 98th percentile',
-    valConverter: val => toAnyUnit(val, 1000 * 1000, 2, 'us'),
+    valConverter: val => timeSecondsFormatter(val, 2),
   },
   handle_request_duration_seconds_avg: {
     promQLTemplate:
       'avg(rate(pd_client_request_handle_requests_duration_seconds_sum{inspectionid="{{inspectionId}}"}[30s])) by (type) /  avg(rate(pd_client_request_handle_requests_duration_seconds_count{inspectionid="{{inspectionId}}"}[30s])) by (type)',
     labelTemplate: '{{type}} average',
-    valConverter: val => toAnyUnit(val, 1000 * 1000, 2, 'us'),
+    valConverter: val => timeSecondsFormatter(val, 2),
   },
 
   // heartbeat
@@ -306,14 +307,14 @@ const RAW_METRICS: { [key: string]: IRawMetric } = {
     promQLTemplate:
       'round(histogram_quantile(0.99, sum(rate(pd_scheduler_region_heartbeat_latency_seconds_bucket{inspectionid="{{inspectionId}}"}[5m])) by (store, le)), 1000)',
     labelTemplate: 'store{{store}}',
-    valConverter: val => toAnyUnit(val, 1000, 1, 'ms'),
+    valConverter: val => timeSecondsFormatter(val, 1),
   },
 
   grpc_completed_commands_duration_99: {
     promQLTemplate:
       'histogram_quantile(0.99, sum(rate(grpc_server_handling_seconds_bucket{inspectionid="{{inspectionId}}"}[5m])) by (grpc_method, le))',
     labelTemplate: '{{grpc_method}}',
-    valConverter: val => toAnyUnit(val, 1000, 1, 'ms'),
+    valConverter: val => timeSecondsFormatter(val, 1),
   },
 
   // ///////////////////////
@@ -347,25 +348,25 @@ const RAW_METRICS: { [key: string]: IRawMetric } = {
     promQLTemplate:
       'histogram_quantile(0.999, sum(rate(tidb_server_handle_query_duration_seconds_bucket{inspectionid="{{inspectionId}}"}[1m])) by (le))',
     labelTemplate: '999',
-    valConverter: val => toAnyUnit(val, 1000, 0, 'ms'),
+    valConverter: timeSecondsFormatter,
   },
   duration_99: {
     promQLTemplate:
       'histogram_quantile(0.99, sum(rate(tidb_server_handle_query_duration_seconds_bucket{inspectionid="{{inspectionId}}"}[1m])) by (le))',
     labelTemplate: '99',
-    valConverter: val => toAnyUnit(val, 1000, 0, 'ms'),
+    valConverter: timeSecondsFormatter,
   },
   duration_95: {
     promQLTemplate:
       'histogram_quantile(0.95, sum(rate(tidb_server_handle_query_duration_seconds_bucket{inspectionid="{{inspectionId}}"}[1m])) by (le))',
     labelTemplate: '95',
-    valConverter: val => toAnyUnit(val, 1000, 0, 'ms'),
+    valConverter: timeSecondsFormatter,
   },
   duration_80: {
     promQLTemplate:
       'histogram_quantile(0.80, sum(rate(tidb_server_handle_query_duration_seconds_bucket{inspectionid="{{inspectionId}}"}[1m])) by (le))',
     labelTemplate: '80',
-    valConverter: val => toAnyUnit(val, 1000, 0, 'ms'),
+    valConverter: timeSecondsFormatter,
   },
 
   // failed query opm
@@ -381,7 +382,7 @@ const RAW_METRICS: { [key: string]: IRawMetric } = {
     promQLTemplate:
       'histogram_quantile(0.90, sum(rate(tidb_server_slow_query_process_duration_seconds_bucket{inspectionid="{{inspectionId}}"}[1m])) by (le))',
     labelTemplate: 'all_proc',
-    valConverter: val => toAnyUnit(val, 1, 0, 's'),
+    valConverter: timeSecondsFormatter,
   },
   slow_query_cop: {
     title: 'Slow query',
@@ -403,7 +404,7 @@ const RAW_METRICS: { [key: string]: IRawMetric } = {
     title: 'Uptime',
     promQLTemplate: '(time() - process_start_time_seconds{job="tidb"})',
     labelTemplate: '{{instance}}',
-    valConverter: val => toAnyUnit(val, 1 / 3600, 0, 'hour'),
+    valConverter: val => timeSecondsFormatter(val, 1),
   },
   // cpu usage
   tidb_cpu_usage: {
@@ -437,7 +438,7 @@ const RAW_METRICS: { [key: string]: IRawMetric } = {
     promQLTemplate:
       'histogram_quantile(0.999, sum(rate(tidb_distsql_handle_query_duration_seconds_bucket{inspectionid="{{inspectionId}}"}[1m])) by (le, type))',
     labelTemplate: '999-{{type}}',
-    valConverter: val => toAnyUnit(val, 1000, 1, 'ms'),
+    valConverter: val => timeSecondsFormatter(val, 1),
   },
   distsql_duration_99: {
     promQLTemplate:
@@ -482,7 +483,7 @@ const RAW_METRICS: { [key: string]: IRawMetric } = {
     promQLTemplate:
       'histogram_quantile(0.999, sum(rate(pd_client_request_handle_requests_duration_seconds_bucket{type="tso", inspectionid="{{inspectionId}}"}[1m])) by (le))',
     labelTemplate: '999',
-    valConverter: val => toAnyUnit(val, 1000, 1, 'ms'),
+    valConverter: val => timeSecondsFormatter(val, 1),
   },
   pd_tso_rpc_duration_99: {
     promQLTemplate:
@@ -501,7 +502,7 @@ const RAW_METRICS: { [key: string]: IRawMetric } = {
     promQLTemplate:
       'histogram_quantile(0.99, sum(rate(tidb_domain_load_schema_duration_seconds_bucket{inspectionid="{{inspectionId}}"}[1m])) by (le, instance))',
     labelTemplate: '{{instance}}',
-    valConverter: val => toAnyUnit(val, 1000, 1, 'ms'),
+    valConverter: val => timeSecondsFormatter(val, 1),
   },
   schema_lease_error_opm: {
     promQLTemplate:
@@ -678,7 +679,7 @@ const RAW_METRICS: { [key: string]: IRawMetric } = {
     promQLTemplate:
       'histogram_quantile(0.99, sum(rate(tikv_raftstore_apply_log_duration_seconds_bucket{inspectionid="{{inspectionId}}"}[1m])) by (le))',
     labelTemplate: '99%',
-    valConverter: val => toAnyUnit(val, 1000 * 1000, 1, 'us'),
+    valConverter: val => timeSecondsFormatter(val, 1),
   },
   tikv_apply_log_duration_90: {
     promQLTemplate:
@@ -696,7 +697,7 @@ const RAW_METRICS: { [key: string]: IRawMetric } = {
     promQLTemplate:
       'histogram_quantile(0.99, sum(rate(tikv_raftstore_apply_log_duration_seconds_bucket{inspectionid="{{inspectionId}}"}[1m])) by (le, job))',
     labelTemplate: '{{job}}',
-    valConverter: val => toAnyUnit(val, 1000 * 1000, 1, 'us'),
+    valConverter: val => timeSecondsFormatter(val, 1),
   },
 
   tikv_append_log_duration_99: {
@@ -704,7 +705,7 @@ const RAW_METRICS: { [key: string]: IRawMetric } = {
     promQLTemplate:
       'histogram_quantile(0.99, sum(rate(tikv_raftstore_append_log_duration_seconds_bucket{inspectionid="{{inspectionId}}"}[1m])) by (le))',
     labelTemplate: '99%',
-    valConverter: val => toAnyUnit(val, 1000 * 1000, 1, 'us'),
+    valConverter: val => timeSecondsFormatter(val, 1),
   },
   tikv_append_log_duration_95: {
     promQLTemplate:
@@ -722,7 +723,7 @@ const RAW_METRICS: { [key: string]: IRawMetric } = {
     promQLTemplate:
       'histogram_quantile(0.99, sum(rate(tikv_raftstore_append_log_duration_seconds_bucket{inspectionid="{{inspectionId}}"}[1m])) by (le, job))',
     labelTemplate: '{{job}}',
-    valConverter: val => toAnyUnit(val, 1000 * 1000, 1, 'us'),
+    valConverter: val => timeSecondsFormatter(val, 1),
   },
 
   // ////////////////
@@ -732,7 +733,7 @@ const RAW_METRICS: { [key: string]: IRawMetric } = {
     promQLTemplate:
       'histogram_quantile(0.99, sum(rate(tikv_scheduler_latch_wait_duration_seconds_bucket{type="prewrite", inspectionid="{{inspectionId}}"}[1m])) by (le))',
     labelTemplate: '99%',
-    valConverter: val => toAnyUnit(val, 1000 * 1000, 1, 'us'),
+    valConverter: val => timeSecondsFormatter(val, 1),
   },
   tikv_scheduler_prewrite_latch_wait_duration_95: {
     promQLTemplate:
@@ -750,7 +751,7 @@ const RAW_METRICS: { [key: string]: IRawMetric } = {
     promQLTemplate:
       'histogram_quantile(0.99, sum(rate(tikv_scheduler_command_duration_seconds_bucket{type="prewrite", inspectionid="{{inspectionId}}"}[1m])) by (le))',
     labelTemplate: '99%',
-    valConverter: val => toAnyUnit(val, 1000, 1, 'ms'),
+    valConverter: val => timeSecondsFormatter(val, 1),
   },
   tivk_scheduler_prewrite_command_duration_95: {
     title: 'Scheduler command duration',
@@ -771,7 +772,7 @@ const RAW_METRICS: { [key: string]: IRawMetric } = {
     promQLTemplate:
       'histogram_quantile(0.99, sum(rate(tikv_scheduler_latch_wait_duration_seconds_bucket{type="commit", inspectionid="{{inspectionId}}"}[1m])) by (le))',
     labelTemplate: '99%',
-    valConverter: val => toAnyUnit(val, 1000, 1, 'ms'),
+    valConverter: val => timeSecondsFormatter(val, 1),
   },
   tikv_scheduler_commit_latch_wait_duration_95: {
     promQLTemplate:
@@ -789,7 +790,7 @@ const RAW_METRICS: { [key: string]: IRawMetric } = {
     promQLTemplate:
       'histogram_quantile(0.99, sum(rate(tikv_scheduler_command_duration_seconds_bucket{type="commit", inspectionid="{{inspectionId}}"}[1m])) by (le))',
     labelTemplate: '99%',
-    valConverter: val => toAnyUnit(val, 1000, 1, 'ms'),
+    valConverter: val => timeSecondsFormatter(val, 1),
   },
   tivk_scheduler_commit_command_duration_95: {
     title: 'Scheduler command duration',
@@ -810,7 +811,7 @@ const RAW_METRICS: { [key: string]: IRawMetric } = {
     promQLTemplate:
       'histogram_quantile(0.99, sum(rate(tikv_raftstore_request_wait_time_duration_secs_bucket{inspectionid="{{inspectionId}}"}[1m])) by (le))',
     labelTemplate: '99%',
-    valConverter: val => toAnyUnit(val, 1000 * 1000, 0, 'us'),
+    valConverter: val => timeSecondsFormatter(val, 0),
   },
   tikv_propose_wait_duration_95: {
     promQLTemplate:
@@ -838,7 +839,7 @@ const RAW_METRICS: { [key: string]: IRawMetric } = {
     promQLTemplate:
       'histogram_quantile(0.99, sum(rate(tikv_storage_engine_async_request_duration_seconds_bucket{type="write", inspectionid="{{inspectionId}}"}[1m])) by (le))',
     labelTemplate: '99%',
-    valConverter: val => toAnyUnit(val, 1000 * 1000, 0, 'us'),
+    valConverter: val => timeSecondsFormatter(val, 0),
   },
   tikv_storage_async_write_duration_95: {
     promQLTemplate:
@@ -856,7 +857,7 @@ const RAW_METRICS: { [key: string]: IRawMetric } = {
     promQLTemplate:
       'histogram_quantile(0.99, sum(rate(tikv_storage_engine_async_request_duration_seconds_bucket{type="snapshot", inspectionid="{{inspectionId}}"}[1m])) by (le))',
     labelTemplate: '99%',
-    valConverter: val => toAnyUnit(val, 1000, 0, 'ms'),
+    valConverter: val => timeSecondsFormatter(val, 0),
   },
   tikv_storage_async_snapshot_duration_95: {
     promQLTemplate:
@@ -885,7 +886,7 @@ const RAW_METRICS: { [key: string]: IRawMetric } = {
     promQLTemplate:
       'avg(tikv_engine_write_micro_seconds{db="raft",type="write_max", inspectionid="{{inspectionId}}"})',
     labelTemplate: 'max',
-    valConverter: val => toAnyUnit(val, 1, 1, 'us'),
+    valConverter: val => timeSecondsFormatter(val / (1000 * 1000), 1),
   },
   rocksdb_raft_write_duration_99: {
     promQLTemplate:
@@ -909,7 +910,7 @@ const RAW_METRICS: { [key: string]: IRawMetric } = {
     promQLTemplate:
       'avg(tikv_engine_write_stall{db="raft",type="write_stall_max", inspectionid="{{inspectionId}}"})',
     labelTemplate: 'max',
-    valConverter: val => toAnyUnit(val, 1, 1, 'us'),
+    valConverter: val => timeSecondsFormatter(val / (1000 * 1000), 1),
   },
   rocksdb_raft_write_stall_duration_99: {
     promQLTemplate:
@@ -933,7 +934,7 @@ const RAW_METRICS: { [key: string]: IRawMetric } = {
     promQLTemplate:
       'avg(tikv_engine_get_micro_seconds{db="raft",type="get_max", inspectionid="{{inspectionId}}"})',
     labelTemplate: 'max',
-    valConverter: val => toAnyUnit(val, 1, 1, 'us'),
+    valConverter: val => timeSecondsFormatter(val / (1000 * 1000), 1),
   },
   rocksdb_raft_get_duration_99: {
     promQLTemplate:
@@ -957,7 +958,7 @@ const RAW_METRICS: { [key: string]: IRawMetric } = {
     promQLTemplate:
       'avg(tikv_engine_seek_micro_seconds{db="raft",type="seek_max", inspectionid="{{inspectionId}}"})',
     labelTemplate: 'max',
-    valConverter: val => toAnyUnit(val, 1, 1, 'us'),
+    valConverter: val => timeSecondsFormatter(val / (1000 * 1000), 1),
   },
   rocksdb_raft_seek_duration_99: {
     promQLTemplate:
@@ -981,7 +982,7 @@ const RAW_METRICS: { [key: string]: IRawMetric } = {
     promQLTemplate:
       'avg(tikv_engine_wal_file_sync_micro_seconds{db="raft",type="wal_file_sync_max", inspectionid="{{inspectionId}}"})',
     labelTemplate: 'max',
-    valConverter: val => toAnyUnit(val, 1, 1, 'us'),
+    valConverter: val => timeSecondsFormatter(val / (1000 * 1000), 1),
   },
   rocksdb_raft_wal_sync_duration_99: {
     promQLTemplate:
@@ -1037,7 +1038,7 @@ const RAW_METRICS: { [key: string]: IRawMetric } = {
     promQLTemplate:
       'avg(tikv_engine_write_micro_seconds{db="kv",type="write_max", inspectionid="{{inspectionId}}"})',
     labelTemplate: 'max',
-    valConverter: val => toAnyUnit(val, 1, 1, 'us'),
+    valConverter: val => timeSecondsFormatter(val / (1000 * 1000), 1),
   },
   rocksdb_kv_write_duration_99: {
     promQLTemplate:
@@ -1061,7 +1062,7 @@ const RAW_METRICS: { [key: string]: IRawMetric } = {
     promQLTemplate:
       'avg(tikv_engine_write_stall{db="kv",type="write_stall_max", inspectionid="{{inspectionId}}"})',
     labelTemplate: 'max',
-    valConverter: val => toAnyUnit(val, 1, 1, 'us'),
+    valConverter: val => timeSecondsFormatter(val / (1000 * 1000), 1),
   },
   rocksdb_kv_write_stall_duration_99: {
     promQLTemplate:
@@ -1085,7 +1086,7 @@ const RAW_METRICS: { [key: string]: IRawMetric } = {
     promQLTemplate:
       'avg(tikv_engine_get_micro_seconds{db="kv",type="get_max", inspectionid="{{inspectionId}}"})',
     labelTemplate: 'max',
-    valConverter: val => toAnyUnit(val, 1, 1, 'us'),
+    valConverter: val => timeSecondsFormatter(val / (1000 * 1000), 1),
   },
   rocksdb_kv_get_duration_99: {
     promQLTemplate:
@@ -1109,7 +1110,7 @@ const RAW_METRICS: { [key: string]: IRawMetric } = {
     promQLTemplate:
       'avg(tikv_engine_seek_micro_seconds{db="kv",type="seek_max", inspectionid="{{inspectionId}}"})',
     labelTemplate: 'max',
-    valConverter: val => toAnyUnit(val, 1, 1, 'us'),
+    valConverter: val => timeSecondsFormatter(val / (1000 * 1000), 1),
   },
   rocksdb_kv_seek_duration_99: {
     promQLTemplate:
@@ -1133,7 +1134,7 @@ const RAW_METRICS: { [key: string]: IRawMetric } = {
     promQLTemplate:
       'avg(tikv_engine_wal_file_sync_micro_seconds{db="kv",type="wal_file_sync_max", inspectionid="{{inspectionId}}"})',
     labelTemplate: 'max',
-    valConverter: val => toAnyUnit(val, 1, 1, 'us'),
+    valConverter: val => timeSecondsFormatter(val / (1000 * 1000), 1),
   },
   rocksdb_kv_wal_sync_duration_99: {
     promQLTemplate:
@@ -1188,7 +1189,7 @@ const RAW_METRICS: { [key: string]: IRawMetric } = {
     promQLTemplate:
       'histogram_quantile(0.9999, sum(rate(tikv_coprocessor_request_duration_seconds_bucket{inspectionid="{{inspectionId}}"}[1m])) by (le,req))',
     labelTemplate: '{{req}}-99.99%',
-    valConverter: val => toAnyUnit(val, 1000, 0, 'ms'),
+    valConverter: val => timeSecondsFormatter(val, 0),
   },
   coprocessor_request_duration_99: {
     promQLTemplate:
@@ -1212,7 +1213,7 @@ const RAW_METRICS: { [key: string]: IRawMetric } = {
     promQLTemplate:
       'histogram_quantile(0.9999, sum(rate(tikv_coprocessor_request_wait_seconds_bucket{inspectionid="{{inspectionId}}"}[1m])) by (le,req))',
     labelTemplate: '{{req}}-99.99%',
-    valConverter: val => toAnyUnit(val, 1000, 0, 'ms'),
+    valConverter: val => timeSecondsFormatter(val, 0),
   },
   coprocessor_wait_duration_99: {
     promQLTemplate:
@@ -1271,7 +1272,7 @@ const RAW_METRICS: { [key: string]: IRawMetric } = {
     promQLTemplate:
       'histogram_quantile(0.95, sum(rate(tikv_coprocessor_request_wait_seconds_bucket{inspectionid="{{inspectionId}}"}[1m])) by (le, job,req))',
     labelTemplate: '{{job}}-{{req}}',
-    valConverter: val => toAnyUnit(val, 1000, 1, 'ms'),
+    valConverter: val => timeSecondsFormatter(val, 1),
   },
 
   // handle_snapshot_duration_99
@@ -1280,7 +1281,7 @@ const RAW_METRICS: { [key: string]: IRawMetric } = {
     promQLTemplate:
       'histogram_quantile(0.99, sum(rate(tikv_server_send_snapshot_duration_seconds_bucket{inspectionid="{{inspectionId}}"}[1m])) by (le))',
     labelTemplate: 'send',
-    valConverter: val => toAnyUnit(val, 1000, 1, 'ms'),
+    valConverter: val => timeSecondsFormatter(val, 1),
   },
   handle_snapshot_duration_99_apply: {
     promQLTemplate:
@@ -1357,7 +1358,7 @@ const RAW_METRICS: { [key: string]: IRawMetric } = {
     promQLTemplate:
       'histogram_quantile(0.99, sum(rate(tikv_grpc_msg_duration_seconds_bucket{type!="kv_gc", inspectionid="{{inspectionId}}"}[1m])) by (le, type))',
     labelTemplate: '{{type}}',
-    valConverter: val => toAnyUnit(val, 1000, 0, 'ms'),
+    valConverter: val => timeSecondsFormatter(val, 0),
   },
 };
 
