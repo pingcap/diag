@@ -311,9 +311,12 @@ def hostinfo(inv):
             _hostvars = _vars.get_vars(host=_inv.get_host(hostname=str(_host)))  # get all varibles for one node
             _deploy_dir = _hostvars['deploy_dir']
             _cluster_name = _hostvars['cluster_name']
+            _tidb_version = _hostvars['tidb_version']
             _ansible_user = _hostvars['ansible_user']
             if 'cluster_name' not in cluster_info:
                 cluster_info['cluster_name'] = _cluster_name
+            if 'tidb_version' not in cluster_info:
+                cluster_info['tidb_version'] = _tidb_version
             _ip = _hostvars['ansible_host'] if 'ansible_host' in _hostvars else \
                 (_hostvars['ansible_ssh_host'] if 'ansible_ssh_host' in _hostvars else
                  _hostvars['inventory_hostname'])
