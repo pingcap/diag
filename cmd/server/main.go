@@ -12,7 +12,7 @@ import (
 func main() {
 	printVersion := flag.Bool("V", false, "print version info")
 	homepath := flag.String("home", "/tmp/tidb-foresight", "tidb-foresight work home")
-	address := flag.String("address", "0.0.0.0:8888", "tidb foresight listen address")
+	address := flag.String("address", "0.0.0.0:9527", "tidb foresight listen address")
 
 	flag.Parse()
 

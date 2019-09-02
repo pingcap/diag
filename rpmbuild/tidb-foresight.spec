@@ -57,7 +57,7 @@ cp -r %{_builddir}/tidb-foresight/bin/* %{_buildrootdir}/%{name}-%{version}-%{re
 cp -r %{_builddir}/tidb-foresight/collector %{_buildrootdir}/%{name}-%{version}-%{release}.%{_build_arch}/usr/local/tidb-foresight/script/
 cp -r %{_builddir}/tidb-foresight/pioneer/pioneer.py %{_buildrootdir}/%{name}-%{version}-%{release}.%{_build_arch}/usr/local/tidb-foresight/bin/pioneer
 cp -r %{_builddir}/tidb-foresight/web/dist/* %{_buildrootdir}/%{name}-%{version}-%{release}.%{_build_arch}/usr/local/tidb-foresight/web/
-cat>%{_buildrootdir}/%{name}-%{version}-%{release}.%{_build_arch}/etc/systemd/system/foresight.service<<EOF
+cat>%{_buildrootdir}/%{name}-%{version}-%{release}.%{_build_arch}/etc/systemd/system/foresight-9527.service<<EOF
 # If you modify this, please also make sure to edit init.sh
 
 [Unit]
@@ -86,7 +86,7 @@ mkdir -p %{_buildrootdir}/%{name}-%{version}-%{release}.%{_build_arch}/etc/logro
 mkdir -p %{_buildrootdir}/%{name}-%{version}-%{release}.%{_build_arch}/var/lib/influxdb/meta
 mkdir -p %{_buildrootdir}/%{name}-%{version}-%{release}.%{_build_arch}/var/lib/influxdb/data
 mkdir -p %{_buildrootdir}/%{name}-%{version}-%{release}.%{_build_arch}/var/lib/influxdb/wal
-cat>%{_buildrootdir}/%{name}-%{version}-%{release}.%{_build_arch}/etc/systemd/system/influxd.service<<EOF
+cat>%{_buildrootdir}/%{name}-%{version}-%{release}.%{_build_arch}/etc/systemd/system/influxd-9528.service<<EOF
 # If you modify this, please also make sure to edit init.sh
 
 [Unit]
@@ -106,7 +106,7 @@ RestartSec=15s
 
 [Install]
 WantedBy=multi-user.target
-Alias=influxd.service
+Alias=influxd-9528.service
 EOF
 
 cp -r %{_builddir}/influxdb-1.7.7-1/influx %{_buildrootdir}/%{name}-%{version}-%{release}.%{_build_arch}/usr/local/influxdb/bin/
@@ -116,6 +116,7 @@ cp -r %{_builddir}/influxdb-1.7.7-1/influx_stress %{_buildrootdir}/%{name}-%{ver
 cp -r %{_builddir}/influxdb-1.7.7-1/influx_tsm %{_buildrootdir}/%{name}-%{version}-%{release}.%{_build_arch}/usr/local/influxdb/bin/
 cp -r %{_builddir}/influxdb-1.7.7-1/influxdb.conf %{_buildrootdir}/%{name}-%{version}-%{release}.%{_build_arch}/usr/local/influxdb/conf/
 sed -i 's/\# bind-address \= \"\:/bind-address = "127.0.0.1\:/g' %{_buildrootdir}/%{name}-%{version}-%{release}.%{_build_arch}/usr/local/influxdb/conf/influxdb.conf
+sed -i 's/127.0.0.1\:8086/127.0.0.1\:9528/g' %{_buildrootdir}/%{name}-%{version}-%{release}.%{_build_arch}/usr/local/influxdb/conf/influxdb.conf
 cat>%{_buildrootdir}/%{name}-%{version}-%{release}.%{_build_arch}/etc/logrotate.d/influxdb<<EOF
 /usr/local/influxdb/log/influxd.log {
     daily
@@ -135,14 +136,14 @@ cp -r %{_builddir}/prometheus-2.8.1.linux-amd64/prometheus %{_buildrootdir}/%{na
 cp -r %{_builddir}/prometheus-2.8.1.linux-amd64/prometheus.yml %{_buildrootdir}/%{name}-%{version}-%{release}.%{_build_arch}/usr/local/prometheus/conf/
 cat>>%{_buildrootdir}/%{name}-%{version}-%{release}.%{_build_arch}/usr/local/prometheus/conf/prometheus.yml<<EOF
 remote_read:
-  - url: "http://localhost:8086/api/v1/prom/read?db=inspection"
+  - url: "http://localhost:9528/api/v1/prom/read?db=inspection"
     read_recent: true
 
 remote_write:
-  - url: "http://localhost:8086/api/v1/prom/write?db=inspection"
+  - url: "http://localhost:9528/api/v1/prom/write?db=inspection"
 EOF
 
-cat>%{_buildrootdir}/%{name}-%{version}-%{release}.%{_build_arch}/etc/systemd/system/prometheus.service<<EOF
+cat>%{_buildrootdir}/%{name}-%{version}-%{release}.%{_build_arch}/etc/systemd/system/prometheus-9529.service<<EOF
 # If you modify this, please also make sure to edit init.sh
 
 [Unit]
@@ -154,7 +155,7 @@ LimitNOFILE=1000000
 #LimitCORE=infinity
 LimitSTACK=10485760
 User=tidb
-ExecStart=/usr/local/prometheus/bin/prometheus --web.listen-address=127.0.0.1:8080 --storage.tsdb.path=/usr/local/prometheus/data --config.file=/usr/local/prometheus/conf/prometheus.yml
+ExecStart=/usr/local/prometheus/bin/prometheus --web.listen-address=127.0.0.1:9529 --storage.tsdb.path=/usr/local/prometheus/data --config.file=/usr/local/prometheus/conf/prometheus.yml
 Restart=always
 RestartSec=15s
 
@@ -185,23 +186,23 @@ chown -R tidb:tidb /usr/local/prometheus
 chown -R influxdb:influxdb /usr/local/influxdb
 chown -R influxdb:influxdb /var/lib/influxdb
 %preun
-systemctl stop foresight.service
-systemctl stop prometheus.service
-systemctl stop influxd.service
+systemctl stop foresight-9527.service
+systemctl stop prometheus-9529.service
+systemctl stop influxd-9528.service
 %postun
 # uninstall foresight
 rm -rf /usr/local/tidb-foresight/
-rm -rf /etc/systemd/system/foresight.service
+rm -rf /etc/systemd/system/foresight-9527.service
 
 # uninstall prometheus
 rm -rf /usr/local/prometheus
-rm -rf /etc/systemd/system/prometheus.service
+rm -rf /etc/systemd/system/prometheus-9529.service
 
 # uninstall influxdb
 rm -rf /usr/local/influxdb
 rm -rf /etc/logrotate.d/influxdb
 rm -rf /var/lib/influxdb
-rm -rf /etc/systemd/system/influxd.service
+rm -rf /etc/systemd/system/influxd-9528.service
 
 %clean
 rm -rf %{_buildrootdir}/*

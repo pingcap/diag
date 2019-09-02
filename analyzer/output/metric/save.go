@@ -80,7 +80,7 @@ func (t *saveMetricTask) Run(c *boot.Config) *Metric {
 func (t *saveMetricTask) initInfluxdbClient() (influxdb.Client, error) {
 	addr := os.Getenv("INFLUX_ADDR")
 	if addr == "" {
-		addr = "http://127.0.0.1:8086"
+		addr = "http://127.0.0.1:9528"
 	}
 	cli, err := influxdb.NewHTTPClient(influxdb.HTTPConfig{
 		Addr:     addr,

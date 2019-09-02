@@ -33,10 +33,10 @@ bwlimit = 10		# KB/s
 threshold = 100		# GB
 
 [influxdb]
-endpoint = "http://127.0.0.1:8086"
+endpoint = "http://127.0.0.1:9528"
 
 [prometheus]
-endpoint = "http://127.0.0.1:8080"
+endpoint = "http://127.0.0.1:9529"
 `
 
 type ForesightConfig struct {

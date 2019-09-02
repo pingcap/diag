@@ -19,15 +19,15 @@
 - 手动部署好 tidb-foresight
     - clone 源码到 `/tmp/tidb-foresight` 目录中
     - 配置系统服务，在 `/etc/systemd/system/` 目录下新建 
-        - prometheus-8080.service
-        - foresight.service
-    - `sudo systemctl start prometheus-8080.service`
+        - prometheus-9529.service
+        - foresight-9527.service
+    - `sudo systemctl start prometheus-9529.service`
     - root 权限下运行 `./deploy.sh`，会将源码目录下的前后端程序打包并拷贝到 `/home/tidb/tidb-foresight/` 目录下
 - 源码发生修改后，更新 `/tmp/tidb-foresight` 仓库中的代码，然后
     - 运行 `./deploy.sh`，即可重新部署，会保留原来的诊断文件和 db
     - 可以按照需要删除部署目录下的 `sqlite.db` 等文件（夹）
     - 需要重置诊断工具，请删除整个部署目录 `/home/tidb/tidb-foresight/`，运行 `deploy.sh`
 - 调试方法：
-    - 打开浏览器，访问 `<本机 ip>:8888` 与前端交互
+    - 打开浏览器，访问 `<本机 ip>:9527` 与前端交互
     - 查看运行状态 `systemctl status foresight`
     - 查看日志 `journalctl -u foresight | tail -n 20`
