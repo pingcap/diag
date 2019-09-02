@@ -23,8 +23,8 @@ func (t *parseResourceTask) Run(args *args.Args, c *boot.Config, m *metric.Metri
 
 	cpu := t.resourceUtil(
 		args.ScrapeBegin, args.ScrapeEnd,
-		fmt.Sprintf(`100 - avg (rate(node_cpu{mode="idle", inspectionid="%s"}[1m]) ) * 100`, c.InspectionId),
-		fmt.Sprintf(`100 - avg by (instance) (irate(node_cpu_seconds_total{mode="idle", inspectionid="%s"}[1m]) ) * 100`, c.InspectionId),
+		fmt.Sprintf(`100 - avg (rate(node_cpu{mode="idle", inspectionid="%s"}[5m]) ) * 100`, c.InspectionId),
+		fmt.Sprintf(`100 - avg by (instance) (irate(node_cpu_seconds_total{mode="idle", inspectionid="%s"}[5m]) ) * 100`, c.InspectionId),
 	)
 	resource.AvgCPU = cpu.Avg()
 	resource.MaxCPU = cpu.Max()
@@ -48,11 +48,11 @@ func (t *parseResourceTask) Run(args *args.Args, c *boot.Config, m *metric.Metri
 	ioutil := t.resourceUtil(
 		args.ScrapeBegin, args.ScrapeEnd,
 		fmt.Sprintf(
-			`100 * (avg(max(rate(node_disk_io_time_ms{inspectionid="%s"}[1m]) / 1000) by (instance)))`,
+			`100 * (avg(max(rate(node_disk_io_time_ms{inspectionid="%s"}[5m]) / 1000) by (instance)))`,
 			c.InspectionId,
 		),
 		fmt.Sprintf(
-			`100 * (avg(max(rate(node_disk_io_time_seconds_total{inspectionid="%s"}[1m]) / 1000) by (instance)))`,
+			`100 * (avg(max(rate(node_disk_io_time_seconds_total{inspectionid="%s"}[5m]) / 1000) by (instance)))`,
 			c.InspectionId,
 		),
 	)
@@ -79,8 +79,13 @@ func (t *parseResourceTask) Run(args *args.Args, c *boot.Config, m *metric.Metri
 }
 
 func (t *parseResourceTask) resourceUtil(begin, end time.Time, querys ...string) utils.FloatArray {
+	const points = 11000
+	step := end.Sub(begin)/points + time.Second
+	if step < time.Second*15 {
+		step = time.Second * 15
+	}
 	for _, query := range querys {
-		v, e := utils.QueryPromRange(query, begin, end, time.Minute)
+		v, e := utils.QueryPromRange(query, begin, end, step)
 		if e != nil {
 			log.Error("query prometheus:", e)
 			continue

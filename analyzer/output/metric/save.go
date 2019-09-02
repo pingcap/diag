@@ -106,47 +106,30 @@ func (t *saveMetricTask) initInfluxdbClient() (influxdb.Client, error) {
 
 func (t *saveMetricTask) insertMetricToInfluxdb(cli influxdb.Client, inspectionId string, matrix matrixT) error {
 	// Use a batch method to improve the speed to import
-	step := 100
-	count := len(matrix)
-	for idx := 0; idx < count; idx += step {
-		batch, err := influxdb.NewBatchPoints(influxdb.BatchPointsConfig{
-			Database:  INFLUX_DB,
-			Precision: "s",
-		})
-		if err != nil {
-			return err
-		}
-		end := idx + step
-		if end > count {
-			end = count
-		}
-		for _, series := range matrix[idx:end] {
-			tags := series.Metric
+	batchWriter := NewBatchWriter(cli, 10000)
+	defer batchWriter.Close()
+	for _, series := range matrix {
+		tags := series.Metric
 
-			name, ok := tags["__name__"]
-			if !ok {
+		name, ok := tags["__name__"]
+		if !ok {
+			continue
+		}
+		tags["inspectionid"] = inspectionId
+
+		for _, point := range series.Points {
+			if math.IsNaN(point.V) || math.IsInf(point.V, 0) {
 				continue
 			}
-			tags["inspectionid"] = inspectionId
-
-			for _, point := range series.Points {
-				if math.IsNaN(point.V) || math.IsInf(point.V, 0) {
-					continue
-				}
-				fields := map[string]interface{}{
-					"value": point.V,
-				}
-				t := time.Unix(point.T, 0)
-				p, err := influxdb.NewPoint(name, tags, fields, t)
-				if err != nil {
-					log.Error("insert a point to influxdb:", err)
-					return err
-				}
-				batch.AddPoint(p)
+			fields := map[string]interface{}{
+				"value": point.V,
 			}
-		}
-		if err := cli.Write(batch); err != nil {
-			return err
+			t := time.Unix(point.T, 0)
+			if p, err := influxdb.NewPoint(name, tags, fields, t); err != nil {
+				return err
+			} else if err := batchWriter.Write(INFLUX_DB, p); err != nil {
+				return err
+			}
 		}
 	}
 	return nil

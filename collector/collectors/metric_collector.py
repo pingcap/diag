@@ -5,16 +5,27 @@ import json
 import time
 
 from collector import Collector, HTTPCollector
+from rfc3339 import parse_datetime
 
+# the prometheus can give at most 11000 points for every series
+# so, for precision you can set MAX_POINTS with a higher value
+# but no more than 11000.
+MAX_POINTS = 11000
 
 class MetricCollector(HTTPCollector):
     def __init__(self, name='metrics', addr='127.0.0.1:9090', metric='up',
-                 path='/api/v1/query', start=None, end=None, step=15):
+                 path='/api/v1/query', start=None, end=None):
         now = int(time.time())
+        step = 15
+        if start is not None and end is not None:
+            delta = parse_datetime(end) - parse_datetime(start)
+            step = (delta.days * 24 * 60 * 60 + delta.seconds) / MAX_POINTS + 1
+            if step < 15:   # the most accurate prometheus can give (15s a point)
+                step = 15
         if start == None:
-            start = now - 3600  # 1h
+            start = now - 3600          # 1h
         if end == None:
-            end = now
+            end = now        
         params = {
             'query': metric,
             'start': start,

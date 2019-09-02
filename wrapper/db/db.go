@@ -37,7 +37,7 @@ type DB interface {
 // Open sqlite.db and return DB interface instead of a struct
 func Open(fp string) (DB, error) {
 	if ins, err := gorm.Open(SQLITE, fp); err == nil {
-		ins.LogMode(true)
+		// ins.LogMode(true)
 		return wrap(ins), nil
 	} else {
 		return nil, err
