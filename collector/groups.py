@@ -299,12 +299,9 @@ def setup_metric_ops(addr, basedir, start, end):
     join = os.path.join
 
     def op(metric):
-        step = 30
-
-        filename = join(basedir, "%s_%s_to_%s_%ss.json" %
-                        (metric, start, end, step))
+        filename = join(basedir, "%s_%s_to_%s.json" % (metric, start, end))
         return Op(MetricCollector(name=metric, addr=addr, metric=metric,
-                                  path='/api/v1/query_range', start=start, end=end, step=step), FileOutput(filename))
+                                  path='/api/v1/query_range', start=start, end=end), FileOutput(filename))
 
     for m in metrics['data']:
         # skip the alerts, it is collected by the alert collector
