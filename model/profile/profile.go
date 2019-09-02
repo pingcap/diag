@@ -13,14 +13,15 @@ import (
 const PROF_FILTER = "type = 'profile'"
 
 type Profile struct {
-	Uuid         string         `json:"uuid"`
-	InstanceName string         `json:"instance_name"`
-	User         string         `json:"user"`
-	Status       string         `json:"status"`
-	Message      string         `json:"message"`
-	CreateTime   utils.NullTime `json:"create_time"`
-	FinishTime   utils.NullTime `json:"finish_time"`
-	Items        []ProfileItem  `json:"items"`
+	Uuid           string         `json:"uuid"`
+	InstanceName   string         `json:"instance_name"`
+	ClusterVersion string         `json:"cluster_version"`
+	User           string         `json:"user"`
+	Status         string         `json:"status"`
+	Message        string         `json:"message"`
+	CreateTime     utils.NullTime `json:"create_time"`
+	FinishTime     utils.NullTime `json:"finish_time"`
+	Items          []ProfileItem  `json:"items"`
 }
 
 type ProfileItem struct {
@@ -32,14 +33,15 @@ type ProfileItem struct {
 
 func fromInspection(insp *inspection.Inspection, profDir string) *Profile {
 	prof := Profile{
-		Uuid:         insp.Uuid,
-		InstanceName: insp.InstanceName,
-		User:         insp.User,
-		Status:       insp.Status,
-		Message:      insp.Message,
-		CreateTime:   insp.CreateTime,
-		FinishTime:   insp.FinishTime,
-		Items:        []ProfileItem{},
+		Uuid:           insp.Uuid,
+		InstanceName:   insp.InstanceName,
+		ClusterVersion: insp.ClusterVersion,
+		User:           insp.User,
+		Status:         insp.Status,
+		Message:        insp.Message,
+		CreateTime:     insp.CreateTime,
+		FinishTime:     insp.FinishTime,
+		Items:          []ProfileItem{},
 	}
 
 	prof.loadItems(profDir)

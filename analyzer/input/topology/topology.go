@@ -4,6 +4,8 @@ package topology
 type Topology struct {
 	// cluster name of this inspection
 	ClusterName string `json:"cluster_name"`
+	// cluster version from inventory.ini
+	ClusterVersion string `json:"tidb_version"`
 	// the hosts of the cluster
 	Hosts []struct {
 		Ip         string `json:"ip"`
