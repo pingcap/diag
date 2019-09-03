@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Table } from 'antd';
-import { prometheusRangeQuery, IPromParams, IMetric } from '@/services/prometheus';
+import { prometheusRangeQuery, IPromParams } from '@/services/prometheus-query';
+import { IPromQuery } from '@/services/prometheus-config';
 
 // const dumbData = [
 //   [1540982900657, 23.45678],
@@ -22,11 +23,11 @@ interface PrometheusTableProps {
 
   tableColumns: [string, string];
 
-  promMetrics: IMetric[];
+  promQueries: IPromQuery[];
   promParams: IPromParams;
 }
 
-function PrometheusTable({ title, tableColumns, promMetrics, promParams }: PrometheusTableProps) {
+function PrometheusTable({ title, tableColumns, promQueries, promParams }: PrometheusTableProps) {
   const [loading, setLoading] = useState(false);
 
   const [dataSource, setDataSource] = useState<any[]>([]);
@@ -41,7 +42,7 @@ function PrometheusTable({ title, tableColumns, promMetrics, promParams }: Prome
     function query() {
       setLoading(true);
       Promise.all(
-        promMetrics.map(metric =>
+        promQueries.map(metric =>
           prometheusRangeQuery(metric.promQL, metric.labelTemplate, promParams),
         ),
       ).then(results => {
@@ -69,8 +70,8 @@ function PrometheusTable({ title, tableColumns, promMetrics, promParams }: Prome
           setDataSource([
             {
               label: labels[1],
-              val: promMetrics[0].valConverter
-                ? promMetrics[0].valConverter(data[0][1])
+              val: promQueries[0].valConverter
+                ? promQueries[0].valConverter(data[0][1])
                 : data[0][1],
             },
           ]);
@@ -81,7 +82,7 @@ function PrometheusTable({ title, tableColumns, promMetrics, promParams }: Prome
     }
 
     query();
-  }, [promMetrics, promParams]);
+  }, [promQueries, promParams]);
 
   return (
     <div>
