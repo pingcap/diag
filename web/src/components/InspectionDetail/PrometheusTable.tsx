@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Table } from 'antd';
-import { prometheusRangeQuery, IPromParams } from '@/services/prometheus-query';
+import { promRangeQuery, IPromParams, promRangeQueries } from '@/services/prometheus-query';
 import { IPromQuery } from '@/services/prometheus-config';
+import { usePromQueries } from './use-prom-queries';
 
 // const dumbData = [
 //   [1540982900657, 23.45678],
@@ -28,61 +29,24 @@ interface PrometheusTableProps {
 }
 
 function PrometheusTable({ title, tableColumns, promQueries, promParams }: PrometheusTableProps) {
-  const [loading, setLoading] = useState(false);
-
-  const [dataSource, setDataSource] = useState<any[]>([]);
+  const [loading, chartLabels, oriChartData] = usePromQueries(promQueries, promParams);
 
   const columns = tableColumns.map((column, index) => ({
     title: column,
     dataIndex: index === 0 ? 'label' : 'val',
     key: index === 0 ? 'label' : 'val',
   }));
-
-  useEffect(() => {
-    function query() {
-      setLoading(true);
-      Promise.all(
-        promQueries.map(metric =>
-          prometheusRangeQuery(metric.promQL, metric.labelTemplate, promParams),
-        ),
-      ).then(results => {
-        let labels: string[] = [];
-        let data: number[][] = [];
-        results
-          .filter(result => result.metricValues.length > 0)
-          .forEach((result, idx) => {
-            if (idx === 0) {
-              labels = result.metricLabels;
-              data = result.metricValues;
-            } else {
-              labels = labels.concat(result.metricLabels.slice(1));
-              const emtpyPlacehoder: number[] = Array(result.metricLabels.length).fill(0);
-              data = data.map((item, index) =>
-                // the result.metricValues may have different length
-                // so result.metricValues[index] may undefined
-                item.concat((result.metricValues[index] || emtpyPlacehoder).slice(1)),
-              );
-            }
-          });
-        setLoading(false);
-
-        if (data.length > 0) {
-          setDataSource([
-            {
-              label: labels[1],
-              val: promQueries[0].valConverter
-                ? promQueries[0].valConverter(data[0][1])
-                : data[0][1],
-            },
-          ]);
-        } else {
-          setDataSource([]);
-        }
-      });
-    }
-
-    query();
-  }, [promQueries, promParams]);
+  const dataSource: any[] =
+    oriChartData.length > 0
+      ? [
+          {
+            label: chartLabels[1],
+            val: promQueries[0].valConverter
+              ? promQueries[0].valConverter(oriChartData[0][1])
+              : oriChartData[0][1],
+          },
+        ]
+      : [];
 
   return (
     <div>

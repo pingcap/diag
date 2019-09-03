@@ -1,5 +1,6 @@
 import _ from 'lodash';
 import request from '@/utils/request';
+import { IPromQuery } from './prometheus-config';
 
 export interface IPromParams {
   start: number;
@@ -48,7 +49,7 @@ export interface IPromParams {
 //   [1560836339, 132132072, 132132800],
 //   [1560836359, 132132071, 132132801],
 // ]
-export async function prometheusRangeQuery(
+export async function promRangeQuery(
   query: string,
   labelTemplate: string,
   promParmas: IPromParams,
@@ -90,4 +91,30 @@ export async function prometheusRangeQuery(
     });
   }
   return { metricLabels, metricValues };
+}
+
+export async function promRangeQueries(promQueries: IPromQuery[], promParams: IPromParams) {
+  const results = await Promise.all(
+    promQueries.map(metric => promRangeQuery(metric.promQL, metric.labelTemplate, promParams)),
+  );
+
+  let labels: string[] = [];
+  let data: number[][] = [];
+  results
+    .filter(result => result.metricValues.length > 0)
+    .forEach((result, idx) => {
+      if (idx === 0) {
+        labels = result.metricLabels;
+        data = result.metricValues;
+      } else {
+        labels = labels.concat(result.metricLabels.slice(1));
+        const emtpyPlacehoder: number[] = Array(result.metricLabels.length).fill(0);
+        data = data.map((item, index) =>
+          // the result.metricValues may have different length
+          // so result.metricValues[index] may undefined
+          item.concat((result.metricValues[index] || emtpyPlacehoder).slice(1)),
+        );
+      }
+    });
+  return { labels, data };
 }

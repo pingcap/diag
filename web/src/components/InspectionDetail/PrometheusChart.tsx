@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import SerialLineChart from '../Chart/SerialLineChart';
-import { prometheusRangeQuery, IPromParams } from '@/services/prometheus-query';
+import { IPromParams, promRangeQueries } from '@/services/prometheus-query';
 import { IPromQuery } from '@/services/prometheus-config';
+import { usePromQueries } from './use-prom-queries';
 
 // const dumbData = [
 //   [1540982900657, 23.45678],
@@ -26,44 +27,7 @@ interface PrometheusChartProps {
 }
 
 function PrometheusChart({ title, promQueries, promParams }: PrometheusChartProps) {
-  const [loading, setLoading] = useState(false);
-  const [chartLabels, setChartLabels] = useState<string[]>([]);
-  const [oriChartData, setOriChartData] = useState<number[][]>([]);
-
-  useEffect(() => {
-    function query() {
-      setLoading(true);
-      Promise.all(
-        promQueries.map(metric =>
-          prometheusRangeQuery(metric.promQL, metric.labelTemplate, promParams),
-        ),
-      ).then(results => {
-        let labels: string[] = [];
-        let data: number[][] = [];
-        results
-          .filter(result => result.metricValues.length > 0)
-          .forEach((result, idx) => {
-            if (idx === 0) {
-              labels = result.metricLabels;
-              data = result.metricValues;
-            } else {
-              labels = labels.concat(result.metricLabels.slice(1));
-              const emtpyPlacehoder: number[] = Array(result.metricLabels.length).fill(0);
-              data = data.map((item, index) =>
-                // the result.metricValues may have different length
-                // so result.metricValues[index] may undefined
-                item.concat((result.metricValues[index] || emtpyPlacehoder).slice(1)),
-              );
-            }
-          });
-        setChartLabels(labels);
-        setOriChartData(data);
-        setLoading(false);
-      });
-    }
-
-    query();
-  }, [promQueries, promParams]);
+  const [loading, chartLabels, oriChartData] = usePromQueries(promQueries, promParams);
 
   return (
     <div>
