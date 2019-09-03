@@ -17,7 +17,7 @@ func SaveDBInfo() *saveDBInfoTask {
 // Save table indexes information to db, a record for a table
 func (t *saveDBInfoTask) Run(m *boot.Model, schemas *dbinfo.DBInfo, c *boot.Config) {
 	for _, schema := range *schemas {
-		if schema.Name == "mysql" {
+		if schema.Name == "mysql" || schema.Name == "INFORMATION_SCHEMA" || schema.Name == "PERFORMANCE_SCHEMA" {
 			continue
 		}
 		for _, tb := range schema.Tables {
