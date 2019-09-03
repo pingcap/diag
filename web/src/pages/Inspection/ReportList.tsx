@@ -23,94 +23,106 @@ const tableColumns = (
   onDelete: any,
   onUpload: any,
   instanceId: string | undefined,
-) => [
-  {
-    title: '诊断报告 ID',
-    dataIndex: 'uuid',
-    key: 'uuid',
-  },
-  {
-    title: '用户名',
-    dataIndex: 'user',
-    key: 'user',
-  },
-  {
-    title: '实例名称',
-    dataIndex: 'instance_name',
-    key: 'instance_name',
-  },
-  {
-    title: '诊断方式',
-    dataIndex: 'type',
-    key: 'type',
-  },
-  {
-    title: '开始时间',
-    dataIndex: 'format_create_time',
-    key: 'format_create_time',
-    render: (text: any) => (text === 'Invalid date' ? '获取中...' : text),
-  },
-  {
-    title: '完成时间',
-    dataIndex: 'format_finish_time',
-    key: 'format_finish_time',
-    render: (text: any, record: IFormatInspection) => {
-      if (record.status === 'exception') {
-        return (
-          <div className={styles.instance_status}>
-            <span style={{ color: 'red' }}>exception</span>
-            <Tooltip title={record.message}>
-              <Icon type="question-circle" />
-            </Tooltip>
-          </div>
-        );
-      }
-      if (record.status === 'running') {
-        return <span>running</span>;
-      }
-      return <span>{text}</span>;
+) => {
+  const columns = [
+    {
+      title: '诊断报告 ID',
+      dataIndex: 'uuid',
+      key: 'uuid',
     },
-  },
-  {
-    title: '操作',
-    key: 'action',
-    render: (text: any, record: IFormatInspection) => (
-      <span>
-        {record.status === 'success' ? (
-          <Link to={getReportDetailLink(instanceId, record.uuid)}>详情</Link>
-        ) : (
-          <span>详情</span>
-        )}
-        {curUser.role === 'admin' && (
-          <React.Fragment>
-            <Divider type="vertical" />
-            {record.status === 'success' ? (
-              <a download href={`/api/v1/inspections/${record.uuid}.tar.gz`}>
-                下载
-              </a>
-            ) : (
-              <span>下载</span>
-            )}
-            {curUser.ka && (
-              <React.Fragment>
-                <Divider type="vertical" />
-                {record.status === 'success' ? (
-                  <a onClick={() => onUpload(record)}>上传</a>
-                ) : (
-                  <span>上传</span>
-                )}
-              </React.Fragment>
-            )}
-          </React.Fragment>
-        )}
-        <Divider type="vertical" />
-        <a style={{ color: 'red' }} onClick={() => onDelete(record)}>
-          删除
-        </a>
-      </span>
-    ),
-  },
-];
+    {
+      title: '用户名',
+      dataIndex: 'user',
+      key: 'user',
+    },
+    {
+      title: '实例名称',
+      dataIndex: 'instance_name',
+      key: 'instance_name',
+    },
+    {
+      title: '集群版本',
+      dataIndex: 'cluster_version',
+      key: 'cluster_version',
+    },
+    {
+      title: '诊断方式',
+      dataIndex: 'type',
+      key: 'type',
+    },
+    {
+      title: '开始时间',
+      dataIndex: 'format_create_time',
+      key: 'format_create_time',
+      render: (text: any) => (text === 'Invalid date' ? '获取中...' : text),
+    },
+    {
+      title: '完成时间',
+      dataIndex: 'format_finish_time',
+      key: 'format_finish_time',
+      render: (text: any, record: IFormatInspection) => {
+        if (record.status === 'exception') {
+          return (
+            <div className={styles.instance_status}>
+              <span style={{ color: 'red' }}>exception</span>
+              <Tooltip title={record.message}>
+                <Icon type="question-circle" />
+              </Tooltip>
+            </div>
+          );
+        }
+        if (record.status === 'running') {
+          return <span>running</span>;
+        }
+        return <span>{text}</span>;
+      },
+    },
+    {
+      title: '操作',
+      key: 'action',
+      render: (text: any, record: IFormatInspection) => (
+        <span>
+          {record.status === 'success' ? (
+            <Link to={getReportDetailLink(instanceId, record.uuid)}>详情</Link>
+          ) : (
+            <span>详情</span>
+          )}
+          {curUser.role === 'admin' && (
+            <React.Fragment>
+              <Divider type="vertical" />
+              {record.status === 'success' ? (
+                <a download href={`/api/v1/inspections/${record.uuid}.tar.gz`}>
+                  下载
+                </a>
+              ) : (
+                <span>下载</span>
+              )}
+              {curUser.ka && (
+                <React.Fragment>
+                  <Divider type="vertical" />
+                  {record.status === 'success' ? (
+                    <a onClick={() => onUpload(record)}>上传</a>
+                  ) : (
+                    <span>上传</span>
+                  )}
+                </React.Fragment>
+              )}
+            </React.Fragment>
+          )}
+          <Divider type="vertical" />
+          <a style={{ color: 'red' }} onClick={() => onDelete(record)}>
+            删除
+          </a>
+        </span>
+      ),
+    },
+  ];
+
+  if (curUser.role === 'admin') {
+    return columns.filter(col => col.dataIndex !== 'cluster_version');
+  }
+  return columns;
+};
 
 interface ReportListProps extends ConnectProps {
   dispatch: Dispatch;

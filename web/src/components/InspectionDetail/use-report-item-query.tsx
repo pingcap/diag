@@ -25,7 +25,7 @@ interface IAbnormalValue {
   value: string | number;
 }
 
-export function useReportItemQuery(apiUrl: string) {
+export function useReportItemQuery(apiUrl: string): [IConclusion[], any[], any[], boolean] {
   const [conclusion, setConclusion] = useState<IConclusion[]>([]);
   const [tableColumns, setTableColumns] = useState<any[]>([]);
   const [dataSource, setDataSource] = useState<any[]>([]);
