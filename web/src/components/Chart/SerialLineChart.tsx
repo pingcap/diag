@@ -103,7 +103,12 @@ function SerialLineChart({
         />
 
         <CartesianGrid strokeDasharray="3 3" />
-        <Tooltip formatter={val => (valConverter ? valConverter(val as number) : val)} />
+        <Tooltip
+          formatter={val => (valConverter ? valConverter(val as number) : val)}
+          wrapperStyle={{
+            zIndex: 1,
+          }}
+        />
         {/* https://github.com/recharts/recharts/issues/614 */}
         {/* Position Legend on the right side of a graph #614 */}
         <Legend
