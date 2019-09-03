@@ -86,13 +86,12 @@ function SerialLineChart({
   const shuffedColors: string[] = useMemo(() => _.shuffle(DEF_COLORS), []);
 
   return (
-    <ResponsiveContainer width="100%">
+    <ResponsiveContainer width="100%" height="100%">
       <LineChart
         data={chartData}
         margin={{
           top: 5,
-          right: 30,
-          left: 30,
+          right: 10,
           bottom: 0,
         }}
       >
@@ -105,7 +104,18 @@ function SerialLineChart({
 
         <CartesianGrid strokeDasharray="3 3" />
         <Tooltip formatter={val => (valConverter ? valConverter(val as number) : val)} />
-        <Legend />
+        {/* https://github.com/recharts/recharts/issues/614 */}
+        {/* Position Legend on the right side of a graph #614 */}
+        <Legend
+          layout="vertical"
+          verticalAlign="top"
+          align="right"
+          wrapperStyle={{
+            paddingLeft: '12px',
+            maxHeight: '80%',
+            overflowY: 'auto',
+          }}
+        />
 
         {chartLabels.slice(1).map((cl, idx) => (
           <Line
