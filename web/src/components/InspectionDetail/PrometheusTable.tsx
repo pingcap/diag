@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { Table } from 'antd';
-import { promRangeQuery, IPromParams, promRangeQueries } from '@/services/prometheus-query';
+import { IPromParams } from '@/services/prometheus-query';
 import { IPromQuery } from '@/services/prometheus-config';
 import { usePromQueries } from './use-prom-queries';
 
@@ -31,22 +31,26 @@ interface PrometheusTableProps {
 function PrometheusTable({ title, tableColumns, promQueries, promParams }: PrometheusTableProps) {
   const [loading, chartLabels, oriChartData] = usePromQueries(promQueries, promParams);
 
+  // can replace it by useMemo
+  function genDataSource() {
+    if (chartLabels.length < 2 || oriChartData.length === 0) {
+      return [];
+    }
+    return chartLabels.slice(1).map((label, index) => ({
+      label,
+      val: promQueries[0].valConverter
+        ? promQueries[0].valConverter(oriChartData[0][index + 1])
+        : oriChartData[0][index + 1],
+      key: `${index}`,
+    }));
+  }
+
   const columns = tableColumns.map((column, index) => ({
     title: column,
     dataIndex: index === 0 ? 'label' : 'val',
     key: index === 0 ? 'label' : 'val',
   }));
-  const dataSource: any[] =
-    oriChartData.length > 0
-      ? [
-          {
-            label: chartLabels[1],
-            val: promQueries[0].valConverter
-              ? promQueries[0].valConverter(oriChartData[0][1])
-              : oriChartData[0][1],
-          },
-        ]
-      : [];
+  const dataSource: any[] = genDataSource();
 
   return (
     <div>

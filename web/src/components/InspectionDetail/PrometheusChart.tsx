@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import SerialLineChart from '../Chart/SerialLineChart';
-import { IPromParams, promRangeQueries } from '@/services/prometheus-query';
+import { IPromParams } from '@/services/prometheus-query';
 import { IPromQuery } from '@/services/prometheus-config';
 import { usePromQueries } from './use-prom-queries';
 
