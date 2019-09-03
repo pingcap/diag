@@ -58,6 +58,9 @@ export function useReportItemQuery(apiUrl: string): [IConclusion[], any[], any[]
                   </div>
                 );
               }
+              if (text.status === 'warning' || text.status === 'info') {
+                return <span style={{ whiteSpace: 'pre-wrap' }}>{text.value}</span>;
+              }
               return <span style={{ whiteSpace: 'pre-wrap' }}>{text}</span>;
             },
           }));
