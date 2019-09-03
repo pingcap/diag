@@ -14,7 +14,7 @@ import (
 func QueryProm(query string, t time.Time) (*float64, error) {
 	addr := os.Getenv("PROM_ADDR")
 	if addr == "" {
-		addr = "http://127.0.0.1:8080"
+		addr = "http://127.0.0.1:9529"
 	}
 	client, err := api.NewClient(api.Config{Address: addr})
 	if err != nil {
@@ -43,7 +43,7 @@ func QueryPromRange(query string, start, end time.Time, step time.Duration) (Flo
 	values := FloatArray{}
 	addr := os.Getenv("PROM_ADDR")
 	if addr == "" {
-		addr = "http://127.0.0.1:8080"
+		addr = "http://127.0.0.1:9529"
 	}
 	client, err := api.NewClient(api.Config{Address: addr})
 	if err != nil {

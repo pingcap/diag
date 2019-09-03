@@ -10,18 +10,18 @@ class TestCollector(unittest.TestCase):
 
 class TestHTTPCollector(unittest.TestCase):
     def test_url(self):
-        c = HTTPCollector(name='httpcollector', addr='127.0.0.1:8080',
+        c = HTTPCollector(name='httpcollector', addr='127.0.0.1:9529',
                           path='/test', params={'k': 'v'})
-        self.assertEqual(c._url(), "http://127.0.0.1:8080/test?k=v")
+        self.assertEqual(c._url(), "http://127.0.0.1:9529/test?k=v")
 
     def test_repr(self):
-        c = HTTPCollector(name='httpcollector', addr='127.0.0.1:8080',
+        c = HTTPCollector(name='httpcollector', addr='127.0.0.1:9529',
                           path='/test', params={'k': 'v'})
         self.assertNotEqual(repr(c), '')
 
     def test_collect(self):
         # TODO mock the HTTP response
-        c = HTTPCollector(name='httpcollector', addr='127.0.0.1:8080',
+        c = HTTPCollector(name='httpcollector', addr='127.0.0.1:9529',
                           path='/test', params={'k': 'v'})
 
 

@@ -64,7 +64,7 @@ cp -r $tempdir/fold-tikv-threads-perf.pl $debdir/usr/local/tidb-foresight/bin/
 cp -r $tempdir/tidb-foresight/collector $debdir/usr/local/tidb-foresight/script/
 cp -r $tempdir/tidb-foresight/pioneer/pioneer.py $debdir/usr/local/tidb-foresight/bin/pioneer
 cp -r $tempdir/tidb-foresight/web/dist/* $debdir/usr/local/tidb-foresight/web/
-cat>$debdir/etc/systemd/system/foresight.service<<EOF
+cat>$debdir/etc/systemd/system/foresight-9527.service<<EOF
 # If you modify this, please also make sure to edit init.sh
 
 [Unit]
@@ -86,7 +86,7 @@ WantedBy=multi-user.target
 EOF
 
 # Install influxdb
-cat>$debdir/etc/systemd/system/influxd.service<<EOF
+cat>$debdir/etc/systemd/system/influxd-9528.service<<EOF
 # If you modify this, please also make sure to edit init.sh
 
 [Unit]
@@ -106,7 +106,7 @@ RestartSec=15s
 
 [Install]
 WantedBy=multi-user.target
-Alias=influxd.service
+Alias=influxd-9528.service
 EOF
 
 cat>>$debdir/etc/logrotate.d/influxdb<<EOF
@@ -128,20 +128,21 @@ cp -r $tempdir/influxdb-1.7.7-1/influx_stress $debdir/usr/local/influxdb/bin/
 cp -r $tempdir/influxdb-1.7.7-1/influx_tsm $debdir/usr/local/influxdb/bin/
 cp -r $tempdir/influxdb-1.7.7-1/influxdb.conf $debdir/usr/local/influxdb/conf/
 sed -i 's/\# bind-address \= \"\:/bind-address = "127.0.0.1\:/g' $debdir/usr/local/influxdb/conf/influxdb.conf
+sed -i 's/127.0.0.1\:8086/127.0.0.1\:9528/g' $debdir/usr/local/influxdb/conf/influxdb.conf
 
 # Install prometheus
 cp -r $tempdir/prometheus-2.8.1.linux-amd64/prometheus $debdir/usr/local/prometheus/bin/
 cp -r $tempdir/prometheus-2.8.1.linux-amd64/prometheus.yml $debdir/usr/local/prometheus/conf/
 cat>>$debdir/usr/local/prometheus/conf/prometheus.yml<<EOF
 remote_read:
-  - url: "http://localhost:8086/api/v1/prom/read?db=inspection"
+  - url: "http://localhost:9528/api/v1/prom/read?db=inspection"
     read_recent: true
 
 remote_write:
-  - url: "http://localhost:8086/api/v1/prom/write?db=inspection"
+  - url: "http://localhost:9528/api/v1/prom/write?db=inspection"
 EOF
 
-cat>$debdir/etc/systemd/system/prometheus.service<<EOF
+cat>$debdir/etc/systemd/system/prometheus-9529.service<<EOF
 # If you modify this, please also make sure to edit init.sh
 
 [Unit]
@@ -153,7 +154,7 @@ LimitNOFILE=1000000
 #LimitCORE=infinity
 LimitSTACK=10485760
 User=tidb
-ExecStart=/usr/local/prometheus/bin/prometheus --web.listen-address=127.0.0.1:8080 --storage.tsdb.path=/usr/local/prometheus/data --config.file=/usr/local/prometheus/conf/prometheus.yml
+ExecStart=/usr/local/prometheus/bin/prometheus --web.listen-address=127.0.0.1:9529 --storage.tsdb.path=/usr/local/prometheus/data --config.file=/usr/local/prometheus/conf/prometheus.yml
 Restart=always
 RestartSec=15s
 
