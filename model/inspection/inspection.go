@@ -15,7 +15,7 @@ type Inspection struct {
 	Status         string         `json:"status"`
 	Message        string         `json:"message"`
 	Type           string         `json:"type"`
-	CreateTime     utils.NullTime `json:"create_time,omitempty",gorm:"column:create_time"`
+	CreateTime     utils.NullTime `json:"create_time,omitempty" gorm:"column:create_time"`
 	FinishTime     utils.NullTime `json:"finish_time,omitempty"`
 	ScrapeBegin    utils.NullTime `json:"scrape_begin,omitempty"`
 	ScrapeEnd      utils.NullTime `json:"scrape_end,omitempty"`
@@ -63,7 +63,7 @@ func (m *inspection) ListInspections(instId string, page, size int64) ([]*Inspec
 
 func (m *inspection) SetInspection(insp *Inspection) error {
 	if !insp.CreateTime.Valid {
-		insp.CreateTime = utils.NullTime{time.Now(), true}
+		insp.CreateTime = utils.NullTime{Time: time.Now(), Valid: true}
 	}
 	return m.db.Save(insp).Error()
 }

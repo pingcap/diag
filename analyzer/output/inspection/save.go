@@ -2,13 +2,11 @@ package inspection
 
 import (
 	"strings"
-	"time"
 
 	"github.com/pingcap/tidb-foresight/analyzer/boot"
 	"github.com/pingcap/tidb-foresight/analyzer/input/args"
 	"github.com/pingcap/tidb-foresight/analyzer/input/envs"
 	"github.com/pingcap/tidb-foresight/analyzer/input/meta"
-	"github.com/pingcap/tidb-foresight/analyzer/input/topology"
 	"github.com/pingcap/tidb-foresight/model"
 	"github.com/pingcap/tidb-foresight/utils"
 	log "github.com/sirupsen/logrus"
@@ -21,7 +19,7 @@ func SaveInspection() *saveInspectionTask {
 }
 
 // Save inspection main record to database (then the frontend can see it)
-func (t *saveInspectionTask) Run(m *boot.Model, c *boot.Config, args *args.Args, topo *topology.Topology, meta *meta.Meta, e *envs.Env) {
+func (t *saveInspectionTask) Run(m *boot.Model, c *boot.Config, args *args.Args, topo *model.Topology, meta *meta.Meta, e *envs.Env) {
 	components := map[string][]string{}
 
 	for _, h := range topo.Hosts {
@@ -43,8 +41,8 @@ func (t *saveInspectionTask) Run(m *boot.Model, c *boot.Config, args *args.Args,
 		Pd:             strings.Join(components["pd"], ","),
 		Grafana:        strings.Join(components["grafana"], ","),
 		Prometheus:     strings.Join(components["prometheus"], ","),
-		CreateTime:     utils.NullTime{time.Unix(int64(meta.CreateTime), 0), true},
-		FinishTime:     utils.NullTime{time.Unix(int64(meta.EndTime), 0), true},
+		CreateTime:     utils.NullTime{meta.InspectTime, true},
+		FinishTime:     utils.NullTime{meta.EndTime, true},
 		ScrapeBegin:    utils.NullTime{args.ScrapeBegin, true},
 		ScrapeEnd:      utils.NullTime{args.ScrapeEnd, true},
 	}); err != nil {

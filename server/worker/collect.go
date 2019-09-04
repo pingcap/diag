@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
-	"path"
 	"strings"
 	"time"
 
@@ -29,7 +28,7 @@ func (w *worker) Collect(inspectionId, inspectionType string, config *model.Conf
 		to = config.SchedRange[1]
 	}
 
-	items := []string{"metric", "basic", "dbinfo", "config", "log"}
+	items := []string{"alert", "dmesg", "basic", "config", "dbinfo", "log", "metric", "network"}
 	if config != nil {
 		if config.CollectHardwareInfo {
 			//	items = append(items, "hardware")
@@ -47,13 +46,10 @@ func (w *worker) Collect(inspectionId, inspectionType string, config *model.Conf
 
 	cmd := exec.Command(
 		w.c.Collector,
+		fmt.Sprintf("--home=%s", w.c.Home),
 		fmt.Sprintf("--instance-id=%s", instanceId),
 		fmt.Sprintf("--inspection-id=%s", inspectionId),
-		fmt.Sprintf("--topology=%s", path.Join(w.c.Home, "topology", instanceId+".json")),
-		fmt.Sprintf("--data-dir=%s", path.Join(w.c.Home, "inspection")),
-		fmt.Sprintf("--collect=%s", strings.Join(items, ",")),
-		fmt.Sprintf("--log-dir=%s", path.Join(w.c.Home, "remote-log", instanceId)),
-		fmt.Sprintf("--log-spliter=%s", path.Join(w.c.Home, "bin", "spliter")),
+		fmt.Sprintf("--items=%s", strings.Join(items, ",")),
 		fmt.Sprintf("--begin=%s", from.Format(time.RFC3339)),
 		fmt.Sprintf("--end=%s", to.Format(time.RFC3339)),
 	)

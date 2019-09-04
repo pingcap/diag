@@ -11,7 +11,7 @@ func Analyze() *analyzeTask {
 	return &analyzeTask{}
 }
 
-// Check if the avg resource useage exceed 20%
+// Check if the resource useage exceed
 func (t *analyzeTask) Run(m *boot.Model, c *boot.Config) {
 	resources, err := m.GetInspectionResourceInfo(c.InspectionId)
 	if err != nil {

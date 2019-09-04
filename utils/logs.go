@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
-	"path"
 	"time"
 
 	log "github.com/sirupsen/logrus"
@@ -13,13 +12,10 @@ import (
 func CollectLog(collector, home, user, instanceId, inspectionId string, begin, end time.Time) error {
 	cmd := exec.Command(
 		collector,
+		fmt.Sprintf("--home=%s", home),
 		fmt.Sprintf("--instance-id=%s", instanceId),
 		fmt.Sprintf("--inspection-id=%s", inspectionId),
-		fmt.Sprintf("--topology=%s", path.Join(home, "topology", instanceId+".json")),
-		fmt.Sprintf("--data-dir=%s", path.Join(home, "inspection")),
-		"--collect=log",
-		fmt.Sprintf("--log-dir=%s", path.Join(home, "remote-log", instanceId)),
-		fmt.Sprintf("--log-spliter=%s", path.Join(home, "bin", "spliter")),
+		"--items=log",
 		fmt.Sprintf("--begin=%s", begin.Format(time.RFC3339)),
 		fmt.Sprintf("--end=%s", end.Format(time.RFC3339)),
 	)
