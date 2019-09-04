@@ -15,6 +15,9 @@ type task struct {
 	// The method stored the reflect value of Run method in target type
 	method reflect.Value
 
+	// the resolve store the resolve mode of this task
+	resolve ResolveMode
+
 	// The inputs stored the types of input list of the Run method
 	// The format of each inputs element is {pkg_path}#{type_name}
 	// eg. github.com/pingcap/tidb-foresight/analyzer/boot#DB
@@ -51,7 +54,7 @@ type task struct {
 // The TaskManager will guarantee the Task1's Run method
 // will be called before Task2's, no matter how the register
 // to the TaskManager.
-func newTask(i interface{}) *task {
+func newTask(i interface{}, m ResolveMode) *task {
 	t := &task{}
 	// Take value of i, and it should be a pointer.
 	v := reflect.ValueOf(i)
@@ -67,6 +70,15 @@ func newTask(i interface{}) *task {
 	}
 
 	// Matching types for Run.
+	mode := v.Elem().FieldByName("Mode")
+	if !mode.IsValid() {
+		t.resolve = m
+	} else if rm, ok := mode.Interface().(ResolveMode); !ok {
+		t.resolve = m
+	} else {
+		t.resolve = rm
+	}
+
 	for idx := 0; idx < t.method.Type().NumIn(); idx++ {
 		if t.method.Type().In(idx).Kind() != reflect.Ptr {
 			panic("only support ptr as input args at present, check Run method of task " + t.id)
@@ -102,6 +114,10 @@ func (t *task) run(args []reflect.Value) []reflect.Value {
 	log.Info("run task ", t.id)
 	t.cache = t.method.Call(args)
 	return t.cache
+}
+
+func (t *task) mode() ResolveMode {
+	return t.resolve
 }
 
 type ResolveMode int16

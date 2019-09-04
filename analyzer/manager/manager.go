@@ -13,7 +13,7 @@ type TaskManager struct {
 	tasks []*task
 }
 
-func NewTaskManager() *TaskManager {
+func New() *TaskManager {
 	return &TaskManager{
 		mode:  Strict,
 		tasks: make([]*task, 0),
@@ -28,7 +28,7 @@ func (tm *TaskManager) Mode(mode ResolveMode) *TaskManager {
 
 func (tm *TaskManager) Register(tasks ...interface{}) *TaskManager {
 	for _, t := range tasks {
-		tm.tasks = append(tm.tasks, newTask(t))
+		tm.tasks = append(tm.tasks, newTask(t, tm.mode))
 	}
 	return tm
 }
@@ -58,7 +58,7 @@ func (tm *TaskManager) outputs(t *task) []reflect.Value {
 		args[i] = tm.value(t.inputs[i])
 	}
 
-	if tm.mode == Strict {
+	if t.mode() == Strict {
 		for _, arg := range args {
 			if !arg.IsValid() || arg.IsNil() {
 				return make([]reflect.Value, len(t.outputs))

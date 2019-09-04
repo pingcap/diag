@@ -13,6 +13,7 @@ import (
 	influxdb "github.com/influxdata/influxdb1-client/v2"
 	"github.com/pingcap/tidb-foresight/analyzer/boot"
 	"github.com/pingcap/tidb-foresight/utils"
+	"github.com/pingcap/tidb-foresight/wrapper/prometheus"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -89,7 +90,7 @@ func (t *saveMetricTask) Run(c *boot.Config, m *boot.Model) *Metric {
 
 	// Return an empty struct, which will be used to fill other tasks' input args to make
 	// sure this task execute before them.
-	return &Metric{}
+	return &Metric{prometheus.New()}
 }
 
 func (t *saveMetricTask) initInfluxdbClient() (influxdb.Client, error) {
