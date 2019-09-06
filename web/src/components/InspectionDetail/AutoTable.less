@@ -9,3 +9,21 @@
 :global(.ant-collapse-content) {
   overflow: visible;
 }
+
+:global(.config_table_cell) {
+  :global(.config_table_cell_summary) {
+    display: block;
+  }
+  :global(.config_table_cell_detail) {
+    display: none;
+  }
+}
+
+:global(.config_table_cell.show_detail) {
+  :global(.config_table_cell_summary) {
+    display: none;
+  }
+  :global(.config_table_cell_detail) {
+    display: block;
+  }
+}
