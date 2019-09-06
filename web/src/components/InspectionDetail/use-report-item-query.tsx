@@ -3,6 +3,8 @@ import React, { useEffect, useState } from 'react';
 import { Tooltip, Icon } from 'antd';
 import request from '@/utils/request';
 
+const styles = require('./AutoTable.less');
+
 interface IResObj {
   [key: string]: any;
 }
@@ -31,6 +33,19 @@ export function useReportItemQuery(apiUrl: string): [IConclusion[], any[], any[]
   const [dataSource, setDataSource] = useState<any[]>([]);
   const [hasAbnormal, setHasAbnormal] = useState(false);
 
+  const itemType = apiUrl.split('/').pop();
+
+  function toggleExpand(record: any, expand: boolean) {
+    const configCellEl = document.getElementById(`config_table_cell_${record.key}`);
+    if (configCellEl) {
+      if (expand) {
+        configCellEl.classList.add('show_detail');
+      } else {
+        configCellEl.classList.remove('show_detail');
+      }
+    }
+  }
+
   useEffect(() => {
     async function fetchData() {
       const res: IResReportItem = await request(apiUrl);
@@ -42,7 +57,7 @@ export function useReportItemQuery(apiUrl: string): [IConclusion[], any[], any[]
             title: key,
             dataIndex: key,
             key,
-            render: (text: any) => {
+            render: (text: any, record: any) => {
               if (text.status === 'error') {
                 containsAbnormal = true;
                 return (
@@ -60,6 +75,22 @@ export function useReportItemQuery(apiUrl: string): [IConclusion[], any[], any[]
               }
               if (text.status === 'warning' || text.status === 'info') {
                 return <span style={{ whiteSpace: 'pre-wrap' }}>{text.value}</span>;
+              }
+              if (itemType === 'config' && key === 'config') {
+                return (
+                  <div className="config_table_cell" id={`config_table_cell_${record.key}`}>
+                    <div className="config_table_cell_summary">
+                      <a onClick={(e: any) => toggleExpand(record, true)}>more</a>
+                      <br />
+                      <span>{text.slice(0, 50)}...</span>
+                    </div>
+                    <div className="config_table_cell_detail">
+                      <a onClick={(e: any) => toggleExpand(record, false)}>less</a>
+                      <br />
+                      <span style={{ whiteSpace: 'pre-wrap' }}>{text}</span>
+                    </div>
+                  </div>
+                );
               }
               return <span style={{ whiteSpace: 'pre-wrap' }}>{text}</span>;
             },

@@ -150,8 +150,8 @@ export default {
   */
   proxy: {
     '/api/v1': {
-      target: 'http://172.16.4.232:8888',
-      // target: 'http://172.16.5.175:9527',
+      // target: 'http://172.16.4.232:8888',
+      target: 'http://172.16.5.175:9527',
     },
   },
 } as IConfig;
