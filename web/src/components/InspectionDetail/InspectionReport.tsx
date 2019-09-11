@@ -15,6 +15,7 @@ import {
   TIDB_PANELS,
   PD_PANELS,
   GLOBAL_PANNELS,
+  DBA_PANELS,
 } from '@/services/prometheus-config-panels';
 
 interface InspectionReportProps {
@@ -35,7 +36,6 @@ function InspectionReport({ inspection }: InspectionReportProps) {
 
   function renderPromethuesChart(chartKey: string) {
     const promChart = PROM_CHARTS[chartKey];
-    const title = promChart.showTitle === false ? undefined : promChart.title;
     const promQueries: IPromQuery[] = promChart.queries.map(promQuery => ({
       ...promQuery,
       promQL: _.template(promQuery.promQLTemplate)({ inspectionId: inspection.uuid }),
@@ -44,7 +44,7 @@ function InspectionReport({ inspection }: InspectionReportProps) {
       return (
         <PrometheusTable
           key={chartKey}
-          title={title}
+          title={promChart.title}
           tableColumns={promChart.tableColumns || ['', '']}
           promQueries={promQueries}
           promParams={promParams}
@@ -54,7 +54,7 @@ function InspectionReport({ inspection }: InspectionReportProps) {
     return (
       <PrometheusChart
         key={chartKey}
-        title={title}
+        title={promChart.title}
         promQueries={promQueries}
         promParams={promParams}
       />
@@ -94,11 +94,7 @@ function InspectionReport({ inspection }: InspectionReportProps) {
       <AutoTable title="5、慢查询信息" apiUrl={genItemApiUrl(inspection.uuid, 'slowlog')} />
       <AutoTable title="6、硬件信息" apiUrl={genItemApiUrl(inspection.uuid, 'hardware')} />
       <AutoTable title="7、软件信息" apiUrl={genItemApiUrl(inspection.uuid, 'software')} />
-      <AutoTable
-        title="8、软件配置信息"
-        apiUrl={genItemApiUrl(inspection.uuid, 'config')}
-        expand={false}
-      />
+      <AutoTable title="8、软件配置信息" apiUrl={genItemApiUrl(inspection.uuid, 'config')} />
       <AutoTable title="9、机器 NTP 时间同步信息" apiUrl={genItemApiUrl(inspection.uuid, 'ntp')} />
       <AutoTable title="10、网络质量信息" apiUrl={genItemApiUrl(inspection.uuid, 'network')} />
       <AutoTable title="11、集群拓扑结构信息" apiUrl={genItemApiUrl(inspection.uuid, 'topology')} />
@@ -109,14 +105,21 @@ function InspectionReport({ inspection }: InspectionReportProps) {
       />
 
       <h2>三、监控信息</h2>
-      <h3>1、全局监控</h3>
+      {/* <h3>1、全局监控</h3>
       {renderPanels(GLOBAL_PANNELS)}
       <h3>2、PD</h3>
       {renderPanels(PD_PANELS)}
       <h3>3、TiDB</h3>
       {renderPanels(TIDB_PANELS)}
       <h3>4、TiKV</h3>
-      {renderPanels(TIKV_PANELS)}
+      {renderPanels(TIKV_PANELS)} */}
+
+      <h3>1. DBA</h3>
+      {renderPanels(DBA_PANELS)}
+      <h3>2. Trouble Shooting</h3>
+      <p>To Add</p>
+      <h3>3. 节点/Store 信息</h3>
+      <p>To Add</p>
     </div>
   );
 }

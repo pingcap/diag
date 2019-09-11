@@ -123,7 +123,7 @@ export const ALL_PANELS: { [key: string]: IPanel } = {
   },
   tidb_pd_client: {
     title: 'PD Client',
-    charts: ['pod_client_cmd_fail_ops', 'pd_tso_rpc_duration'],
+    charts: ['pd_client_cmd_fail_ops', 'pd_tso_rpc_duration'],
   },
   tidb_schema_load: {
     title: 'Schema Load',
@@ -258,6 +258,120 @@ export const ALL_PANELS: { [key: string]: IPanel } = {
     title: 'gRPC',
     charts: ['grpc_message_duration_99'],
   },
+
+  // 新的分类
+  dba_error: {
+    title: 'Error 信息',
+    charts: [
+      'failed_query_opm',
+      // 'Critical Error OPS', // todo
+      'pd_client_cmd_fail_ops',
+      // 'panic count' // todo
+      // '服务器时间回跳' // todo
+      'ticlient_region_error',
+      'lock_resolve_ops',
+      'tikv_server_busy',
+      'tikv_raftstore_error',
+      'tikv_coprocessor_error',
+      'tikv_grpc_message_error',
+      'tikv_leader_drop',
+      'tikv_leader_missing',
+      'tikv_scheduler_error',
+      'tikv_server_report_failures',
+      'schema_lease_error_opm',
+      // 'GC 进度' // todo
+    ],
+  },
+  dba_resources: {
+    title: '资源信息',
+    charts: [
+      'vcores',
+      'uptime',
+
+      'cpu_usage',
+      'tidb_cpu_usage',
+      'raft_store_cpu',
+      'async_apply_cpu',
+      'coprocessor_cpu',
+      'storage_readpool_cpu',
+      'split_check_cpu',
+      'grpc_poll_cpu',
+      'scheduler_cpu',
+
+      // memorey // todo
+
+      'load',
+
+      'storage_capacity',
+      'storage_size',
+      'storage_size_ratio',
+      'io_util',
+      // 'IO iops' // todo
+      // 'IO write latency'  // todo
+
+      // network
+      'network_traffic',
+      'connection_count',
+      'tcp_retrans',
+
+      // store/node // todo
+
+      // region
+      // 'total' // todo
+      'regions_label_level',
+      'region_health',
+      'region_heartbeat_latency_99',
+
+      // qps - tidb
+      'qps',
+      'duration',
+
+      // qps - pd
+      // qps // todo
+      // tso handle_request_duration_seconds
+      'pd_tso_rpc_duration',
+      // async duration // todo
+
+      // etcd
+      'handle_txn_count',
+      'wal_fsync_duration_seconds_99',
+
+      // qps - tikv
+      'tikv_qps',
+      // grpc duration
+
+      // ddl
+      'ddl_opm',
+
+      // tidb get token duraion // todo
+    ],
+  },
+  dba_background_task_info: {
+    title: '后台任务信息',
+    charts: [
+      'load_schema_duration',
+      'schema_lease_error_opm',
+
+      // scheduler
+      'tikv_scheduler_prewrite_latch_wait_duration',
+      'tivk_scheduler_prewrite_command_duration',
+      'tikv_scheduler_commit_latch_wait_duration',
+      'tivk_scheduler_commit_command_duration',
+      'scheduler_pending_commands',
+
+      'schedule_operator_create',
+      'schedule_operator_timeout',
+
+      // snapshot
+      'handle_snapshot_duration_99',
+      // Snapshot state count // todo
+
+      // balance // tod
+
+      // raft
+      'tikv_raft_vote',
+    ],
+  },
 };
 
 // /////////////////////////////////////////
@@ -312,3 +426,9 @@ export const TIKV_PANELS = [
   'tikv_thread_cpu',
   'tikv_grpc',
 ];
+
+export const DBA_PANELS = ['dba_error', 'dba_resources', 'dba_background_task_info'];
+
+export const TROUBLE_SHOOTING_PANELS = [];
+
+export const NODE_STORE_INFO_PANELS = [];

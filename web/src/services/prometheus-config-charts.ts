@@ -40,7 +40,6 @@ export interface IPromQuery {
 
 export interface IPromChart {
   title: string;
-  showTitle?: boolean; // default is true
 
   chartType?: 'line' | 'table'; // default is line
   tableColumns?: [string, string]; // for chartType is table
@@ -53,7 +52,6 @@ export const PROM_CHARTS: { [key: string]: IPromChart } = {
   // Overview
   vcores: {
     title: 'Vcores',
-    showTitle: false,
     chartType: 'table',
     tableColumns: ['Host', 'CPU Num'],
     queries: [
@@ -74,7 +72,6 @@ export const PROM_CHARTS: { [key: string]: IPromChart } = {
 
   memory: {
     title: 'Memory',
-    showTitle: false,
     chartType: 'table',
     tableColumns: ['Host', 'Memory'],
     queries: [
@@ -95,7 +92,6 @@ export const PROM_CHARTS: { [key: string]: IPromChart } = {
 
   cpu_usage: {
     title: 'CPU Usage',
-    showTitle: false,
     queries: [
       {
         version: 'v_2_x',
@@ -116,7 +112,6 @@ export const PROM_CHARTS: { [key: string]: IPromChart } = {
 
   load: {
     title: 'Load',
-    showTitle: false,
     queries: [
       {
         promQLTemplate: 'node_load1{inspectionid="{{inspectionId}}"}',
@@ -128,7 +123,6 @@ export const PROM_CHARTS: { [key: string]: IPromChart } = {
 
   memory_available: {
     title: 'Memorey Available',
-    showTitle: false,
     queries: [
       {
         version: 'v_2_x',
@@ -147,7 +141,6 @@ export const PROM_CHARTS: { [key: string]: IPromChart } = {
 
   network_traffic: {
     title: 'Network Traffic',
-    showTitle: false,
     queries: [
       {
         version: 'v_2_x',
@@ -182,7 +175,6 @@ export const PROM_CHARTS: { [key: string]: IPromChart } = {
 
   tcp_retrans: {
     title: 'TCP Retrans',
-    showTitle: false,
     queries: [
       {
         version: 'v_2_x',
@@ -216,7 +208,6 @@ export const PROM_CHARTS: { [key: string]: IPromChart } = {
 
   io_util: {
     title: 'IO Util',
-    showTitle: false,
     queries: [
       {
         version: 'v_2_x',
@@ -515,7 +506,7 @@ export const PROM_CHARTS: { [key: string]: IPromChart } = {
   // Query Summary: QPS, QPS By Instance, Duration, Failed Query OPM
   // qps
   qps: {
-    title: 'QPS',
+    title: 'TiDB QPS',
     queries: [
       {
         promQLTemplate:
@@ -627,7 +618,7 @@ export const PROM_CHARTS: { [key: string]: IPromChart } = {
   },
   // cpu usage
   tidb_cpu_usage: {
-    title: 'CPU Usage',
+    title: 'TiDB CPU Usage',
     queries: [
       {
         promQLTemplate: 'rate(process_cpu_seconds_total{job="tidb"}[1m])',
@@ -734,7 +725,7 @@ export const PROM_CHARTS: { [key: string]: IPromChart } = {
   // PD Client Panel
 
   //
-  pod_client_cmd_fail_ops: {
+  pd_client_cmd_fail_ops: {
     title: 'PD Client CMD Fail OPS',
     queries: [
       {
@@ -862,7 +853,7 @@ export const PROM_CHARTS: { [key: string]: IPromChart } = {
   },
 
   tikv_qps: {
-    title: 'QPS',
+    title: 'TiKV QPS',
     queries: [
       {
         promQLTemplate:
@@ -1107,7 +1098,7 @@ export const PROM_CHARTS: { [key: string]: IPromChart } = {
   // ////////////////
   // Scheduler - prewrite Panel
   tikv_scheduler_prewrite_latch_wait_duration: {
-    title: 'Scheduler latch wait duration',
+    title: 'Scheduler latch wait duration (prewrite)',
     queries: [
       {
         promQLTemplate:
@@ -1129,7 +1120,7 @@ export const PROM_CHARTS: { [key: string]: IPromChart } = {
   },
 
   tivk_scheduler_prewrite_command_duration: {
-    title: 'Scheduler command duration',
+    title: 'Scheduler command duration (prewrite)',
     queries: [
       {
         promQLTemplate:
@@ -1152,7 +1143,7 @@ export const PROM_CHARTS: { [key: string]: IPromChart } = {
   // ////////////////
   // Scheduler - commit Panel
   tikv_scheduler_commit_latch_wait_duration: {
-    title: 'Scheduler latch wait duration',
+    title: 'Scheduler latch wait duration (commit)',
     queries: [
       {
         promQLTemplate:
@@ -1174,7 +1165,7 @@ export const PROM_CHARTS: { [key: string]: IPromChart } = {
   },
 
   tivk_scheduler_commit_command_duration: {
-    title: 'Scheduler command duration',
+    title: 'Scheduler command duration (commit)',
     queries: [
       {
         promQLTemplate:
@@ -1816,7 +1807,7 @@ export const PROM_CHARTS: { [key: string]: IPromChart } = {
         promQLTemplate:
           'sum(rate(tikv_thread_cpu_seconds_total{name=~"raftstore_.*", inspectionid="{{inspectionId}}"}[1m])) by (job, name)',
         labelTemplate: '{{job}}',
-        valConverter: val => toPercent(val, 4),
+        valConverter: val => toPercent(val, 2),
       },
     ],
   },
@@ -1836,7 +1827,7 @@ export const PROM_CHARTS: { [key: string]: IPromChart } = {
         promQLTemplate:
           'sum(rate(tikv_thread_cpu_seconds_total{name=~"apply_[0-9]+", inspectionid="{{inspectionId}}"}[1m])) by (instance)',
         labelTemplate: '{{instance}}',
-        valConverter: val => toPercent(val, 4),
+        valConverter: val => toPercent(val, 2),
       },
     ],
   },
@@ -1848,7 +1839,7 @@ export const PROM_CHARTS: { [key: string]: IPromChart } = {
         promQLTemplate:
           'sum(rate(tikv_thread_cpu_seconds_total{name=~"cop_.*", inspectionid="{{inspectionId}}"}[1m])) by (job)',
         labelTemplate: '{{job}}',
-        valConverter: val => toPercent(val, 4),
+        valConverter: val => toPercent(val, 2),
       },
     ],
   },
@@ -1859,7 +1850,7 @@ export const PROM_CHARTS: { [key: string]: IPromChart } = {
         promQLTemplate:
           'sum(rate(tikv_thread_cpu_seconds_total{name=~"store_read.*", inspectionid="{{inspectionId}}"}[1m])) by (job)',
         labelTemplate: '{{job}}',
-        valConverter: val => toPercent(val, 4),
+        valConverter: val => toPercent(val, 2),
       },
     ],
   },
@@ -1870,7 +1861,7 @@ export const PROM_CHARTS: { [key: string]: IPromChart } = {
         promQLTemplate:
           'sum(rate(tikv_thread_cpu_seconds_total{name=~"split_check", inspectionid="{{inspectionId}}"}[1m])) by (job)',
         labelTemplate: '{{job}}',
-        valConverter: val => toPercent(val, 4),
+        valConverter: val => toPercent(val, 2),
       },
     ],
   },
@@ -1881,7 +1872,7 @@ export const PROM_CHARTS: { [key: string]: IPromChart } = {
         promQLTemplate:
           'sum(rate(tikv_thread_cpu_seconds_total{name=~"grpc.*", inspectionid="{{inspectionId}}"}[1m])) by (job)',
         labelTemplate: '{{job}}',
-        valConverter: val => toPercent(val, 4),
+        valConverter: val => toPercent(val, 2),
       },
     ],
   },
@@ -1892,7 +1883,7 @@ export const PROM_CHARTS: { [key: string]: IPromChart } = {
         promQLTemplate:
           'sum(rate(tikv_thread_cpu_seconds_total{name=~"storage_schedul.*", inspectionid="{{inspectionId}}"}[1m])) by (job)',
         labelTemplate: '{{job}}',
-        valConverter: val => toPercent(val, 4),
+        valConverter: val => toPercent(val, 2),
       },
     ],
   },
