@@ -1,7 +1,7 @@
 import React from 'react';
 import { Table } from 'antd';
 import { IPromParams } from '@/services/prometheus-query';
-import { IPromQuery } from '@/services/prometheus-config';
+import { IPromQuery } from '@/services/prometheus-config-charts';
 import { usePromQueries } from './use-prom-queries';
 
 // const dumbData = [
