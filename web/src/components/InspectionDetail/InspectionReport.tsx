@@ -7,16 +7,15 @@ import { IPromParams } from '@/services/prometheus-query';
 import CollpasePanel from './CollapsePanel';
 import PrometheusChart from './PrometheusChart';
 import PrometheusTable from './PrometheusTable';
+import { IPromQuery, PROM_CHARTS } from '@/services/prometheus-config-charts';
 import {
-  IPromQuery,
-  PROM_CHARTS,
-  PANELS,
   IPanel,
+  ALL_PANELS,
   TIKV_PANELS,
   TIDB_PANELS,
   PD_PANELS,
-  GLOBAL_PANNEL,
-} from '@/services/prometheus-config';
+  GLOBAL_PANNELS,
+} from '@/services/prometheus-config-panels';
 
 interface InspectionReportProps {
   inspection: IInspectionDetail;
@@ -63,7 +62,7 @@ function InspectionReport({ inspection }: InspectionReportProps) {
   }
 
   function renderPanel(panelKey: string) {
-    const panel: IPanel = PANELS[panelKey];
+    const panel: IPanel = ALL_PANELS[panelKey];
     return (
       <CollpasePanel title={panel.title} expand={panel.expand || false} key={panelKey}>
         {panel.charts.map(renderPromethuesChart)}
@@ -111,7 +110,7 @@ function InspectionReport({ inspection }: InspectionReportProps) {
 
       <h2>三、监控信息</h2>
       <h3>1、全局监控</h3>
-      {renderPanels(GLOBAL_PANNEL)}
+      {renderPanels(GLOBAL_PANNELS)}
       <h3>2、PD</h3>
       {renderPanels(PD_PANELS)}
       <h3>3、TiDB</h3>

@@ -1,6 +1,6 @@
 import _ from 'lodash';
 import request from '@/utils/request';
-import { IPromQuery } from './prometheus-config';
+import { IPromQuery } from './prometheus-config-charts';
 
 export interface IPromParams {
   start: number;
