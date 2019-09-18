@@ -14,7 +14,7 @@ export const ALL_PANELS: { [key: string]: IPanel } = {
   global_memory: {
     title: 'Memory',
     expand: true,
-    charts: ['memory'],
+    charts: ['memory_total'],
   },
   global_cpu_usage: {
     title: 'CPU Usage',
@@ -260,13 +260,18 @@ export const ALL_PANELS: { [key: string]: IPanel } = {
   },
 
   // 新的分类
-  dba_error: {
-    title: 'Error 信息',
+  dba_error_1: {
+    title: 'Error 信息 (一级)',
     charts: [
       'failed_query_opm',
       // 'Critical Error OPS', // todo
       'pd_client_cmd_fail_ops',
       // 'panic count' // todo
+    ],
+  },
+  dba_error_2: {
+    title: 'Error 信息 (二级)',
+    charts: [
       // '服务器时间回跳' // todo
       'ticlient_region_error',
       'lock_resolve_ops',
@@ -279,7 +284,9 @@ export const ALL_PANELS: { [key: string]: IPanel } = {
       'tikv_scheduler_error',
       'tikv_server_report_failures',
       'schema_lease_error_opm',
-      // 'GC 进度' // todo
+      'tidb_gc_failure_opm',
+      'tidb_gc_delete_range_failure_opm',
+      // 'tikv GC 进度' // todo
     ],
   },
   dba_resources: {
@@ -291,14 +298,16 @@ export const ALL_PANELS: { [key: string]: IPanel } = {
       'cpu_usage',
       'tidb_cpu_usage',
       'raft_store_cpu',
-      'async_apply_cpu',
+      // 'async_apply_cpu',
       'coprocessor_cpu',
-      'storage_readpool_cpu',
-      'split_check_cpu',
-      'grpc_poll_cpu',
-      'scheduler_cpu',
+      // 'storage_readpool_cpu',
+      // 'split_check_cpu',
+      // 'grpc_poll_cpu',
+      // 'scheduler_cpu',
 
       // memorey // todo
+      'memory_total',
+      'memory_available',
 
       'load',
 
@@ -427,7 +436,12 @@ export const TIKV_PANELS = [
   'tikv_grpc',
 ];
 
-export const DBA_PANELS = ['dba_error', 'dba_resources', 'dba_background_task_info'];
+export const DBA_PANELS = [
+  'dba_error_1',
+  'dba_error_2',
+  'dba_resources',
+  'dba_background_task_info',
+];
 
 export const TROUBLE_SHOOTING_PANELS = [];
 

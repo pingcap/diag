@@ -70,8 +70,8 @@ export const PROM_CHARTS: { [key: string]: IPromChart } = {
     ],
   },
 
-  memory: {
-    title: 'Memory',
+  memory_total: {
+    title: 'Memory Total',
     chartType: 'table',
     tableColumns: ['Host', 'Memory'],
     queries: [
@@ -122,7 +122,7 @@ export const PROM_CHARTS: { [key: string]: IPromChart } = {
   },
 
   memory_available: {
-    title: 'Memorey Available',
+    title: 'Memory Available',
     queries: [
       {
         version: 'v_2_x',
@@ -1897,6 +1897,27 @@ export const PROM_CHARTS: { [key: string]: IPromChart } = {
           'histogram_quantile(0.99, sum(rate(tikv_grpc_msg_duration_seconds_bucket{type!="kv_gc", inspectionid="{{inspectionId}}"}[1m])) by (le, type))',
         labelTemplate: '{{type}}',
         valConverter: val => timeSecondsFormatter(val, 0),
+      },
+    ],
+  },
+
+  // 2019/09/18
+  tidb_gc_failure_opm: {
+    title: 'GC Failure OPM',
+    queries: [
+      {
+        promQLTemplate: 'sum(increase(tidb_tikvclient_gc_failure[1m])) by (type)',
+        labelTemplate: '{{type}}',
+      },
+    ],
+  },
+  tidb_gc_delete_range_failure_opm: {
+    title: 'Delete Range Failure OPM',
+    queries: [
+      {
+        promQLTemplate:
+          'sum(increase(tidb_tikvclient_gc_unsafe_destroy_range_failures[1m])) by (type)',
+        labelTemplate: '{{type}}',
       },
     ],
   },
