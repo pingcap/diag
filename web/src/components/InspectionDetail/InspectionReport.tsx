@@ -113,13 +113,7 @@ function InspectionReport({ inspection }: InspectionReportProps) {
       {renderPanels(TIDB_PANELS)}
       <h3>4、TiKV</h3>
       {renderPanels(TIKV_PANELS)} */}
-
-      <h3>1. DBA</h3>
       {renderPanels(DBA_PANELS)}
-      <h3>2. Trouble Shooting</h3>
-      <p>To Add</p>
-      <h3>3. 节点/Store 信息</h3>
-      <p>To Add</p>
     </div>
   );
 }
