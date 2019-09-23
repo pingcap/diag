@@ -17,14 +17,14 @@ export const ALL_PANELS: { [key: string]: IPanel } = {
     charts: ['memory_total'],
   },
   global_cpu_usage: {
-    title: 'CPU Usage',
+    title: 'Global CPU Usage',
     expand: true,
-    charts: ['cpu_usage'],
+    charts: ['global_cpu_usage'],
   },
   global_load: {
     title: 'Load',
     expand: true,
-    charts: ['load'],
+    charts: ['load_1'],
   },
   global_memory_available: {
     title: 'Memorey Available',
@@ -101,7 +101,7 @@ export const ALL_PANELS: { [key: string]: IPanel } = {
   // TiDB Panel
   tidb_query_summary: {
     title: 'Query Summary',
-    charts: ['qps', 'qps_by_instance', 'duration', 'failed_query_opm', 'slow_query'],
+    charts: ['qps', 'qps_by_instance', 'tidb_duration', 'failed_query_opm', 'slow_query'],
   },
   tidb_server: {
     title: 'Server',
@@ -139,7 +139,7 @@ export const ALL_PANELS: { [key: string]: IPanel } = {
     title: 'Cluster',
     charts: [
       'tikv_store_size',
-      'tikv_cpu',
+      'tikv_thread_cpu',
       'tikv_memory',
       'tikv_io_utilization',
       'tikv_qps',
@@ -295,8 +295,11 @@ export const ALL_PANELS: { [key: string]: IPanel } = {
       'vcores',
       'uptime',
 
-      'cpu_usage',
+      // 'global_cpu_usage',
+      'pd_cpu_usage',
       'tidb_cpu_usage',
+      'tikv_cpu_usage',
+      'tikv_thread_cpu',
       'raft_store_cpu',
       // 'async_apply_cpu',
       'coprocessor_cpu',
@@ -309,7 +312,9 @@ export const ALL_PANELS: { [key: string]: IPanel } = {
       'memory_total',
       'memory_available',
 
-      'load',
+      'load_1',
+      'load_5',
+      'load_15',
 
       'storage_capacity',
       'storage_size',
@@ -333,11 +338,11 @@ export const ALL_PANELS: { [key: string]: IPanel } = {
 
       // qps - tidb
       'qps',
-      'duration',
+      'tidb_duration',
 
       // qps - pd
       // qps // todo
-      // tso handle_request_duration_seconds
+      'handle_request_duration_seconds',
       'pd_tso_rpc_duration',
       // async duration // todo
 
@@ -375,7 +380,7 @@ export const ALL_PANELS: { [key: string]: IPanel } = {
       'handle_snapshot_duration_99',
       // Snapshot state count // todo
 
-      // balance // tod
+      // balance // todo
 
       // raft
       'tikv_raft_vote',

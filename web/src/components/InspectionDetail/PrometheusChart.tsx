@@ -1,8 +1,12 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { Button } from 'antd';
 import SerialLineChart from '../Chart/SerialLineChart';
 import { IPromParams } from '@/services/prometheus-query';
 import { IPromQuery } from '@/services/prometheus-config-charts';
 import { usePromQueries } from './use-prom-queries';
+import PrometheusChartHeader from './PrometheusChartHeader';
+
+const styles = require('./inspection-detail-style.less');
 
 // const dumbData = [
 //   [1540982900657, 23.45678],
@@ -20,7 +24,7 @@ import { usePromQueries } from './use-prom-queries';
 // const dumbLables = ['timestamp', 'qps'];
 
 interface PrometheusChartProps {
-  title?: string;
+  title: string;
 
   promQueries: IPromQuery[];
   promParams: IPromParams;
@@ -30,8 +34,9 @@ function PrometheusChart({ title, promQueries, promParams }: PrometheusChartProp
   const [loading, chartLabels, oriChartData] = usePromQueries(promQueries, promParams);
 
   return (
-    <div>
-      {title && <h4 style={{ textAlign: 'center', marginTop: 10 }}>{title}</h4>}
+    <div className={styles.chart_container}>
+      <PrometheusChartHeader title={title} promQueries={promQueries} />
+
       {loading && <p style={{ textAlign: 'center' }}>loading...</p>}
       {!loading && oriChartData.length === 0 && <p style={{ textAlign: 'center' }}>No Data</p>}
       {!loading && oriChartData.length > 0 && (

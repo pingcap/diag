@@ -11,10 +11,10 @@ import { IPromQuery, PROM_CHARTS } from '@/services/prometheus-config-charts';
 import {
   IPanel,
   ALL_PANELS,
-  TIKV_PANELS,
-  TIDB_PANELS,
-  PD_PANELS,
-  GLOBAL_PANNELS,
+  // TIKV_PANELS,
+  // TIDB_PANELS,
+  // PD_PANELS,
+  // GLOBAL_PANNELS,
   DBA_PANELS,
 } from '@/services/prometheus-config-panels';
 

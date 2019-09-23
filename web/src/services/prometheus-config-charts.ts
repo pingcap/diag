@@ -90,8 +90,8 @@ export const PROM_CHARTS: { [key: string]: IPromChart } = {
     ],
   },
 
-  cpu_usage: {
-    title: 'CPU Usage',
+  global_cpu_usage: {
+    title: 'Global CPU Usage',
     queries: [
       {
         version: 'v_2_x',
@@ -110,11 +110,31 @@ export const PROM_CHARTS: { [key: string]: IPromChart } = {
     ],
   },
 
-  load: {
-    title: 'Load',
+  load_1: {
+    title: 'Load[1m]',
     queries: [
       {
         promQLTemplate: 'node_load1{inspectionid="{{inspectionId}}"}',
+        labelTemplate: '{{instance}}',
+        valConverter: val => toFixed(val, 1),
+      },
+    ],
+  },
+  load_5: {
+    title: 'Load[5m]',
+    queries: [
+      {
+        promQLTemplate: 'node_load5{inspectionid="{{inspectionId}}"}',
+        labelTemplate: '{{instance}}',
+        valConverter: val => toFixed(val, 1),
+      },
+    ],
+  },
+  load_15: {
+    title: 'Load[15m]',
+    queries: [
+      {
+        promQLTemplate: 'node_load15{inspectionid="{{inspectionId}}"}',
         labelTemplate: '{{instance}}',
         valConverter: val => toFixed(val, 1),
       },
@@ -458,7 +478,7 @@ export const PROM_CHARTS: { [key: string]: IPromChart } = {
 
   // tidb
   handle_request_duration_seconds: {
-    title: 'handle requests duration',
+    title: 'PD TSO handle requests duration',
     queries: [
       {
         promQLTemplate:
@@ -538,8 +558,8 @@ export const PROM_CHARTS: { [key: string]: IPromChart } = {
   },
 
   // duration
-  duration: {
-    title: 'Duration',
+  tidb_duration: {
+    title: 'TiDB Duration',
     queries: [
       {
         promQLTemplate:
@@ -610,20 +630,44 @@ export const PROM_CHARTS: { [key: string]: IPromChart } = {
     title: 'Uptime',
     queries: [
       {
-        promQLTemplate: '(time() - process_start_time_seconds{job="tidb"})',
+        promQLTemplate:
+          '(time() - process_start_time_seconds{job="tidb", inspectionid="{{inspectionId}}"})',
         labelTemplate: '{{instance}}',
         valConverter: val => timeSecondsFormatter(val, 1),
       },
     ],
   },
   // cpu usage
+  pd_cpu_usage: {
+    title: 'PD CPU Usage',
+    queries: [
+      {
+        promQLTemplate:
+          'rate(process_cpu_seconds_total{job="pd", inspectionid="{{inspectionId}}"}[1m])',
+        labelTemplate: '{{instance}}',
+        valConverter: val => toPercent(val, 1),
+      },
+    ],
+  },
   tidb_cpu_usage: {
     title: 'TiDB CPU Usage',
     queries: [
       {
-        promQLTemplate: 'rate(process_cpu_seconds_total{job="tidb"}[1m])',
+        promQLTemplate:
+          'rate(process_cpu_seconds_total{job="tidb", inspectionid="{{inspectionId}}"}[1m])',
         labelTemplate: '{{instance}}',
-        valConverter: val => toPercent(val, 3),
+        valConverter: val => toPercent(val, 1),
+      },
+    ],
+  },
+  tikv_cpu_usage: {
+    title: 'TiKV CPU Usage',
+    queries: [
+      {
+        promQLTemplate:
+          'rate(process_cpu_seconds_total{job="tikv", inspectionid="{{inspectionId}}"}[1m])',
+        labelTemplate: '{{instance}}',
+        valConverter: val => toPercent(val, 1),
       },
     ],
   },
@@ -809,8 +853,8 @@ export const PROM_CHARTS: { [key: string]: IPromChart } = {
     ],
   },
 
-  tikv_cpu: {
-    title: 'CPU',
+  tikv_thread_cpu: {
+    title: 'TiKV Thread CPU',
     queries: [
       {
         promQLTemplate:
@@ -1906,7 +1950,8 @@ export const PROM_CHARTS: { [key: string]: IPromChart } = {
     title: 'GC Failure OPM',
     queries: [
       {
-        promQLTemplate: 'sum(increase(tidb_tikvclient_gc_failure[1m])) by (type)',
+        promQLTemplate:
+          'sum(increase(tidb_tikvclient_gc_failure{inspectionid="{{inspectionId}}"}[1m])) by (type)',
         labelTemplate: '{{type}}',
       },
     ],
@@ -1916,7 +1961,7 @@ export const PROM_CHARTS: { [key: string]: IPromChart } = {
     queries: [
       {
         promQLTemplate:
-          'sum(increase(tidb_tikvclient_gc_unsafe_destroy_range_failures[1m])) by (type)',
+          'sum(increase(tidb_tikvclient_gc_unsafe_destroy_range_failures{inspectionid="{{inspectionId}}"}[1m])) by (type)',
         labelTemplate: '{{type}}',
       },
     ],
