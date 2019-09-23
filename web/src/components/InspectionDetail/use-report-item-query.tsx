@@ -3,8 +3,6 @@ import React, { useEffect, useState } from 'react';
 import { Tooltip, Icon } from 'antd';
 import request from '@/utils/request';
 
-const styles = require('./AutoTable.less');
-
 interface IResObj {
   [key: string]: any;
 }

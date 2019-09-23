@@ -630,7 +630,8 @@ export const PROM_CHARTS: { [key: string]: IPromChart } = {
     title: 'Uptime',
     queries: [
       {
-        promQLTemplate: '(time() - process_start_time_seconds{job="tidb"})',
+        promQLTemplate:
+          '(time() - process_start_time_seconds{job="tidb", inspectionid="{{inspectionId}}"})',
         labelTemplate: '{{instance}}',
         valConverter: val => timeSecondsFormatter(val, 1),
       },
@@ -641,7 +642,8 @@ export const PROM_CHARTS: { [key: string]: IPromChart } = {
     title: 'PD CPU Usage',
     queries: [
       {
-        promQLTemplate: 'rate(process_cpu_seconds_total{job="pd"}[1m])',
+        promQLTemplate:
+          'rate(process_cpu_seconds_total{job="pd", inspectionid="{{inspectionId}}"}[1m])',
         labelTemplate: '{{instance}}',
         valConverter: val => toPercent(val, 1),
       },
@@ -651,7 +653,8 @@ export const PROM_CHARTS: { [key: string]: IPromChart } = {
     title: 'TiDB CPU Usage',
     queries: [
       {
-        promQLTemplate: 'rate(process_cpu_seconds_total{job="tidb"}[1m])',
+        promQLTemplate:
+          'rate(process_cpu_seconds_total{job="tidb", inspectionid="{{inspectionId}}"}[1m])',
         labelTemplate: '{{instance}}',
         valConverter: val => toPercent(val, 1),
       },
@@ -661,7 +664,8 @@ export const PROM_CHARTS: { [key: string]: IPromChart } = {
     title: 'TiKV CPU Usage',
     queries: [
       {
-        promQLTemplate: 'rate(process_cpu_seconds_total{job="tikv"}[1m])',
+        promQLTemplate:
+          'rate(process_cpu_seconds_total{job="tikv", inspectionid="{{inspectionId}}"}[1m])',
         labelTemplate: '{{instance}}',
         valConverter: val => toPercent(val, 1),
       },
@@ -1946,7 +1950,8 @@ export const PROM_CHARTS: { [key: string]: IPromChart } = {
     title: 'GC Failure OPM',
     queries: [
       {
-        promQLTemplate: 'sum(increase(tidb_tikvclient_gc_failure[1m])) by (type)',
+        promQLTemplate:
+          'sum(increase(tidb_tikvclient_gc_failure{inspectionid="{{inspectionId}}"}[1m])) by (type)',
         labelTemplate: '{{type}}',
       },
     ],
@@ -1956,7 +1961,7 @@ export const PROM_CHARTS: { [key: string]: IPromChart } = {
     queries: [
       {
         promQLTemplate:
-          'sum(increase(tidb_tikvclient_gc_unsafe_destroy_range_failures[1m])) by (type)',
+          'sum(increase(tidb_tikvclient_gc_unsafe_destroy_range_failures{inspectionid="{{inspectionId}}"}[1m])) by (type)',
         labelTemplate: '{{type}}',
       },
     ],

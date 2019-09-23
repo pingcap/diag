@@ -1,7 +1,7 @@
 import React, { ReactNode, useState } from 'react';
 import { Collapse } from 'antd';
 
-const styles = require('./AutoTable.less');
+const styles = require('./inspection-detail-style.less');
 
 interface CollpasePanelProps {
   expand?: boolean;

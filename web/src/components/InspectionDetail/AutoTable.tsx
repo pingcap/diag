@@ -3,7 +3,7 @@ import { Table, Collapse } from 'antd';
 import _ from 'lodash';
 import { useReportItemQuery } from './use-report-item-query';
 
-const styles = require('./AutoTable.less');
+const styles = require('./inspection-detail-style.less');
 
 interface AutoTableProps {
   title?: string;

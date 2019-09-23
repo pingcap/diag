@@ -3,6 +3,7 @@ import { Table } from 'antd';
 import { IPromParams } from '@/services/prometheus-query';
 import { IPromQuery } from '@/services/prometheus-config-charts';
 import { usePromQueries } from './use-prom-queries';
+import PrometheusChartHeader from './PrometheusChartHeader';
 
 // const dumbData = [
 //   [1540982900657, 23.45678],
@@ -20,7 +21,7 @@ import { usePromQueries } from './use-prom-queries';
 // const dumbLables = ['timestamp', 'qps'];
 
 interface PrometheusTableProps {
-  title?: string;
+  title: string;
 
   tableColumns: [string, string];
 
@@ -54,7 +55,8 @@ function PrometheusTable({ title, tableColumns, promQueries, promParams }: Prome
 
   return (
     <div>
-      {title && <h4 style={{ textAlign: 'center', marginTop: 10 }}>{title}</h4>}
+      <PrometheusChartHeader title={title} promQueries={promQueries} />
+
       {loading && <p style={{ textAlign: 'center' }}>loading...</p>}
       {!loading && dataSource.length === 0 && <p style={{ textAlign: 'center' }}>No Data</p>}
       {!loading && dataSource.length > 0 && (
