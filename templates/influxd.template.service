@@ -1,0 +1,19 @@
+# If you modify this, please also make sure to edit init.sh
+
+[Unit]
+Description=InfluxDB is an open-source, distributed, time series database
+Documentation=https://docs.influxdata.com/influxdb/
+After=network-online.target
+
+[Service]
+LimitNOFILE=1000000
+#LimitCORE=infinity
+LimitSTACK=10485760
+User=tidb
+ExecStart=$prefix/tidb-foresight/bin/influxd -config $prefix/tidb-foresight/conf/influxdb.conf
+Restart=always
+RestartSec=15s
+
+[Install]
+WantedBy=multi-user.target
+Alias=influxd-9528.service

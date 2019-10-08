@@ -33,11 +33,30 @@ LDFLAGS += -X "github.com/pingcap/tidb-foresight/version.GitBranch=$(shell git r
 
 CHECK_LDFLAGS += $(LDFLAGS)
 
-.PHONY: all server analyzer spliter syncer
+INFLUXDB = influxd
+PROMETHEUS = prometheus
+PERL_SCRIPTS := flamegraph.pl fold-tikv-threads-perf.pl stackcollapse-perf.pl
+NEEDS_INSTALL = $(INFLUXDB) $(PROMETHEUS) $(PERL_SCRIPTS)
 
-default: all
+DOWNLOAD_PREFIX = http://fileserver.pingcap.net/download/foresight/
+
+# TODO: remove debug
+.PHONY: all server analyzer spliter syncer install debug
+
+default: all	
 
 all: server analyzer spliter syncer
+	eval './download.py $(DOWNLOAD_PREFIX) $(NEEDS_INSTALL)'
+
+# If prefix is now provided, please abort
+# it will execute after all the target is already build
+# Usage: make install prefix=/opt/tidb
+# TODO: if we need a default prefix?
+install: all
+ifndef prefix
+	$(error prefix is not set)
+endif
+	eval './install.py $(prefix) $(NEEDS_INSTALL)'
 
 build:
 	$(GOBUILD)
