@@ -4,6 +4,9 @@ import sys
 import os
 
 if __name__ == '__main__':
+    # TODO: do we need use more package manager like apt-get?
+    os.system('yum install -y graphviz perf rsync golang')
+
     download_prefix = 'http://fileserver.pingcap.net/download/foresight/'
     if 'http' not in sys.argv[1]:
         download_prefix = None

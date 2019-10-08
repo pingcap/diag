@@ -41,7 +41,7 @@ NEEDS_INSTALL = $(INFLUXDB) $(PROMETHEUS) $(PERL_SCRIPTS)
 DOWNLOAD_PREFIX = http://fileserver.pingcap.net/download/foresight/
 
 # TODO: remove debug
-.PHONY: all server analyzer spliter syncer install debug
+.PHONY: all server analyzer spliter syncer install stop start
 
 default: all	
 
@@ -51,7 +51,6 @@ all: server analyzer spliter syncer
 # If prefix is now provided, please abort
 # it will execute after all the target is already build
 # Usage: make install prefix=/opt/tidb
-# TODO: if we need a default prefix?
 install: all
 ifndef prefix
 	$(error prefix is not set)
@@ -60,6 +59,26 @@ endif
 
 build:
 	$(GOBUILD)
+
+stop:
+	systemctl stop foresight-9527
+	systemctl stop influxd-9528
+	systemctl stop prometheus-9529
+	
+start:
+	systemctl daemon-reload
+	systemctl start foresight-9527
+	systemctl start influxd-9528
+	systemctl start prometheus-9529
+
+	@echo "To start tidb-foresight (will listen on port 9527):\n\
+			systemctl start foresight-9527\n\
+			systemctl start influxd-9528\n\
+			systemctl start prometheus-9529\n"
+	@echo "View the log as follows:\n\
+			journalctl -u foresight-9527\n\
+			journalctl -u influxd-9528\n\
+			journalctl -u prometheus-9529\n"
 
 RACE_FLAG =
 ifeq ("$(WITH_RACE)", "1")

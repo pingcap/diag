@@ -31,3 +31,15 @@
     - 打开浏览器，访问 `<本机 ip>:9527` 与前端交互
     - 查看运行状态 `systemctl status foresight`
     - 查看日志 `journalctl -u foresight | tail -n 20`
+
+## Makefile 
+
+注意：目前只支持 CentOS
+
+* `make`  `make all`： 下载依赖并编译所有内容
+* `make stop` 关闭正在运行的诊断工具服务
+* `make start` 运行诊断工具服务
+* `make install --prefix=` 把诊断工具代码编译，并放到 `prefix` 指定的目录下
+
+
+

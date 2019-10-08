@@ -14,7 +14,7 @@ if __name__ == '__main__':
         print('prefix is a subdirectory of src files, cannot work')
         exit(1)
     arguments_dict = {'prefix': prefix}
-    service_list = [('prometheus', 9529), ('influxd', 9528),
+    service_list = [('prometheus', 9527), ('influxd', 9528),
                     ('foresight', 9529)]
 
     # create and copy files for them
@@ -30,7 +30,7 @@ if __name__ == '__main__':
 
             with open('{}-{}.service'.format(service_name, number), 'w+') as fw:
                 fw.write(src.safe_substitute(arguments_dict))
-    print('nmsl')
+
     # need to check and create if prefix not exists
     if not os.path.exists(prefix):
         os.makedirs(prefix)
@@ -38,8 +38,3 @@ if __name__ == '__main__':
     os.system("cp -r * {}".format(prefix))
     os.system("mv {}/*.service /etc/systemd/system/".format(prefix))
     os.system("chmod 755 {}/*".format(prefix))
-
-    # start services
-    os.system("systemctl daemon-reload")
-    for service_name, number in service_list:
-        os.system("systemctl {}-{}".format(service_name, number))
