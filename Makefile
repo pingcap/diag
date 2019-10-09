@@ -41,21 +41,23 @@ NEEDS_INSTALL = $(INFLUXDB) $(PROMETHEUS) $(PERL_SCRIPTS)
 DOWNLOAD_PREFIX = http://fileserver.pingcap.net/download/foresight/
 
 # TODO: remove debug
-.PHONY: all server analyzer spliter syncer install stop start
+.PHONY: all server analyzer spliter syncer install stop start web
 
 default: all	
 
-all: server analyzer spliter syncer
-	eval './download.py $(DOWNLOAD_PREFIX) $(NEEDS_INSTALL)'
+all: prepare server analyzer spliter syncer
+
+prepare: web 
+	eval './scripts/download.py $(DOWNLOAD_PREFIX) $(NEEDS_INSTALL)'
 
 # If prefix is now provided, please abort
 # it will execute after all the target is already build
 # Usage: make install prefix=/opt/tidb
-install: all
+install:
 ifndef prefix
 	$(error prefix is not set)
 endif
-	eval './install.py $(prefix) $(NEEDS_INSTALL)'
+	eval './scripts/install.py $(prefix) $(NEEDS_INSTALL)'
 
 build:
 	$(GOBUILD)
@@ -71,14 +73,19 @@ start:
 	systemctl start influxd-9528
 	systemctl start prometheus-9529
 
-	@echo "To start tidb-foresight (will listen on port 9527):\n\
-			systemctl start foresight-9527\n\
-			systemctl start influxd-9528\n\
+	@echo "To start tidb-foresight (will listen on port 9527):\
+			systemctl start foresight-9527\
+			systemctl start influxd-9528\
 			systemctl start prometheus-9529\n"
 	@echo "View the log as follows:\n\
-			journalctl -u foresight-9527\n\
-			journalctl -u influxd-9528\n\
-			journalctl -u prometheus-9529\n"
+			journalctl -u foresight-9527\
+			journalctl -u influxd-9528\
+			journalctl -u prometheus-9529"
+
+web: 
+	cd web && yarn && yarn build
+	cp -r web/dist web-dist/
+
 
 RACE_FLAG =
 ifeq ("$(WITH_RACE)", "1")
