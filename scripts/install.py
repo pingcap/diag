@@ -91,3 +91,4 @@ if __name__ == '__main__':
     os.system("cp *.service {}".format(dest_dir))
     os.system("cp *.service /etc/systemd/system/".format(dest_dir))
     os.system("chmod 755 {}/*".format(dest_dir))
+    os.system("chmod 755 {}/scripts/*".format(dest_dir))

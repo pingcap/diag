@@ -48,6 +48,7 @@ default: all
 all: prepare server analyzer spliter syncer
 
 prepare: web 
+	chmod 755 './scripts/*'
 	eval './scripts/download.py $(DOWNLOAD_PREFIX) $(NEEDS_INSTALL)'
 
 # If prefix is now provided, please abort
@@ -57,6 +58,7 @@ install:
 ifndef prefix
 	$(error prefix is not set)
 endif
+	chmod 755 './scripts/*'
 	eval './scripts/install.py $(prefix) $(NEEDS_INSTALL)'
 
 build:
@@ -72,7 +74,7 @@ start:
 	systemctl start foresight-9527
 	systemctl start influxd-9528
 	systemctl start prometheus-9529
-
+	chmod 755 './scripts/*'
 	eval './scripts/start_msg.py'
 
 web: 
