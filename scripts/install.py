@@ -87,5 +87,6 @@ if __name__ == '__main__':
     for to_copy_directory in to_copy_directories:
         os.system("cp -r {} {}".format(
             to_copy_directory, os.path.join(dest_dir, to_copy_directory)))
-    os.system("mv {}/*.service /etc/systemd/system/".format(prefix))
-    os.system("chmod 755 {}/*".format(prefix))
+    os.system("mv *.service {}".format(dest_dir))
+    os.system("mv {}/*.service /etc/systemd/system/".format(dest_dir))
+    os.system("chmod 755 {}/*".format(dest_dir))
