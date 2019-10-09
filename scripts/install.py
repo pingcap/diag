@@ -84,9 +84,10 @@ if __name__ == '__main__':
     to_copy_directories = ['data', 'log', 'bin', 'web-dist', 'conf']
     dest_dir = os.path.join(prefix, 'tidb-foresight')
     mkdir_if_nonexists(dest_dir)
+
     for to_copy_directory in to_copy_directories:
         os.system("cp -r {} {}".format(
             to_copy_directory, os.path.join(dest_dir, to_copy_directory)))
-    os.system("mv *.service {}".format(dest_dir))
-    os.system("mv {}/*.service /etc/systemd/system/".format(dest_dir))
+    os.system("cp *.service {}".format(dest_dir))
+    os.system("cp *.service /etc/systemd/system/".format(dest_dir))
     os.system("chmod 755 {}/*".format(dest_dir))
