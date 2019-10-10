@@ -85,6 +85,12 @@ if __name__ == '__main__':
     dest_dir = os.path.join(prefix, 'tidb-foresight')
     mkdir_if_nonexists(dest_dir)
 
+    # check tidb-foresight.toml
+    # if exists, then copy it to $prefix/tidb-foresight
+    if os.path.exists('tidb-foresight.toml'):
+        os.system(
+            'cp tidb-foresight.toml {}/tidb-foresight.toml'.format(dest_dir))
+
     for to_copy_directory in to_copy_directories:
         os.system("cp -r {} {}".format(
             to_copy_directory, os.path.join(dest_dir, to_copy_directory)))

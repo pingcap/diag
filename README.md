@@ -39,7 +39,14 @@
 * `make`  `make all`： 下载依赖并编译所有内容
 * `make stop` 关闭正在运行的诊断工具服务
 * `make start` 运行诊断工具服务
-* `make install --prefix=` 把诊断工具代码编译，并放到 `prefix` 指定的目录下
+* `make install prefix=` 把诊断工具代码编译，并放到 `prefix` 指定的目录下，目录包括下列
+  * conf: prometheus 和 influxdb 的配置
+  * data: prometheus 和 influxdb 用到的数据目录
+  * log: prometheus 和 influxdb 用到的日志目录
+  * web-dist: 生成的网页文件
+  * bin: tidb-foresight 和 prometheus, influxdb 的二进制文件
+* `make web` 需要在网络环境下运行，下载 dependency 并且编译 web. 将生成的网页放在 `web-dist` 目录下面
+* `make prepare` 下载 prometheus 和 influxdb，以及一些编译要用到的网络资源
 
 
 
