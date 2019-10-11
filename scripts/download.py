@@ -9,7 +9,7 @@ def package_manager():
     script = "awk -F= '/^NAME/{print $2}' /etc/os-release"
     try:
         edition = subprocess.check_output(script).strip().lower()
-    except OSError(e):
+    except OSError as e:
         print('cannot run script: {}'.format(script))
         raise e
     mapper = {'ubuntu': 'apt-get', 'centos': 'yum'}

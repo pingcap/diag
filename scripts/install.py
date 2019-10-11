@@ -74,7 +74,7 @@ def validate_int(port):
     """
     try:
         return int(port)
-    except ValueError(e):
+    except ValueError as e:
         print('Port {} is not available'.format(port))
         raise e
 
