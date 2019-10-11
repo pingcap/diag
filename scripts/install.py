@@ -14,11 +14,10 @@ from string import Template
 
 def mkdir_if_nonexists(path):
     """
-    Mkdir for path if `path` directory not exists.
+    Create and empty directory for path.
     path: str
     """
-    if not os.path.exists(path):
-        os.mkdir(path)
+    os.system("mkdir -p {}".format(path))
 
 
 def generate_service(prefix, prometheus_port, influxd_port, foresight_port):
