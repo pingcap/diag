@@ -2,10 +2,23 @@
 
 import sys
 import os
+import subprocess
+
+
+def package_manager():
+    edition = subprocess.check_output(
+        "awk -F= '/^NAME/{print $2}' /etc/os-release").strip().lower()
+    mapper = {'ubuntu': 'apt-get', 'centos': 'yum'}
+    for k, v in mapper:
+        if k in edition:
+            return v
+    raise ValueError("don't know the package manager for {}".format(edition))
+
 
 if __name__ == '__main__':
-    # TODO: do we need use more package manager like apt-get?
-    os.system('yum install -y graphviz perf rsync golang')
+
+    os.system('{} install -y graphviz perf rsync golang'.format(
+        package_manager()))
 
     download_prefix = 'http://fileserver.pingcap.net/download/foresight/'
     if 'http' not in sys.argv[1]:
