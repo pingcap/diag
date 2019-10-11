@@ -13,7 +13,7 @@ def package_manager():
         print('cannot run script: {}'.format(script))
         raise e
     mapper = {'ubuntu': 'apt-get', 'centos': 'yum'}
-    for k, v in mapper:
+    for k, v in mapper.iteritems():
         if k in edition:
             return v
     raise ValueError("don't know the package manager for {}".format(edition))
