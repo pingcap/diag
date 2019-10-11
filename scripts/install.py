@@ -46,9 +46,14 @@ def generate_service(prefix, prometheus_port, influxd_port, foresight_port):
                 fw.write(src.safe_substitute(arguments_dict))
 
 
-def generate_conf(prefix):
+def generate_conf(prefix, prometheus_port, influxd_port, foresight_port):
     mkdir_if_nonexists('conf')
-    arguments_dict = {'prefix': prefix}
+    arguments_dict = {
+        'prefix': prefix,
+        'prometheus_port': prometheus_port,
+        'influxd_port': influxd_port,
+        'foresight_port': foresight_port
+    }
     service_list = ['influxdb.conf', 'prometheus.yml']
 
     # create and copy files for them
@@ -87,7 +92,7 @@ if __name__ == '__main__':
         exit(1)
 
     generate_service(prefix, prometheus_port, influxd_port, foresight_port)
-    generate_conf(prefix)
+    generate_conf(prefix, prometheus_port, influxd_port, foresight_port)
 
     # final stage for copying files
     # need to check and create if prefix not exists
