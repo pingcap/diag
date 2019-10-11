@@ -16,7 +16,8 @@ def package_manager():
     for k, v in mapper.iteritems():
         if k in edition:
             return v
-    raise ValueError("don't know the package manager for {}".format(edition))
+    print('not centos, use apt-get as package manager.')
+    return 'apt-get'
 
 
 if __name__ == '__main__':
