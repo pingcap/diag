@@ -26,10 +26,10 @@ scrape_configs:
     # scheme defaults to 'http'.
 
     static_configs:
-    - targets: ['localhost:9529']
+    - targets: ['localhost:$prometheus_port']
 remote_read:
-  - url: "http://localhost:9528/api/v1/prom/read?db=inspection"
+  - url: "http://localhost:$influxd_port/api/v1/prom/read?db=inspection"
     read_recent: true
 
 remote_write:
-  - url: "http://localhost:9528/api/v1/prom/write?db=inspection"
+  - url: "http://localhost:$influxd_port/api/v1/prom/write?db=inspection"

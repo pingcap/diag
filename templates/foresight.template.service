@@ -9,13 +9,13 @@ LimitNOFILE=1000000
 #LimitCORE=infinity
 LimitSTACK=10485760
 User=tidb
-ExecStart=$prefix/tidb-foresight/bin/prometheus --web.listen-address=127.0.0.1:9529 --storage.tsdb.path=$prefix/tidb-foresight/data/prometheus --config.file=$prefix/tidb-foresight/conf/prometheus.yml
+ExecStart=$prefix/tidb-foresight/bin/prometheus --web.listen-address=127.0.0.1:$foresight_port --storage.tsdb.path=$prefix/tidb-foresight/data/prometheus --config.file=$prefix/tidb-foresight/conf/prometheus.yml
 Restart=always
 RestartSec=15s
 
 [Install]
 WantedBy=multi-user.target
-[root@localhost tidb-foresight]# cat foresight-9527.service 
+[root@localhost tidb-foresight]# cat foresight-$foresight_port.service 
 # If you modify this, please also make sure to edit init.sh
 
 [Unit]

@@ -40,6 +40,16 @@ NEEDS_INSTALL = $(INFLUXDB) $(PROMETHEUS) $(PERL_SCRIPTS)
 
 DOWNLOAD_PREFIX = http://fileserver.pingcap.net/download/foresight/
 
+ifeq ($(foresight_port),)
+foresight_port=9529
+endif
+ifeq ($(influxd_port),)
+influxd_port=9528
+endif
+ifeq ($(prometheus_port),)
+prometheus_port=9527
+endif
+
 # TODO: remove debug
 .PHONY: all server analyzer spliter syncer install stop start web
 
@@ -59,7 +69,7 @@ ifndef prefix
 	$(error prefix is not set)
 endif
 	chmod 755 ./scripts/*
-	eval './scripts/install.py $(prefix) $(NEEDS_INSTALL)'
+	eval './scripts/install.py $(prefix) $(foresight_port) $(influxd_port) $(prometheus_port)'
 
 build:
 	$(GOBUILD)
@@ -74,7 +84,7 @@ start:
 	systemctl start foresight-9527
 	systemctl start influxd-9528
 	systemctl start prometheus-9529
-	chmod 755 './scripts/*'
+	chmod 755 ./scripts/*
 	eval './scripts/start_msg.py'
 
 web: 

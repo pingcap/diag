@@ -16,4 +16,4 @@ RestartSec=15s
 
 [Install]
 WantedBy=multi-user.target
-Alias=influxd-9528.service
+Alias=influxd-$influxd_port.service

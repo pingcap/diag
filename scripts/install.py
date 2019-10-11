@@ -21,14 +21,19 @@ def mkdir_if_nonexists(path):
         os.mkdir(path)
 
 
-def generate_service(prefix):
+def generate_service(prefix, prometheus_port, influxd_port, foresight_port):
     """
     generate directory for config.
     """
     # mkdir_if_nonexists('conf')
-    arguments_dict = {'prefix': prefix}
-    service_list = [('prometheus', 9527), ('influxd', 9528),
-                    ('foresight', 9529)]
+    arguments_dict = {
+        'prefix': prefix,
+        'prometheus_port': prometheus_port,
+        'influxd_port': influxd_port,
+        'foresight_port': foresight_port
+    }
+    service_list = [('prometheus', prometheus_port), ('influxd', influxd_port),
+                    ('foresight', foresight_port)]
 
     # create and copy files for them
     for service_name, number in service_list:
@@ -57,8 +62,23 @@ def generate_conf(prefix):
                 fw.write(src.safe_substitute(arguments_dict))
 
 
+def validate_int(port):
+    """
+    port: expect to be the port argument like "9527", panic if port is not a \
+    number larger than 0.
+    return: `int` of the port
+    """
+    try:
+        return int(port)
+    except ValueError(e):
+        print('Port {} is not available'.format(port))
+        raise e
+
+
 if __name__ == '__main__':
     prefix = sys.argv[1]
+    (foresight_port, influxd_port,
+     prometheus_port) = map(validate_int, sys.argv[2:])
     # move all to prefix
     # if prefix is a subdirectory of current dir, it will fail
     print(os.path.realpath(prefix), os.path.realpath('.'))
@@ -66,24 +86,26 @@ if __name__ == '__main__':
         print('prefix is a subdirectory of src files, cannot work')
         exit(1)
 
-    generate_service(prefix)
+    generate_service(prefix, prometheus_port, influxd_port, foresight_port)
     generate_conf(prefix)
-
-    directories = [
-        'data', 'data/influxdb', 'data/prometheus', 'log', 'log/influxdb',
-        'log/prometheus'
-    ]
-    for to_create_dir in directories:
-        mkdir_if_nonexists(to_create_dir)
 
     # final stage for copying files
     # need to check and create if prefix not exists
     if not os.path.exists(prefix):
         os.makedirs(prefix)
 
-    to_copy_directories = ['data', 'log', 'bin', 'web-dist', 'conf']
+    to_copy_directories = ['bin', 'web-dist', 'conf']
     dest_dir = os.path.join(prefix, 'tidb-foresight')
     mkdir_if_nonexists(dest_dir)
+
+    directories = [
+        'data', 'data/influxdb', 'data/prometheus', 'log', 'log/influxdb',
+        'log/prometheus'
+    ]
+    for to_create_dir in directories:
+        # create them in dest_dir
+        to_create_dir = os.path.join(dest_dir, to_create_dir)
+        mkdir_if_nonexists(to_create_dir)
 
     # check tidb-foresight.toml
     # if exists, then copy it to $prefix/tidb-foresight

@@ -108,3 +108,5 @@ venv.bak/
 web-dist/*
 # generated configuration
 conf/*
+# generated in install phase
+**/*.service
