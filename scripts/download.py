@@ -6,8 +6,12 @@ import subprocess
 
 
 def package_manager():
-    edition = subprocess.check_output(
-        "awk -F= '/^NAME/{print $2}' /etc/os-release").strip().lower()
+    script = "awk -F= '/^NAME/{print $2}' /etc/os-release"
+    try:
+        edition = subprocess.check_output(script).strip().lower()
+    except OSError(e):
+        print('cannot run script: {}'.format(script))
+        raise e
     mapper = {'ubuntu': 'apt-get', 'centos': 'yum'}
     for k, v in mapper:
         if k in edition:
