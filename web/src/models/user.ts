@@ -3,6 +3,8 @@ import { Reducer } from 'redux';
 
 import { routerRedux } from 'dva/router';
 import { queryCurrent, accountLogin, accountLogout } from '@/services/user';
+import { setAuthority } from '@/utils/authority';
+import { reloadAuthorized } from '@/utils/Authorized';
 
 export interface CurrentUser {
   username?: string;
@@ -43,6 +45,7 @@ const UserModel: UserModelType = {
           type: 'saveCurrentUser',
           payload: res,
         });
+        reloadAuthorized();
         yield put(
           routerRedux.replace({
             pathname: '/',
@@ -60,12 +63,12 @@ const UserModel: UserModelType = {
       );
       yield put({
         type: 'saveCurrentUser',
-        res: {},
+        payload: {},
       });
     },
     *fetchCurrent(_, { call, put, select }) {
       const user = yield select((state: any) => state.user.currentUser);
-      if (user.username) {
+      if (user.username && user.username.length > 0) {
         return;
       }
 
@@ -75,12 +78,18 @@ const UserModel: UserModelType = {
           type: 'saveCurrentUser',
           payload: res,
         });
+      } else {
+        yield put({
+          type: 'saveCurrentUser',
+          payload: { username: '' },
+        });
       }
     },
   },
 
   reducers: {
     saveCurrentUser(state, action) {
+      setAuthority((action.payload as CurrentUser).role || '');
       return {
         ...state,
         currentUser: action.payload || {},
