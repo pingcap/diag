@@ -128,3 +128,4 @@ if __name__ == '__main__':
     os.system("yes | cp -i -f -r *.service {}".format(dest_dir))
     os.system("yes | cp -i -f -r *.service /etc/systemd/system/")
     os.system("chmod 755 {}/*".format(dest_dir))
+    os.system("chmod 755 {}/bin/*".format(dest_dir))
