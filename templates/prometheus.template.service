@@ -8,7 +8,7 @@ After=syslog.target network.target remote-fs.target nss-lookup.target
 LimitNOFILE=1000000
 #LimitCORE=infinity
 LimitSTACK=10485760
-User=tidb
+User=root
 ExecStart=$prefix/tidb-foresight/bin/prometheus --web.listen-address=127.0.0.1:$prometheus_port --storage.tsdb.path=$prefix/tidb-foresight/data/prometheus --config.file=$prefix/tidb-foresight/conf/prometheus.yml
 Restart=always
 RestartSec=15s
