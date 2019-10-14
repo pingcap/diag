@@ -1,4 +1,4 @@
-PROJECT=tidb
+PROJECT=tidb-foresight
 GOPATH ?= $(shell go env GOPATH)
 
 # Ensure GOPATH is set before running build process.
@@ -26,6 +26,8 @@ FILES     := $$(find $$($(PACKAGE_DIRECTORIES)) -name "*.go")
 FAILPOINT_ENABLE  := $$(find $$PWD/ -type d | grep -vE "(\.git|tools)" | xargs tools/bin/failpoint-ctl enable)
 FAILPOINT_DISABLE := $$(find $$PWD/ -type d | grep -vE "(\.git|tools)" | xargs tools/bin/failpoint-ctl disable)
 
+FAIL_ON_STDOUT := awk '{ print } END { if (NR > 0) { exit 1 } }'
+
 LDFLAGS += -X "github.com/pingcap/tidb-foresight/version.ReleaseVersion=$(shell git describe --tags --dirty --always)"
 LDFLAGS += -X "github.com/pingcap/tidb-foresight/version.BuildTS=$(shell date -u '+%Y-%m-%d %I:%M:%S')"
 LDFLAGS += -X "github.com/pingcap/tidb-foresight/version.GitHash=$(shell git rev-parse HEAD)"
@@ -41,6 +43,10 @@ all: server analyzer spliter syncer
 
 build:
 	$(GOBUILD)
+
+fmt:
+	@echo "gofmt (simplify)"
+	@gofmt -s -l -w $(FILES) 2>&1 | $(FAIL_ON_STDOUT)
 
 RACE_FLAG =
 ifeq ("$(WITH_RACE)", "1")
