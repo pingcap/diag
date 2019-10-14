@@ -110,3 +110,5 @@ web-dist/*
 conf/*
 # generated in install phase
 **/*.service
+
+.idea/
