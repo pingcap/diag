@@ -101,7 +101,9 @@ if __name__ == '__main__':
         os.makedirs(prefix)
 
     to_copy_directories = ['bin', 'web-dist', 'conf']
+    # 最终的 $prefix/tidb-foresight 文件
     dest_dir = os.path.join(prefix, 'tidb-foresight')
+    # override
     mkdir_if_nonexists(dest_dir)
 
     directories = [
@@ -116,16 +118,16 @@ if __name__ == '__main__':
     # check tidb-foresight.toml
     # if exists, then copy it to $prefix/tidb-foresight
     if os.path.exists('tidb-foresight.toml'):
-        os.system('yes | cp -i -f -r tidb-foresight.toml {}/tidb-foresight.toml'
+        os.system('yes | cp tidb-foresight.toml {}/tidb-foresight.toml'
                   .format(dest_dir))
 
     for to_copy_directory in to_copy_directories:
-        os.system("yes | cp -i -f -r {} {}".format(
-            to_copy_directory, os.path.join(dest_dir, to_copy_directory)))
+        os.system("yes | cp -r {} {}".format(
+            to_copy_directory, dest_dir))
     # rename web-dist to web
     os.system(
         "mv -f {dest_dir}/web-dist {dest_dir}/web".format(dest_dir=dest_dir))
-    os.system("yes | cp -i -f -r *.service {}".format(dest_dir))
-    os.system("yes | cp -i -f -r *.service /etc/systemd/system/")
-    os.system("chmod 755 {}/*".format(dest_dir))
-    os.system("chmod 755 {}/bin/*".format(dest_dir))
+    os.system("yes | cp -r *.service {}".format(dest_dir))
+    os.system("yes | cp -r *.service /etc/systemd/system/")
+    os.system("chmod a+x {}/*".format(dest_dir))
+    os.system("chmod a+x {}/bin/*".format(dest_dir))
