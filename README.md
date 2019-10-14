@@ -48,5 +48,6 @@
 * `make web` 需要在网络环境下运行，下载 dependency 并且编译 web. 将生成的网页放在 `web-dist` 目录下面
 * `make prepare` 下载 prometheus 和 influxdb，以及一些编译要用到的网络资源
 
+注意：
 
-
+* `start` `stop` `install` 这三个 phase 可以指定三个参数：`prometheus_port` `influxd_port` `foresight_port`, 但是你一旦在 install 阶段指定了参数，就必须在另外两个阶段使用同样的参数，否则它们会按照默认的方式执行。

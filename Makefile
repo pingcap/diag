@@ -50,7 +50,6 @@ ifeq ($(prometheus_port),)
 prometheus_port=9527
 endif
 
-# TODO: remove debug
 .PHONY: all server analyzer spliter syncer install stop start web
 
 default: all	
@@ -76,17 +75,12 @@ build:
 	$(GOBUILD)
 
 stop:
-	systemctl stop foresight-9527
-	systemctl stop influxd-9528
-	systemctl stop prometheus-9529
+	eval './scripts/stop.py $(foresight_port) $(influxd_port) $(prometheus_port)'
 	
 start:
 	systemctl daemon-reload
-	systemctl start foresight-9527
-	systemctl start influxd-9528
-	systemctl start prometheus-9529
 	chmod 755 ./scripts/*
-	eval './scripts/start_msg.py'
+	eval './scripts/start.py $(foresight_port) $(influxd_port) $(prometheus_port)'
 
 web: 
 	cd web && yarn && yarn build
