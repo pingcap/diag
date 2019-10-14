@@ -82,7 +82,7 @@ def validate_int(port):
 
 
 if __name__ == '__main__':
-    prefix = sys.argv[1]
+    prefix = os.path.abspath(sys.argv[1])
     (foresight_port, influxd_port,
      prometheus_port) = map(validate_int, sys.argv[2:])
     # move all to prefix
