@@ -23,7 +23,9 @@ def package_manager():
 if __name__ == '__main__':
     manager = package_manager()
     if manager == 'yum':
-        os.system('curl --silent --location https://rpm.nodesource.com/setup_10.x | sudo bash -')
+        os.system(
+            'curl --silent --location https://rpm.nodesource.com/setup_10.x | sudo bash -'
+        )
         os.system(
             'curl --silent --location https://dl.yarnpkg.com/rpm/yarn.repo | sudo tee /etc/yum.repos.d/yarn.repo'
         )
@@ -35,7 +37,8 @@ if __name__ == '__main__':
             'echo "deb https://dl.yarnpkg.com/debian/ stable main" | sudo tee /etc/apt/sources.list.d/yarn.list'
         )
         os.system('apt-get update')
-    os.system('{} install -y graphviz perf rsync golang nodejs yarn'.format(manager))
+    os.system(
+        '{} install -y graphviz perf rsync golang nodejs yarn'.format(manager))
 
     download_prefix = 'http://fileserver.pingcap.net/download/foresight/'
     if 'http' not in sys.argv[1]:
