@@ -41,13 +41,13 @@ NEEDS_INSTALL = $(INFLUXDB) $(PROMETHEUS) $(PERL_SCRIPTS)
 DOWNLOAD_PREFIX = http://fileserver.pingcap.net/download/foresight/
 
 ifeq ($(foresight_port),)
-foresight_port=9529
+foresight_port=9527
 endif
 ifeq ($(influxd_port),)
 influxd_port=9528
 endif
 ifeq ($(prometheus_port),)
-prometheus_port=9527
+prometheus_port=9529
 endif
 
 .PHONY: all server analyzer spliter syncer install stop start web

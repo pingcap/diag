@@ -15,15 +15,17 @@ from string import Template
 def mkdir_if_nonexists(path):
     """
     Create and empty directory for path.
-    path: str
+    path: `str` for path of the directory to create.
     """
     os.system("mkdir -p {}".format(path))
 
 
 def generate_service(prefix, prometheus_port, influxd_port, foresight_port):
     """
-    generate directory for config.
+    Remove all history service files and generate directory for config.
     """
+    # remove all historical service files.
+    os.system("rm *.service")
     # mkdir_if_nonexists('conf')
     arguments_dict = {
         'prefix': prefix,
