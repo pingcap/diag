@@ -122,6 +122,9 @@ if __name__ == '__main__':
     for to_copy_directory in to_copy_directories:
         os.system("yes | cp -i -f -r {} {}".format(
             to_copy_directory, os.path.join(dest_dir, to_copy_directory)))
+    # rename web-dist to web
+    os.system(
+        "mv -f {dest_dir}/web-dist {dest_dir}/web".format(dest_dir=dest_dir))
     os.system("yes | cp -i -f -r *.service {}".format(dest_dir))
     os.system("yes | cp -i -f -r *.service /etc/systemd/system/")
     os.system("chmod 755 {}/*".format(dest_dir))

@@ -49,15 +49,15 @@ if __name__ == '__main__':
     start_service('foresight', foresight_port)
 
     # message for starting the system
-    print("""To start tidb-foresight (will listen on port {forsight_port}):
-        systemctl start foresight-{forsight_port}
+    print("""To start tidb-foresight (will listen on port {foresight_port}):
+        systemctl start foresight-{foresight_port}
         systemctl start influxd-{influxd_port}
         systemctl start prometheus-{prometheus_port}\n""".format(
         foresight_port=foresight_port,
         influxd_port=influxd_port,
         prometheus_port=prometheus_port))
     print("""View the log as follows:
-        journalctl -u foresight-{forsight_port}
+        journalctl -u foresight-{foresight_port}
         journalctl -u influxd-{influxd_port}
         journalctl -u prometheus-{prometheus_port}""".format(
         foresight_port=foresight_port,
