@@ -21,9 +21,20 @@ def package_manager():
 
 
 if __name__ == '__main__':
-
-    os.system('{} install -y graphviz perf rsync golang'.format(
-        package_manager()))
+    manager = package_manager()
+    if manager == 'yum':
+        os.system(
+            'curl --silent --location https://dl.yarnpkg.com/rpm/yarn.repo | sudo tee /etc/yum.repos.d/yarn.repo'
+        )
+    else:
+        os.system(
+            'curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg | sudo apt-key add -'
+        )
+        os.system(
+            'echo "deb https://dl.yarnpkg.com/debian/ stable main" | sudo tee /etc/apt/sources.list.d/yarn.list'
+        )
+        os.system('apt-get update')
+    os.system('{} install -y graphviz perf rsync golang yarn'.format())
 
     download_prefix = 'http://fileserver.pingcap.net/download/foresight/'
     if 'http' not in sys.argv[1]:
