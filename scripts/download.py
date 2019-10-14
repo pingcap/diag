@@ -35,7 +35,7 @@ if __name__ == '__main__':
             'echo "deb https://dl.yarnpkg.com/debian/ stable main" | sudo tee /etc/apt/sources.list.d/yarn.list'
         )
         os.system('apt-get update')
-    os.system('{} install -y graphviz perf rsync golang yarn'.format(manager))
+    os.system('{} install -y graphviz perf rsync golang nodejs yarn'.format(manager))
 
     download_prefix = 'http://fileserver.pingcap.net/download/foresight/'
     if 'http' not in sys.argv[1]:
