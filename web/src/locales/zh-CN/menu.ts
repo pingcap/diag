@@ -48,6 +48,7 @@ export default {
   'menu.editor.mind': '脑图编辑器',
   'menu.editor.koni': '拓扑编辑器',
 
+  'menu.instances': '集群管理',
   'menu.inspection': '诊断管理',
   'menu.inspection.instance_list': '集群实例列表',
   'menu.inspection.report_list': '诊断报告列表',

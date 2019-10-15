@@ -11,12 +11,29 @@ export default [
     ],
   },
   {
+    path: '/home',
+    component: '../layouts/BlankLayout',
+    routes: [
+      {
+        path: '/home',
+        component: './Home/HomePage',
+      },
+    ],
+  },
+  {
     path: '/',
     component: '../layouts/BasicLayout',
     routes: [
       {
         path: '/',
-        redirect: '/inspection',
+        redirect: '/home',
+      },
+      {
+        path: '/instances',
+        name: 'instances',
+        icon: 'dashboard',
+        component: './Cluster/InstanceList',
+        authority: ['admin'],
       },
       {
         path: '/inspection',
@@ -26,13 +43,7 @@ export default [
         routes: [
           {
             path: '/inspection',
-            name: 'inspection',
-            component: './Inspection/InspectionHome',
-          },
-          {
-            path: '/inspection/instances',
-            name: 'instance_list',
-            component: './Inspection/InstanceList',
+            redirect: '/inspection/reports',
           },
           {
             path: '/inspection/instances/:id/reports',

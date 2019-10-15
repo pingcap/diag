@@ -56,7 +56,7 @@ ifeq ($(user), )
 user=tidb
 endif
 
-.PHONY: all server analyzer spliter syncer install stop start web
+.PHONY: all server analyzer spliter syncer install stop start web fmt
 
 default: all	
 
