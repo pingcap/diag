@@ -31,3 +31,23 @@
     - 打开浏览器，访问 `<本机 ip>:9527` 与前端交互
     - 查看运行状态 `systemctl status foresight`
     - 查看日志 `journalctl -u foresight | tail -n 20`
+
+## Makefile 
+
+注意：目前只支持 CentOS
+
+* `make`  `make all`： 下载依赖并编译所有内容
+* `make stop` 关闭正在运行的诊断工具服务
+* `make start` 运行诊断工具服务
+* `make install prefix=` 把诊断工具代码编译，并放到 `prefix` 指定的目录下，目录包括下列
+  * conf: prometheus 和 influxdb 的配置
+  * data: prometheus 和 influxdb 用到的数据目录
+  * log: prometheus 和 influxdb 用到的日志目录
+  * web-dist: 生成的网页文件
+  * bin: tidb-foresight 和 prometheus, influxdb 的二进制文件
+* `make web` 需要在网络环境下运行，下载 dependency 并且编译 web. 将生成的网页放在 `web-dist` 目录下面
+* `make prepare` 下载 prometheus 和 influxdb，以及一些编译要用到的网络资源
+
+注意：
+
+* `start` `stop` `install` 这三个 phase 可以指定三个参数：`prometheus_port` `influxd_port` `foresight_port`, 但是你一旦在 install 阶段指定了参数，就必须在另外两个阶段使用同样的参数，否则它们会按照默认的方式执行。

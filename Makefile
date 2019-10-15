@@ -35,14 +35,62 @@ LDFLAGS += -X "github.com/pingcap/tidb-foresight/version.GitBranch=$(shell git r
 
 CHECK_LDFLAGS += $(LDFLAGS)
 
-.PHONY: all server analyzer spliter syncer
+INFLUXDB = influxd
+PROMETHEUS = prometheus
+PERL_SCRIPTS := flamegraph.pl fold-tikv-threads-perf.pl stackcollapse-perf.pl
+NEEDS_INSTALL = $(INFLUXDB) $(PROMETHEUS) $(PERL_SCRIPTS)
 
-default: all
+DOWNLOAD_PREFIX = http://fileserver.pingcap.net/download/foresight/
 
-all: server analyzer spliter syncer
+ifeq ($(foresight_port),)
+foresight_port=9527
+endif
+ifeq ($(influxd_port),)
+influxd_port=9528
+endif
+ifeq ($(prometheus_port),)
+prometheus_port=9529
+endif
+
+ifeq ($(user), )
+user=tidb
+endif
+
+.PHONY: all server analyzer spliter syncer install stop start web fmt
+
+default: all	
+
+all: prepare server analyzer spliter syncer
+
+prepare: 
+	chmod 755 ./scripts/*
+	eval './scripts/download.py $(DOWNLOAD_PREFIX) $(NEEDS_INSTALL)'
+	@$(MAKE) web
+
+# If prefix is now provided, please abort
+# it will execute after all the target is already build
+# Usage: make install prefix=/opt/tidb
+install:
+ifndef prefix
+	$(error prefix is not set)
+endif
+	chmod 755 ./scripts/*
+	eval './scripts/install.py $(prefix) $(user) $(foresight_port) $(influxd_port) $(prometheus_port)'
 
 build:
 	$(GOBUILD)
+
+stop:
+	eval './scripts/stop.py $(foresight_port) $(influxd_port) $(prometheus_port)'
+	
+start:
+	systemctl daemon-reload
+	chmod 755 ./scripts/*
+	eval './scripts/start.py $(foresight_port) $(influxd_port) $(prometheus_port)'
+
+web: 
+	cd web && yarn && yarn build
+	cp -r web/dist web-dist/
 
 fmt:
 	@echo "gofmt (simplify)"

@@ -104,4 +104,11 @@ venv.bak/
 # mypy
 .mypy_cache/
 
+# dist for web
+web-dist/*
+# generated configuration
+conf/*
+# generated in install phase
+**/*.service
+
 .idea/

@@ -1,0 +1,17 @@
+# If you modify this, please also make sure to edit init.sh
+
+[Unit]
+Description=web service
+After=syslog.target network.target remote-fs.target nss-lookup.target
+
+[Service]
+LimitNOFILE=1000000
+#LimitCORE=infinity
+LimitSTACK=10485760
+User=$user
+ExecStart=$prefix/tidb-foresight/bin/tidb-foresight --home=$prefix/tidb-foresight --prometheus=127.0.0.1:$prometheus_port --influxdb=127.0.0.1:$influxd_port
+Restart=always
+RestartSec=15s
+
+[Install]
+WantedBy=multi-user.target
