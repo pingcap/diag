@@ -5,7 +5,6 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
-	"path"
 	"strings"
 
 	"github.com/google/uuid"
@@ -90,11 +89,11 @@ func (h *createProfileHandler) collectProfile(instanceId, inspectionId, componen
 	}
 	cmd := exec.Command(
 		h.c.Collector,
+		fmt.Sprintf("--home=%s", h.c.Home),
 		fmt.Sprintf("--instance-id=%s", instanceId),
 		fmt.Sprintf("--inspection-id=%s", inspectionId),
-		fmt.Sprintf("--topology=%s", path.Join(h.c.Home, "topology", instanceId+".json")),
-		fmt.Sprintf("--data-dir=%s", path.Join(h.c.Home, "inspection")),
-		fmt.Sprintf("--collect=%s", option),
+		fmt.Sprintf("--items=profile"),
+		fmt.Sprintf("--components=%s", component),
 	)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr

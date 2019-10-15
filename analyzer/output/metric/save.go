@@ -6,10 +6,12 @@ import (
 	"math"
 	"os"
 	"path"
+	"runtime"
 	"time"
 
 	influxdb "github.com/influxdata/influxdb1-client/v2"
 	"github.com/pingcap/tidb-foresight/analyzer/boot"
+	"github.com/pingcap/tidb-foresight/utils"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -48,29 +50,33 @@ func (t *saveMetricTask) Run(c *boot.Config) *Metric {
 	}
 	defer cli.Close()
 
+	tl := utils.NewTokenLimiter(uint(runtime.NumCPU()))
 	for _, file := range files {
-		result := &queryResult{}
-		data, err := ioutil.ReadFile(path.Join(metricDir, file.Name()))
-		if err != nil {
-			log.Error("read metric file:", err)
-			return nil
-		}
-		if err := json.Unmarshal(data, &result); err != nil {
-			log.Error("read metric content", err)
-			return nil
-		}
-		if result.Status != "success" {
-			log.Warnf("skip exceptional metric: %s", file.Name())
-			continue
-		}
-		if result.Data.ResultType != "matrix" {
-			continue
-		}
-		if err = t.insertMetricToInfluxdb(cli, c.InspectionId, result.Data.Result); err != nil {
-			log.Error("insert metric to influxdb:", err)
-			return nil
-		}
+		go func(tok *utils.Token) {
+			defer tl.Put(tok)
+			result := &queryResult{}
+			data, err := ioutil.ReadFile(path.Join(metricDir, file.Name()))
+			if err != nil {
+				log.Error("read metric file:", err)
+				return
+			}
+			if err := json.Unmarshal(data, &result); err != nil {
+				log.Errorf("read metric content(%s): %s", file.Name(), err)
+				return
+			}
+			if result.Status != "success" {
+				log.Warnf("skip exceptional metric: %s", file.Name())
+				return
+			}
+			if result.Data.ResultType != "matrix" {
+				return
+			}
+			if err = t.insertMetricToInfluxdb(cli, c.InspectionId, result.Data.Result); err != nil {
+				log.Error("insert metric to influxdb:", err)
+			}
+		}(tl.Get())
 	}
+	tl.Wait()
 
 	// Return an empty struct, which will be used to fill other tasks' input args to make
 	// sure this task execute before them.

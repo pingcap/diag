@@ -6,6 +6,7 @@ import (
 	"path"
 
 	"github.com/pingcap/tidb-foresight/analyzer/boot"
+	"github.com/pingcap/tidb-foresight/model"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -16,8 +17,8 @@ func ParseTopology() *parseTopologyTask {
 }
 
 // Parse topology.json
-func (t *parseTopologyTask) Run(c *boot.Config) *Topology {
-	topo := Topology{}
+func (t *parseTopologyTask) Run(c *boot.Config) *model.Topology {
+	topo := model.Topology{}
 
 	content, err := ioutil.ReadFile(path.Join(c.Src, "topology.json"))
 	if err != nil {

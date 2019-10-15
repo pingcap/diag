@@ -56,11 +56,11 @@ ifeq ($(user), )
 user=tidb
 endif
 
-.PHONY: all server analyzer spliter syncer install stop start web fmt
+.PHONY: all server collector insight analyzer spliter syncer install stop start web fmt
 
 default: all	
 
-all: server analyzer spliter syncer
+all: server collector insight analyzer spliter syncer
 
 prepare: 
 	chmod 755 ./scripts/*
@@ -109,6 +109,12 @@ endif
 
 server:
 	$(GOBUILD) $(RACE_FLAG) -ldflags '$(LDFLAGS) $(CHECK_FLAG)' -o bin/tidb-foresight cmd/server/*.go
+
+collector:
+	$(GOBUILD) $(RACE_FLAG) -ldflags '$(LDFLAGS) $(CHECK_FLAG)' -o bin/collector cmd/collector/*.go
+
+insight:
+	$(GOBUILD) $(RACE_FLAG) -ldflags '$(LDFLAGS) $(CHECK_FLAG)' -o bin/insight cmd/insight/*.go
 
 analyzer:
 	$(GOBUILD) $(RACE_FLAG) -ldflags '$(LDFLAGS) $(CHECK_FLAG)' -o bin/analyzer cmd/analyzer/*.go
