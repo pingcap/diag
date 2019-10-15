@@ -188,8 +188,12 @@ const InspectionModel: InspectionModelType = {
       }
     },
 
-    *fetchInspections({ payload }, { call, put }) {
-      const { instanceId, page } = payload;
+    *fetchInspections({ payload }, { call, put, select }) {
+      const { instanceId } = payload;
+      let { page } = payload;
+      if (page === undefined) {
+        page = yield select((state: any) => state.inspection.cur_inspections_page);
+      }
       let res: IInspectionsRes;
       if (instanceId) {
         res = yield call(queryInstanceInspections, instanceId, page);

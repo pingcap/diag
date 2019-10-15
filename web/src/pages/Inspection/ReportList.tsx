@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Table, Button, Divider, Modal, Tooltip, Icon } from 'antd';
 import { connect } from 'dva';
 import { Link } from 'umi';
@@ -9,6 +9,7 @@ import UploadRemoteReportModal from '@/components/UploadRemoteReportModal';
 import { CurrentUser } from '@/models/user';
 import UploadLocalReportModal from '@/components/UploadLocalReportModal';
 import ConfigInstanceModal from '@/components/ConfigInstanceModal';
+import { useIntervalRun } from '@/custom-hooks/use-interval-run';
 
 const styles = require('../style.less');
 
@@ -150,11 +151,9 @@ function ReportList({ dispatch, curUser, inspection, match, loading }: ReportLis
     [inspection.cur_inspections_page, inspection.total_inspections],
   );
 
-  useEffect(() => {
-    fetchInspections(inspection.cur_inspections_page);
-  }, []);
+  useIntervalRun(fetchInspections);
 
-  function fetchInspections(page: number) {
+  function fetchInspections(page?: number) {
     dispatch({
       type: 'inspection/fetchInspections',
       payload: {
@@ -204,7 +203,7 @@ function ReportList({ dispatch, curUser, inspection, match, loading }: ReportLis
     <div className={styles.container}>
       <div className={styles.list_header}>
         <h2>诊断报告列表</h2>
-        {curUser.role === 'admin' && (
+        {curUser.role === 'admin' && instanceId !== undefined && (
           <Button type="primary" onClick={() => setConfigModalVisible(true)}>
             手动一键诊断
           </Button>
