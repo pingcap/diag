@@ -85,16 +85,15 @@ def validate_int(port):
         raise e
 
 
-def chmod_path(path):
+def chmod_path(abs_path):
     """
     path: an `str` for the path
-    TODO: fix this
     """
-    import pathlib
-
-    path = pathlib.Path(path)
-    for parent in path.parents:
-        os.system("chmod r+x {}".format(parent))
+    pos = abs_path.find('/')
+    while pos != -1:
+        current_path = abs_path[:pos]
+        os.system("chmod r+x {}".format(current_path))
+        pos = abs_path.find('/', pos+1)
 
 
 def package_manager():
@@ -104,7 +103,7 @@ def package_manager():
         return: `str` for current linux distribution
         """
         try:
-            return platform.linux_distribution()
+            return ' '.join(platform.linux_distribution())
         except:
             return "N/A"
 
@@ -113,7 +112,7 @@ def package_manager():
 
     # https://docs.python.org/3/library/platform.html?highlight=uname#platform.version
     for version in validating_list:
-        edition = version[3].strip().lower()
+        edition = version.strip().lower()
         mapper = {'ubuntu': 'apt-get', 'centos': 'yum', 'darwin': 'brew'}
         for k, v in mapper.iteritems():
             if k in edition:
@@ -123,6 +122,7 @@ def package_manager():
 
 
 if __name__ == '__main__':
+    chmod_path('/Users/fuasahi/pingcap/tidb-foresight')
     # install the requirements
     os.system('{} install -y graphviz perf rsync golang'.format(
         package_manager()))
