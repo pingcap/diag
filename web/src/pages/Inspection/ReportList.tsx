@@ -203,7 +203,7 @@ function ReportList({ dispatch, curUser, inspection, match, loading }: ReportLis
     <div className={styles.container}>
       <div className={styles.list_header}>
         <h2>诊断报告列表</h2>
-        {curUser.role === 'admin' && (
+        {curUser.role === 'admin' && instanceId !== undefined && (
           <Button type="primary" onClick={() => setConfigModalVisible(true)}>
             手动一键诊断
           </Button>
