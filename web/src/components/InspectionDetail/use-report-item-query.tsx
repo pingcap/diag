@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 
 import { Tooltip, Icon } from 'antd';
 import request from '@/utils/request';
+import { formatDatetime } from '@/utils/datetime-util';
 
 interface IResObj {
   [key: string]: any;
@@ -74,6 +75,10 @@ export function useReportItemQuery(apiUrl: string): [IConclusion[], any[], any[]
               if (text.status === 'warning' || text.status === 'info') {
                 return <span style={{ whiteSpace: 'pre-wrap' }}>{text.value}</span>;
               }
+              // convert the server time format to local time
+              if (key === 'time' || key.endsWith('_time')) {
+                text = formatDatetime(text);
+              }
               if (itemType === 'config' && key === 'config') {
                 return (
                   <div className="config_table_cell" id={`config_table_cell_${record.key}`}>
@@ -118,7 +123,8 @@ export function useReportItemQuery(apiUrl: string): [IConclusion[], any[], any[]
           ];
           const dataArr = Object.keys(res).map(key => ({
             field: key,
-            value: res[key],
+            // convert the server time format to local time
+            value: key === 'time' || key.endsWith('_time') ? formatDatetime(res[key]) : res[key],
             key,
           }));
           setTableColumns(columns);
