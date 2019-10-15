@@ -9,7 +9,6 @@ This script will be used in `make install`, it will:
 
 import sys
 import os
-import pathlib
 import platform
 from string import Template
 
@@ -86,31 +85,46 @@ def validate_int(port):
         raise e
 
 
-def chmod_path(path):
+def chmod_path(abs_path):
     """
     path: an `str` for the path
     """
-    path = pathlib.Path(path)
-    for parent in path.parents:
-        os.system("chmod r+x {}".format(parent))
+    pos = abs_path.find('/')
+    while pos != -1:
+        current_path = abs_path[:pos + 1]
+        os.system("chmod go+x {}".format(current_path))
+        pos = abs_path.find('/', pos + 1)
 
 
 def package_manager():
-    version = platform.uname()
+
+    def linux_distribution():
+        """
+        return: `str` for current linux distribution
+        """
+        try:
+            return ' '.join(platform.linux_distribution())
+        except:
+            return "N/A"
+
+    validating_list = (linux_distribution(), platform.system(),
+                       platform.version())
+
     # https://docs.python.org/3/library/platform.html?highlight=uname#platform.version
-    edition = version[3].strip().lower()
-    mapper = {'ubuntu': 'apt-get', 'centos': 'yum', 'darwin': 'brew'}
-    for k, v in mapper.iteritems():
-        if k in edition:
-            return v
-    print('not centos, use apt-get as package manager.')
+    for version in validating_list:
+        edition = version.strip().lower()
+        mapper = {'ubuntu': 'apt-get', 'centos': 'yum', 'darwin': 'brew'}
+        for k, v in mapper.iteritems():
+            if k in edition:
+                return v
+    print('not centos/ubuntu/osx, use apt-get as package manager.')
     return 'apt-get'
 
 
 if __name__ == '__main__':
     # install the requirements
-    os.system(
-        '{} install -y graphviz perf rsync golang'.format(package_manager()))
+    os.system('{} install -y graphviz perf rsync golang'.format(
+        package_manager()))
 
     prefix = os.path.abspath(sys.argv[1])
     user = sys.argv[2]
@@ -150,17 +164,20 @@ if __name__ == '__main__':
     # check tidb-foresight.toml
     # if exists, then copy it to $prefix/tidb-foresight
     if os.path.exists('tidb-foresight.toml'):
-        os.system('yes | cp tidb-foresight.toml {}/tidb-foresight.toml'.format(
-            dest_dir))
+        os.system(
+            'yes | cp -f tidb-foresight.toml {}/tidb-foresight.toml'.format(
+                dest_dir))
 
     for to_copy_directory in to_copy_directories:
-        os.system("yes | cp -r {} {}".format(to_copy_directory, dest_dir))
+        os.system("yes | cp -rf {} {}".format(to_copy_directory, dest_dir))
     # rename web-dist to web
+    print("mv {dest_dir}/web-dist {dest_dir}/web")
     os.system(
-        "mv -f {dest_dir}/web-dist {dest_dir}/web".format(dest_dir=dest_dir))
-    os.system("yes | cp -r *.service {}".format(dest_dir))
-    os.system("yes | cp -r *.service /etc/systemd/system/")
-    os.system('chown {} r -R $prefix'.format(user))
+        "yes | rm -rf {dest_dir}/web && yes | mv -T {dest_dir}/web-dist {dest_dir}/web"
+        .format(dest_dir=dest_dir))
+    os.system("yes | cp -rf *.service {}".format(dest_dir))
+    os.system("yes | cp -f *.service /etc/systemd/system/")
+    os.system('chown {} -R $prefix'.format(user))
     chmod_path(dest_dir)
 
     os.system("chmod a+x {}/*".format(dest_dir))

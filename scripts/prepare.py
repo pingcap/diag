@@ -7,14 +7,27 @@ import platform
 
 
 def package_manager():
-    version = platform.uname()
+    
+    def linux_distribution():
+        """
+        return: `str` for current linux distribution
+        """
+        try:
+            return ' '.join(platform.linux_distribution())
+        except:
+            return "N/A"
+
+    validating_list = (linux_distribution(), platform.system(),
+                       platform.version())
+
     # https://docs.python.org/3/library/platform.html?highlight=uname#platform.version
-    edition = version[3].strip().lower()
-    mapper = {'ubuntu': 'apt-get', 'centos': 'yum', 'darwin': 'brew'}
-    for k, v in mapper.iteritems():
-        if k in edition:
-            return v
-    print('not centos, use apt-get as package manager.')
+    for version in validating_list:
+        edition = version.strip().lower()
+        mapper = {'ubuntu': 'apt-get', 'centos': 'yum', 'darwin': 'brew'}
+        for k, v in mapper.iteritems():
+            if k in edition:
+                return v
+    print('not centos/ubuntu/osx, use apt-get as package manager.')
     return 'apt-get'
 
 
