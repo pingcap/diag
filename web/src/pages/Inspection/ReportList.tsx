@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Table, Button, Divider, Modal, Tooltip, Icon } from 'antd';
 import { connect } from 'dva';
 import { Link } from 'umi';

@@ -18,6 +18,7 @@ export interface IFlameGraph {
   instance_name: string;
   user: string;
   status: 'running' | 'exception' | 'success';
+  message: string;
   create_time: string;
   finish_time: string;
 
