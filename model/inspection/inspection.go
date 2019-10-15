@@ -7,23 +7,24 @@ import (
 )
 
 type Inspection struct {
-	Uuid           string         `json:"uuid" gorm:"PRIMARY_KEY"`
-	InstanceId     string         `json:"instance_id"`
-	InstanceName   string         `json:"instance_name"`
-	ClusterVersion string         `json:"cluster_version"`
-	User           string         `json:"user"`
-	Status         string         `json:"status"`
-	Message        string         `json:"message"`
-	Type           string         `json:"type"`
-	CreateTime     utils.NullTime `json:"create_time,omitempty" gorm:"column:create_time"`
-	FinishTime     utils.NullTime `json:"finish_time,omitempty"`
-	ScrapeBegin    utils.NullTime `json:"scrape_begin,omitempty"`
-	ScrapeEnd      utils.NullTime `json:"scrape_end,omitempty"`
-	Tidb           string         `json:"tidb"`
-	Tikv           string         `json:"tikv"`
-	Pd             string         `json:"pd"`
-	Grafana        string         `json:"grafana"`
-	Prometheus     string         `json:"prometheus"`
+	Uuid            string         `json:"uuid" gorm:"PRIMARY_KEY"`
+	InstanceId      string         `json:"instance_id"`
+	InstanceName    string         `json:"instance_name"`
+	ClusterVersion  string         `json:"cluster_version"`
+	User            string         `json:"user"`
+	Status          string         `json:"status"`
+	Message         string         `json:"message"`
+	Type            string         `json:"type"`
+	CreateTime      utils.NullTime `json:"create_time,omitempty" gorm:"column:create_time"`
+	FinishTime      utils.NullTime `json:"finish_time,omitempty"`
+	EstimateLeftSec int32          `json:"estimate_left_sec,omitempty"`
+	ScrapeBegin     utils.NullTime `json:"scrape_begin,omitempty"`
+	ScrapeEnd       utils.NullTime `json:"scrape_end,omitempty"`
+	Tidb            string         `json:"tidb"`
+	Tikv            string         `json:"tikv"`
+	Pd              string         `json:"pd"`
+	Grafana         string         `json:"grafana"`
+	Prometheus      string         `json:"prometheus"`
 }
 
 const DIAG_FILTER = "type in ('auto', 'manual')"
@@ -82,6 +83,10 @@ func (m *inspection) DeleteInspection(inspId string) error {
 	return m.db.Delete(&Inspection{Uuid: inspId}).Error()
 }
 
-func (m inspection) UpdateInspectionStatus(inspId, status string) error {
+func (m *inspection) UpdateInspectionStatus(inspId, status string) error {
 	return m.db.Model(&Inspection{}).Where(&Inspection{Uuid: inspId}).Update("status", status).Error()
+}
+
+func (m *inspection) UpdateInspectionEstimateLeftSec(inspId string, leftSec int32) error {
+	return m.db.Model(&Inspection{}).Where(&Inspection{Uuid: inspId}).Update("estimate_left_sec", leftSec).Error()
 }
