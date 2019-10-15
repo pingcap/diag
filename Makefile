@@ -60,11 +60,11 @@ endif
 
 default: all	
 
-all: prepare server analyzer spliter syncer
+all: server analyzer spliter syncer
 
 prepare: 
 	chmod 755 ./scripts/*
-	eval './scripts/download.py $(DOWNLOAD_PREFIX) $(NEEDS_INSTALL)'
+	eval './scripts/prepare.py $(DOWNLOAD_PREFIX) $(NEEDS_INSTALL)'
 	@$(MAKE) web
 
 # If prefix is now provided, please abort

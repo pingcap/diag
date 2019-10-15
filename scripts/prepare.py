@@ -3,16 +3,14 @@
 import sys
 import os
 import subprocess
+import platform
 
 
 def package_manager():
-    script = "awk -F= '/^NAME/{print $2}' /etc/os-release"
-    try:
-        edition = subprocess.check_output(script, shell=True).strip().lower()
-    except OSError as e:
-        print('cannot run script: {}'.format(script))
-        raise e
-    mapper = {'ubuntu': 'apt-get', 'centos': 'yum'}
+    version = platform.uname()
+    # https://docs.python.org/3/library/platform.html?highlight=uname#platform.version
+    edition = version[3].strip().lower()
+    mapper = {'ubuntu': 'apt-get', 'centos': 'yum', 'darwin': 'brew'}
     for k, v in mapper.iteritems():
         if k in edition:
             return v
@@ -29,6 +27,8 @@ if __name__ == '__main__':
         os.system(
             'curl --silent --location https://dl.yarnpkg.com/rpm/yarn.repo | sudo tee /etc/yum.repos.d/yarn.repo'
         )
+    elif manager == 'brew':
+        os.system("brew install yarn")
     else:
         os.system(
             'curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg | sudo apt-key add -'
@@ -37,8 +37,8 @@ if __name__ == '__main__':
             'echo "deb https://dl.yarnpkg.com/debian/ stable main" | sudo tee /etc/apt/sources.list.d/yarn.list'
         )
         os.system('apt-get update')
-    os.system(
-        '{} install -y graphviz perf rsync golang nodejs yarn'.format(manager))
+
+    os.system('{} install -y nodejs yarn'.format(manager))
 
     download_prefix = 'http://fileserver.pingcap.net/download/foresight/'
     if 'http' not in sys.argv[1]:

@@ -10,6 +10,7 @@ This script will be used in `make install`, it will:
 import sys
 import os
 import pathlib
+import platform
 from string import Template
 
 
@@ -94,7 +95,23 @@ def chmod_path(path):
         os.system("chmod r+x {}".format(parent))
 
 
+def package_manager():
+    version = platform.uname()
+    # https://docs.python.org/3/library/platform.html?highlight=uname#platform.version
+    edition = version[3].strip().lower()
+    mapper = {'ubuntu': 'apt-get', 'centos': 'yum', 'darwin': 'brew'}
+    for k, v in mapper.iteritems():
+        if k in edition:
+            return v
+    print('not centos, use apt-get as package manager.')
+    return 'apt-get'
+
+
 if __name__ == '__main__':
+    # install the requirements
+    os.system(
+        '{} install -y graphviz perf rsync golang'.format(package_manager()))
+
     prefix = os.path.abspath(sys.argv[1])
     user = sys.argv[2]
     (foresight_port, influxd_port,
