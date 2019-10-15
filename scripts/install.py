@@ -83,8 +83,9 @@ def validate_int(port):
 
 if __name__ == '__main__':
     prefix = os.path.abspath(sys.argv[1])
+    user = sys.argv[2]
     (foresight_port, influxd_port,
-     prometheus_port) = map(validate_int, sys.argv[2:])
+     prometheus_port) = map(validate_int, sys.argv[3:])
     # move all to prefix
     # if prefix is a subdirectory of current dir, it will fail
     print(os.path.realpath(prefix), os.path.realpath('.'))
@@ -129,5 +130,6 @@ if __name__ == '__main__':
         "mv -f {dest_dir}/web-dist {dest_dir}/web".format(dest_dir=dest_dir))
     os.system("yes | cp -r *.service {}".format(dest_dir))
     os.system("yes | cp -r *.service /etc/systemd/system/")
+    os.system('chown {} -R $prefix/tidb-foresight'.format(user))
     os.system("chmod a+x {}/*".format(dest_dir))
     os.system("chmod a+x {}/bin/*".format(dest_dir))

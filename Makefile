@@ -52,6 +52,10 @@ ifeq ($(prometheus_port),)
 prometheus_port=9529
 endif
 
+ifeq ($(user), )
+user=tidb
+endif
+
 .PHONY: all server analyzer spliter syncer install stop start web
 
 default: all	
@@ -71,7 +75,7 @@ ifndef prefix
 	$(error prefix is not set)
 endif
 	chmod 755 ./scripts/*
-	eval './scripts/install.py $(prefix) $(foresight_port) $(influxd_port) $(prometheus_port)'
+	eval './scripts/install.py $(prefix) $(user) $(foresight_port) $(influxd_port) $(prometheus_port)'
 
 build:
 	$(GOBUILD)
