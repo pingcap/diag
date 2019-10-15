@@ -7,24 +7,26 @@ import (
 )
 
 type Inspection struct {
-	Uuid            string         `json:"uuid" gorm:"PRIMARY_KEY"`
-	InstanceId      string         `json:"instance_id"`
-	InstanceName    string         `json:"instance_name"`
-	ClusterVersion  string         `json:"cluster_version"`
-	User            string         `json:"user"`
-	Status          string         `json:"status"`
-	Message         string         `json:"message"`
-	Type            string         `json:"type"`
-	CreateTime      utils.NullTime `json:"create_time,omitempty" gorm:"column:create_time"`
-	FinishTime      utils.NullTime `json:"finish_time,omitempty"`
-	EstimateLeftSec int32          `json:"estimate_left_sec,omitempty"`
-	ScrapeBegin     utils.NullTime `json:"scrape_begin,omitempty"`
-	ScrapeEnd       utils.NullTime `json:"scrape_end,omitempty"`
-	Tidb            string         `json:"tidb"`
-	Tikv            string         `json:"tikv"`
-	Pd              string         `json:"pd"`
-	Grafana         string         `json:"grafana"`
-	Prometheus      string         `json:"prometheus"`
+	Uuid           string         `json:"uuid" gorm:"PRIMARY_KEY"`
+	InstanceId     string         `json:"instance_id"`
+	InstanceName   string         `json:"instance_name"`
+	ClusterVersion string         `json:"cluster_version"`
+	User           string         `json:"user"`
+	Status         string         `json:"status"`
+	Message        string         `json:"message"`
+	Type           string         `json:"type"`
+	CreateTime     utils.NullTime `json:"create_time,omitempty" gorm:"column:create_time"`
+	FinishTime     utils.NullTime `json:"finish_time,omitempty"`
+	// The estimated left seconds for inspection. If the field was not provided,
+	// it will be initialized as -1
+	EstimatedLeftSec int32          `json:"estimated_left_sec,omitempty" gorm:"default:-1"`
+	ScrapeBegin      utils.NullTime `json:"scrape_begin,omitempty"`
+	ScrapeEnd        utils.NullTime `json:"scrape_end,omitempty"`
+	Tidb             string         `json:"tidb"`
+	Tikv             string         `json:"tikv"`
+	Pd               string         `json:"pd"`
+	Grafana          string         `json:"grafana"`
+	Prometheus       string         `json:"prometheus"`
 }
 
 const DIAG_FILTER = "type in ('auto', 'manual')"
