@@ -92,7 +92,7 @@ def chmod_path(abs_path):
     pos = abs_path.find('/')
     while pos != -1:
         current_path = abs_path[:pos]
-        os.system("chmod r+x {}".format(current_path))
+        os.system("chmod go+x {}".format(current_path))
         pos = abs_path.find('/', pos+1)
 
 
@@ -122,7 +122,6 @@ def package_manager():
 
 
 if __name__ == '__main__':
-    chmod_path('/Users/fuasahi/pingcap/tidb-foresight')
     # install the requirements
     os.system('{} install -y graphviz perf rsync golang'.format(
         package_manager()))
@@ -165,17 +164,17 @@ if __name__ == '__main__':
     # check tidb-foresight.toml
     # if exists, then copy it to $prefix/tidb-foresight
     if os.path.exists('tidb-foresight.toml'):
-        os.system('yes | cp tidb-foresight.toml {}/tidb-foresight.toml'.format(
+        os.system('yes | cp -f tidb-foresight.toml {}/tidb-foresight.toml'.format(
             dest_dir))
 
     for to_copy_directory in to_copy_directories:
-        os.system("yes | cp -r {} {}".format(to_copy_directory, dest_dir))
+        os.system("yes | cp -rf {} {}".format(to_copy_directory, dest_dir))
     # rename web-dist to web
     os.system(
         "mv -f {dest_dir}/web-dist {dest_dir}/web".format(dest_dir=dest_dir))
-    os.system("yes | cp -r *.service {}".format(dest_dir))
-    os.system("yes | cp -r *.service /etc/systemd/system/")
-    os.system('chown {} r -R $prefix'.format(user))
+    os.system("yes | cp -rf *.service {}".format(dest_dir))
+    os.system("yes | cp -f *.service /etc/systemd/system/")
+    os.system('chown {} -R $prefix'.format(user))
     chmod_path(dest_dir)
 
     os.system("chmod a+x {}/*".format(dest_dir))
