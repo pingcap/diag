@@ -6,6 +6,7 @@ import (
 	"os/exec"
 	"os/user"
 	"path"
+	"strings"
 
 	"github.com/pingcap/tidb-foresight/model"
 	"github.com/pingcap/tidb-foresight/utils"
@@ -38,7 +39,11 @@ func (b *BasicCollector) Collect() error {
 	}
 
 	for _, host := range topo.Hosts {
-		if e := b.insight(user.Username, host.Ip); e != nil {
+		ports := []string{}
+		for _, comp := range host.Components {
+			ports = append(ports, comp.Port)
+		}
+		if e := b.insight(user.Username, host.Ip, ports); e != nil {
 			if err == nil {
 				err = e
 			}
@@ -48,7 +53,7 @@ func (b *BasicCollector) Collect() error {
 	return err
 }
 
-func (b *BasicCollector) insight(user, ip string) error {
+func (b *BasicCollector) insight(user, ip string, ports []string) error {
 	p := path.Join(b.opts.GetHome(), "inspection", b.opts.GetInspectionId(), "insight", ip)
 	if err := os.MkdirAll(p, os.ModePerm); err != nil {
 		return err
@@ -71,7 +76,7 @@ func (b *BasicCollector) insight(user, ip string) error {
 	execute := exec.Command(
 		"ssh",
 		fmt.Sprintf("%s@%s", user, ip),
-		fmt.Sprintf("bash -c \"%s\"", "sudo chmod 755 /tmp/insight && sudo /tmp/insight"),
+		fmt.Sprintf("sudo chmod 755 /tmp/insight && sudo /tmp/insight --port %s", strings.Join(ports, ",")),
 	)
 	execute.Stdout = f
 	execute.Stderr = os.Stderr

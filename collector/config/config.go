@@ -67,7 +67,7 @@ func (c *ConfigCollector) config(user, ip, port, comp, depdir string) error {
 	cmd := exec.Command(
 		"ssh",
 		fmt.Sprintf("%s@%s", user, ip),
-		fmt.Sprintf("bash -c \"cat %s/conf/%s.toml\"", depdir, comp),
+		fmt.Sprintf("cat %s/conf/%s.toml", depdir, comp),
 	)
 	cmd.Stdout = f
 	cmd.Stderr = os.Stderr

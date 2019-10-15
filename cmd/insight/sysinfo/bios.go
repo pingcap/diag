@@ -16,4 +16,3 @@ func (si *SysInfo) getBIOSInfo() {
 	si.BIOS.Version = slurpFile("/sys/class/dmi/id/bios_version")
 	si.BIOS.Date = slurpFile("/sys/class/dmi/id/bios_date")
 }
- 
