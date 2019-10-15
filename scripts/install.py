@@ -91,7 +91,7 @@ def chmod_path(abs_path):
     """
     pos = abs_path.find('/')
     while pos != -1:
-        current_path = abs_path[:pos]
+        current_path = abs_path[:pos + 1]
         os.system("chmod go+x {}".format(current_path))
         pos = abs_path.find('/', pos + 1)
 
