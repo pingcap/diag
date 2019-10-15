@@ -9,6 +9,7 @@ This script will be used in `make install`, it will:
 
 import sys
 import os
+import pathlib
 from string import Template
 
 
@@ -20,7 +21,8 @@ def mkdir_if_nonexists(path):
     os.system("mkdir -p {}".format(path))
 
 
-def generate_service(prefix, prometheus_port, influxd_port, foresight_port, user):
+def generate_service(prefix, prometheus_port, influxd_port, foresight_port,
+                     user):
     """
     Remove all history service files and generate directory for config.
     """
@@ -32,7 +34,7 @@ def generate_service(prefix, prometheus_port, influxd_port, foresight_port, user
         'prometheus_port': prometheus_port,
         'influxd_port': influxd_port,
         'foresight_port': foresight_port,
-        'user', user,
+        'user': user,
     }
     service_list = [('prometheus', prometheus_port), ('influxd', influxd_port),
                     ('foresight', foresight_port)]
@@ -83,6 +85,15 @@ def validate_int(port):
         raise e
 
 
+def chmod_path(path):
+    """
+    path: an `str` for the path
+    """
+    path = pathlib.Path(path)
+    for parent in path.parents:
+        os.system("chmod r+x {}".format(parent))
+
+
 if __name__ == '__main__':
     prefix = os.path.abspath(sys.argv[1])
     user = sys.argv[2]
@@ -95,7 +106,8 @@ if __name__ == '__main__':
         print('prefix is a subdirectory of src files, cannot work')
         exit(1)
 
-    generate_service(prefix, prometheus_port, influxd_port, foresight_port, user)
+    generate_service(prefix, prometheus_port, influxd_port, foresight_port,
+                     user)
     generate_conf(prefix, prometheus_port, influxd_port, foresight_port, user)
 
     # final stage for copying files
@@ -121,17 +133,18 @@ if __name__ == '__main__':
     # check tidb-foresight.toml
     # if exists, then copy it to $prefix/tidb-foresight
     if os.path.exists('tidb-foresight.toml'):
-        os.system('yes | cp tidb-foresight.toml {}/tidb-foresight.toml'
-                  .format(dest_dir))
+        os.system('yes | cp tidb-foresight.toml {}/tidb-foresight.toml'.format(
+            dest_dir))
 
     for to_copy_directory in to_copy_directories:
-        os.system("yes | cp -r {} {}".format(
-            to_copy_directory, dest_dir))
+        os.system("yes | cp -r {} {}".format(to_copy_directory, dest_dir))
     # rename web-dist to web
     os.system(
         "mv -f {dest_dir}/web-dist {dest_dir}/web".format(dest_dir=dest_dir))
     os.system("yes | cp -r *.service {}".format(dest_dir))
     os.system("yes | cp -r *.service /etc/systemd/system/")
-    os.system('chown {} -R $prefix'.format(user))
+    os.system('chown {} r -R $prefix'.format(user))
+    chmod_path(dest_dir)
+
     os.system("chmod a+x {}/*".format(dest_dir))
     os.system("chmod a+x {}/bin/*".format(dest_dir))
