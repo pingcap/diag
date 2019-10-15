@@ -9,7 +9,6 @@ This script will be used in `make install`, it will:
 
 import sys
 import os
-import pathlib
 import platform
 from string import Template
 
@@ -89,28 +88,44 @@ def validate_int(port):
 def chmod_path(path):
     """
     path: an `str` for the path
+    TODO: fix this
     """
+    import pathlib
+
     path = pathlib.Path(path)
     for parent in path.parents:
         os.system("chmod r+x {}".format(parent))
 
 
 def package_manager():
-    version = platform.uname()
+
+    def linux_distribution():
+        """
+        return: `str` for current linux distribution
+        """
+        try:
+            return platform.linux_distribution()
+        except:
+            return "N/A"
+
+    validating_list = (linux_distribution(), platform.system(),
+                       platform.version())
+
     # https://docs.python.org/3/library/platform.html?highlight=uname#platform.version
-    edition = version[3].strip().lower()
-    mapper = {'ubuntu': 'apt-get', 'centos': 'yum', 'darwin': 'brew'}
-    for k, v in mapper.iteritems():
-        if k in edition:
-            return v
-    print('not centos, use apt-get as package manager.')
+    for version in validating_list:
+        edition = version[3].strip().lower()
+        mapper = {'ubuntu': 'apt-get', 'centos': 'yum', 'darwin': 'brew'}
+        for k, v in mapper.iteritems():
+            if k in edition:
+                return v
+    print('not centos/ubuntu/osx, use apt-get as package manager.')
     return 'apt-get'
 
 
 if __name__ == '__main__':
     # install the requirements
-    os.system(
-        '{} install -y graphviz perf rsync golang'.format(package_manager()))
+    os.system('{} install -y graphviz perf rsync golang'.format(
+        package_manager()))
 
     prefix = os.path.abspath(sys.argv[1])
     user = sys.argv[2]
