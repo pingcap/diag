@@ -20,7 +20,7 @@ def mkdir_if_nonexists(path):
     os.system("mkdir -p {}".format(path))
 
 
-def generate_service(prefix, prometheus_port, influxd_port, foresight_port):
+def generate_service(prefix, prometheus_port, influxd_port, foresight_port, user):
     """
     Remove all history service files and generate directory for config.
     """
@@ -31,7 +31,8 @@ def generate_service(prefix, prometheus_port, influxd_port, foresight_port):
         'prefix': prefix,
         'prometheus_port': prometheus_port,
         'influxd_port': influxd_port,
-        'foresight_port': foresight_port
+        'foresight_port': foresight_port,
+        'user', user,
     }
     service_list = [('prometheus', prometheus_port), ('influxd', influxd_port),
                     ('foresight', foresight_port)]
@@ -47,13 +48,14 @@ def generate_service(prefix, prometheus_port, influxd_port, foresight_port):
                 fw.write(src.safe_substitute(arguments_dict))
 
 
-def generate_conf(prefix, prometheus_port, influxd_port, foresight_port):
+def generate_conf(prefix, prometheus_port, influxd_port, foresight_port, user):
     mkdir_if_nonexists('conf')
     arguments_dict = {
         'prefix': prefix,
         'prometheus_port': prometheus_port,
         'influxd_port': influxd_port,
-        'foresight_port': foresight_port
+        'foresight_port': foresight_port,
+        'user': user
     }
     service_list = ['influxdb.conf', 'prometheus.yml']
 
@@ -93,8 +95,8 @@ if __name__ == '__main__':
         print('prefix is a subdirectory of src files, cannot work')
         exit(1)
 
-    generate_service(prefix, prometheus_port, influxd_port, foresight_port)
-    generate_conf(prefix, prometheus_port, influxd_port, foresight_port)
+    generate_service(prefix, prometheus_port, influxd_port, foresight_port, user)
+    generate_conf(prefix, prometheus_port, influxd_port, foresight_port, user)
 
     # final stage for copying files
     # need to check and create if prefix not exists
@@ -130,6 +132,6 @@ if __name__ == '__main__':
         "mv -f {dest_dir}/web-dist {dest_dir}/web".format(dest_dir=dest_dir))
     os.system("yes | cp -r *.service {}".format(dest_dir))
     os.system("yes | cp -r *.service /etc/systemd/system/")
-    os.system('chown {} -R $prefix/tidb-foresight'.format(user))
+    os.system('chown {} -R $prefix'.format(user))
     os.system("chmod a+x {}/*".format(dest_dir))
     os.system("chmod a+x {}/bin/*".format(dest_dir))
