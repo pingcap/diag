@@ -143,8 +143,11 @@ const MiscModel: MiscModelType = {
       return res !== undefined;
     },
 
-    *fetchPerfProfiles({ payload }, { call, put }) {
-      const { page } = payload;
+    *fetchPerfProfiles({ payload }, { call, put, select }) {
+      let { page } = payload;
+      if (page === undefined) {
+        page = yield select((state: any) => state.misc.perfprofile.cur_page);
+      }
       const res = yield call(queryPerfProfiles, page);
       if (res !== undefined) {
         yield put({

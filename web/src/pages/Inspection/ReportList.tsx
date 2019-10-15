@@ -9,6 +9,7 @@ import UploadRemoteReportModal from '@/components/UploadRemoteReportModal';
 import { CurrentUser } from '@/models/user';
 import UploadLocalReportModal from '@/components/UploadLocalReportModal';
 import ConfigInstanceModal from '@/components/ConfigInstanceModal';
+import { useIntervalRun } from '@/custom-hooks/use-interval-run';
 
 const styles = require('../style.less');
 
@@ -150,11 +151,9 @@ function ReportList({ dispatch, curUser, inspection, match, loading }: ReportLis
     [inspection.cur_inspections_page, inspection.total_inspections],
   );
 
-  useEffect(() => {
-    fetchInspections(inspection.cur_inspections_page);
-  }, []);
+  useIntervalRun(fetchInspections);
 
-  function fetchInspections(page: number) {
+  function fetchInspections(page?: number) {
     dispatch({
       type: 'inspection/fetchInspections',
       payload: {

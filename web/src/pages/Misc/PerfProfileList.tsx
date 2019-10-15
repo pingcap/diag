@@ -10,6 +10,7 @@ import UploadRemoteReportModal from '@/components/UploadRemoteReportModal';
 import { CurrentUser } from '@/models/user';
 import UploadLocalReportModal from '@/components/UploadLocalReportModal';
 import { IFormatInstance } from '@/models/inspection';
+import { useIntervalRun } from '@/custom-hooks/use-interval-run';
 
 const styles = require('../style.less');
 
@@ -130,11 +131,13 @@ function PerfProfileList({
     [perfprofile.total, perfprofile.cur_page],
   );
 
-  useEffect(() => {
-    fetchPerfProfiles(perfprofile.cur_page);
-  }, []);
+  const columns = useMemo(() => tableColumns(curUser, deletePerfProfile, uploadPerfProfile), [
+    curUser,
+  ]);
 
-  function fetchPerfProfiles(page: number) {
+  useIntervalRun(fetchPerfProfiles);
+
+  function fetchPerfProfiles(page?: number) {
     dispatch({
       type: 'misc/fetchPerfProfiles',
       payload: {
@@ -142,10 +145,6 @@ function PerfProfileList({
       },
     });
   }
-
-  const columns = useMemo(() => tableColumns(curUser, deletePerfProfile, uploadPerfProfile), [
-    curUser,
-  ]);
 
   function deletePerfProfile(record: IPerfProfile) {
     Modal.confirm({

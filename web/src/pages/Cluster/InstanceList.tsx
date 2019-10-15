@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Table, Button, Tooltip, Icon, Divider, Modal } from 'antd';
 import { connect } from 'dva';
 import { Link } from 'umi';
@@ -6,6 +6,7 @@ import { ConnectState, ConnectProps, InspectionModelState, Dispatch } from '@/mo
 import { IFormatInstance, IInstance } from '@/models/inspection';
 import AddInstanceModal from '@/components/AddInstanceModal';
 import ConfigInstanceModal from '@/components/ConfigInstanceModal';
+import { useIntervalRun } from '@/custom-hooks/use-interval-run';
 
 const styles = require('../style.less');
 
@@ -91,9 +92,7 @@ function InstanceList({ inspection, dispatch, loading }: InstanceListProps) {
   const [configModalVisible, setConfigModalVisible] = useState(false);
   const [curInstance, setCurInstance] = useState<IInstance | null>(null);
 
-  useEffect(() => {
-    dispatch({ type: 'inspection/fetchInstances' });
-  }, []);
+  useIntervalRun(() => dispatch({ type: 'inspection/fetchInstances' }));
 
   const columns = useMemo(() => tableColumns(deleteInstance, configInstance), []);
 
