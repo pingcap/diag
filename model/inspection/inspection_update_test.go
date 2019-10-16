@@ -21,20 +21,20 @@ type testGDBSuite struct {
 }
 
 func (s *testGDBSuite) SetUpTest(c *C) {
-	testingDbFile, err := ioutil.TempFile("", "sqlite1.db")
+	testingDbFile, err := ioutil.TempFile("", "sqlite-test.db")
 
 	if err != nil {
 		c.Fatal(err)
 	}
 
-	db, err := db.Open(testingDbFile.Name())
+	testingDb, err := db.Open(testingDbFile.Name())
 	if err != nil {
 		c.Fatal(err)
 	}
 
-	s.db = db
+	s.db = testingDb
 	s.tmp = testingDbFile
-	s.model = New(db)
+	s.model = New(testingDb)
 
 	c.Assert(err, IsNil)
 	s.db.CreateTable(&Inspection{})
@@ -87,8 +87,6 @@ func (s *testGDBSuite) TestingUpdateInspectionEstimateLeftSec(c *C) {
 
 	i = -1000
 	err := s.model.UpdateInspectionEstimateLeftSec(idString, i)
-	if err == nil {
-		// should be nil
-		c.Fatal("UpdateInspectionEstimateLeftSec shouldn't accept arguments less than 1000")
-	}
+	// should be nil: UpdateInspectionEstimateLeftSec shouldn't accept arguments less than 0
+	c.Assert(err, NotNil)
 }

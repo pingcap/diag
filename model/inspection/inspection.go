@@ -92,7 +92,6 @@ func (m *inspection) UpdateInspectionStatus(inspId, status string) error {
 
 func (m *inspection) UpdateInspectionEstimateLeftSec(inspId string, leftSec int32) error {
 	if leftSec < 0 {
-		// TODO: check the arguments for leftSec
 		return errors.New("leftSec should no less than 0")
 	}
 	return m.db.Model(&Inspection{}).Where(&Inspection{Uuid: inspId}).Update("estimated_left_sec", leftSec).Error()
