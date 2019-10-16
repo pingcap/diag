@@ -43,7 +43,15 @@ func (s *testGDBSuite) SetUpTest(c *C) {
 }
 
 func (s *testGDBSuite) TearDownTest(c *C) {
-	err := os.Remove(s.tmp.Name()) // clean up
+	err := s.db.Close()
+	if err != nil {
+		c.Fatal(err)
+	}
+	err = s.tmp.Close()
+	if err != nil {
+		c.Fatal(err)
+	}
+	err = os.Remove(s.tmp.Name()) // clean up
 	if err != nil {
 		c.Fatal(err)
 	}
@@ -80,8 +88,7 @@ func (s *testGDBSuite) TestingUpdateInspectionEstimateLeftSec(c *C) {
 	i = -1000
 	err := s.model.UpdateInspectionEstimateLeftSec(idString, i)
 	if err == nil {
-		// should not be nil
+		// should be nil
 		c.Fatal("UpdateInspectionEstimateLeftSec shouldn't accept arguments less than 1000")
 	}
-
 }
