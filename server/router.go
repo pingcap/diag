@@ -95,6 +95,7 @@ func (s *Server) CreateRouter() http.Handler {
 	r.Handle("/api/v1/inspections/{id}", inspection.GetInspection(s.model)).Methods("GET")
 	r.Handle("/api/v1/inspections/{id}", inspection.UploadInspection(s.config)).Methods("PUT")
 	r.Handle("/api/v1/inspections/{id}", inspection.DeleteInspection(s.config, s.model)).Methods("DELETE")
+	r.Handle("/api/v1/inspections/{id}", inspection.UpdateInspectionEscapedLeft(s.model)).Methods("PUT")
 
 	// report
 	r.Handle("/api/v1/inspections/{id}/symptom", report.Symptom(s.model)).Methods("GET")
