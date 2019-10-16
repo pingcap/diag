@@ -1,6 +1,7 @@
 package inspection
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -26,6 +27,12 @@ func (h *updateHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 func (h *updateHandler) updateInspectionEscapedLeft(r *http.Request) (*model.Inspection, utils.StatusError) {
 	uuid := mux.Vars(r)["id"]
+	leftBody := make(map[string]string)
+	err := json.NewDecoder(r.Body).Decode(leftBody)
+	if err != nil {
+		log.Error("server error", err)
+		return nil, utils.ParamsMismatch
+	}
 	leftSecStr := mux.Vars(r)["left"]
 	leftSec, err := strconv.ParseInt(leftSecStr, 10, 32)
 	if err != nil {
