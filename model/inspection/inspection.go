@@ -1,6 +1,7 @@
 package inspection
 
 import (
+	"errors"
 	"time"
 
 	"github.com/pingcap/tidb-foresight/utils"
@@ -17,13 +18,16 @@ type Inspection struct {
 	Type           string         `json:"type"`
 	CreateTime     utils.NullTime `json:"create_time,omitempty" gorm:"column:create_time"`
 	FinishTime     utils.NullTime `json:"finish_time,omitempty"`
-	ScrapeBegin    utils.NullTime `json:"scrape_begin,omitempty"`
-	ScrapeEnd      utils.NullTime `json:"scrape_end,omitempty"`
-	Tidb           string         `json:"tidb"`
-	Tikv           string         `json:"tikv"`
-	Pd             string         `json:"pd"`
-	Grafana        string         `json:"grafana"`
-	Prometheus     string         `json:"prometheus"`
+	// The estimated left seconds for inspection. If the field was not provided,
+	// it will be initialized as -1
+	EstimatedLeftSec int32          `json:"estimated_left_sec,omitempty" gorm:"default:-1"`
+	ScrapeBegin      utils.NullTime `json:"scrape_begin,omitempty"`
+	ScrapeEnd        utils.NullTime `json:"scrape_end,omitempty"`
+	Tidb             string         `json:"tidb"`
+	Tikv             string         `json:"tikv"`
+	Pd               string         `json:"pd"`
+	Grafana          string         `json:"grafana"`
+	Prometheus       string         `json:"prometheus"`
 }
 
 const DIAG_FILTER = "type in ('auto', 'manual')"
@@ -82,6 +86,13 @@ func (m *inspection) DeleteInspection(inspId string) error {
 	return m.db.Delete(&Inspection{Uuid: inspId}).Error()
 }
 
-func (m inspection) UpdateInspectionStatus(inspId, status string) error {
+func (m *inspection) UpdateInspectionStatus(inspId, status string) error {
 	return m.db.Model(&Inspection{}).Where(&Inspection{Uuid: inspId}).Update("status", status).Error()
+}
+
+func (m *inspection) UpdateInspectionEstimateLeftSec(inspId string, leftSec int32) error {
+	if leftSec < 0 {
+		return errors.New("leftSec should no less than 0")
+	}
+	return m.db.Model(&Inspection{}).Where(&Inspection{Uuid: inspId}).Update("estimated_left_sec", leftSec).Error()
 }
