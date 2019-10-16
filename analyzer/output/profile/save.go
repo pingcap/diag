@@ -201,11 +201,12 @@ func (t *saveProfileTask) flameRust(src, dst string) error {
 	flamegraph.Stdout = df
 
 	if err = utils.StartCommands(script, fold, collapse, flamegraph); err != nil {
-		log.Error("exec:", err)
+		log.Error("start perf:", err)
 		return err
 	}
+
 	if err = utils.WaitCommands(script, fold, collapse, flamegraph); err != nil {
-		log.Error("exec:", err)
+		log.Error("wait perf:", err)
 		return err
 	}
 

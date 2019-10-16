@@ -93,6 +93,8 @@ func (h *createProfileHandler) collectProfile(instanceId, inspectionId, componen
 	if component != "" {
 		option += ":" + component
 	}
+	from := time.Now()
+	to := from.Add(time.Minute * 1)
 	cmd := exec.Command(
 		h.c.Collector,
 		fmt.Sprintf("--home=%s", h.c.Home),
@@ -100,6 +102,8 @@ func (h *createProfileHandler) collectProfile(instanceId, inspectionId, componen
 		fmt.Sprintf("--inspection-id=%s", inspectionId),
 		fmt.Sprintf("--items=profile"),
 		fmt.Sprintf("--components=%s", component),
+		fmt.Sprintf("--begin=%s", from.Format(time.RFC3339)),
+		fmt.Sprintf("--end=%s", to.Format(time.RFC3339)),
 	)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr

@@ -24,3 +24,13 @@ func WaitCommands(cmds ...*exec.Cmd) error {
 	}
 	return nil
 }
+
+func RunCommands(cmds ...*exec.Cmd) error {
+	for _, cmd := range cmds {
+		log.Info(cmd.Args)
+		if err := cmd.Run(); err != nil {
+			return err
+		}
+	}
+	return nil
+}

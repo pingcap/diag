@@ -11,8 +11,8 @@ type Options struct {
 	InspectionId string `json:"inspection_id" long:"inspection-id" description:"a unique id to identity this inspection" required:"true"`
 	Home         string `json:"home" long:"home" description:"foresight working directory" required:"true"`
 	Items        string `json:"collect" long:"items" description:"items to collect" required:"true"`
-	Begin        string `json:"begin" long:"begin" description:"scrape begin time"`
-	End          string `json:"end" long:"end" description:"scrape begin time"`
+	Begin        string `json:"begin" long:"begin" description:"scrape begin time" required:"true"`
+	End          string `json:"end" long:"end" description:"scrape begin time" required:"true"`
 	Components   string `json:"components" long:"components" description:"components to be profile"`
 }
 
@@ -47,5 +47,8 @@ func (o *Options) GetScrapeEnd() (time.Time, error) {
 }
 
 func (o *Options) GetComponents() []string {
+	if o.Components == "" {
+		return []string{}
+	}
 	return strings.Split(o.Components, ",")
 }
