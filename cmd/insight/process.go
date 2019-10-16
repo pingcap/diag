@@ -2,8 +2,11 @@
 package main
 
 import (
+	"bytes"
+	"fmt"
 	"io/ioutil"
 	"log"
+	"os/exec"
 	"strconv"
 	"strings"
 
@@ -194,6 +197,20 @@ func getProcessByPID(pid int) (*process.Process, error) {
 		}
 	}
 	return nil, err
+}
+
+func getProcessByPort(port int) (*process.Process, error) {
+	cmd := exec.Command("lsof", fmt.Sprintf("-tiTCP:%d", port), "-sTCP:LISTEN")
+	buf := new(bytes.Buffer)
+	cmd.Stdout = buf
+	if err := cmd.Run(); err != nil {
+		return nil, err
+	}
+	var pid int
+	if _, err := fmt.Sscanf(buf.String(), "%d", &pid); err != nil {
+		return nil, err
+	}
+	return getProcessByPID(pid)
 }
 
 func getProcessesByName(searchName string) ([]*process.Process, error) {

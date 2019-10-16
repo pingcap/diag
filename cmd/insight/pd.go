@@ -75,14 +75,14 @@ func getPDVersionByName() []PDMeta {
 	return pdMeta
 }
 
-func getPDVersionByPIDList(pidList []string) []PDMeta {
+func getPDVersionByPortList(portList []string) []PDMeta {
 	pdMeta := make([]PDMeta, 0)
-	for _, pidStr := range pidList {
-		pidNum, err := strconv.Atoi(pidStr)
+	for _, portStr := range portList {
+		portNum, err := strconv.Atoi(portStr)
 		if err != nil {
 			log.Fatal(err)
 		}
-		proc, err := getProcessByPID(pidNum)
+		proc, err := getProcessByPort(portNum)
 		if err != nil {
 			log.Fatal(err)
 		}

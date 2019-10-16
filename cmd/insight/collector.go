@@ -48,16 +48,16 @@ type Metrics struct {
 }
 
 type options struct {
-	Pid  string
+	Port string
 	Proc bool
 }
 
 func parseOpts() options {
-	optPid := flag.String("pid", "", "The PID of process to collect info. Multiple PIDs can be seperatted by ','.")
+	optPort := flag.String("port", "", "The port of process to collect info. Multiple ports can be seperatted by ','.")
 	optProc := flag.Bool("proc", false, "Only collect process info, disabled (Collect everything except process info) by default.")
 	flag.Parse()
 
-	opts := options{*optPid, *optProc}
+	opts := options{*optPort, *optProc}
 	return opts
 }
 
@@ -76,14 +76,14 @@ func main() {
 }
 
 func (metric *Metrics) getMetrics(opts options) {
-	var pidList []string
-	if len(opts.Pid) > 0 {
-		pidList = strings.Split(opts.Pid, ",")
+	var portList []string
+	if len(opts.Port) > 0 {
+		portList = strings.Split(opts.Port, ",")
 	}
 
-	metric.Meta.getMeta(pidList)
+	metric.Meta.getMeta(portList)
 	if opts.Proc {
-		metric.ProcStats = GetProcessStats(pidList)
+		metric.ProcStats = GetProcessStats(portList)
 	} else {
 		metric.SysInfo.GetSysInfo()
 		metric.NTP.getNTPInfo()
@@ -91,7 +91,7 @@ func (metric *Metrics) getMetrics(opts options) {
 	}
 }
 
-func (meta *Meta) getMeta(pidList []string) {
+func (meta *Meta) getMeta(portList []string) {
 	meta.Timestamp = time.Now()
 	if sysUptime, sysIdleTime, err := GetSysUptime(); err == nil {
 		meta.UPTime = sysUptime
@@ -103,10 +103,10 @@ func (meta *Meta) getMeta(pidList []string) {
 	meta.GitCommit = InsightGitCommit
 	meta.BuildTime = InsightBuildTime
 	meta.GoVersion = fmt.Sprintf("%s %s/%s", runtime.Version(), runtime.GOOS, runtime.GOARCH)
-	if len(pidList) > 0 {
-		meta.TiDBVer = getTiDBVersionByPIDList(pidList)
-		meta.TiKVVer = getTiKVVersionByPIDList(pidList)
-		meta.PDVer = getPDVersionByPIDList(pidList)
+	if len(portList) > 0 {
+		meta.TiDBVer = getTiDBVersionByPortList(portList)
+		meta.TiKVVer = getTiKVVersionByPortList(portList)
+		meta.PDVer = getPDVersionByPortList(portList)
 	} else {
 		meta.TiDBVer = getTiDBVersionByName()
 		meta.TiKVVer = getTiKVVersionByName()

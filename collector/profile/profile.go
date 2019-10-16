@@ -118,7 +118,7 @@ func (c *ProfileCollector) perfRustProcess(name, ip, port string) {
 	cmd := exec.Command(
 		"ssh",
 		fmt.Sprintf("%s@%s", user, ip),
-		fmt.Sprintf("bash -c \"perf record -F 99 -g -p $(lsof -tiTCP:%s -sTCP:LISTEN -P -n) -o /dev/stdout -- sleep 60\"", port),
+		fmt.Sprintf("perf record -F 99 -g -p $(lsof -tiTCP:%s -sTCP:LISTEN -P -n) -o /dev/stdout -- sleep 60", port),
 	)
 	cmd.Stdout = f
 	cmd.Stderr = os.Stderr

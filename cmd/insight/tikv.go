@@ -78,14 +78,14 @@ func getTiKVVersionByName() []TiKVMeta {
 	return tikvMeta
 }
 
-func getTiKVVersionByPIDList(pidList []string) []TiKVMeta {
+func getTiKVVersionByPortList(portList []string) []TiKVMeta {
 	tikvMeta := make([]TiKVMeta, 0)
-	for _, pidStr := range pidList {
-		pidNum, err := strconv.Atoi(pidStr)
+	for _, portStr := range portList {
+		portNum, err := strconv.Atoi(portStr)
 		if err != nil {
 			log.Fatal(err)
 		}
-		proc, err := getProcessByPID(pidNum)
+		proc, err := getProcessByPort(portNum)
 		if err != nil {
 			log.Fatal(err)
 		}

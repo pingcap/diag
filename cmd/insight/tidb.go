@@ -78,14 +78,14 @@ func getTiDBVersionByName() []TiDBMeta {
 	return tidbMeta
 }
 
-func getTiDBVersionByPIDList(pidList []string) []TiDBMeta {
+func getTiDBVersionByPortList(portList []string) []TiDBMeta {
 	tidbMeta := make([]TiDBMeta, 0)
-	for _, pidStr := range pidList {
-		pidNum, err := strconv.Atoi(pidStr)
+	for _, portStr := range portList {
+		portNum, err := strconv.Atoi(portStr)
 		if err != nil {
 			log.Fatal(err)
 		}
-		proc, err := getProcessByPID(pidNum)
+		proc, err := getProcessByPort(portNum)
 		if err != nil {
 			log.Fatal(err)
 		}

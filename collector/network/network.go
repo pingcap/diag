@@ -61,7 +61,7 @@ func (c *NetworkCollector) dmesg(user, ip string) error {
 	cmd := exec.Command(
 		"ssh",
 		fmt.Sprintf("%s@%s", user, ip),
-		fmt.Sprintf("bash -c \"%s\"", "netstat -s"),
+		"netstat -s",
 	)
 	cmd.Stdout = f
 	cmd.Stderr = os.Stderr
