@@ -9,7 +9,7 @@ LimitNOFILE=1000000
 #LimitCORE=infinity
 LimitSTACK=10485760
 User=$user
-ExecStart=$prefix/tidb-foresight/bin/tidb-foresight --home=$prefix/tidb-foresight --prometheus=127.0.0.1:$prometheus_port --influxdb=127.0.0.1:$influxd_port
+ExecStart=$prefix/tidb-foresight/bin/tidb-foresight --home=$prefix/tidb-foresight --prometheus=http://127.0.0.1:$prometheus_port --influxdb=http://127.0.0.1:$influxd_port
 Restart=always
 RestartSec=15s
 
