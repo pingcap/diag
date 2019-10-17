@@ -14,7 +14,25 @@ tags:
     description: 诊断工具的 DBA 用户
   - name: client
     description: 普通用户
-paths: None
+  - name: ka
+    description: KA 用户
+paths:
+  "/api/vi/emphasis":
+    get:
+      tags:
+        - client
+        - dba
+      summary: 获得所有的重点问题报告
+      operationId: listAllEmpasis
+      responses:
+        '200':
+          description: 成功找到了所有的 Emphasis
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Instance'
 components:
   schemas:
     Instance:
@@ -356,3 +374,44 @@ components:
           type: string
         name:
           type: string
+    EmphasisProblem:
+      type: object
+      properties:
+        related_graph:
+          type: string
+          description: 相关联的监控图
+          example: "TiDB Duration"
+        problem:
+          type: string
+          description: 调研的相关问题
+          example: "内存占用过高"
+    Emphasis:
+      type: object
+      properties:
+        uuid:
+          type: string
+          format: uuid
+          example: "e66d287f-d859-4d54-a62b-6ecc95534e95"
+        instance_id:
+          type: string
+          format: uuid
+          example: "e66d287f-d859-4d54-a62b-6ecc95534e95"
+        created_time:
+          type: string
+          format: date-time
+          example: "2002-10-02T10:00:00-05:00"
+        investgating_start:
+          type: string
+          format: date-time
+          example: "2002-10-02T10:00:00-05:00"
+        investgating_end:
+          type: string
+          format: date-time
+          example: "2002-11-02T10:00:00-05:00"
+        investgating_problem:
+          type: string
+          example: "数据库瓶颈分析——Read"
+        related_problems:
+          type: array
+          items:
+            $ref: "#/components/schemas/EmphasisProblem"
