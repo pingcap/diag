@@ -10,9 +10,9 @@ info:
   contact:
     email: fuxuwei@pingcap.com
 tags:
-  - name: dbas
+  - name: dba
     description: 诊断工具的 DBA 用户
-  - name: users
+  - name: client
     description: 普通用户
 paths: None
 components:
