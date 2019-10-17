@@ -17,7 +17,48 @@ tags:
   - name: ka
     description: KA 用户
 paths:
-  "/api/vi/emphasis":
+
+  "/api/v1/emphasis":
+    put:
+      tags:
+        - dba
+      summary: 上传重点问题报告
+      operationId: uploadEmphasis
+      requestBody:
+        content:
+          application/octet-stream:
+            schema:
+              type: string
+              format: binary
+      responses:
+        '200':
+          description: 上传成功，返回对象信息
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Instance'
+    post:
+      tags:
+        - dba
+      summary: 生成问题报告
+      operationId: generateEmphasis
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EmphasisProblem"
+
+      responses:
+        '200':
+          description: 生成成功，返回对象信息
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Instance'
     get:
       tags:
         - client
@@ -33,7 +74,89 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/Instance'
+  /api/v1/emphasis/{id}/download:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    get:
+      tags:
+        - dba
+      operationId: downloadEmphasisReport
+      responses:
+        '404':
+          description: 这个 id 对应的 emphasis 不存在
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/responses/NotFound'
+        '200':
+          description: 下载内容
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+
+  /api/v1/emphasis/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    get:
+      tags:
+        - client
+        - dba
+      summary: 单个 Emphasis 的信息
+      operationId: getEmphasis
+      responses:
+        '404':
+          description: 这个 id 对应的 emphasis 不存在
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/responses/NotFound'
+        '200':
+          description: 成功获得目标 id 的具体内容
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Instance'
+    delete:
+      tags:
+        - dba
+      summary: 删除单个 Emphasis 的信息
+      operationId: deleteEmphasis
+      responses:
+        '404':
+          description: 这个 id 对应的 emphasis 不存在, 无法删除
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/responses/NotFound'
+        '204':
+          description: 成功删除
+
 components:
+  responses:
+    NotFound:
+      description: The specified resource was not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Unauthorized:
+      description: Unauthorized
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
   schemas:
     Instance:
       type: object
@@ -415,3 +538,32 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/EmphasisProblem"
+    # Schema for error response body
+    Error:
+      type: object
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+      required:
+        - code
+        - message
+    ReportReq:
+      type: object
+      properties:
+        instance_id:
+          type: string
+          format: uuid
+        investgating_start:
+          type: string
+          format: date-time
+          example: "2002-10-02T10:00:00-05:00"
+        investgating_end:
+          type: string
+          format: date-time
+          example: "2002-11-02T10:00:00-05:00"
+        investgating_problem:
+          type: string
+          example: "数据库瓶颈分析——Read"
+        
