@@ -10,107 +10,349 @@ info:
   contact:
     email: fuxuwei@pingcap.com
 tags:
-  - name: admins
-    description: Secured Admin-only calls
-paths:
-  # TODO: this is a initializing commit. The api now is copying from the origin draft.
-  # TODO: I need to change it later.
-  /inventory:
-    get:
-      tags:
-        - admins
-      summary: searches inventory
-      operationId: searchInventory
-      description: |
-        By passing in the appropriate options, you can search for
-        available inventory in the system
-      parameters:
-        - in: query
-          name: searchString
-          description: pass an optional search string for looking up inventory
-          required: false
-          schema:
-            type: string
-        - in: query
-          name: skip
-          description: number of records to skip for pagination
-          schema:
-            type: integer
-            format: int32
-            minimum: 0
-        - in: query
-          name: limit
-          description: maximum number of records to return
-          schema:
-            type: integer
-            format: int32
-            minimum: 0
-            maximum: 50
-      responses:
-        '200':
-          description: search results matching criteria
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/InventoryItem'
-        '400':
-          description: bad input parameter
-    post:
-      tags:
-        - admins
-      summary: adds an inventory item
-      operationId: addInventory
-      description: Adds an item to the system
-      responses:
-        '201':
-          description: item created
-        '400':
-          description: 'invalid input, object invalid'
-        '409':
-          description: an existing item already exists
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/InventoryItem'
-        description: Inventory item to add
+  - name: dbas
+    description: 诊断工具的 DBA 用户
+  - name: users
+    description: 普通用户
+paths: None
 components:
   schemas:
-    InventoryItem:
+    Instance:
       type: object
-      required:
-        - id
-        - name
-        - manufacturer
-        - releaseDate
+      properties:
+        uuid:
+          type: string
+          format: uuid
+          example: "e66d287f-d859-4d54-a62b-6ecc95534e95"
+        name:
+          type: string
+          example: test-cluster
+          description: tidb 实例的名称
+        user:
+          type: string
+          example: tidb
+          description: 系统上的 user 的名称
+        status:
+          type: string
+          description: enum对象，表示 集群的状态(我要看细一点)
+          example: success
+        message:
+          type: string
+          description: "TODO: 我不懂这个 message 是啥"
+        create_time:
+          type: string
+          format: date-time
+          description: 实例创建的时间, 格式是 date time
+          example: "2002-10-02T10:00:00-05:00"
+        tidb:
+          type: string
+          description: tidb 集群的列表，用逗号分隔开来
+        tikv:
+          type: string
+          description: tidb 集群的列表，用逗号分隔开来
+        pd:
+          type: string
+          description: pd 集群的列表，用逗号分隔开来
+        grafana:
+          type: string
+          description: grafana 实例的访问地址
+        prometheus:
+          type: string
+          description: prometheus 的访问地址
+    Config:
+      type: object
+      properties:
+        instance_id:
+          type: string
+          format: uuid
+          example: "e66d287f-d859-4d54-a62b-6ecc95534e95"
+          description: "config 所属的集群, Instance 的 foreign-key"
+        collect_hardware_info:
+          type: boolean
+          description: 是否收集硬件信息
+          example: true
+        collect_software_info:
+          type: string
+          description: 是否收集软件信息
+          example: true
+        collect_log:
+          type: boolean
+          description: "是否应该收集日志"
+          example: true
+        auto_sched_start:
+          type: string
+          description: "自动调度开始的时间"
+          example: "00:00"
+        auto_sched_day:
+          type: string
+          description: "自动调度的日期"
+          example: "SUN"
+        auto_sched_duration:
+          type: integer
+          format: int64
+          description: "自动调度的间隔，单位是秒"
+        manual_sched_range:
+          type: string
+          description: "TODO: 这个我没太懂"
+        report_keep_duration:
+          type: integer
+          format: int64
+          description: "自动上报的间隔，单位是秒"
+    Inspection:
+      type: object
+      properties:
+        tidb:
+          type: string
+          description: tidb 集群的列表，用逗号分隔开来
+        tikv:
+          type: string
+          description: tidb 集群的列表，用逗号分隔开来
+        pd:
+          type: string
+          description: pd 集群的列表，用逗号分隔开来
+        grafana:
+          type: string
+          description: grafana 实例的访问地址
+        prometheus:
+          type: string
+          description: prometheus 的访问地址
+        uuid:
+          type: string
+          format: uuid
+          example: "e66d287f-d859-4d54-a62b-6ecc95534e95"
+          description: "报告的 uuid"
+        instance_id:
+          type: string
+          format: uuid
+          example: "e66d287f-d859-4d54-a62b-6ecc95534e95"
+          description: "config 所属的集群, Instance 的 foreign-key"
+        instance_name:
+          type: string
+          example: "tidb-foresight"
+          description: 实例的名称
+        user:
+          type: string
+          example: tidb
+          description: 系统上的 user 的名称
+        status:
+          type: string
+          description: enum对象，表示 集群的状态(我要看细一点)
+          example: success
+        message:
+          type: string
+          description: "TODO: 我不懂这个 message 是啥"
+        create_time:
+          type: string
+          format: date-time
+          description: 实例创建的时间, 格式是 date time
+          example: "2002-10-02T10:00:00-05:00"
+    LogEntity:
+      type: object
       properties:
         id:
           type: string
           format: uuid
-          example: d290f1ee-6c54-4b01-90e6-d701748f0851
-        name:
+          example: "e66d287f-d859-4d54-a62b-6ecc95534e95"
+        instance_name:
           type: string
-          example: Widget Adapter
-        releaseDate:
+    ProfileItem:
+      type: object
+      properties:
+        component:
+          type: string
+          description: "具体的组件"
+        address:
+          type: string
+        flames:
+          type: array
+          items:
+            type: string
+        metas:
+          type: array
+          items:
+            type: string
+    Profile:
+      type: object
+      properties:
+        uuid:
+          type: string
+          format: uuid
+          example: "e66d287f-d859-4d54-a62b-6ecc95534e95"
+        instance_name:
+          type: string
+          example: "tidb-foresight"
+          description: 实例的名称
+        cluster_version:
+          type: string
+          example: "3.0.5"
+          description: 集群的版本号
+        user:
+          type: string
+          example: tidb
+          description: 系统上的 user 的名称
+        status:
+          type: string
+          description: enum对象，表示 集群的状态(我要看细一点)
+          example: success
+        message:
+          type: string
+          description: "TODO: 我不懂这个 message 是啥"
+        create_time:
           type: string
           format: date-time
-          example: '2016-08-29T09:12:33.001Z'
-        manufacturer:
-          $ref: '#/components/schemas/Manufacturer'
-    Manufacturer:
-      required:
-        - name
+          description: 实例 开始 Profile 的时间, 格式是 date time, nullable
+          example: "2002-10-02T10:00:00-05:00"
+        finish_time:
+          type: string
+          format: date-time
+          description: 实例 Profile 的时间, 格式是 date time, nullable
+          example: "2002-10-02T10:00:00-05:00"
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProfileItem'
+    AlertInfo:
+      type: object
       properties:
         name:
           type: string
-          example: ACME Corporation
-        homePage:
+        value:
           type: string
-          format: url
-          example: 'https://www.acme-corp.com'
-        phone:
+        time:
           type: string
-          example: 408-867-5309
+          format: date-time
+    BasicInfo:
       type: object
+      properties:
+        cluster_name:
+          type: string
+        cluster_create_time:
+          type: string
+          format: date-time
+        inspect_time:
+          type: string
+          format: date-time
+        tidb_alive:
+          type: integer
+        tikv_alive:
+          type: integer
+        pd_alive:
+          type: integer
+    ConfigInfo:
+      type: object
+      properties:
+        node_ip:
+          type: string
+        port:
+          type: string
+        component:
+          type: string
+        config:
+          type: string
+    DBInfo:
+      type: object
+      properties:
+        schema:
+          type: string
+        table:
+          type: string
+        index:
+          type: string
+    DmesgLog:
+      type: object
+      properties:
+        node_ip:
+          type: string
+        log:
+          type: string
+    HardwareInfo:
+      type: object
+      properties:
+        node_ip:
+          type: string
+        cpu:
+          type: string
+        memory:
+          type: string
+        disk:
+          type: string
+        network:
+          type: string
+    Items:
+      type: object
+      properties:
+        name:
+          type: string
+        status:
+          type: string
+        messages:
+          type: string
+    NetworkInfo:
+      type: object
+      properties:
+        node_ip:
+          type: string
+        connections:
+          type: string
+        recv:
+          type: string
+        send:
+          type: string
+        bad_seg:
+          type: string
+    NtpInfo:
+      type: object
+      properties:
+        node_ip:
+          type: string
+        offset:
+          type: number
+          format: double
+    ResourceInfo:
+      type: object
+      properties:
+        name:
+          type: string
+        duration:
+          type: string
+        avg:
+          type: string
+        max:
+          type: string
+    SlowLogInfo:
+      type: object
+      properties:
+        time:
+          type: string
+          format: date-time
+        query:
+          type: string
+    SoftwareInfo:
+      type: object
+      properties:
+        node_ip:
+          type: string
+        component:
+          type: string
+        version:
+          type: string
+    Syptom:
+      type: object
+      properties:
+        status:
+          type: string
+        message:
+          type: string
+        description:
+          type: string
+    TopologyInfo:
+      type: object
+      properties:
+        node_ip:
+          type: string
+        port:
+          type: string
+        status:
+          type: string
+        name:
+          type: string
