@@ -146,9 +146,11 @@ function ReportList({
 }: ReportListProps) {
   const initInstanceId: string | undefined = match && match.params && (match.params as any).id;
 
+  // TODO: try to use useReducer to replace so many useState
   const [selectedInstance, setSelectedInstance] = useState(initInstanceId);
 
   const [configModalVisible, setConfigModalVisible] = useState(false);
+  const [manualInspect, setManualInspect] = useState(false);
 
   const [uploadRemoteModalVisible, setUploadRemoteModalVisible] = useState(false);
   const [remoteUploadUrl, setRemoteUploadUrl] = useState('');
@@ -221,6 +223,11 @@ function ReportList({
     });
   }
 
+  function handleInspectionConfig(manual: boolean) {
+    setConfigModalVisible(true);
+    setManualInspect(manual);
+  }
+
   return (
     <div className={styles.container}>
       <div className={styles.list_header}>
@@ -243,9 +250,18 @@ function ReportList({
         )}
         <div className={styles.space} />
         {curUser.role === 'admin' && selectedInstance !== undefined && (
-          <Button type="primary" onClick={() => setConfigModalVisible(true)}>
-            手动一键诊断
-          </Button>
+          <React.Fragment>
+            <Button
+              type="primary"
+              style={{ right: 12 }}
+              onClick={() => handleInspectionConfig(false)}
+            >
+              自动诊断设置
+            </Button>
+            <Button type="primary" onClick={() => handleInspectionConfig(true)}>
+              手动诊断
+            </Button>
+          </React.Fragment>
         )}
         {curUser.role === 'dba' && (
           <Button type="primary" onClick={() => setUploadLocalModalVisible(true)}>
@@ -264,7 +280,7 @@ function ReportList({
         dispatch={dispatch}
         visible={configModalVisible}
         onClose={() => setConfigModalVisible(false)}
-        manual
+        manual={manualInspect}
         instanceId={selectedInstance || ''}
       />
       <UploadRemoteReportModal
