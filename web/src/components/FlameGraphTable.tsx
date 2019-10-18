@@ -71,5 +71,13 @@ export default function FlameGraphTable({ reportId }: FlamegraphTableProps) {
     fetchDetail();
   }, []);
 
-  return <Table dataSource={flames} columns={tableColumns} pagination={false} loading={loading} />;
+  return (
+    <Table
+      dataSource={flames}
+      rowKey="svgFullPath"
+      columns={tableColumns}
+      pagination={false}
+      loading={loading}
+    />
+  );
 }

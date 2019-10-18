@@ -79,7 +79,7 @@ const tableColumns = (curUser: CurrentUser, onDelete: any, onUpload: any) => [
     render: (text: any, record: IPerfProfile) => (
       <span>
         {record.status === 'success' ? (
-          <Link to={`/misc/perfprofiles/${record.uuid}`}>详情</Link>
+          <Link to={`/inspection/perfprofiles/${record.uuid}`}>详情</Link>
         ) : (
           <span>详情</span>
         )}
