@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { Table, Button, Tooltip, Icon, Divider, Modal } from 'antd';
+import { Table, Button, Tooltip, Icon, Divider, Modal, Menu, Dropdown } from 'antd';
 import { connect } from 'dva';
 import { Link } from 'umi';
 import { ConnectState, ConnectProps, InspectionModelState, Dispatch } from '@/models/connect';
@@ -61,9 +61,23 @@ const tableColumns = (onDelete: any) => [
     render: (text: any, record: IFormatInstance) => (
       <span>
         {record.status === 'success' ? (
-          <Link to={`/inspection/instances/${record.uuid}/reports`}>查看</Link>
+          <Dropdown
+            trigger={['click']}
+            overlay={
+              <Menu>
+                <Menu.Item>
+                  <Link to={`/inspection/instances/${record.uuid}/reports`}>诊断报告</Link>
+                </Menu.Item>
+                <Menu.Item>
+                  <Link to="/inspection/perfprofiles">火焰图 & profile</Link>
+                </Menu.Item>
+              </Menu>
+            }
+          >
+            <a href="#">诊断管理</a>
+          </Dropdown>
         ) : (
-          <span>查看</span>
+          <span>诊断管理</span>
         )}
         <Divider type="vertical" />
         <a style={{ color: 'red' }} onClick={() => onDelete(record)}>
