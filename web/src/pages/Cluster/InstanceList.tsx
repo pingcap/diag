@@ -1,16 +1,15 @@
 import React, { useMemo, useState } from 'react';
-import { Table, Button, Tooltip, Icon, Divider, Modal } from 'antd';
+import { Table, Button, Tooltip, Icon, Divider, Modal, Menu, Dropdown } from 'antd';
 import { connect } from 'dva';
 import { Link } from 'umi';
 import { ConnectState, ConnectProps, InspectionModelState, Dispatch } from '@/models/connect';
 import { IFormatInstance, IInstance } from '@/models/inspection';
 import AddInstanceModal from '@/components/AddInstanceModal';
-import ConfigInstanceModal from '@/components/ConfigInstanceModal';
 import { useIntervalRun } from '@/custom-hooks/use-interval-run';
 
 const styles = require('../style.less');
 
-const tableColumns = (onDelete: any, onConfig: any) => [
+const tableColumns = (onDelete: any) => [
   {
     title: '用户名',
     dataIndex: 'user',
@@ -62,15 +61,23 @@ const tableColumns = (onDelete: any, onConfig: any) => [
     render: (text: any, record: IFormatInstance) => (
       <span>
         {record.status === 'success' ? (
-          <Link to={`/inspection/instances/${record.uuid}/reports`}>查看</Link>
+          <Dropdown
+            trigger={['click']}
+            overlay={
+              <Menu>
+                <Menu.Item>
+                  <Link to={`/inspection/instances/${record.uuid}/reports`}>诊断报告</Link>
+                </Menu.Item>
+                <Menu.Item>
+                  <Link to="/inspection/perfprofiles">火焰图 & profile</Link>
+                </Menu.Item>
+              </Menu>
+            }
+          >
+            <a href="#">诊断管理</a>
+          </Dropdown>
         ) : (
-          <span>查看</span>
-        )}
-        <Divider type="vertical" />
-        {record.status === 'success' ? (
-          <a onClick={() => onConfig(record)}>设置</a>
-        ) : (
-          <span>设置</span>
+          <span>诊断管理</span>
         )}
         <Divider type="vertical" />
         <a style={{ color: 'red' }} onClick={() => onDelete(record)}>
@@ -89,12 +96,10 @@ interface InstanceListProps extends ConnectProps {
 
 function InstanceList({ inspection, dispatch, loading }: InstanceListProps) {
   const [addModalVisible, setAddModalVisible] = useState(false);
-  const [configModalVisible, setConfigModalVisible] = useState(false);
-  const [curInstance, setCurInstance] = useState<IInstance | null>(null);
 
   useIntervalRun(() => dispatch({ type: 'inspection/fetchInstances' }));
 
-  const columns = useMemo(() => tableColumns(deleteInstance, configInstance), []);
+  const columns = useMemo(() => tableColumns(deleteInstance), []);
 
   function deleteInstance(record: IFormatInstance) {
     Modal.confirm({
@@ -112,11 +117,6 @@ function InstanceList({ inspection, dispatch, loading }: InstanceListProps) {
     });
   }
 
-  function configInstance(record: IFormatInstance) {
-    setConfigModalVisible(true);
-    setCurInstance(record);
-  }
-
   function onAdd() {
     setAddModalVisible(true);
   }
@@ -127,11 +127,6 @@ function InstanceList({ inspection, dispatch, loading }: InstanceListProps) {
       type: 'inspection/saveInstance',
       payload: instance,
     });
-  }
-
-  function closeConfigModal() {
-    setConfigModalVisible(false);
-    setCurInstance(null);
   }
 
   return (
@@ -152,12 +147,6 @@ function InstanceList({ inspection, dispatch, loading }: InstanceListProps) {
         visible={addModalVisible}
         onClose={() => setAddModalVisible(false)}
         onData={addInstance}
-      />
-      <ConfigInstanceModal
-        visible={configModalVisible}
-        onClose={closeConfigModal}
-        manual={false}
-        instanceId={curInstance ? curInstance.uuid : ''}
       />
     </div>
   );

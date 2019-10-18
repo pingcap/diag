@@ -1,6 +1,10 @@
 import { useEffect } from 'react';
 
-export function useIntervalRun(run: () => void, intervalTime: number = 10 * 1000) {
+export function useIntervalRun(
+  run: () => void,
+  intervalTime: number = 10 * 1000,
+  deps: any[] = [],
+) {
   useEffect(() => {
     let timer: NodeJS.Timeout;
     function intervalRun() {
@@ -26,5 +30,5 @@ export function useIntervalRun(run: () => void, intervalTime: number = 10 * 1000
       clearTimer();
     }
     return cleanup;
-  }, []);
+  }, deps);
 }

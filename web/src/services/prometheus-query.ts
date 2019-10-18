@@ -9,7 +9,7 @@ export interface IPromParams {
 }
 
 // request:
-// http://localhost:3000/metric/api/v1/query_range?query=pd_cluster_status%7Btype%3D%22storage_size%22%7D&start=1560836237&end=1560836537&step=20
+// http://localhost:8000/api/v1/metric/query_range?query=pd_cluster_status%7Btype%3D%22storage_size%22%7D&start=1560836237&end=1560836537&step=20
 // response:
 // {
 //   "status": "success",

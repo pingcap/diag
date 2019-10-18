@@ -39,56 +39,69 @@ export default [
         path: '/inspection',
         name: 'inspection',
         icon: 'dashboard',
-        hideChildrenInMenu: true,
         routes: [
           {
             path: '/inspection',
             redirect: '/inspection/reports',
           },
           {
+            path: '/inspection/reports',
+            name: 'report_list',
+            component: './Inspection/ReportList',
+          },
+          {
             path: '/inspection/instances/:id/reports',
             name: 'report_list',
             component: './Inspection/ReportList',
+            hideInMenu: true,
           },
           {
             path: '/inspection/instances/:instanceId/reports/:id',
             name: 'report_detail',
             component: './Inspection/ReportDetail',
+            hideInMenu: true,
           },
           {
             path: '/inspection/reports/:id',
             name: 'report_detail',
             component: './Inspection/ReportDetail',
+            hideInMenu: true,
           },
           {
-            path: '/inspection/reports',
-            name: 'report_list',
-            component: './Inspection/ReportList',
-          },
-        ],
-      },
-      {
-        path: '/misc',
-        name: 'misc',
-        icon: 'dashboard',
-        routes: [
-          {
-            path: '/misc',
-            redirect: '/misc/perfprofiles',
-          },
-          {
-            path: '/misc/perfprofiles',
+            path: '/inspection/perfprofiles',
             name: 'perf_profile',
             component: './Misc/PerfProfileList',
           },
           {
-            path: '/misc/perfprofiles/:id',
+            path: '/inspection/perfprofiles/:id',
             name: 'perf_profile_detail',
             component: './Misc/PerfProfileDetail',
             hideInMenu: true,
           },
         ],
       },
+      // {
+      //   path: '/misc',
+      //   name: 'misc',
+      //   icon: 'dashboard',
+      //   routes: [
+      //     {
+      //       path: '/misc',
+      //       redirect: '/misc/perfprofiles',
+      //     },
+      //     {
+      //       path: '/misc/perfprofiles',
+      //       name: 'perf_profile',
+      //       component: './Misc/PerfProfileList',
+      //     },
+      //     {
+      //       path: '/misc/perfprofiles/:id',
+      //       name: 'perf_profile_detail',
+      //       component: './Misc/PerfProfileDetail',
+      //       hideInMenu: true,
+      //     },
+      //   ],
+      // },
       {
         path: '/logs',
         name: 'logs',

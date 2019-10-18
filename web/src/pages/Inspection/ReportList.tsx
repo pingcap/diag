@@ -1,5 +1,5 @@
-import React, { useMemo, useState } from 'react';
-import { Table, Button, Divider, Modal, Tooltip, Icon } from 'antd';
+import React, { useMemo, useState, useEffect } from 'react';
+import { Table, Button, Divider, Modal, Tooltip, Icon, Select } from 'antd';
 import { connect } from 'dva';
 import { Link } from 'umi';
 import { PaginationConfig } from 'antd/lib/table';
@@ -10,6 +10,8 @@ import { CurrentUser } from '@/models/user';
 import UploadLocalReportModal from '@/components/UploadLocalReportModal';
 import ConfigInstanceModal from '@/components/ConfigInstanceModal';
 import { useIntervalRun } from '@/custom-hooks/use-interval-run';
+
+const { Option } = Select;
 
 const styles = require('../style.less');
 
@@ -131,12 +133,24 @@ interface ReportListProps extends ConnectProps {
   curUser: CurrentUser;
   inspection: InspectionModelState;
   loading: boolean;
+  loadingInstances: boolean;
 }
 
-function ReportList({ dispatch, curUser, inspection, match, loading }: ReportListProps) {
-  const instanceId: string | undefined = match && match.params && (match.params as any).id;
+function ReportList({
+  dispatch,
+  curUser,
+  inspection,
+  match,
+  loading,
+  loadingInstances,
+}: ReportListProps) {
+  const initInstanceId: string | undefined = match && match.params && (match.params as any).id;
+
+  // TODO: try to use useReducer to replace so many useState
+  const [selectedInstance, setSelectedInstance] = useState(initInstanceId);
 
   const [configModalVisible, setConfigModalVisible] = useState(false);
+  const [manualInspect, setManualInspect] = useState(false);
 
   const [uploadRemoteModalVisible, setUploadRemoteModalVisible] = useState(false);
   const [remoteUploadUrl, setRemoteUploadUrl] = useState('');
@@ -151,21 +165,31 @@ function ReportList({ dispatch, curUser, inspection, match, loading }: ReportLis
     [inspection.cur_inspections_page, inspection.total_inspections],
   );
 
-  useIntervalRun(fetchInspections);
+  useIntervalRun(fetchInspections, 10 * 1000, [selectedInstance]);
+
+  useEffect(() => {
+    fetchInstances();
+  }, []);
+
+  function fetchInstances() {
+    dispatch({
+      type: 'inspection/fetchInstances',
+    });
+  }
 
   function fetchInspections(page?: number) {
     dispatch({
       type: 'inspection/fetchInspections',
       payload: {
         page,
-        instanceId,
+        instanceId: selectedInstance,
       },
     });
   }
 
   const columns = useMemo(
-    () => tableColumns(curUser, deleteInspection, uploadInspection, instanceId),
-    [curUser],
+    () => tableColumns(curUser, deleteInspection, uploadInspection, selectedInstance),
+    [curUser, selectedInstance],
   );
 
   function deleteInspection(record: IFormatInspection) {
@@ -199,14 +223,45 @@ function ReportList({ dispatch, curUser, inspection, match, loading }: ReportLis
     });
   }
 
+  function handleInspectionConfig(manual: boolean) {
+    setConfigModalVisible(true);
+    setManualInspect(manual);
+  }
+
   return (
     <div className={styles.container}>
       <div className={styles.list_header}>
         <h2>诊断报告列表</h2>
-        {curUser.role === 'admin' && instanceId !== undefined && (
-          <Button type="primary" onClick={() => setConfigModalVisible(true)}>
-            手动一键诊断
-          </Button>
+        {curUser.role === 'admin' && (
+          <Select
+            value={selectedInstance}
+            loading={loadingInstances}
+            allowClear
+            placeholder="选择集群实例"
+            style={{ width: 200, marginLeft: 12 }}
+            onChange={(val: any) => setSelectedInstance(val)}
+          >
+            {inspection.instances.map(item => (
+              <Option value={item.uuid} key={item.uuid}>
+                {item.name}
+              </Option>
+            ))}
+          </Select>
+        )}
+        <div className={styles.space} />
+        {curUser.role === 'admin' && selectedInstance !== undefined && (
+          <React.Fragment>
+            <Button
+              type="primary"
+              style={{ right: 12 }}
+              onClick={() => handleInspectionConfig(false)}
+            >
+              自动诊断设置
+            </Button>
+            <Button type="primary" onClick={() => handleInspectionConfig(true)}>
+              手动诊断
+            </Button>
+          </React.Fragment>
         )}
         {curUser.role === 'dba' && (
           <Button type="primary" onClick={() => setUploadLocalModalVisible(true)}>
@@ -225,8 +280,8 @@ function ReportList({ dispatch, curUser, inspection, match, loading }: ReportLis
         dispatch={dispatch}
         visible={configModalVisible}
         onClose={() => setConfigModalVisible(false)}
-        manual
-        instanceId={instanceId || ''}
+        manual={manualInspect}
+        instanceId={selectedInstance || ''}
       />
       <UploadRemoteReportModal
         visible={uploadRemoteModalVisible}
@@ -247,4 +302,5 @@ export default connect(({ user, inspection, loading }: ConnectState) => ({
   curUser: user.currentUser,
   inspection,
   loading: loading.effects['inspection/fetchInspections'],
+  loadingInstances: loading.effects['inspection/fetchInstances'],
 }))(ReportList);
