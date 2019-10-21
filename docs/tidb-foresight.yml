@@ -17,9 +17,9 @@ tags:
   - name: ka
     description: KA Client 用户
 paths:
-  /api/v1/instances/{id}/emphasis:
+  /api/v1/instances/{InstanceId}/emphasis:
     parameters:
-      - name: id
+      - name: InstanceId
         in: path
         required: true
         schema:
@@ -32,7 +32,7 @@ paths:
       operationId: getAllEmphasisOfInstance
       responses:
         '200':
-          description: 获取到了 id 下对应的所有 Emphasis 实例
+          description: 获取到了 InstanceId 下对应的所有 Emphasis 实例
           content:
             application/json:
               schema:
@@ -40,9 +40,6 @@ paths:
                 items:
                   $ref: '#/components/schemas/Emphasis'
 
-
-
-  "/api/v1/emphasis":
     post:
       tags:
         - ka
@@ -62,6 +59,9 @@ paths:
               schema:
                 $ref: '#/components/schemas/Emphasis'
 
+
+
+  "/api/v1/emphasis/":
     get:
       tags:
         - dba
@@ -88,6 +88,8 @@ paths:
     get:
       tags:
         - dba
+        - client
+        - ka
       operationId: downloadEmphasisReport
       responses:
         '404':
@@ -575,9 +577,6 @@ components:
     ReportReq:
       type: object
       properties:
-        instance_id:
-          type: string
-          format: uuid
         investgating_start:
           type: string
           format: date-time
