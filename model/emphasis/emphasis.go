@@ -14,8 +14,3 @@ type Emphasis struct {
 
 	RelatedProblems []Emphasis `json:"related_problems" gorm:"foreignkey:UserRefer"`
 }
-
-// 列出所有的重点问题
-func ListAllEmphasis() {
-	panic("unimplemented")
-}
