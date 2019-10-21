@@ -19,12 +19,12 @@ tags:
 paths:
   /api/v1/instances/{InstanceId}/emphasis:
     parameters:
-      - name: InstanceId
-        in: path
-        required: true
-        schema:
-          type: string
-          format: uuid
+    - name: InstanceId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
     get:
       tags:
         - ka
@@ -70,6 +70,28 @@ paths:
       responses:
         '200':
           description: 成功找到了所有的 Emphasis
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Emphasis'
+
+    post:
+      tags:
+        - ka
+        - client
+      summary: 导入本地的报告
+      operationId: loadLocalReport
+      requestBody:
+        content:
+          application/octet-stream:
+            schema:
+              type: string
+              format: binary
+      responses:
+        '200':
+          description: 成功上传本地的报告
           content:
             application/json:
               schema:
