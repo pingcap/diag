@@ -13,55 +13,57 @@ tags:
   - name: dba
     description: 诊断工具的 DBA 用户
   - name: client
-    description: 普通用户
+    description: 普通 Client 用户
   - name: ka
-    description: KA 用户
+    description: KA Client 用户
 paths:
-
-  "/api/v1/emphasis":
-    put:
+  /api/v1/instances/{id}/emphasis:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    get:
       tags:
-        - dba
-      summary: 上传重点问题报告
-      operationId: uploadEmphasis
-      requestBody:
-        content:
-          application/octet-stream:
-            schema:
-              type: string
-              format: binary
+        - ka
+        - client
+      operationId: getAllEmphasisOfInstance
       responses:
         '200':
-          description: 上传成功，返回对象信息
+          description: 获取到了 id 下对应的所有 Emphasis 实例
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/Instance'
+                  $ref: '#/components/schemas/Emphasis'
+
+
+
+  "/api/v1/emphasis":
     post:
       tags:
-        - dba
+        - ka
+        - client
       summary: 生成问题报告
       operationId: generateEmphasis
       requestBody:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/EmphasisProblem"
-
+              $ref: "#/components/schemas/ReportReq"
       responses:
         '200':
           description: 生成成功，返回对象信息
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/Instance'
+                $ref: '#/components/schemas/Emphasis'
+
     get:
       tags:
-        - client
         - dba
       summary: 获得所有的重点问题报告
       operationId: listAllEmpasis
@@ -73,8 +75,9 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/Instance'
-  /api/v1/emphasis/{id}/download:
+                  $ref: '#/components/schemas/Emphasis'
+
+  /api/v1/emphasis/{id}.tar.gz:
     parameters:
       - name: id
         in: path
@@ -109,6 +112,26 @@ paths:
         schema:
           type: string
           format: uuid
+    put:
+      tags:
+        - ka
+      summary: 上传重点问题报告
+      operationId: uploadEmphasis
+      requestBody:
+        content:
+          application/octet-stream:
+            schema:
+              type: string
+              format: binary
+      responses:
+        '200':
+          description: 上传成功，返回对象信息
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Emphasis'
     get:
       tags:
         - client
@@ -127,7 +150,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Instance'
+                $ref: '#/components/schemas/Emphasis'
     delete:
       tags:
         - dba
@@ -566,4 +589,3 @@ components:
         investgating_problem:
           type: string
           example: "数据库瓶颈分析——Read"
-        
