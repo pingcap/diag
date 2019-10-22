@@ -10,6 +10,7 @@ import (
 	"github.com/pingcap/fn"
 	"github.com/pingcap/tidb-foresight/handler/auth"
 	"github.com/pingcap/tidb-foresight/handler/config"
+	"github.com/pingcap/tidb-foresight/handler/emphasis"
 	"github.com/pingcap/tidb-foresight/handler/inspection"
 	"github.com/pingcap/tidb-foresight/handler/instance"
 	"github.com/pingcap/tidb-foresight/handler/logs"
@@ -96,6 +97,28 @@ func (s *Server) CreateRouter() http.Handler {
 	r.Handle("/api/v1/inspections/{id}", inspection.UploadInspection(s.config)).Methods("PUT")
 	r.Handle("/api/v1/inspections/{id}", inspection.DeleteInspection(s.config, s.model)).Methods("DELETE")
 	r.Handle("/api/v1/inspections/{id}", inspection.UpdateInspectionEscapedLeft(s.model)).Methods("PUT")
+
+	// emphasis
+	api := r.PathPrefix("/api/v1").Subrouter()
+
+	{
+		// List
+		api.Handle("/emphasis", emphasis.Unimplemented(s.config)).Methods("GET")
+		// Upload and import local reports.
+		api.Handle("/emphasis", emphasis.Unimplemented(s.config)).Methods("POST")
+		// List with instance_id
+		api.Handle("/instances/{InstanceId}/emphasis", emphasis.Unimplemented(s.config)).Methods("GET")
+		// Download resource from
+		api.Handle("/emphasis/{uuid}.tar.gz", emphasis.Unimplemented(s.config)).Methods("GET")
+		// Generate Report
+		api.Handle("/instances/{InstanceId}/emphasis", emphasis.Unimplemented(s.config)).Methods("POST")
+		// Upload emphasis
+		api.Handle("/api/v1/emphasis/{id}", emphasis.Unimplemented(s.config)).Methods("PUT")
+		// Get Emphasis by id
+		api.Handle("/api/v1/emphasis/{id}", emphasis.Unimplemented(s.config)).Methods("GET")
+		// Delete emphasis by id
+		api.Handle("/api/v1/emphasis/{id}", emphasis.Unimplemented(s.config)).Methods("DELETE")
+	}
 
 	// report
 	r.Handle("/api/v1/inspections/{id}/symptom", report.Symptom(s.model)).Methods("GET")
