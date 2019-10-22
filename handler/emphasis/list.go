@@ -4,7 +4,7 @@ import (
 	"net/http"
 
 	"github.com/pingcap/fn"
-	hepler "github.com/pingcap/tidb-foresight/handler/utils"
+	helper "github.com/pingcap/tidb-foresight/handler/utils"
 	"github.com/pingcap/tidb-foresight/model"
 	"github.com/pingcap/tidb-foresight/utils"
 	log "github.com/sirupsen/logrus"
@@ -15,6 +15,7 @@ type listAllEmphasisHandler struct {
 	m model.Model
 }
 
+// List By Instance Id
 type listAllEmphasisByInstanceHandler struct {
 	m model.Model
 }
@@ -36,8 +37,8 @@ func (h *listAllEmphasisByInstanceHandler) ServeHTTP(w http.ResponseWriter, r *h
 }
 
 func (h *listAllEmphasisByInstanceHandler) listAllEmphasisByInstance(r *http.Request) (*utils.PaginationResponse, utils.StatusError) {
-	page, size := hepler.LoadHttpPaging(r)
-	instanceId := hepler.LoadRouterVar(r, "instance_id")
+	page, size := helper.LoadHttpPaging(r)
+	instanceId := helper.LoadRouterVar(r, "instance_id")
 
 	emphasis, total, err := h.m.ListAllEmphasisOfInstance(page, size, instanceId)
 	if err != nil {
@@ -48,7 +49,7 @@ func (h *listAllEmphasisByInstanceHandler) listAllEmphasisByInstance(r *http.Req
 }
 
 func (h *listAllEmphasisHandler) listAllEmphasis(r *http.Request) (*utils.PaginationResponse, utils.StatusError) {
-	page, size := hepler.LoadHttpPaging(r)
+	page, size := helper.LoadHttpPaging(r)
 	emphasis, total, err := h.m.ListAllEmphasis(page, size)
 	if err != nil {
 		log.Error("list inspections: ", err)
