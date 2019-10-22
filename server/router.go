@@ -115,7 +115,7 @@ func (s *Server) CreateRouter() http.Handler {
 		// Upload emphasis
 		api.Handle("/api/v1/emphasis/{uuid}", emphasis.Unimplemented(s.config)).Methods("PUT")
 		// Get Emphasis by id
-		api.Handle("/api/v1/emphasis/{uuid}", emphasis.Unimplemented(s.config)).Methods("GET")
+		api.Handle("/api/v1/emphasis/{uuid}", emphasis.GetEmphasis(s.model)).Methods("GET")
 		// Delete emphasis by id
 		api.Handle("/api/v1/emphasis/{uuid}", emphasis.Unimplemented(s.config)).Methods("DELETE")
 	}
