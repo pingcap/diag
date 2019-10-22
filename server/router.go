@@ -103,21 +103,21 @@ func (s *Server) CreateRouter() http.Handler {
 
 	{
 		// List
-		api.Handle("/emphasis", emphasis.Unimplemented(s.config)).Methods("GET")
+		api.Handle("/emphasis", emphasis.ListAllEmphasis(s.model)).Methods("GET")
 		// Upload and import local reports.
 		api.Handle("/emphasis", emphasis.Unimplemented(s.config)).Methods("POST")
 		// List with instance_id
-		api.Handle("/instances/{InstanceId}/emphasis", emphasis.Unimplemented(s.config)).Methods("GET")
+		api.Handle("/instances/{instance_id}/emphasis", emphasis.ListAllEmphasisByInstance(s.model)).Methods("GET")
 		// Download resource from
 		api.Handle("/emphasis/{uuid}.tar.gz", emphasis.Unimplemented(s.config)).Methods("GET")
 		// Generate Report
-		api.Handle("/instances/{InstanceId}/emphasis", emphasis.Unimplemented(s.config)).Methods("POST")
+		api.Handle("/instances/{instance_id}/emphasis", emphasis.Unimplemented(s.config)).Methods("POST")
 		// Upload emphasis
-		api.Handle("/api/v1/emphasis/{id}", emphasis.Unimplemented(s.config)).Methods("PUT")
+		api.Handle("/api/v1/emphasis/{uuid}", emphasis.Unimplemented(s.config)).Methods("PUT")
 		// Get Emphasis by id
-		api.Handle("/api/v1/emphasis/{id}", emphasis.Unimplemented(s.config)).Methods("GET")
+		api.Handle("/api/v1/emphasis/{uuid}", emphasis.Unimplemented(s.config)).Methods("GET")
 		// Delete emphasis by id
-		api.Handle("/api/v1/emphasis/{id}", emphasis.Unimplemented(s.config)).Methods("DELETE")
+		api.Handle("/api/v1/emphasis/{uuid}", emphasis.Unimplemented(s.config)).Methods("DELETE")
 	}
 
 	// report
