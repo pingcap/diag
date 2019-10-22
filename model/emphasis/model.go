@@ -7,9 +7,9 @@ import (
 )
 
 type Model interface {
-	ListAllEmphasis(page, size int64) ([]*Emphasis, error)
-	ListAllEmphasisOfInstance(page, size int64, instanceId string) ([]*Emphasis, error)
-	GenerateEmphasis(InvestStart time.Time, InvestEnd time.Time, InvestProblem string) (*Emphasis, error)
+	ListAllEmphasis(page, size int64) ([]*Emphasis, int, error)
+	ListAllEmphasisOfInstance(page, size int64, instanceId string) ([]*Emphasis, int, error)
+	GenerateEmphasis(InstanceId string, InvestStart time.Time, InvestEnd time.Time, InvestProblem string) (*Emphasis, error)
 	GetEmphasis(uuid string) (*Emphasis, error)
 }
 
@@ -22,11 +22,10 @@ type emphasis struct {
 	db db.DB
 }
 
-func (e *emphasis) ListAllEmphasis(page, size int64) ([]*Emphasis, int, error) {
+// 分页的辅助函数
+func (e *emphasis) paging(query db.DB, page, size int64) ([]*Emphasis, int, error) {
 	insps := []*Emphasis{}
 	count := 0
-	query := e.db.Model(&Emphasis{}).Order("created_time desc")
-
 	if err := query.Offset((page - 1) * size).Limit(size).Find(&insps).Error(); err != nil {
 		return nil, 0, err
 	}
@@ -38,14 +37,30 @@ func (e *emphasis) ListAllEmphasis(page, size int64) ([]*Emphasis, int, error) {
 	return insps, count, nil
 }
 
-func (*emphasis) ListAllEmphasisOfInstance(page, size int64, instanceId string) ([]*Emphasis, error) {
-	panic("implement me")
+func (e *emphasis) ListAllEmphasis(page, size int64) ([]*Emphasis, int, error) {
+	query := e.db.Model(&Emphasis{}).Order("created_time desc")
+	return e.paging(query, page, size)
 }
 
-func (*emphasis) GenerateEmphasis(InvestStart time.Time, InvestEnd time.Time, InvestProblem string) (*Emphasis, error) {
-	panic("implement me")
+func (e *emphasis) ListAllEmphasisOfInstance(page, size int64, instanceId string) ([]*Emphasis, int, error) {
+	query := e.db.Model(&Emphasis{}).Where("instance_id = ?", instanceId).Order("created_time desc")
+	return e.paging(query, page, size)
 }
 
-func (*emphasis) GetEmphasis(uuid string) (*Emphasis, error) {
-	panic("implement me")
+func (e *emphasis) GenerateEmphasis(InstanceId string, InvestStart time.Time, InvestEnd time.Time, InvestProblem string) (*Emphasis, error) {
+	emph := Emphasis{InstanceId: InstanceId, InvestgatingStart: InvestStart, InvestgatingEnd: InvestEnd, InvestgatingProblem: InvestProblem}
+
+	if err := e.db.Create(&emph).Error(); err != nil {
+		return nil, err
+	}
+	return &emph, nil
+}
+
+func (e *emphasis) GetEmphasis(uuid string) (*Emphasis, error) {
+	emph := Emphasis{}
+
+	if err := e.db.Where(&Emphasis{Uuid: uuid}).Take(&emph).Error(); err != nil {
+		return nil, err
+	}
+	return &emph, nil
 }
