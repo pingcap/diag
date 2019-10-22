@@ -34,7 +34,7 @@ const tableColumns = [
   },
 ];
 
-const logLevels = ['DEBUG', 'INFO', 'WARNING', 'ERROR', 'OTHERS'];
+const LOG_LEVELS = ['DEBUG', 'INFO', 'WARNING', 'ERROR', 'OTHERS'];
 
 interface ReportListProps extends ConnectProps {
   dispatch: Dispatch;
@@ -210,7 +210,7 @@ function ReportList({
           style={{ width: 140, marginRight: 12 }}
           onChange={handleLogLevelChange}
         >
-          {logLevels.map(item => (
+          {LOG_LEVELS.map(item => (
             <Option value={item} key={item}>
               {item}
             </Option>

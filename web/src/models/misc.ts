@@ -119,6 +119,7 @@ const MiscModel: MiscModelType = {
           payload: { page, res },
         });
       }
+      return res;
     },
     *addFlamegraph({ payload }, { call, put }) {
       const instanceId = payload;
@@ -156,6 +157,7 @@ const MiscModel: MiscModelType = {
           payload: { page, res },
         });
       }
+      return res;
     },
     *addPerfProfile({ payload }, { call, put }) {
       const { instanceId, node } = payload;

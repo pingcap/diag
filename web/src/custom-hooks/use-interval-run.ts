@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 
 export function useIntervalRun(
-  run: () => void,
+  run: () => Promise<any>,
   intervalTime: number = 10 * 1000,
   deps: any[] = [],
 ) {
@@ -9,8 +9,11 @@ export function useIntervalRun(
     let timer: NodeJS.Timeout;
     function intervalRun() {
       clearTimer();
-      run();
-      timer = setInterval(run, intervalTime);
+      run().then((ret: any) => {
+        if (ret !== undefined) {
+          timer = setInterval(run, intervalTime);
+        }
+      });
     }
     function clearTimer() {
       clearInterval(timer);

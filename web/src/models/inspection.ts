@@ -175,6 +175,7 @@ const InspectionModel: InspectionModelType = {
           payload: res,
         });
       }
+      return res;
     },
     *deleteInstance({ payload }, { call, put }) {
       const instanceId = payload;
@@ -209,6 +210,7 @@ const InspectionModel: InspectionModelType = {
           },
         });
       }
+      return res;
     },
     *deleteInspection({ payload }, { call, put }) {
       const inspectionId = payload;
