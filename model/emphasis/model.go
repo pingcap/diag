@@ -3,13 +3,13 @@ package emphasis
 import (
 	"github.com/pingcap/tidb-foresight/utils"
 	"github.com/pingcap/tidb-foresight/wrapper/db"
-	"time"
 )
 
 type Model interface {
 	ListAllEmphasis(page, size int64) ([]*Emphasis, int, error)
 	ListAllEmphasisOfInstance(page, size int64, instanceId string) ([]*Emphasis, int, error)
-	GenerateEmphasis(InstanceId string, InvestStart time.Time, InvestEnd time.Time, InvestProblem string) (*Emphasis, error)
+	CreateEmphasis(*Emphasis) error
+	//GenerateEmphasis(InstanceId string, InvestStart time.Time, InvestEnd time.Time, InvestProblem string) (*Emphasis, error)
 	GetEmphasis(uuid string) (*Emphasis, error)
 }
 
@@ -20,6 +20,10 @@ func New(db db.DB) Model {
 
 type emphasis struct {
 	db db.DB
+}
+
+func (e *emphasis) CreateEmphasis(emp *Emphasis) error {
+	return e.db.Create(emp).Error()
 }
 
 // 分页的辅助函数
@@ -47,14 +51,14 @@ func (e *emphasis) ListAllEmphasisOfInstance(page, size int64, instanceId string
 	return e.paging(query, page, size)
 }
 
-func (e *emphasis) GenerateEmphasis(InstanceId string, InvestStart time.Time, InvestEnd time.Time, InvestProblem string) (*Emphasis, error) {
-	emph := Emphasis{InstanceId: InstanceId, InvestgatingStart: InvestStart, InvestgatingEnd: InvestEnd, InvestgatingProblem: InvestProblem}
-
-	if err := e.db.Create(&emph).Error(); err != nil {
-		return nil, err
-	}
-	return &emph, nil
-}
+//func (e *emphasis) GenerateEmphasis(InstanceId string, InvestStart time.Time, InvestEnd time.Time, InvestProblem string) (*Emphasis, error) {
+//	emph := Emphasis{InstanceId: InstanceId, InvestgatingStart: InvestStart, InvestgatingEnd: InvestEnd, InvestgatingProblem: InvestProblem}
+//
+//	if err := e.db.Create(&emph).Error(); err != nil {
+//		return nil, err
+//	}
+//	return &emph, nil
+//}
 
 func (e *emphasis) GetEmphasis(uuid string) (*Emphasis, error) {
 	emph := Emphasis{}
