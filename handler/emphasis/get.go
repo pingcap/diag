@@ -1,6 +1,7 @@
 package emphasis
 
 import (
+	"github.com/pingcap/fn"
 	helper "github.com/pingcap/tidb-foresight/handler/utils"
 	"github.com/pingcap/tidb-foresight/model"
 	"github.com/pingcap/tidb-foresight/model/emphasis"

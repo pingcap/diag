@@ -22,6 +22,7 @@ func LoadHttpPaging(r *http.Request) (page int64, size int64) {
 	if err != nil {
 		size = 10
 	}
+	return
 }
 
 // Load from route. The route must exists, otherwise the program will panic.
@@ -29,6 +30,7 @@ func LoadRouterVar(r *http.Request, route string) (v string) {
 	if v, ok := mux.Vars(r)[route]; !ok {
 		panic(fmt.Sprintf("%s in LoadRouterVar not exists", v))
 	}
+	return
 }
 
 // Load from body of http and parse it into body. The body is intend to be

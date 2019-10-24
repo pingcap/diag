@@ -1,10 +1,10 @@
 package emphasis
 
 import (
-	"encoding/json"
 	"github.com/google/uuid"
 	"time"
 
+	"github.com/pingcap/fn"
 	"github.com/pingcap/tidb-foresight/bootstrap"
 	helper "github.com/pingcap/tidb-foresight/handler/utils"
 	"github.com/pingcap/tidb-foresight/model"
@@ -14,9 +14,13 @@ import (
 	"net/http"
 )
 
+// TODO：find a place to unify all emphasis
+const CreateType = "emphasis"
+
+// TODO: replace this worker to the real worker.
 type Worker interface {
-	Collect() error
-	Analyze() error
+	Collect(inspectionId, inspectionType string, config *model.Config) error
+	Analyze(inspectionId string) error
 }
 
 //type DiagnoseWorker interface {
@@ -74,13 +78,16 @@ func (h *createEmphasisHandler) createEmphasis(r *http.Request, c *model.Config)
 
 	// TODO: implement the part of collect and analyze.
 	go func() {
-		if err := h.w.Collect(); err != nil {
-			panic("implement me")
+		if err := h.w.Collect(emp.InstanceId, CreateType, c); err != nil {
+			// TODO: implement the real logic here.
+			//panic("implement me")
 			return
 		}
 
-		if err := h.w.Analyze(); err != nil {
-			panic("implement me")
+		// Analyze phase
+		if err := h.w.Analyze(emp.InstanceId); err != nil {
+			// TODO: implement the real logic here.
+			//panic("implement me")
 			return
 		}
 	}()
