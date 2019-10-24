@@ -76,6 +76,7 @@ func (s *Server) CreateRouter() http.Handler {
 	r.Handle("/api/v1/instances/{id}/config", config.GetConfig(s.model)).Methods("GET")
 	r.Handle("/api/v1/instances/{id}/config", config.SetConfig(s.model, s.scheduler)).Methods("PUT")
 	r.Handle("/api/v1/instances/{id}/inspections", inspection.ListInspection(s.model)).Methods("GET")
+	// Attached worker here.
 	r.Handle("/api/v1/instances/{id}/inspections", inspection.CreateInspection(s.config, s.model, s.worker)).Methods("POST")
 	r.Handle("/api/v1/instances/{id}/perfprofiles", profile.ListProfile(s.config, s.model)).Methods("GET")
 	r.Handle("/api/v1/instances/{id}/perfprofiles", profile.CreateProfile(s.config, s.model, s.worker)).Methods("POST")

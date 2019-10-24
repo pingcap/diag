@@ -30,8 +30,8 @@ type task struct {
 	cache []reflect.Value
 }
 
-// Genrate a task struct from any struct pointer having Run method
-// The Run method is required, however, it's signature is not important,
+// Generate a task struct from any struct pointer having `Run` method
+// The `Run` method is required, however, it's signature is not important,
 // the input list of the Run method will be filled by TaskManager, the
 // output list of the Run method will be collected for other taks' input
 // list.
@@ -53,18 +53,20 @@ type task struct {
 // to the TaskManager.
 func newTask(i interface{}) *task {
 	t := &task{}
-
+	// Take value of i, and it should be a pointer.
 	v := reflect.ValueOf(i)
 	if v.Kind() != reflect.Ptr {
 		panic("task is not a pointer:" + v.Type().PkgPath() + "#" + v.Type().Name())
 	}
-
+	// Load method for this type.
 	t.id = v.Elem().Type().PkgPath() + "#" + v.Elem().Type().Name()
+	// Load method run.
 	t.method = v.MethodByName("Run")
 	if !t.method.IsValid() {
 		panic(t.id + " does't have method Run")
 	}
 
+	// Matching types for Run.
 	for idx := 0; idx < t.method.Type().NumIn(); idx++ {
 		if t.method.Type().In(idx).Kind() != reflect.Ptr {
 			panic("only support ptr as input args at present, check Run method of task " + t.id)

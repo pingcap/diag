@@ -1,6 +1,9 @@
 package emphasis
 
-import "time"
+import (
+	"github.com/pingcap/tidb-foresight/model/inspection"
+	"time"
+)
 
 type Emphasis struct {
 	Uuid              string    `json:"uuid"`
@@ -12,4 +15,14 @@ type Emphasis struct {
 	InvestgatingProblem string `json:"investgating_problem"`
 
 	RelatedProblems []Emphasis `json:"related_problems" gorm:"foreignkey:UserRefer"`
+}
+
+// TODO: 类型转换
+func (emp *Emphasis) CorrespondInspection() inspection.Inspection {
+	panic("implement me")
+}
+
+// TODO:
+func InspectionToEmphasis(insp *inspection.Inspection) Emphasis {
+	panic("implement me")
 }
