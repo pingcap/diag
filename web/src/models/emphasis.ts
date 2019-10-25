@@ -24,6 +24,11 @@ export interface IEmphasis {
   message: string;
 }
 
+export interface IEmphasisDetail extends IEmphasis {
+  scrape_begin: string;
+  scrape_end: string;
+}
+
 // /////
 
 export interface IEmphasisInfo {

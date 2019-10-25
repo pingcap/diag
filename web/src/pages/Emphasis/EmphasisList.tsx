@@ -114,12 +114,10 @@ const tableColumns = (
       ),
     },
   ];
-
-  if (curUser.role === 'admin') {
-    return columns.filter(col => col.dataIndex !== 'cluster_version');
-  }
   return columns;
 };
+
+const EMPHASIS_PROBLEMS = ['数据库瓶颈分析', 'QPS 抖动问题', '.99 延迟高问题'];
 
 interface ReportListProps extends ConnectProps {
   dispatch: Dispatch;
@@ -261,7 +259,7 @@ function ReportList({
               style={{ width: 140, marginRight: 12, marginLeft: 12 }}
               onChange={handleIssueChange}
             >
-              {['问题 1', '问题 2'].map(item => (
+              {EMPHASIS_PROBLEMS.map(item => (
                 <Option value={item} key={item}>
                   {item}
                 </Option>
