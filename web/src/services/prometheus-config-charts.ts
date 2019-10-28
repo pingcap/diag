@@ -2191,6 +2191,46 @@ export const PROM_CHARTS: { [key: string]: IPromChart } = {
       },
     ],
   },
+  // Disk
+  disk_latency: {
+    title: 'Disk Latency',
+    queries: [
+      {
+        promQLTemplate:
+          'irate(node_disk_read_time_seconds_total{inspectionid="{{inspectionId}}"}[5m]) / irate(node_disk_reads_completed_total{inspectionid="{{inspectionId}}"}[5m])',
+        labelTemplate: 'Read: {{instance}} - {{device}}',
+      },
+    ],
+  },
+  disk_operations: {
+    title: 'Disk Operations',
+    queries: [
+      {
+        promQLTemplate:
+          'irate(node_disk_reads_completed_total{inspectionid="{{inspectionId}}"}[5m])',
+        labelTemplate: 'Read: {{instance}} - {{device}}',
+      },
+    ],
+  },
+  disk_bandwidth: {
+    title: 'Disk Bandwidth',
+    queries: [
+      {
+        promQLTemplate: 'irate(node_disk_read_bytes_total{inspectionid="{{inspectionId}}"}[5m])',
+        labelTemplate: 'Read: {{instance}} - {{device}}',
+      },
+    ],
+  },
+  disk_load: {
+    title: 'Disk Load',
+    queries: [
+      {
+        promQLTemplate:
+          'irate(node_disk_read_time_seconds_total{inspectionid="{{inspectionId}}"}[5m])',
+        labelTemplate: 'Read: {{instance}} - {{device}}',
+      },
+    ],
+  },
   // Storage
   storage_readpool_cpu_2: {
     title: 'Storage ReadPool CPU',
@@ -2341,44 +2381,165 @@ export const PROM_CHARTS: { [key: string]: IPromChart } = {
       },
     ],
   },
-  // Disk
-  disk_latency: {
-    title: 'Disk Latency',
+  //-------------------------
+  // scheduler
+  scheduler_latch_wait_duration: {
+    title: 'Scheduler latch wait duration',
     queries: [
       {
         promQLTemplate:
-          'irate(node_disk_read_time_seconds_total{inspectionid="{{inspectionId}}"}[5m]) / irate(node_disk_reads_completed_total{inspectionid="{{inspectionId}}"}[5m])',
-        labelTemplate: 'Read: {{instance}} - {{device}}',
+          'histogram_quantile(0.99, sum(rate(tikv_scheduler_latch_wait_duration_seconds_bucket{inspectionid="{{inspectionId}}"}[5m])) by (le, type))',
+        labelTemplate: '99%-{{type}}',
+        valConverter: val => timeSecondsFormatter(val, 1),
+      },
+      {
+        promQLTemplate:
+          'histogram_quantile(0.95, sum(rate(tikv_scheduler_latch_wait_duration_seconds_bucket{inspectionid="{{inspectionId}}"}[5m])) by (le, type))',
+        labelTemplate: '95%-{{type}}',
+      },
+      {
+        promQLTemplate:
+          'rate(tikv_scheduler_latch_wait_duration_seconds_sum{inspectionid="{{inspectionId}}"}[5m]) / rate(tikv_scheduler_latch_wait_duration_seconds_count{inspectionid="{{inspectionId}}"}[5m])',
+        labelTemplate: 'avg-{{type}}',
       },
     ],
   },
-  disk_operations: {
-    title: 'Disk Operations',
+  scheduler_worker_cpu: {
+    title: 'Scheduler worker CPU',
     queries: [
       {
         promQLTemplate:
-          'irate(node_disk_reads_completed_total{inspectionid="{{inspectionId}}"}[5m])',
-        labelTemplate: 'Read: {{instance}} - {{device}}',
+          'sum(rate(tikv_thread_cpu_seconds_total{name=~"sched_.*", inspectionid="{{inspectionId}}"}[1m])) by (instance)',
+        labelTemplate: '{{instance}}',
       },
     ],
   },
-  disk_bandwidth: {
-    title: 'Disk Bandwidth',
-    queries: [
-      {
-        promQLTemplate: 'irate(node_disk_read_bytes_total{inspectionid="{{inspectionId}}"}[5m])',
-        labelTemplate: 'Read: {{instance}} - {{device}}',
-      },
-    ],
-  },
-  disk_load: {
-    title: 'Disk Load',
+  scheduler_99_command_duration: {
+    title: '99% scheduler command duration',
     queries: [
       {
         promQLTemplate:
-          'irate(node_disk_read_time_seconds_total{inspectionid="{{inspectionId}}"}[5m])',
-        labelTemplate: 'Read: {{instance}} - {{device}}',
+          'histogram_quantile(0.99, sum(rate(tikv_scheduler_command_duration_seconds_bucket{inspectionid="{{inspectionId}}"}[1m])) by (le, type))',
+        labelTemplate: '{{type}}',
       },
     ],
   },
+  // raftstore
+  raftstore_99_propose_wait_duration: {
+    title: '99% propose wait duration by instance',
+    queries: [
+      {
+        promQLTemplate:
+          'histogram_quantile(0.99, sum(rate(tikv_raftstore_request_wait_time_duration_secs_bucket{inspectionid="{{inspectionId}}"}[1m])) by (le, instance))',
+        labelTemplate: '{{instance}}',
+      },
+    ],
+  },
+  raftstore_raft_store_cpu: {
+    title: 'Raft store CPU',
+    queries: [
+      {
+        promQLTemplate:
+          'sum(rate(tikv_thread_cpu_seconds_total{name=~"raftstore_.*", inspectionid="{{inspectionId}}"}[1m])) by (instance)',
+        labelTemplate: '{{instance}}',
+      },
+    ],
+  },
+  raftstore_storage_async_write_duration: {
+    title: 'Storage async write duration',
+    queries: [
+      {
+        promQLTemplate:
+          'histogram_quantile(0.99, sum(rate(tikv_storage_engine_async_request_duration_seconds_bucket{type="write", inspectionid="{{inspectionId}}"}[5m])) by (le))',
+        labelTemplate: '99%',
+        valConverter: val => timeSecondsFormatter(val, 0),
+      },
+      {
+        promQLTemplate:
+          'histogram_quantile(0.95, sum(rate(tikv_storage_engine_async_request_duration_seconds_bucket{type="write", inspectionid="{{inspectionId}}"}[5m])) by (le))',
+        labelTemplate: '95%',
+      },
+      {
+        promQLTemplate:
+          'sum(rate(tikv_storage_engine_async_request_duration_seconds_sum{type="write", inspectionid="{{inspectionId}}"}[5m])) / sum(rate(tikv_storage_engine_async_request_duration_seconds_count{type="write", inspectionid="{{inspectionId}}"}[5m]))',
+        labelTemplate: 'avg',
+      },
+    ],
+  },
+  // RocksDB-Raft
+  rocksdb_raft_99_append_log_duration: {
+    title: '99% append log duration by instance',
+    queries: [
+      {
+        promQLTemplate:
+          'histogram_quantile(0.99, sum(rate(tikv_raftstore_append_log_duration_seconds_bucket{inspectionid="{{inspectionId}}"}[1m])) by (le, instance))',
+        labelTemplate: '{{instance}}',
+      },
+    ],
+  },
+  rocksdb_raft_write_duration_2: {
+    title: 'Write duration',
+    queries: [
+      {
+        promQLTemplate:
+          'max(tikv_engine_write_micro_seconds{db="raft",type="write_max", inspectionid="{{inspectionId}}"})',
+        labelTemplate: 'max',
+        valConverter: val => timeSecondsFormatter(val / (1000 * 1000), 1),
+      },
+      {
+        promQLTemplate:
+          'max(tikv_engine_write_micro_seconds{db="raft",type="write_percentile99", inspectionid="{{inspectionId}}"})',
+        labelTemplate: '99%',
+      },
+      {
+        promQLTemplate:
+          'max(tikv_engine_write_micro_seconds{db="raft",type="write_percentile95", inspectionid="{{inspectionId}}"})',
+        labelTemplate: '95%',
+      },
+      {
+        promQLTemplate:
+          'max(tikv_engine_write_micro_seconds{db="raft",type="write_average", inspectionid="{{inspectionId}}"})',
+        labelTemplate: 'avg',
+      },
+    ],
+  },
+  // RocksDB-KV
+  rocksdb_kv_99_apply_wait_duration: {
+    title: '99% apply wait duration by instance',
+    queries: [
+      {
+        promQLTemplate:
+          'histogram_quantile(0.99, sum(rate(tikv_raftstore_apply_wait_time_duration_secs_bucket{inspectionid="{{inspectionId}}"}[5m])) by (le, instance))',
+        labelTemplate: '{{instance}}',
+      },
+    ],
+  },
+  // rocksdb_kv_apply_log_duration: same as tikv_apply_log_duration
+  rocksdb_kv_write_duration_2: {
+    title: 'Write duration',
+    queries: [
+      {
+        promQLTemplate:
+          'max(tikv_engine_write_micro_seconds{db="kv",type="write_max", inspectionid="{{inspectionId}}"})',
+        labelTemplate: 'max',
+        valConverter: val => timeSecondsFormatter(val / (1000 * 1000), 1),
+      },
+      {
+        promQLTemplate:
+          'max(tikv_engine_write_micro_seconds{db="kv",type="write_percentile99", inspectionid="{{inspectionId}}"})',
+        labelTemplate: '99%',
+      },
+      {
+        promQLTemplate:
+          'max(tikv_engine_write_micro_seconds{db="kv",type="write_percentile95", inspectionid="{{inspectionId}}"})',
+        labelTemplate: '95%',
+      },
+      {
+        promQLTemplate:
+          'max(tikv_engine_write_micro_seconds{db="kv",type="write_average", inspectionid="{{inspectionId}}"})',
+        labelTemplate: 'avg',
+      },
+    ],
+  },
+  // rocksdb_kv_async_apply_cpu: same as async_apply_cpu
 };

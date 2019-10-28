@@ -427,16 +427,22 @@ export const ALL_PANELS: { [key: string]: IPanel } = {
     title: 'gRPC',
     charts: ['grpc_99_grpc_message_duration', 'grpc_poll_cpu_2'],
   },
+  disk: {
+    title: 'Disk',
+    charts: ['disk_latency', 'disk_operations', 'disk_bandwidth', 'disk_load'],
+  },
+  //---------
+  // only for read
   storage: {
-    title: 'Storage',
+    title: 'Storage (only for read)',
     charts: ['storage_readpool_cpu_2'],
   },
   coprocessor: {
-    title: 'Coprocessor',
+    title: 'Coprocessor (only for read)',
     charts: ['coprocessor_wait_duration_2', 'coprocessor_handle_duration', 'coprocessor_cpu_2'],
   },
   rocksdb_kv: {
-    title: 'RocksDB-KV',
+    title: 'RocksDB-KV (only for read)',
     charts: [
       'rocksdb_kv_get_duration',
       'rocksdb_kv_get_operation',
@@ -445,9 +451,36 @@ export const ALL_PANELS: { [key: string]: IPanel } = {
       'rocksdb_kv_block_cache_hit',
     ],
   },
-  disk: {
-    title: 'Disk',
-    charts: ['disk_latency', 'disk_operations', 'disk_bandwidth', 'disk_load'],
+  //---------
+  // only for write
+  scheduler: {
+    title: 'Scheduler (only for write)',
+    charts: [
+      'scheduler_latch_wait_duration',
+      'scheduler_worker_cpu',
+      'scheduler_99_command_duration',
+    ],
+  },
+  raftstore: {
+    title: 'raftstore (only for write)',
+    charts: [
+      'raftstore_99_propose_wait_duration',
+      'raftstore_raft_store_cpu',
+      'raftstore_storage_async_write_duration',
+    ],
+  },
+  rocksdb_raft: {
+    title: 'RocksDB-Raft (only for write)',
+    charts: ['rocksdb_raft_99_append_log_duration', 'rocksdb_raft_write_duration_2'],
+  },
+  rocksdb_kv_2: {
+    title: 'RocksDB-KV (only for write)',
+    charts: [
+      'rocksdb_kv_99_apply_wait_duration',
+      'tikv_apply_log_duration',
+      'rocksdb_kv_write_duration_2',
+      'async_apply_cpu',
+    ],
   },
 };
 
@@ -523,8 +556,16 @@ export const EMPHASIS_DB_PERFORMANCE_PANELS = [
   'kv',
   'pd_client',
   'grpc',
+  'disk',
+  //---------------------------
+  // only for read
   'storage',
   'coprocessor',
   'rocksdb_kv',
-  'disk',
+  //---------------------------
+  // only for write
+  'scheduler',
+  'raftstore',
+  'rocksdb_raft',
+  'rocksdb_kv_2',
 ];
