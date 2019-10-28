@@ -75,6 +75,9 @@ const tableColumns = (
           );
         }
         if (record.status === 'running') {
+          if ((record.estimated_left_sec || 0) > 0) {
+            return <span>诊断中，预计还剩余 {record.estimated_left_sec} 秒</span>;
+          }
           return <span>running</span>;
         }
         return <span>{text}</span>;

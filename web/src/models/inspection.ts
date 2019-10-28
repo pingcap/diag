@@ -57,6 +57,8 @@ export interface IInspection {
   type: 'manual' | 'auto';
   create_time: string;
   finish_time: string;
+
+  estimated_left_sec?: number;
 }
 
 export interface IInspectionReport {
