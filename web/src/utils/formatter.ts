@@ -92,6 +92,7 @@ export const timeSecondsFormatter = (seconds = 0, fixed = 0) => {
   return `${toFixed(seconds, fixed)} s`;
 };
 
+// 0.5 => 50%
 export const toPercent = (size: number, decimals: number = 2) => {
   if (size === null || size === undefined) {
     return '';
@@ -99,7 +100,7 @@ export const toPercent = (size: number, decimals: number = 2) => {
   return `${toFixed(100 * size, decimals)}%`;
 };
 
-// add % unit
+// add % unit, 0.5 => 0.5%
 export const toPercentUnit = (size: number, decimals: number = 2) => {
   if (size === null || size === undefined) {
     return '';

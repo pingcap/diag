@@ -1978,6 +1978,7 @@ export const PROM_CHARTS: { [key: string]: IPromChart } = {
         promQLTemplate:
           'histogram_quantile(0.95, sum(rate(tidb_server_handle_query_duration_seconds_bucket{inspectionid="{{inspectionId}}"}[1m])) by (le))',
         labelTemplate: '95',
+        valConverter: val => timeSecondsFormatter(val, 1),
       },
       {
         promQLTemplate:
@@ -1993,6 +1994,7 @@ export const PROM_CHARTS: { [key: string]: IPromChart } = {
         promQLTemplate:
           'histogram_quantile(0.99, sum(rate(tidb_server_get_token_duration_seconds_bucket{inspectionid="{{inspectionId}}"}[1m])) by (le))',
         labelTemplate: '99',
+        valConverter: val => timeSecondsFormatter(val, 1),
       },
     ],
   },
@@ -2016,6 +2018,7 @@ export const PROM_CHARTS: { [key: string]: IPromChart } = {
         promQLTemplate:
           'go_memstats_heap_inuse_bytes{job=~"tidb.*", inspectionid="{{inspectionId}}"}',
         labelTemplate: '{{instance}}-{{job}}',
+        valConverter: bytesSizeFormatter,
       },
     ],
   },
@@ -2027,6 +2030,7 @@ export const PROM_CHARTS: { [key: string]: IPromChart } = {
         promQLTemplate:
           'histogram_quantile(0.99, sum(rate(tidb_session_parse_duration_seconds_bucket{inspectionid="{{inspectionId}}"}[1m])) by (le, sql_type))',
         labelTemplate: '{{sql_type}}',
+        valConverter: val => timeSecondsFormatter(val, 1),
       },
     ],
   },
@@ -2038,6 +2042,7 @@ export const PROM_CHARTS: { [key: string]: IPromChart } = {
         promQLTemplate:
           'histogram_quantile(0.99, sum(rate(tidb_session_compile_duration_seconds_bucket{inspectionid="{{inspectionId}}"}[1m])) by (le, sql_type))',
         labelTemplate: '{{sql_type}}',
+        valConverter: val => timeSecondsFormatter(val, 1),
       },
     ],
   },
@@ -2049,6 +2054,7 @@ export const PROM_CHARTS: { [key: string]: IPromChart } = {
         promQLTemplate:
           'histogram_quantile(0.99, sum(rate(tidb_session_transaction_duration_seconds_bucket{inspectionid="{{inspectionId}}"}[1m])) by (le, sql_type))',
         labelTemplate: '99-{{sql_type}}',
+        valConverter: val => timeSecondsFormatter(val, 1),
       },
       {
         promQLTemplate:
@@ -2105,6 +2111,7 @@ export const PROM_CHARTS: { [key: string]: IPromChart } = {
         promQLTemplate:
           'histogram_quantile(0.999, sum(rate(tidb_tikvclient_txn_cmd_duration_seconds_bucket{type=~"get|batch_get|seek|seek_reverse", inspectionid="{{inspectionId}}"}[1m])) by (le, type))',
         labelTemplate: '{{type}}',
+        valConverter: val => timeSecondsFormatter(val, 1),
       },
     ],
   },
@@ -2115,6 +2122,7 @@ export const PROM_CHARTS: { [key: string]: IPromChart } = {
         promQLTemplate:
           'histogram_quantile(0.99, sum(rate(tidb_tikvclient_txn_cmd_duration_seconds_bucket{type=~"get|batch_get|seek|seek_reverse", inspectionid="{{inspectionId}}"}[1m])) by (le, type))',
         labelTemplate: '{{type}}',
+        valConverter: val => timeSecondsFormatter(val, 1),
       },
     ],
   },
@@ -2135,6 +2143,7 @@ export const PROM_CHARTS: { [key: string]: IPromChart } = {
         promQLTemplate:
           'histogram_quantile(0.99, sum(rate(tidb_tikvclient_backoff_seconds_bucket{inspectionid="{{inspectionId}}"}[5m])) by (le, type))',
         labelTemplate: '{{type}}',
+        valConverter: val => timeSecondsFormatter(val, 1),
       },
     ],
   },
@@ -2156,6 +2165,7 @@ export const PROM_CHARTS: { [key: string]: IPromChart } = {
         promQLTemplate:
           'histogram_quantile(0.999, sum(rate(pd_client_cmd_handle_cmds_duration_seconds_bucket{type="tso", inspectionid="{{inspectionId}}"}[1m])) by (le))',
         labelTemplate: '999',
+        valConverter: val => timeSecondsFormatter(val, 1),
       },
       {
         promQLTemplate:
@@ -2178,6 +2188,7 @@ export const PROM_CHARTS: { [key: string]: IPromChart } = {
         promQLTemplate:
           'histogram_quantile(0.99, sum(rate(tikv_grpc_msg_duration_seconds_bucket{type=~"kv_get|kv_batch_get|coprocessor", inspectionid="{{inspectionId}}"}[5m])) by (le, type))',
         labelTemplate: '{{type}}',
+        valConverter: val => timeSecondsFormatter(val, 1),
       },
     ],
   },
@@ -2188,6 +2199,7 @@ export const PROM_CHARTS: { [key: string]: IPromChart } = {
         promQLTemplate:
           'sum(rate(tikv_thread_cpu_seconds_total{name=~"raftstore_.*", inspectionid="{{inspectionId}}"}[1m])) by (instance, name)',
         labelTemplate: '{{instance}} - {{name}}',
+        valConverter: val => toPercent(val, 2),
       },
     ],
   },
@@ -2199,6 +2211,7 @@ export const PROM_CHARTS: { [key: string]: IPromChart } = {
         promQLTemplate:
           'irate(node_disk_read_time_seconds_total{inspectionid="{{inspectionId}}"}[5m]) / irate(node_disk_reads_completed_total{inspectionid="{{inspectionId}}"}[5m])',
         labelTemplate: 'Read: {{instance}} - {{device}}',
+        valConverter: val => timeSecondsFormatter(val, 1),
       },
     ],
   },
@@ -2209,6 +2222,7 @@ export const PROM_CHARTS: { [key: string]: IPromChart } = {
         promQLTemplate:
           'irate(node_disk_reads_completed_total{inspectionid="{{inspectionId}}"}[5m])',
         labelTemplate: 'Read: {{instance}} - {{device}}',
+        valConverter: val => toAnyUnit(val, 1, 0, 'iops'),
       },
     ],
   },
@@ -2218,6 +2232,7 @@ export const PROM_CHARTS: { [key: string]: IPromChart } = {
       {
         promQLTemplate: 'irate(node_disk_read_bytes_total{inspectionid="{{inspectionId}}"}[5m])',
         labelTemplate: 'Read: {{instance}} - {{device}}',
+        valConverter: bytesSizeFormatter,
       },
     ],
   },
@@ -2228,6 +2243,7 @@ export const PROM_CHARTS: { [key: string]: IPromChart } = {
         promQLTemplate:
           'irate(node_disk_read_time_seconds_total{inspectionid="{{inspectionId}}"}[5m])',
         labelTemplate: 'Read: {{instance}} - {{device}}',
+        valConverter: val => toFixed(val, 3),
       },
     ],
   },
@@ -2239,6 +2255,7 @@ export const PROM_CHARTS: { [key: string]: IPromChart } = {
         promQLTemplate:
           'sum(rate(tikv_thread_cpu_seconds_total{name=~"store_read.*", inspectionid="{{inspectionId}}"}[1m])) by (instance)',
         labelTemplate: '{{instance}}',
+        valConverter: val => toPercent(val, 1),
       },
     ],
   },
@@ -2250,6 +2267,7 @@ export const PROM_CHARTS: { [key: string]: IPromChart } = {
         promQLTemplate:
           'histogram_quantile(1, sum(rate(tikv_coprocessor_request_wait_seconds_bucket{inspectionid="{{inspectionId}}"}[1m])) by (le,req))',
         labelTemplate: '{{req}}-100%',
+        valConverter: val => timeSecondsFormatter(val, 1),
       },
       {
         promQLTemplate:
@@ -2265,6 +2283,7 @@ export const PROM_CHARTS: { [key: string]: IPromChart } = {
         promQLTemplate:
           'histogram_quantile(1, sum(rate(tikv_coprocessor_request_handle_seconds_bucket{inspectionid="{{inspectionId}}"}[1m])) by (le,req))',
         labelTemplate: '{{req}}-100%',
+        valConverter: val => timeSecondsFormatter(val, 1),
       },
       {
         promQLTemplate:
@@ -2280,6 +2299,7 @@ export const PROM_CHARTS: { [key: string]: IPromChart } = {
         promQLTemplate:
           'sum(rate(tikv_thread_cpu_seconds_total{name=~"cop_.*", inspectionid="{{inspectionId}}"}[1m])) by (instance)',
         labelTemplate: '{{instance}}',
+        valConverter: val => toPercent(val, 1),
       },
     ],
   },
@@ -2292,6 +2312,7 @@ export const PROM_CHARTS: { [key: string]: IPromChart } = {
         promQLTemplate:
           'sum(rate(tikv_engine_memtable_efficiency{db="kv", type="memtable_hit", inspectionid="{{inspectionId}}"}[1m]))',
         labelTemplate: 'memtable',
+        valConverter: val => toAnyUnit(val, 1, 1, 'ops'),
       },
       {
         promQLTemplate:
@@ -2323,6 +2344,7 @@ export const PROM_CHARTS: { [key: string]: IPromChart } = {
         promQLTemplate:
           'sum(rate(tikv_engine_locate{db="kv", type="number_db_seek", inspectionid="{{inspectionId}}"}[1m]))',
         labelTemplate: 'seek',
+        valConverter: val => toAnyUnit(val, 1, 1, 'ops'),
       },
       {
         promQLTemplate:
@@ -2358,6 +2380,7 @@ export const PROM_CHARTS: { [key: string]: IPromChart } = {
         promQLTemplate:
           'sum(rate(tikv_engine_cache_efficiency{instance=~"$instance", db="$db", type="block_cache_hit", inspectionid="{{inspectionId}}"}[1m])) / (sum(rate(tikv_engine_cache_efficiency{db="$db", type="block_cache_hit", inspectionid="{{inspectionId}}"}[1m])) + sum(rate(tikv_engine_cache_efficiency{db="$db", type="block_cache_miss", inspectionid="{{inspectionId}}"}[1m])))',
         labelTemplate: 'all',
+        valConverter: val => toPercent(val, 1),
       },
       {
         promQLTemplate:
@@ -2411,6 +2434,7 @@ export const PROM_CHARTS: { [key: string]: IPromChart } = {
         promQLTemplate:
           'sum(rate(tikv_thread_cpu_seconds_total{name=~"sched_.*", inspectionid="{{inspectionId}}"}[1m])) by (instance)',
         labelTemplate: '{{instance}}',
+        valConverter: val => toPercent(val, 1),
       },
     ],
   },
@@ -2421,6 +2445,7 @@ export const PROM_CHARTS: { [key: string]: IPromChart } = {
         promQLTemplate:
           'histogram_quantile(0.99, sum(rate(tikv_scheduler_command_duration_seconds_bucket{inspectionid="{{inspectionId}}"}[1m])) by (le, type))',
         labelTemplate: '{{type}}',
+        valConverter: val => timeSecondsFormatter(val, 1),
       },
     ],
   },
@@ -2432,6 +2457,7 @@ export const PROM_CHARTS: { [key: string]: IPromChart } = {
         promQLTemplate:
           'histogram_quantile(0.99, sum(rate(tikv_raftstore_request_wait_time_duration_secs_bucket{inspectionid="{{inspectionId}}"}[1m])) by (le, instance))',
         labelTemplate: '{{instance}}',
+        valConverter: val => timeSecondsFormatter(val, 1),
       },
     ],
   },
@@ -2442,6 +2468,7 @@ export const PROM_CHARTS: { [key: string]: IPromChart } = {
         promQLTemplate:
           'sum(rate(tikv_thread_cpu_seconds_total{name=~"raftstore_.*", inspectionid="{{inspectionId}}"}[1m])) by (instance)',
         labelTemplate: '{{instance}}',
+        valConverter: val => toPercent(val, 4),
       },
     ],
   },
@@ -2452,7 +2479,7 @@ export const PROM_CHARTS: { [key: string]: IPromChart } = {
         promQLTemplate:
           'histogram_quantile(0.99, sum(rate(tikv_storage_engine_async_request_duration_seconds_bucket{type="write", inspectionid="{{inspectionId}}"}[5m])) by (le))',
         labelTemplate: '99%',
-        valConverter: val => timeSecondsFormatter(val, 0),
+        valConverter: val => timeSecondsFormatter(val, 1),
       },
       {
         promQLTemplate:
@@ -2474,6 +2501,7 @@ export const PROM_CHARTS: { [key: string]: IPromChart } = {
         promQLTemplate:
           'histogram_quantile(0.99, sum(rate(tikv_raftstore_append_log_duration_seconds_bucket{inspectionid="{{inspectionId}}"}[1m])) by (le, instance))',
         labelTemplate: '{{instance}}',
+        valConverter: val => timeSecondsFormatter(val / (1000 * 1000), 1),
       },
     ],
   },
@@ -2511,6 +2539,7 @@ export const PROM_CHARTS: { [key: string]: IPromChart } = {
         promQLTemplate:
           'histogram_quantile(0.99, sum(rate(tikv_raftstore_apply_wait_time_duration_secs_bucket{inspectionid="{{inspectionId}}"}[5m])) by (le, instance))',
         labelTemplate: '{{instance}}',
+        valConverter: val => timeSecondsFormatter(val / (1000 * 1000), 1),
       },
     ],
   },
