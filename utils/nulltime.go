@@ -33,3 +33,10 @@ func (nt *NullTime) MarshalJSON() ([]byte, error) {
 		return json.Marshal(nil)
 	}
 }
+
+func FromTime(t time.Time) NullTime {
+	return NullTime{
+		Time:  t,
+		Valid: true,
+	}
+}

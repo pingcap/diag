@@ -1,35 +1,32 @@
 package emphasis
 
 import (
-	"github.com/google/uuid"
+	"fmt"
+	"net/http"
+	"os"
+	"os/exec"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/pingcap/fn"
 	"github.com/pingcap/tidb-foresight/bootstrap"
 	helper "github.com/pingcap/tidb-foresight/handler/utils"
 	"github.com/pingcap/tidb-foresight/model"
 	"github.com/pingcap/tidb-foresight/utils"
 	log "github.com/sirupsen/logrus"
-
-	"net/http"
 )
 
 // TODO：find a place to unify all emphasis
 const CreateType = "emphasis"
 
-// TODO: replace this worker to the real worker.
+// TODO: replace this worker to the only real worker.
 type Worker interface {
 	Collect(inspectionId, inspectionType string, config *model.Config) error
 	Analyze(inspectionId string) error
 }
 
-//type DiagnoseWorker interface {
-//	Collect(inspectionId, inspectionType string, config *model.Config) error
-//	Analyze(inspectionId string) error
-//}
-
-// 1. 启动具体的 collector 和 analyzer
-// 2. 利用 gorm 创建 model
+// 1. Start collector and analyzer
+// 2. Using gorm to create model
 type createEmphasisHandler struct {
 	c *bootstrap.ForesightConfig
 	m model.Model
@@ -49,6 +46,31 @@ type createEmphasisRequest struct {
 	End   time.Time `json:"investgating_end"`
 
 	Problem string `json:"investgating_problem"`
+}
+
+func (h *createEmphasisHandler) collectEmphasis(instanceId, inspectionId string) error {
+	// TODO: fill it with a correct value.
+	cmd := exec.Command(
+		h.c.Collector,
+		fmt.Sprintf("--home=%s", h.c.Home),
+		fmt.Sprintf("--instance-id=%s", instanceId),
+		fmt.Sprintf("--inspection-id=%s", inspectionId),
+		fmt.Sprintf("--items=profile"),
+	)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	cmd.Env = append(
+		os.Environ(),
+		"FORESIGHT_USER="+h.c.User.Name,
+		"INSPECTION_TYPE=profile",
+	)
+	log.Info(cmd.Args)
+	err := cmd.Run()
+	if err != nil {
+		log.Error("run ", h.c.Collector, ": ", err)
+		return err
+	}
+	return nil
 }
 
 func (h *createEmphasisHandler) createEmphasis(r *http.Request, c *model.Config) (*model.Emphasis, utils.StatusError) {
@@ -71,23 +93,36 @@ func (h *createEmphasisHandler) createEmphasis(r *http.Request, c *model.Config)
 		InvestgatingProblem: req.Problem,
 	}
 
-	if err := h.m.CreateEmphasis(emp); err != nil {
-		log.Error("create emphasis error ", err)
-		return nil, utils.DatabaseDeleteError
+	// instance, err
+	_, err := h.m.GetInstance(instanceId)
+	if err != nil {
+		log.Error("get instance:", err)
+		return nil, utils.DatabaseQueryError
 	}
 
-	// TODO: implement the part of collect and analyze.
+	insp := emp.CorrespondInspection()
+	inspectionId := insp.Uuid
+
+	err = h.m.SetInspection(insp)
+
+	if err != nil {
+		log.Error("set inpsection: ", err)
+		return nil, utils.DatabaseInsertError
+	}
+
 	go func() {
-		if err := h.w.Collect(emp.InstanceId, CreateType, c); err != nil {
-			// TODO: implement the real logic here.
-			//panic("implement me")
+		if err := h.collectEmphasis(instanceId, inspectionId); err != nil {
+			log.Error("profile ", inspectionId, ": ", err)
+			insp.Status = "exception"
+			insp.Message = "profile failed"
+			h.m.SetInspection(insp)
 			return
 		}
-
-		// Analyze phase
-		if err := h.w.Analyze(emp.InstanceId); err != nil {
-			// TODO: implement the real logic here.
-			//panic("implement me")
+		if err := h.w.Analyze(inspectionId); err != nil {
+			log.Error("analyze ", inspectionId, ": ", err)
+			insp.Status = "exception"
+			insp.Message = "analyze failed"
+			h.m.SetInspection(insp)
 			return
 		}
 	}()

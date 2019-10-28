@@ -1,16 +1,16 @@
 package emphasis
 
 import (
+	"net/http"
+	"os"
+	"path"
+
 	"github.com/pingcap/fn"
 	"github.com/pingcap/tidb-foresight/bootstrap"
 	helper "github.com/pingcap/tidb-foresight/handler/utils"
 	"github.com/pingcap/tidb-foresight/model"
 	"github.com/pingcap/tidb-foresight/model/emphasis"
 	"github.com/pingcap/tidb-foresight/utils"
-	"net/http"
-	"os"
-	"path"
-
 	log "github.com/sirupsen/logrus"
 )
 

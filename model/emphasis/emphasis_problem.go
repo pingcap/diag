@@ -1,10 +1,10 @@
 package emphasis
 
-// 重点问题中排查的问题选项
+// The Problem in Emphasis.
 type Problem struct {
 	Uuid string `json:"uuid" gorm:"PRIMARY_KEY"`
-	// 相关的 Grafana 监控图
+	// Related Grafana Graph.
 	RelatedGraph string `json:"related_graph"`
-	// 具体的问题, 返回 json null 代表没问题
+	// Related problem, return json null to represent no problem here.
 	Problem string `json:"problem"`
 }

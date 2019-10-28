@@ -110,13 +110,13 @@ func (s *Server) CreateRouter() http.Handler {
 		// Get Emphasis by id
 		api.Handle("/api/v1/emphasis/{uuid}", emphasis.GetEmphasis(s.model)).Methods("GET")
 		// Upload and import local reports
-		api.Handle("/emphasis", emphasis.Unimplemented(s.config)).Methods("POST")
+		api.Handle("/emphasis", emphasis.ImportInspection(s.config, s.model, s.worker)).Methods("POST")
 		// Download zip resource of an emphasis
-		api.Handle("/emphasis/{uuid}.tar.gz", emphasis.Unimplemented(s.config)).Methods("GET")
+		api.Handle("/emphasis/{uuid}.tar.gz", emphasis.ExportEmphasis(s.config)).Methods("GET")
 		// Generate Report
 		api.Handle("/instances/{instance_id}/emphasis", emphasis.CreateEmphasis(s.config, s.model, s.worker)).Methods("POST")
 		// Upload emphasis
-		api.Handle("/api/v1/emphasis/{uuid}", emphasis.Unimplemented(s.config)).Methods("PUT")
+		api.Handle("/api/v1/emphasis/{uuid}", emphasis.UploadEmphasis(s.config)).Methods("PUT")
 		// Delete emphasis by id
 		api.Handle("/api/v1/emphasis/{uuid}", emphasis.DeleteEmphasis(s.model, s.config)).Methods("DELETE")
 	}
