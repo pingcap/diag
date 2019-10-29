@@ -66,7 +66,7 @@ func (m *inspection) ListInspections(instId string, page, size int64) ([]*Inspec
 }
 
 func (m *inspection) SetInspection(insp *Inspection) error {
-	if !insp.CreateTime.Valid {
+		if !insp.CreateTime.Valid {
 		insp.CreateTime = utils.NullTime{Time: time.Now(), Valid: true}
 	}
 	return m.db.Save(insp).Error()

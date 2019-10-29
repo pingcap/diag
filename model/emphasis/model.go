@@ -24,10 +24,10 @@ type emphasis struct {
 }
 
 func (e *emphasis) CreateEmphasis(emp *Emphasis) error {
-	return e.db.Create(emp).Error()
+	return e.db.Create(emp.CorrespondInspection()).Error()
 }
 
-// 分页的辅助函数
+// The helper function for paging.
 //
 func (e *emphasis) paging(query db.DB, page, size int64) ([]*Emphasis, int, error) {
 	insps := []*inspection.Inspection{}
