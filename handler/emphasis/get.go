@@ -1,6 +1,7 @@
 package emphasis
 
 import (
+	"github.com/pingcap/tidb-foresight/wrapper/db"
 	"net/http"
 
 	"github.com/pingcap/fn"
@@ -26,9 +27,12 @@ func (h *getEmphasisHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 func (h *getEmphasisHandler) getEmphasis(r *http.Request) (*emphasis.Emphasis, utils.StatusError) {
 	inspectionId := helper.LoadRouterVar(r, "uuid")
-
+	log.Info("getEmphasis(r *http.Request) load with uuid ", inspectionId)
 	if inspection, err := h.m.GetEmphasis(inspectionId); err != nil {
 		log.Error("get inspection:", err)
+		if db.IsNotFound(err) {
+			return nil, utils.TargetObjectNotFound
+		}
 		return nil, utils.DatabaseQueryError
 	} else {
 		return inspection, nil
