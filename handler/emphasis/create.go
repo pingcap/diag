@@ -55,7 +55,6 @@ func (h *createEmphasisHandler) collectEmphasis(start, end time.Time, instanceId
 		fmt.Sprintf("--home=%s", h.c.Home),
 		fmt.Sprintf("--instance-id=%s", instanceId),
 		fmt.Sprintf("--inspection-id=%s", inspectionId),
-		"--items=emphasis",
 		fmt.Sprintf("--begin=%s", start.Format(time.RFC3339)),
 		fmt.Sprintf("--end=%s", end.Format(time.RFC3339)),
 	)
@@ -64,7 +63,7 @@ func (h *createEmphasisHandler) collectEmphasis(start, end time.Time, instanceId
 	cmd.Env = append(
 		os.Environ(),
 		"FORESIGHT_USER="+h.c.User.Name,
-		"INSPECTION_TYPE=profile",
+		"INSPECTION_TYPE=emphasis",
 	)
 	log.Info(cmd.Args)
 	err := cmd.Run()
