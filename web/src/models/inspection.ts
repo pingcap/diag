@@ -57,6 +57,8 @@ export interface IInspection {
   type: 'manual' | 'auto';
   create_time: string;
   finish_time: string;
+
+  estimated_left_sec?: number;
 }
 
 export interface IInspectionReport {
@@ -175,6 +177,7 @@ const InspectionModel: InspectionModelType = {
           payload: res,
         });
       }
+      return res;
     },
     *deleteInstance({ payload }, { call, put }) {
       const instanceId = payload;
@@ -209,6 +212,7 @@ const InspectionModel: InspectionModelType = {
           },
         });
       }
+      return res;
     },
     *deleteInspection({ payload }, { call, put }) {
       const inspectionId = payload;

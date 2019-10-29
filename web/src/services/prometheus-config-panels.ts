@@ -386,6 +386,102 @@ export const ALL_PANELS: { [key: string]: IPanel } = {
       'tikv_raft_vote',
     ],
   },
+
+  // 重点问题排查相关 panel
+  tidb_server_2: {
+    title: 'TiDB-Server',
+    charts: [
+      'tidb_server_duration',
+      'tidb_server_99_get_token_duration',
+      'tidb_server_connection_count',
+      'tidb_server_heap_memory_usage',
+    ],
+  },
+  parse: {
+    title: 'Parse',
+    charts: ['parse_99_parse_duration'],
+  },
+  compile: {
+    title: 'Compile',
+    charts: ['compile_99_compile_duration'],
+  },
+  transaction: {
+    title: 'Transaction',
+    charts: ['transaction_duration', 'transaction_statement_num', 'transaction_retry_num'],
+  },
+  kv: {
+    title: 'KV',
+    charts: [
+      'kv_cmd_duration_9999',
+      'kv_cmd_duration_99',
+      'kv_lock_resolve_ops',
+      'kv_99_kv_backoff_duration',
+      'kv_backoff_ops',
+    ],
+  },
+  pd_client: {
+    title: 'PD Client',
+    charts: ['pd_tso_wait_duration', 'pd_tso_rpc_duration'],
+  },
+  grpc: {
+    title: 'gRPC',
+    charts: ['grpc_99_grpc_message_duration', 'grpc_poll_cpu_2'],
+  },
+  disk: {
+    title: 'Disk',
+    charts: ['disk_latency', 'disk_operations', 'disk_bandwidth', 'disk_load'],
+  },
+  //---------
+  // only for read
+  storage: {
+    title: 'Storage (only for read)',
+    charts: ['storage_readpool_cpu_2'],
+  },
+  coprocessor: {
+    title: 'Coprocessor (only for read)',
+    charts: ['coprocessor_wait_duration_2', 'coprocessor_handle_duration', 'coprocessor_cpu_2'],
+  },
+  rocksdb_kv: {
+    title: 'RocksDB-KV (only for read)',
+    charts: [
+      'rocksdb_kv_get_duration',
+      'rocksdb_kv_get_operation',
+      'rocksdb_kv_seek_duration',
+      'rocksdb_kv_seek_operation',
+      'rocksdb_kv_block_cache_hit',
+    ],
+  },
+  //---------
+  // only for write
+  scheduler: {
+    title: 'Scheduler (only for write)',
+    charts: [
+      'scheduler_latch_wait_duration',
+      'scheduler_worker_cpu',
+      'scheduler_99_command_duration',
+    ],
+  },
+  raftstore: {
+    title: 'raftstore (only for write)',
+    charts: [
+      'raftstore_99_propose_wait_duration',
+      'raftstore_raft_store_cpu',
+      'raftstore_storage_async_write_duration',
+    ],
+  },
+  rocksdb_raft: {
+    title: 'RocksDB-Raft (only for write)',
+    charts: ['rocksdb_raft_99_append_log_duration', 'rocksdb_raft_write_duration_2'],
+  },
+  rocksdb_kv_2: {
+    title: 'RocksDB-KV (only for write)',
+    charts: [
+      'rocksdb_kv_99_apply_wait_duration',
+      'tikv_apply_log_duration',
+      'rocksdb_kv_write_duration_2',
+      'async_apply_cpu',
+    ],
+  },
 };
 
 // /////////////////////////////////////////
@@ -451,3 +547,25 @@ export const DBA_PANELS = [
 export const TROUBLE_SHOOTING_PANELS = [];
 
 export const NODE_STORE_INFO_PANELS = [];
+
+export const EMPHASIS_DB_PERFORMANCE_PANELS = [
+  'tidb_server_2',
+  'parse',
+  'compile',
+  'transaction',
+  'kv',
+  'pd_client',
+  'grpc',
+  'disk',
+  //---------------------------
+  // only for read
+  'storage',
+  'coprocessor',
+  'rocksdb_kv',
+  //---------------------------
+  // only for write
+  'scheduler',
+  'raftstore',
+  'rocksdb_raft',
+  'rocksdb_kv_2',
+];
