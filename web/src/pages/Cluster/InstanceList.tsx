@@ -71,6 +71,9 @@ const tableColumns = (onDelete: any) => [
                 <Menu.Item>
                   <Link to="/inspection/perfprofiles">火焰图 & profile</Link>
                 </Menu.Item>
+                <Menu.Item>
+                  <Link to={`/inspection/instances/${record.uuid}/emphasis`}>重点问题</Link>
+                </Menu.Item>
               </Menu>
             }
           >

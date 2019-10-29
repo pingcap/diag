@@ -8,6 +8,7 @@ import { UserModelState } from './user';
 import { InspectionModelState } from './inspection';
 import { MiscModelState } from './misc';
 import { LogModelState } from './log';
+import { EmphasisModelState } from './emphasis';
 
 export {
   GlobalModelState,
@@ -15,6 +16,8 @@ export {
   UserModelState,
   InspectionModelState,
   MiscModelState,
+  LogModelState,
+  EmphasisModelState,
 };
 
 export interface Loading {
@@ -36,6 +39,7 @@ export interface ConnectState {
   inspection: InspectionModelState;
   misc: MiscModelState;
   log: LogModelState;
+  emphasis: EmphasisModelState;
 }
 
 export type Effect = (

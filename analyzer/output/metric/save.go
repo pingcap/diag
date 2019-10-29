@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"math"
+	"math/rand"
 	"os"
 	"path"
 	"runtime"
@@ -33,7 +34,7 @@ func SaveMetric() *saveMetricTask {
 
 // Run the task which parses all the metric files collected
 // by a metric collector
-func (t *saveMetricTask) Run(c *boot.Config) *Metric {
+func (t *saveMetricTask) Run(c *boot.Config, m *boot.Model) *Metric {
 	metricDir := path.Join(c.Src, "metric")
 	files, err := ioutil.ReadDir(metricDir)
 	if err != nil {
@@ -51,7 +52,10 @@ func (t *saveMetricTask) Run(c *boot.Config) *Metric {
 	defer cli.Close()
 
 	tl := utils.NewTokenLimiter(uint(runtime.NumCPU()))
-	for _, file := range files {
+	start := time.Now()
+	rand.Shuffle(len(files), func(i, j int) { files[i], files[j] = files[j], files[i] })
+	for idx, file := range files {
+		file := file
 		go func(tok *utils.Token) {
 			defer tl.Put(tok)
 			result := &queryResult{}
@@ -75,6 +79,11 @@ func (t *saveMetricTask) Run(c *boot.Config) *Metric {
 				log.Error("insert metric to influxdb:", err)
 			}
 		}(tl.Get())
+		elapsed := int(time.Now().Sub(start).Seconds())
+		left := int32(elapsed*10000/(idx+1)*(len(files)-idx-1)) / 10000
+		if err := m.UpdateInspectionEstimateLeftSec(c.InspectionId, left); err != nil {
+			log.Error("update estimate left sec:", err)
+		}
 	}
 	tl.Wait()
 

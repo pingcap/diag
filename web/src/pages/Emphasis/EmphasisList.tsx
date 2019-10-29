@@ -1,14 +1,16 @@
 import React, { useMemo, useState, useEffect } from 'react';
-import { Table, Button, Divider, Modal, Tooltip, Icon, Select } from 'antd';
+import { Table, Button, Divider, Modal, Tooltip, Icon, Select, DatePicker } from 'antd';
 import { connect } from 'dva';
 import { Link } from 'umi';
 import { PaginationConfig } from 'antd/lib/table';
-import { ConnectState, ConnectProps, InspectionModelState, Dispatch } from '@/models/connect';
-import { IFormatInspection, IInspection } from '@/models/inspection';
+import { RangePickerValue } from 'antd/lib/date-picker/interface';
 import UploadRemoteReportModal from '@/components/UploadRemoteReportModal';
-import { CurrentUser } from '@/models/user';
 import UploadLocalReportModal from '@/components/UploadLocalReportModal';
-import ConfigInstanceModal from '@/components/ConfigInstanceModal';
+import { ConnectState, ConnectProps, Dispatch, EmphasisModelState } from '@/models/connect';
+import { CurrentUser } from '@/models/user';
+import { IFormatInstance } from '@/models/inspection';
+import { IEmphasis } from '@/models/emphasis';
+import { formatDatetime } from '@/utils/datetime-util';
 import { useIntervalRun } from '@/custom-hooks/use-interval-run';
 
 const { Option } = Select;
@@ -17,8 +19,8 @@ const styles = require('../style.less');
 
 function getReportDetailLink(instanceId: string | undefined, reportId: string) {
   return instanceId === undefined
-    ? `/inspection/reports/${reportId}`
-    : `/inspection/instances/${instanceId}/reports/${reportId}`;
+    ? `/inspection/emphasis/${reportId}`
+    : `/inspection/instances/${instanceId}/emphasis/${reportId}`;
 }
 
 const tableColumns = (
@@ -29,7 +31,7 @@ const tableColumns = (
 ) => {
   const columns = [
     {
-      title: '诊断报告 ID',
+      title: '报告 ID',
       dataIndex: 'uuid',
       key: 'uuid',
     },
@@ -44,26 +46,18 @@ const tableColumns = (
       key: 'instance_name',
     },
     {
-      title: '集群版本',
-      dataIndex: 'cluster_version',
-      key: 'cluster_version',
+      title: '排查时间',
+      key: 'emphasis_time',
+      render: (text: any, record: IEmphasis) => (
+        <span>
+          {formatDatetime(record.start_time)} ~ {formatDatetime(record.finish_time)}
+        </span>
+      ),
     },
     {
-      title: '诊断方式',
-      dataIndex: 'type',
-      key: 'type',
-    },
-    {
-      title: '开始时间',
-      dataIndex: 'format_create_time',
-      key: 'format_create_time',
-      render: (text: any) => (text === 'Invalid date' ? '获取中...' : text),
-    },
-    {
-      title: '完成时间',
-      dataIndex: 'format_finish_time',
-      key: 'format_finish_time',
-      render: (text: any, record: IFormatInspection) => {
+      title: '创建时间',
+      key: 'create_time',
+      render: (text: any, record: IEmphasis) => {
         if (record.status === 'exception') {
           return (
             <div className={styles.instance_status}>
@@ -75,18 +69,15 @@ const tableColumns = (
           );
         }
         if (record.status === 'running') {
-          if ((record.estimated_left_sec || 0) > 0) {
-            return <span>诊断中，预计还剩余 {record.estimated_left_sec} 秒</span>;
-          }
           return <span>running</span>;
         }
-        return <span>{text}</span>;
+        return <span>{formatDatetime(record.create_time)}</span>;
       },
     },
     {
       title: '操作',
       key: 'action',
-      render: (text: any, record: IFormatInspection) => (
+      render: (text: any, record: IEmphasis) => (
         <span>
           {record.status === 'success' ? (
             <Link to={getReportDetailLink(instanceId, record.uuid)}>详情</Link>
@@ -97,7 +88,7 @@ const tableColumns = (
             <React.Fragment>
               <Divider type="vertical" />
               {record.status === 'success' ? (
-                <a download href={`/api/v1/inspections/${record.uuid}.tar.gz`}>
+                <a download href={`/api/v1/emphasis/${record.uuid}.tar.gz`}>
                   下载
                 </a>
               ) : (
@@ -123,18 +114,18 @@ const tableColumns = (
       ),
     },
   ];
-
-  if (curUser.role === 'admin') {
-    return columns.filter(col => col.dataIndex !== 'cluster_version');
-  }
   return columns;
 };
+
+const EMPHASIS_PROBLEMS = ['数据库瓶颈分析', 'QPS 抖动问题', '.99 延迟高问题'];
 
 interface ReportListProps extends ConnectProps {
   dispatch: Dispatch;
 
   curUser: CurrentUser;
-  inspection: InspectionModelState;
+  instances: IFormatInstance[];
+  emphasis: EmphasisModelState;
+
   loading: boolean;
   loadingInstances: boolean;
 }
@@ -142,7 +133,8 @@ interface ReportListProps extends ConnectProps {
 function ReportList({
   dispatch,
   curUser,
-  inspection,
+  instances,
+  emphasis,
   match,
   loading,
   loadingInstances,
@@ -152,23 +144,23 @@ function ReportList({
   // TODO: try to use useReducer to replace so many useState
   const [selectedInstance, setSelectedInstance] = useState(initInstanceId);
 
-  const [configModalVisible, setConfigModalVisible] = useState(false);
-  const [manualInspect, setManualInspect] = useState(false);
-
   const [uploadRemoteModalVisible, setUploadRemoteModalVisible] = useState(false);
   const [remoteUploadUrl, setRemoteUploadUrl] = useState('');
 
   const [uploadLocalModalVisible, setUploadLocalModalVisible] = useState(false);
 
+  const [timeRange, setTimeRange] = useState<[string, string]>(['', '']);
+  const [issue, setIssue] = useState('');
+
   const pagination: PaginationConfig = useMemo(
     () => ({
-      total: inspection.total_inspections,
-      current: inspection.cur_inspections_page,
+      total: emphasis.emphasis.total,
+      current: emphasis.emphasis.cur_page,
     }),
-    [inspection.cur_inspections_page, inspection.total_inspections],
+    [emphasis.emphasis.cur_page, emphasis.emphasis.total],
   );
 
-  useIntervalRun(fetchInspections, 10 * 1000, [selectedInstance]);
+  useIntervalRun(fetchEmphasisList, 10 * 1000, [selectedInstance]);
 
   useEffect(() => {
     fetchInstances();
@@ -180,9 +172,9 @@ function ReportList({
     });
   }
 
-  function fetchInspections(page?: number) {
+  function fetchEmphasisList(page?: number) {
     return dispatch({
-      type: 'inspection/fetchInspections',
+      type: 'emphasis/fetchEmphasisList',
       payload: {
         page,
         instanceId: selectedInstance,
@@ -191,11 +183,11 @@ function ReportList({
   }
 
   const columns = useMemo(
-    () => tableColumns(curUser, deleteInspection, uploadInspection, selectedInstance),
+    () => tableColumns(curUser, deleteEmphasis, uploadEmphasis, selectedInstance),
     [curUser, selectedInstance],
   );
 
-  function deleteInspection(record: IFormatInspection) {
+  function deleteEmphasis(record: IEmphasis) {
     Modal.confirm({
       title: '删除报告？',
       content: '你确定要删除这个报告吗？删除后不可恢复',
@@ -203,38 +195,46 @@ function ReportList({
       okButtonProps: { type: 'danger' },
       onOk() {
         dispatch({
-          type: 'inspection/deleteInspection',
+          type: 'emphasis/deleteEmphasis',
           payload: record.uuid,
         });
       },
     });
   }
 
-  function uploadInspection(record: IFormatInspection) {
+  function uploadEmphasis(record: IEmphasis) {
     setUploadRemoteModalVisible(true);
-    setRemoteUploadUrl(`/inspections/${record.uuid}`);
+    setRemoteUploadUrl(`/emphasis/${record.uuid}`);
   }
 
   function handleTableChange(curPagination: PaginationConfig) {
-    fetchInspections(curPagination.current as number);
+    fetchEmphasisList(curPagination.current as number);
   }
 
-  function handleLocalFileUploaded(res: IInspection) {
+  function handleLocalFileUploaded(res: IEmphasis) {
     dispatch({
-      type: 'inspection/saveInspection',
+      type: 'emphasis/saveEmphasis',
       payload: res,
     });
   }
 
-  function handleInspectionConfig(manual: boolean) {
-    setConfigModalVisible(true);
-    setManualInspect(manual);
+  function handleRangeChange(dates: RangePickerValue, dateStrings: [string, string]) {
+    // 如果用户进行了 clear，dates 为 [], dateStrings 为 ["", ""]
+    if (dates[0] && dates[1]) {
+      setTimeRange([dates[0].format(), dates[1].format()]);
+    } else {
+      setTimeRange(['', '']);
+    }
+  }
+
+  function handleIssueChange(value: string | undefined) {
+    setIssue(value || '');
   }
 
   return (
     <div className={styles.container}>
       <div className={styles.list_header}>
-        <h2>诊断报告列表</h2>
+        <h2>报告列表</h2>
         {curUser.role === 'admin' && (
           <Select
             value={selectedInstance}
@@ -244,28 +244,40 @@ function ReportList({
             style={{ width: 200, marginLeft: 12 }}
             onChange={(val: any) => setSelectedInstance(val)}
           >
-            {inspection.instances.map(item => (
+            {instances.map(item => (
               <Option value={item.uuid} key={item.uuid}>
                 {item.name}
               </Option>
             ))}
           </Select>
         )}
-        <div className={styles.space} />
         {curUser.role === 'admin' && selectedInstance !== undefined && (
           <React.Fragment>
-            <Button
-              type="primary"
-              style={{ right: 12 }}
-              onClick={() => handleInspectionConfig(false)}
+            <Select
+              allowClear
+              placeholder="请选择重点问题"
+              style={{ width: 140, marginRight: 12, marginLeft: 12 }}
+              onChange={handleIssueChange}
             >
-              自动诊断设置
-            </Button>
-            <Button type="primary" onClick={() => handleInspectionConfig(true)}>
-              手动诊断
+              {EMPHASIS_PROBLEMS.map(item => (
+                <Option value={item} key={item}>
+                  {item}
+                </Option>
+              ))}
+            </Select>
+            <DatePicker.RangePicker
+              style={{ marginRight: 12 }}
+              showTime={{ format: 'HH:mm' }}
+              format="YYYY-MM-DD HH:mm"
+              placeholder={['诊断起始时间', '结束时间']}
+              onChange={handleRangeChange}
+            />
+            <Button type="primary" disabled={timeRange[0] === '' || issue === ''}>
+              开始诊断
             </Button>
           </React.Fragment>
         )}
+        <div className={styles.space} />
         {curUser.role === 'dba' && (
           <Button type="primary" onClick={() => setUploadLocalModalVisible(true)}>
             + 导入本地报告
@@ -274,17 +286,10 @@ function ReportList({
       </div>
       <Table
         loading={loading}
-        dataSource={inspection.inspections}
+        dataSource={emphasis.emphasis.list}
         columns={columns}
         onChange={handleTableChange}
         pagination={pagination}
-      />
-      <ConfigInstanceModal
-        dispatch={dispatch}
-        visible={configModalVisible}
-        onClose={() => setConfigModalVisible(false)}
-        manual={manualInspect}
-        instanceId={selectedInstance || ''}
       />
       <UploadRemoteReportModal
         visible={uploadRemoteModalVisible}
@@ -294,16 +299,17 @@ function ReportList({
       <UploadLocalReportModal
         visible={uploadLocalModalVisible}
         onClose={() => setUploadLocalModalVisible(false)}
-        actionUrl="/api/v1/inspections"
+        actionUrl="/api/v1/emphasis"
         onData={handleLocalFileUploaded}
       />
     </div>
   );
 }
 
-export default connect(({ user, inspection, loading }: ConnectState) => ({
+export default connect(({ user, inspection, emphasis, loading }: ConnectState) => ({
   curUser: user.currentUser,
-  inspection,
-  loading: loading.effects['inspection/fetchInspections'],
+  instances: inspection.instances,
+  emphasis,
+  loading: loading.effects['emphasis/fetchEmphasisList'],
   loadingInstances: loading.effects['inspection/fetchInstances'],
 }))(ReportList);
