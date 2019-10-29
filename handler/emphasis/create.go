@@ -48,14 +48,16 @@ type createEmphasisRequest struct {
 	Problem string `json:"investgating_problem"`
 }
 
-func (h *createEmphasisHandler) collectEmphasis(instanceId, inspectionId string) error {
-	// TODO: fill it with a correct value.
+func (h *createEmphasisHandler) collectEmphasis(start, end time.Time, instanceId, inspectionId string) error {
+
 	cmd := exec.Command(
 		h.c.Collector,
 		fmt.Sprintf("--home=%s", h.c.Home),
 		fmt.Sprintf("--instance-id=%s", instanceId),
 		fmt.Sprintf("--inspection-id=%s", inspectionId),
-		fmt.Sprintf("--items=profile"),
+		"--items=emphasis",
+		fmt.Sprintf("--begin=%s", start.Format(time.RFC3339)),
+		fmt.Sprintf("--end=%s", end.Format(time.RFC3339)),
 	)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
@@ -111,7 +113,7 @@ func (h *createEmphasisHandler) createEmphasis(r *http.Request, c *model.Config)
 	}
 
 	go func() {
-		if err := h.collectEmphasis(instanceId, inspectionId); err != nil {
+		if err := h.collectEmphasis(req.Start, req.End, instanceId, inspectionId); err != nil {
 			log.Error("profile ", inspectionId, ": ", err)
 			insp.Status = "exception"
 			insp.Message = "profile failed"
