@@ -42,7 +42,7 @@ func (h *importEmphasisHandler) importEmphasis(r *http.Request) (*model.Inspecti
 	inspection := &model.Inspection{
 		Uuid:   inspectionId,
 		Status: "running",
-		Type: "emphasis",
+		Type:   "emphasis",
 	}
 	if err := h.m.SetInspection(inspection); err != nil {
 		log.Error("create inspection: ", err)
