@@ -119,3 +119,8 @@ func (db *wrapedDB) Create(value interface{}) DB {
 func (db *wrapedDB) Error() error {
 	return db.DB.Error
 }
+
+// If the error is a not found error.
+func IsNotFound(err error) bool {
+	return gorm.IsRecordNotFoundError(err)
+}

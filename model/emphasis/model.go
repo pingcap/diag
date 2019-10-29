@@ -59,7 +59,7 @@ func (e *emphasis) ListAllEmphasisOfInstance(page, size int64, instanceId string
 func (e *emphasis) GetEmphasis(uuid string) (*Emphasis, error) {
 	emph := Emphasis{}
 
-	if err := e.db.Where(&Emphasis{Uuid: uuid}).Take(&emph).Error(); err != nil {
+	if err := e.db.Where("uuid = ?", uuid).Take(&emph).Error(); err != nil {
 		return nil, err
 	}
 	return &emph, nil
