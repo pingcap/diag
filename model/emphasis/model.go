@@ -32,7 +32,8 @@ func (e *emphasis) CreateEmphasis(emp *Emphasis) error {
 func (e *emphasis) paging(query db.DB, page, size int64) ([]*Emphasis, int, error) {
 	insps := []*inspection.Inspection{}
 	count := 0
-	if err := query.Where("type = ?", "emphasis").Offset((page - 1) * size).Limit(size).Find(&insps).Error(); err != nil {
+	query = query.Where("type = ?", "emphasis")
+	if err := query.Offset((page - 1) * size).Limit(size).Find(&insps).Error(); err != nil {
 		return nil, 0, err
 	}
 
