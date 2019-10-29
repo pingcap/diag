@@ -171,7 +171,7 @@ if __name__ == '__main__':
     for to_copy_directory in to_copy_directories:
         os.system("yes | cp -rf {} {}".format(to_copy_directory, dest_dir))
     # rename web-dist to web
-    print("mv {dest_dir}/web-dist {dest_dir}/web")
+    print("mv {dest_dir}/web-dist {dest_dir}/web".format(dest_dir=dest_dir))
     os.system(
         "yes | rm -rf {dest_dir}/web && yes | mv -T {dest_dir}/web-dist {dest_dir}/web"
         .format(dest_dir=dest_dir))

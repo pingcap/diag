@@ -47,12 +47,11 @@ func (s *testGDBSuite) SetUpTest(c *C) {
 	c.Assert(s.db.HasTable(&inspection.Inspection{}), IsTrue)
 }
 
-
 func (s *testGDBSuite) TestingCreate(c *C) {
 	emp := &Emphasis{
-		Uuid: "1321",
-		CreatedTime: time.Now(),
-		InvestgatingEnd: time.Now(),
+		Uuid:              "1321",
+		CreatedTime:       time.Now(),
+		InvestgatingEnd:   time.Now(),
 		InvestgatingStart: time.Now(),
 	}
 	err := s.model.CreateEmphasis(emp)
