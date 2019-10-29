@@ -48,7 +48,7 @@ type createEmphasisRequest struct {
 	Problem string `json:"investgating_problem"`
 }
 
-func (h *createEmphasisHandler) collectEmphasis(start, end time.Time, instanceId, inspectionId string) error {
+func (h *createEmphasisHandler) collectEmphasis(start, end time.Time, instanceId, inspectionId string, instance *model.Instance) error {
 
 	cmd := exec.Command(
 		h.c.Collector,
@@ -57,6 +57,8 @@ func (h *createEmphasisHandler) collectEmphasis(start, end time.Time, instanceId
 		fmt.Sprintf("--inspection-id=%s", inspectionId),
 		fmt.Sprintf("--begin=%s", start.Format(time.RFC3339)),
 		fmt.Sprintf("--end=%s", end.Format(time.RFC3339)),
+		// TODO: update it and make it more than db info.
+		"--items=dbinfo",
 	)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
@@ -64,6 +66,7 @@ func (h *createEmphasisHandler) collectEmphasis(start, end time.Time, instanceId
 		os.Environ(),
 		"FORESIGHT_USER="+h.c.User.Name,
 		"INSPECTION_TYPE=emphasis",
+		"CLUSTER_CREATE_TIME="+instance.CreateTime.Format(time.RFC3339),
 	)
 	log.Info(cmd.Args)
 	err := cmd.Run()
@@ -89,7 +92,7 @@ func (h *createEmphasisHandler) createEmphasis(req *createEmphasisRequest, r *ht
 	}
 
 	// instance, err
-	_, err := h.m.GetInstance(instanceId)
+	instance, err := h.m.GetInstance(instanceId)
 	if err != nil {
 		log.Error("get instance:", err)
 		return nil, helper.GormErrorMapper(err, utils.DatabaseQueryError)
@@ -106,7 +109,7 @@ func (h *createEmphasisHandler) createEmphasis(req *createEmphasisRequest, r *ht
 	}
 
 	go func() {
-		if err := h.collectEmphasis(req.Start, req.End, instanceId, inspectionId); err != nil {
+		if err := h.collectEmphasis(req.Start, req.End, instanceId, inspectionId, instance); err != nil {
 			log.Error("profile ", inspectionId, ": ", err)
 			insp.Status = "exception"
 			insp.Message = "profile failed"
