@@ -74,16 +74,10 @@ func (h *createEmphasisHandler) collectEmphasis(start, end time.Time, instanceId
 	return nil
 }
 
-func (h *createEmphasisHandler) createEmphasis(r *http.Request, c *model.Config) (*model.Emphasis, utils.StatusError) {
+func (h *createEmphasisHandler) createEmphasis(req *createEmphasisRequest, r *http.Request) (*model.Emphasis, utils.StatusError) {
 	instanceId := helper.LoadRouterVar(r, "instance_id")
 	newUuid := uuid.New().String()
-	c.InstanceId = instanceId
 
-	var req createEmphasisRequest
-
-	if err := helper.LoadJsonFromHttpBody(r, &req); err != nil {
-		return nil, utils.ParamsMismatch
-	}
 	emp := &model.Emphasis{
 		Uuid:        newUuid,
 		InstanceId:  instanceId,
@@ -98,7 +92,7 @@ func (h *createEmphasisHandler) createEmphasis(r *http.Request, c *model.Config)
 	_, err := h.m.GetInstance(instanceId)
 	if err != nil {
 		log.Error("get instance:", err)
-		return nil, utils.DatabaseQueryError
+		return nil, helper.GormErrorMapper(err, utils.DatabaseQueryError)
 	}
 
 	insp := emp.CorrespondInspection()
@@ -108,7 +102,7 @@ func (h *createEmphasisHandler) createEmphasis(r *http.Request, c *model.Config)
 
 	if err != nil {
 		log.Error("set inpsection: ", err)
-		return nil, utils.DatabaseInsertError
+		return nil, helper.GormErrorMapper(err, utils.DatabaseInsertError)
 	}
 
 	go func() {
