@@ -173,7 +173,7 @@ if __name__ == '__main__':
     # rename web-dist to web
     print("mv {dest_dir}/web-dist {dest_dir}/web".format(dest_dir=dest_dir))
     os.system(
-        "yes | rm -rf {dest_dir}/web && yes | mv -T {dest_dir}/web-dist {dest_dir}/web"
+        "rm -rf {dest_dir}/web && mv -T web/dist {dest_dir}/web"
         .format(dest_dir=dest_dir))
     os.system("yes | cp -rf *.service {}".format(dest_dir))
     os.system("yes | cp -f *.service /etc/systemd/system/")
