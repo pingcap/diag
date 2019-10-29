@@ -18,7 +18,6 @@ func ParseInsight() *parseInsightTask {
 
 // Parse the output of insight collector
 func (t *parseInsightTask) Run(c *boot.Config) *Insight {
-	// 拿到一个初始化的 insight 对象
 	insight := Insight{}
 
 	ips, err := ioutil.ReadDir(path.Join(c.Src, "insight"))
