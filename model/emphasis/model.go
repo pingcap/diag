@@ -47,12 +47,12 @@ func (e *emphasis) paging(query db.DB, page, size int64) ([]*Emphasis, int, erro
 }
 
 func (e *emphasis) ListAllEmphasis(page, size int64) ([]*Emphasis, int, error) {
-	query := e.db.Model(&inspection.Inspection{}).Order("created_time desc")
+	query := e.db.Model(&inspection.Inspection{}).Order("create_time desc")
 	return e.paging(query, page, size)
 }
 
 func (e *emphasis) ListAllEmphasisOfInstance(page, size int64, instanceId string) ([]*Emphasis, int, error) {
-	query := e.db.Model(&inspection.Inspection{}).Where("instance_id = ?", instanceId).Order("created_time desc")
+	query := e.db.Model(&inspection.Inspection{}).Where("instance_id = ?", instanceId).Order("create_time desc")
 	return e.paging(query, page, size)
 }
 
