@@ -4,6 +4,7 @@ import { connect } from 'dva';
 import { Link } from 'umi';
 import { PaginationConfig } from 'antd/lib/table';
 import { RangePickerValue } from 'antd/lib/date-picker/interface';
+import moment from 'moment';
 import UploadRemoteReportModal from '@/components/UploadRemoteReportModal';
 import UploadLocalReportModal from '@/components/UploadLocalReportModal';
 import { ConnectState, ConnectProps, Dispatch, EmphasisModelState } from '@/models/connect';
@@ -50,7 +51,7 @@ const tableColumns = (
       key: 'emphasis_time',
       render: (text: any, record: IEmphasis) => (
         <span>
-          {formatDatetime(record.start_time)} ~ {formatDatetime(record.finish_time)}
+          {formatDatetime(record.investgating_start)} ~ {formatDatetime(record.investgating_end)}
         </span>
       ),
     },
@@ -71,7 +72,7 @@ const tableColumns = (
         if (record.status === 'running') {
           return <span>running</span>;
         }
-        return <span>{formatDatetime(record.create_time)}</span>;
+        return <span>{formatDatetime(record.created_time)}</span>;
       },
     },
     {
@@ -117,7 +118,15 @@ const tableColumns = (
   return columns;
 };
 
-const EMPHASIS_PROBLEMS = ['数据库瓶颈分析', 'QPS 抖动问题', '.99 延迟高问题'];
+// TODO: extract
+const endOfToday = moment().endOf('day');
+const EMPHASIS_PROBLEMS = [
+  {
+    value: 'db',
+    text: '数据库瓶颈分析',
+  },
+];
+// ['数据库瓶颈分析', 'QPS 抖动问题', '.99 延迟高问题'];
 
 interface ReportListProps extends ConnectProps {
   dispatch: Dispatch;
@@ -149,8 +158,18 @@ function ReportList({
 
   const [uploadLocalModalVisible, setUploadLocalModalVisible] = useState(false);
 
-  const [timeRange, setTimeRange] = useState<[string, string]>(['', '']);
   const [issue, setIssue] = useState('');
+
+  const defTimeRange: [moment.Moment, moment.Moment] = [moment().subtract(1, 'hours'), moment()];
+  const [timeRange, setTimeRange] = useState<[string, string]>([
+    defTimeRange[0].format(),
+    defTimeRange[1].format(),
+  ]);
+
+  function disableDate(current: moment.Moment | undefined) {
+    // Can not select days before today
+    return (current && current > endOfToday) || false;
+  }
 
   const pagination: PaginationConfig = useMemo(
     () => ({
@@ -186,6 +205,18 @@ function ReportList({
     () => tableColumns(curUser, deleteEmphasis, uploadEmphasis, selectedInstance),
     [curUser, selectedInstance],
   );
+
+  function inspectEmphasis() {
+    dispatch({
+      type: 'emphasis/addEmphasis',
+      payload: {
+        instanceId: selectedInstance,
+        investgating_start: timeRange[0],
+        investgating_end: timeRange[1],
+        investgating_problem: issue,
+      },
+    });
+  }
 
   function deleteEmphasis(record: IEmphasis) {
     Modal.confirm({
@@ -260,8 +291,8 @@ function ReportList({
               onChange={handleIssueChange}
             >
               {EMPHASIS_PROBLEMS.map(item => (
-                <Option value={item} key={item}>
-                  {item}
+                <Option value={item.value} key={item.value}>
+                  {item.text}
                 </Option>
               ))}
             </Select>
@@ -271,8 +302,14 @@ function ReportList({
               format="YYYY-MM-DD HH:mm"
               placeholder={['诊断起始时间', '结束时间']}
               onChange={handleRangeChange}
+              defaultValue={defTimeRange}
+              disabledDate={disableDate}
             />
-            <Button type="primary" disabled={timeRange[0] === '' || issue === ''}>
+            <Button
+              type="primary"
+              disabled={timeRange[0] === '' || issue === ''}
+              onClick={inspectEmphasis}
+            >
               开始诊断
             </Button>
           </React.Fragment>

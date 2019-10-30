@@ -15,10 +15,10 @@ export interface IEmphasis {
   user: string;
   instance_name: string;
 
-  start_time: string;
-  finish_time: string;
+  investgating_start: string;
+  investgating_end: string;
 
-  create_time: string;
+  created_time: string;
 
   status: 'running' | 'exception' | 'success';
   message: string;
@@ -100,8 +100,8 @@ const EmphasisModel: EmphasisModelType = {
       return res;
     },
     *addEmphasis({ payload }, { call, put }) {
-      const instanceId = payload;
-      const res = yield call(addEmphasis, instanceId);
+      const { instanceId } = payload;
+      const res = yield call(addEmphasis, instanceId, payload);
       if (res !== undefined) {
         yield put({
           type: 'saveEmphasis',
