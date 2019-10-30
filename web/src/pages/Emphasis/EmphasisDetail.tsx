@@ -8,6 +8,7 @@ import { CurrentUser } from '@/models/user';
 import { IEmphasisDetail } from '@/models/emphasis';
 import { queryEmphasisDetail } from '@/services/emphasis';
 import EmphasisReport from '@/components/InspectionDetail/EmphasisReport';
+import { formatDatetime } from '@/utils/datetime-util';
 
 const styles = require('../style.less');
 
@@ -80,7 +81,11 @@ function EmphasisDetail({ dispatch, match, curUser }: EmphasisDetailProps) {
 
       <div>
         <h2>集群：</h2>
-        <h2>排查时间段：</h2>
+        <h2>
+          排查时间段：
+          {emphasisDetail && formatDatetime(emphasisDetail.investgating_start)} ~{' '}
+          {emphasisDetail && formatDatetime(emphasisDetail.investgating_end)}
+        </h2>
         <h2>排查问题：</h2>
       </div>
 
@@ -88,7 +93,6 @@ function EmphasisDetail({ dispatch, match, curUser }: EmphasisDetailProps) {
         {loading && <Spin size="large" style={{ marginLeft: 8, marginRight: 8 }} />}
 
         {emphasisDetail && <EmphasisReport emphasis={emphasisDetail} />}
-        <EmphasisReport emphasis={undefined} />
       </div>
 
       <UploadRemoteReportModal
