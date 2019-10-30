@@ -37,16 +37,19 @@ func (emp *Emphasis) CorrespondInspection() *inspection.Inspection {
 
 		Status: emp.Status,
 		Type:   "emphasis",
+
+		Message: emp.InvestgatingProblem,
 	}
 }
 
 func InspectionToEmphasis(insp *inspection.Inspection) *Emphasis {
 	return &Emphasis{
-		Uuid:              insp.Uuid,
-		InstanceId:        insp.InstanceId,
-		CreatedTime:       insp.CreateTime.Time,
-		InvestgatingStart: insp.ScrapeBegin.Time,
-		InvestgatingEnd:   insp.ScrapeEnd.Time,
-		Status:            insp.Status,
+		Uuid:                insp.Uuid,
+		InstanceId:          insp.InstanceId,
+		CreatedTime:         insp.CreateTime.Time,
+		InvestgatingStart:   insp.ScrapeBegin.Time,
+		InvestgatingEnd:     insp.ScrapeEnd.Time,
+		Status:              insp.Status,
+		InvestgatingProblem: insp.Message,
 	}
 }
