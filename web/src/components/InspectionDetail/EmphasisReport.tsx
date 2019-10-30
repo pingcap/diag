@@ -1,7 +1,7 @@
 import React from 'react';
 import moment from 'moment';
 import _ from 'lodash';
-// import AutoTable from './AutoTable';
+import AutoTable from './AutoTable';
 import { IPromParams } from '@/services/prometheus-query';
 import CollpasePanel from './CollapsePanel';
 import PrometheusChart from './PrometheusChart';
@@ -15,17 +15,15 @@ import {
 import { IEmphasisDetail } from '@/models/emphasis';
 
 interface EmphasisReportProps {
-  emphasis: IEmphasisDetail | undefined;
+  emphasis: IEmphasisDetail;
 }
 
 const CHART_SAMPLE_COUNT = 15;
 
 // TODO: 提取重复代码
 function EmphasisReport({ emphasis }: EmphasisReportProps) {
-  // const start = moment(emphasis.scrape_begin).unix();
-  const start = moment().unix();
-  // const end = moment(emphasis.scrape_end).unix();
-  const end = start + 5 * 60;
+  const start = moment(emphasis.investgating_start).unix();
+  const end = moment(emphasis.investgating_end).unix();
   const step = Math.floor((end - start) / CHART_SAMPLE_COUNT);
   const promParams: IPromParams = { start, end, step };
 
@@ -33,8 +31,7 @@ function EmphasisReport({ emphasis }: EmphasisReportProps) {
     const promChart = PROM_CHARTS[chartKey];
     const promQueries: IPromQuery[] = promChart.queries.map(promQuery => ({
       ...promQuery,
-      // promQL: _.template(promQuery.promQLTemplate)({ inspectionId: emphasis.uuid }),
-      promQL: _.template(promQuery.promQLTemplate)({ inspectionId: 'aaa' }),
+      promQL: _.template(promQuery.promQLTemplate)({ inspectionId: emphasis.uuid }),
     }));
     if (promChart.chartType === 'table') {
       return (
@@ -73,7 +70,7 @@ function EmphasisReport({ emphasis }: EmphasisReportProps) {
   return (
     <div style={{ marginTop: 20 }}>
       <h2>一、问题定位</h2>
-      {/* <AutoTable title="overview" apiUrl={`/emphasis/${emphasis.uuid}/symptom`} /> */}
+      <AutoTable title="overview" apiUrl={`/emphasis/${emphasis.uuid}/symptom`} />
 
       <h2>二、问题排查监控信息</h2>
       {renderPanels(EMPHASIS_DB_PERFORMANCE_PANELS)}

@@ -51,7 +51,7 @@ const tableColumns = (
       key: 'emphasis_time',
       render: (text: any, record: IEmphasis) => (
         <span>
-          {formatDatetime(record.start_time)} ~ {formatDatetime(record.finish_time)}
+          {formatDatetime(record.investgating_start)} ~ {formatDatetime(record.investgating_end)}
         </span>
       ),
     },
@@ -72,7 +72,7 @@ const tableColumns = (
         if (record.status === 'running') {
           return <span>running</span>;
         }
-        return <span>{formatDatetime(record.create_time)}</span>;
+        return <span>{formatDatetime(record.created_time)}</span>;
       },
     },
     {

@@ -15,10 +15,10 @@ export interface IEmphasis {
   user: string;
   instance_name: string;
 
-  start_time: string;
-  finish_time: string;
+  investgating_start: string;
+  investgating_end: string;
 
-  create_time: string;
+  created_time: string;
 
   status: 'running' | 'exception' | 'success';
   message: string;
