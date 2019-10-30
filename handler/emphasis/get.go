@@ -35,6 +35,11 @@ func (h *getEmphasisHandler) getEmphasis(r *http.Request) (*emphasis.Emphasis, u
 		}
 		return nil, utils.DatabaseQueryError
 	} else {
+		problems, err := h.m.LoadAllProblems(inspection)
+		if err != nil {
+			return nil, utils.DatabaseQueryError
+		}
+		inspection.RelatedProblems = problems
 		return inspection, nil
 	}
 }
