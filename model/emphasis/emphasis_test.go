@@ -23,7 +23,7 @@ type testGDBSuite struct {
 }
 
 func (s *testGDBSuite) SetUpTest(c *C) {
-	testingDbFile, err := ioutil.TempFile(".", "sqlite.db")
+	testingDbFile, err := ioutil.TempFile("", "sqlite.db")
 
 	if err != nil {
 		c.Fatal(err)
@@ -34,9 +34,9 @@ func (s *testGDBSuite) SetUpTest(c *C) {
 		c.Fatal(err)
 	}
 
-	s.db = testingDb
+	s.db = testingDb.Debug()
 	s.tmp = testingDbFile
-	s.model = New(testingDb)
+	s.model = New(testingDb.Debug())
 
 	c.Assert(err, IsNil)
 
@@ -100,6 +100,17 @@ func (s *testGDBSuite) TestingCreate(c *C) {
 	}
 	c.Assert(len(emps) == 1, IsTrue)
 
+	empk := &Emphasis{
+		Uuid:              "1325",
+		CreatedTime:       time.Now(),
+		InvestgatingEnd:   time.Now(),
+		InvestgatingStart: time.Now(),
+	}
+	err = s.model.CreateEmphasis(empk)
+	if err != nil {
+		c.Fatal(err)
+	}
+
 	err = s.model.DeleteEmphasis("1321")
 	if err != nil {
 		c.Fatal(err)
@@ -109,5 +120,6 @@ func (s *testGDBSuite) TestingCreate(c *C) {
 	if err != nil {
 		c.Fatal(err)
 	}
-	c.Assert(len(emps) == 0, IsTrue)
+	c.Assert(len(emps) == 1, IsTrue)
+	c.Assert(empk.Uuid == "1325", IsTrue)
 }
