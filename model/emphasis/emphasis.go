@@ -24,7 +24,7 @@ type Emphasis struct {
 
 	Status string `json:"status"` // The status of "running" | "exception" | "success" .
 
-	RelatedProblems []Problem `json:"related_problems" gorm:"foreignkey:UserRefer"`
+	RelatedProblems []*Problem `json:"related_problems" gorm:"foreignkey:UserRefer"`
 }
 
 func (emp *Emphasis) CorrespondInspection() *inspection.Inspection {
@@ -50,4 +50,3 @@ func InspectionToEmphasis(insp *inspection.Inspection) *Emphasis {
 		Status:            insp.Status,
 	}
 }
-

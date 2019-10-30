@@ -89,6 +89,7 @@ func (h *createEmphasisHandler) createEmphasis(req *createEmphasisRequest, r *ht
 		InvestgatingStart:   req.Start,
 		InvestgatingEnd:     req.End,
 		InvestgatingProblem: req.Problem,
+		Status:              "running",
 	}
 
 	// instance, err
