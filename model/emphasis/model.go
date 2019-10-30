@@ -31,18 +31,19 @@ type emphasis struct {
 func (e *emphasis) AddProblem(inspectionId string, problem *Problem) error {
 	problem.InspectionId = inspectionId
 	problem.CreateTime = utils.FromTime(time.Now())
-	err := e.db.Create(problem).Error()
+	err := e.db.Debug().Create(problem).Error()
 	return err
 }
 
 func (e *emphasis) LoadAllProblems(emp *Emphasis) ([]*Problem, error) {
 	problems := []*Problem{}
-	err := e.db.Model(&Problem{}).Where("instance_id = ?", emp.Uuid).Order("create_time desc").Find(&problems).Error()
+	err := e.db.Debug().Model(&Problem{}).Where("inspection_id = ?", emp.Uuid).Order("create_time desc").Find(&problems).Error()
 	return problems, err
 }
 
 func (e *emphasis) CreateEmphasis(emp *Emphasis) error {
-	return e.db.Create(emp.CorrespondInspection()).Error()
+	insp := emp.CorrespondInspection()
+	return e.db.Debug().Create(insp).Error()
 }
 
 // The helper function for paging.
@@ -65,7 +66,7 @@ func (e *emphasis) paging(query db.DB, page, size int64) ([]*Emphasis, int, erro
 }
 
 func (e *emphasis) ListAllEmphasis(page, size int64) ([]*Emphasis, int, error) {
-	query := e.db.Model(&inspection.Inspection{}).Order("create_time desc")
+	query := e.db.Debug().Model(&inspection.Inspection{}).Order("create_time desc")
 	return e.paging(query, page, size)
 }
 
@@ -75,10 +76,10 @@ func (e *emphasis) ListAllEmphasisOfInstance(page, size int64, instanceId string
 }
 
 func (e *emphasis) GetEmphasis(uuid string) (*Emphasis, error) {
-	emph := Emphasis{}
+	emph := inspection.Inspection{}
 
-	if err := e.db.Where("uuid = ?", uuid).Take(&emph).Error(); err != nil {
+	if err := e.db.Debug().Where("uuid = ?", uuid).Take(&emph).Error(); err != nil {
 		return nil, err
 	}
-	return &emph, nil
+	return InspectionToEmphasis(&emph), nil
 }

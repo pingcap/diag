@@ -32,6 +32,7 @@ type DB interface {
 	Updates(values interface{}, ignoreProtectedAttrs ...bool) DB
 	Model(value interface{}) DB
 	Close() error
+	Debug() DB
 }
 
 // Open sqlite.db and return DB interface instead of a struct
@@ -50,6 +51,10 @@ func wrap(ins *gorm.DB) DB {
 
 type wrapedDB struct {
 	*gorm.DB
+}
+
+func (db *wrapedDB) Debug() DB {
+	return wrap(db.DB.Debug())
 }
 
 func (db *wrapedDB) Model(value interface{}) DB {
