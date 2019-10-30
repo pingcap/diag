@@ -42,7 +42,7 @@ func (h *importInspectionHandler) importInspection(r *http.Request) (*model.Insp
 	inspection := &model.Inspection{
 		Uuid:   inspectionId,
 		Status: "running",
-		Type: "emphasis",
+		Type:   "emphasis",
 	}
 	if err := h.m.SetInspection(inspection); err != nil {
 		log.Error("create inspection: ", err)

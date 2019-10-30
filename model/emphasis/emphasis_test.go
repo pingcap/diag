@@ -1,6 +1,7 @@
 package emphasis
 
 import (
+	"database/sql"
 	"github.com/pingcap/tidb-foresight/model/inspection"
 	"testing"
 	"time"
@@ -43,8 +44,9 @@ func (s *testGDBSuite) SetUpTest(c *C) {
 	c.Assert(err, IsNil)
 
 	s.db.CreateTable(&inspection.Inspection{})
+	s.db.CreateTable(&Problem{})
 	c.Assert(s.db.HasTable(&inspection.Inspection{}), IsTrue)
-	c.Assert(s.db.HasTable(&inspection.Inspection{}), IsTrue)
+	c.Assert(s.db.HasTable(&Problem{}), IsTrue)
 }
 
 func (s *testGDBSuite) TestingCreate(c *C) {
@@ -71,4 +73,23 @@ func (s *testGDBSuite) TestingCreate(c *C) {
 		c.Fatal(err)
 	}
 	c.Assert(emp2 == emp, IsTrue)
+
+	newProb := &Problem{
+		Problem:      sql.NullString{},
+		Uuid:         "2103712",
+		RelatedGraph: "tidb",
+		Advise:       "suicide",
+	}
+
+	err = s.model.AddProblem(emp.Uuid, newProb)
+	if err != nil {
+		c.Fatal(err)
+	}
+
+	probs, err := s.model.LoadAllProblems(emp)
+	if err != nil {
+		c.Fatal(err)
+	}
+	c.Assert(len(probs) == 1, IsTrue)
+	c.Assert(*probs[0] == *newProb, IsTrue)
 }
