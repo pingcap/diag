@@ -8,6 +8,7 @@ import (
 
 func initDB(dbpath string) db.DB {
 	db, err := db.Open(dbpath)
+	//db, err := db.OpenDebug(dbpath)
 
 	if err != nil {
 		log.Panic(err)

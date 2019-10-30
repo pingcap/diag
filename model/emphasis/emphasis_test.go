@@ -91,10 +91,6 @@ func (s *testGDBSuite) TestingCreate(c *C) {
 	c.Assert(len(probs) == 1, IsTrue)
 	c.Assert(probs[0].Uuid == newProb.Uuid, IsTrue)
 
-	err = s.model.DeleteEmphasis("1321")
-	if err != nil {
-		c.Fatal(err)
-	}
 	// Create inspection with other Types other than emphasis.
 	s.db.Create(inspection.Inspection{})
 
@@ -103,6 +99,11 @@ func (s *testGDBSuite) TestingCreate(c *C) {
 		c.Fatal(err)
 	}
 	c.Assert(len(emps) == 1, IsTrue)
+
+	err = s.model.DeleteEmphasis("1321")
+	if err != nil {
+		c.Fatal(err)
+	}
 
 	emps, _, err = s.model.ListAllEmphasis(0, 5)
 	if err != nil {
