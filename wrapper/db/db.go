@@ -45,6 +45,15 @@ func Open(fp string) (DB, error) {
 	}
 }
 
+func OpenDebug(fp string) (DB, error) {
+	db, err := Open(fp)
+	if err == nil {
+		return db.Debug(), nil
+	} else {
+		return nil, err
+	}
+}
+
 func wrap(ins *gorm.DB) DB {
 	return &wrapedDB{ins}
 }
