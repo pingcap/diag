@@ -33,25 +33,25 @@ type emphasis struct {
 
 // TODO: consider cascading delete.
 func (e *emphasis) DeleteEmphasis(uuid string) error {
-	return e.db.Debug().Where("uuid = ?", uuid).Delete(&inspection.Inspection{}).Error()
+	return e.db.Where("uuid = ?", uuid).Delete(&inspection.Inspection{}).Error()
 }
 
 func (e *emphasis) AddProblem(inspectionId string, problem *Problem) error {
 	problem.InspectionId = inspectionId
 	problem.CreateTime = utils.FromTime(time.Now())
-	err := e.db.Debug().Create(problem).Error()
+	err := e.db.Create(problem).Error()
 	return err
 }
 
 func (e *emphasis) LoadAllProblems(emp *Emphasis) ([]*Problem, error) {
 	problems := []*Problem{}
-	err := e.db.Debug().Model(&Problem{}).Where("inspection_id = ?", emp.Uuid).Order("create_time desc").Find(&problems).Error()
+	err := e.db.Model(&Problem{}).Where("inspection_id = ?", emp.Uuid).Order("create_time desc").Find(&problems).Error()
 	return problems, err
 }
 
 func (e *emphasis) CreateEmphasis(emp *Emphasis) error {
 	insp := emp.CorrespondInspection()
-	return e.db.Debug().Create(insp).Error()
+	return e.db.Create(insp).Error()
 }
 
 // The helper function for paging.
@@ -74,19 +74,19 @@ func (e *emphasis) paging(query db.DB, page, size int64) ([]*Emphasis, int, erro
 }
 
 func (e *emphasis) ListAllEmphasis(page, size int64) ([]*Emphasis, int, error) {
-	query := e.db.Debug().Model(&inspection.Inspection{}).Order("create_time desc")
+	query := e.db.Model(&inspection.Inspection{}).Where("type = ?", "emphasis").Order("create_time desc")
 	return e.paging(query, page, size)
 }
 
 func (e *emphasis) ListAllEmphasisOfInstance(page, size int64, instanceId string) ([]*Emphasis, int, error) {
-	query := e.db.Model(&inspection.Inspection{}).Where("instance_id = ?", instanceId).Order("create_time desc")
+	query := e.db.Model(&inspection.Inspection{}).Where("instance_id = ? AND type = ?", instanceId, "emphasis").Order("create_time desc")
 	return e.paging(query, page, size)
 }
 
 func (e *emphasis) GetEmphasis(uuid string) (*Emphasis, error) {
 	emph := inspection.Inspection{}
 
-	if err := e.db.Debug().Where("uuid = ?", uuid).Take(&emph).Error(); err != nil {
+	if err := e.db.Where("uuid = ?", uuid).Take(&emph).Error(); err != nil {
 		return nil, err
 	}
 	return InspectionToEmphasis(&emph), nil
