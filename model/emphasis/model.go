@@ -1,10 +1,11 @@
 package emphasis
 
 import (
+	"time"
+
 	"github.com/pingcap/tidb-foresight/model/inspection"
 	"github.com/pingcap/tidb-foresight/utils"
 	"github.com/pingcap/tidb-foresight/wrapper/db"
-	"time"
 )
 
 type Model interface {
@@ -13,6 +14,8 @@ type Model interface {
 	CreateEmphasis(*Emphasis) error
 	//GenerateEmphasis(InstanceId string, InvestStart time.Time, InvestEnd time.Time, InvestProblem string) (*Emphasis, error)
 	GetEmphasis(uuid string) (*Emphasis, error)
+
+	DeleteEmphasis(uuid string) error
 	// Add Problem for Emphasis
 	AddProblem(inspectionId string, problem *Problem) error
 	// Load all problems for Emphasis
@@ -26,6 +29,11 @@ func New(db db.DB) Model {
 
 type emphasis struct {
 	db db.DB
+}
+
+// TODO: consider cascading delete.
+func (e *emphasis) DeleteEmphasis(uuid string) error {
+	return e.db.Debug().Where("uuid = ?", uuid).Delete(&inspection.Inspection{}).Error()
 }
 
 func (e *emphasis) AddProblem(inspectionId string, problem *Problem) error {

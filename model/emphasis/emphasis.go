@@ -51,7 +51,3 @@ func InspectionToEmphasis(insp *inspection.Inspection) *Emphasis {
 	}
 }
 
-// TODO: delete this method.
-func (emp *Emphasis) loadProblems(dir string) {
-
-}
