@@ -95,6 +95,14 @@ func (s *testGDBSuite) TestingCreate(c *C) {
 	if err != nil {
 		c.Fatal(err)
 	}
+	// Create inspection with other Types other than emphasis.
+	s.db.Create(inspection.Inspection{})
+
+	emps, _, err = s.model.ListAllEmphasis(0, 5)
+	if err != nil {
+		c.Fatal(err)
+	}
+	c.Assert(len(emps) == 1, IsTrue)
 
 	emps, _, err = s.model.ListAllEmphasis(0, 5)
 	if err != nil {
