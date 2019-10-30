@@ -38,7 +38,7 @@ func (h *deleteEmphasisHandler) deleteEmphasis(r *http.Request) (*emphasis.Empha
 	os.RemoveAll(path.Join(h.c.Home, "profile", uuid))
 	os.RemoveAll(path.Join(h.c.Home, "remote-log", uuid))
 
-	if err := h.m.DeleteInspection(inspectionId); err != nil {
+	if err := h.m.DeleteEmphasis(inspectionId); err != nil {
 		log.Error("delete inspection:", err)
 		return nil, utils.DatabaseQueryError
 	} else {

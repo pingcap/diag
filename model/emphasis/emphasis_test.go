@@ -2,16 +2,13 @@ package emphasis
 
 import (
 	"database/sql"
-	"github.com/pingcap/tidb-foresight/model/inspection"
-	"testing"
-	"time"
-)
-
-import (
 	"io/ioutil"
 	"os"
+	"testing"
+	"time"
 
 	. "github.com/pingcap/check"
+	"github.com/pingcap/tidb-foresight/model/inspection"
 	"github.com/pingcap/tidb-foresight/wrapper/db"
 )
 
@@ -93,4 +90,15 @@ func (s *testGDBSuite) TestingCreate(c *C) {
 	}
 	c.Assert(len(probs) == 1, IsTrue)
 	c.Assert(probs[0].Uuid == newProb.Uuid, IsTrue)
+
+	err = s.model.DeleteEmphasis("1321")
+	if err != nil {
+		c.Fatal(err)
+	}
+
+	emps, _, err = s.model.ListAllEmphasis(0, 5)
+	if err != nil {
+		c.Fatal(err)
+	}
+	c.Assert(len(emps) == 0, IsTrue)
 }
