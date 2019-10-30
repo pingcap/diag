@@ -24,6 +24,7 @@ type Model interface {
 
 func New(db db.DB) Model {
 	utils.MustInitSchema(db, &Emphasis{})
+	utils.MustInitSchema(db, &Problem{})
 	return &emphasis{db}
 }
 
