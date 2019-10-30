@@ -61,18 +61,19 @@ func (s *testGDBSuite) TestingCreate(c *C) {
 		c.Fatal(err)
 	}
 
-	emps, _, err := s.model.ListAllEmphasis(5, 5)
+	emps, _, err := s.model.ListAllEmphasis(0, 5)
 	if err != nil {
 		c.Fatal(err)
 	}
 	c.Assert(len(emps) == 1, IsTrue)
-	c.Assert(emps[0] == emp, IsTrue)
+	c.Assert(emps[0].Uuid == emp.Uuid, IsTrue)
 
 	emp2, err := s.model.GetEmphasis("1321")
+
 	if err != nil {
 		c.Fatal(err)
 	}
-	c.Assert(emp2 == emp, IsTrue)
+	c.Assert(emp2.Uuid == emp.Uuid, IsTrue)
 
 	newProb := &Problem{
 		Problem:      sql.NullString{},
@@ -91,5 +92,5 @@ func (s *testGDBSuite) TestingCreate(c *C) {
 		c.Fatal(err)
 	}
 	c.Assert(len(probs) == 1, IsTrue)
-	c.Assert(*probs[0] == *newProb, IsTrue)
+	c.Assert(probs[0].Uuid == newProb.Uuid, IsTrue)
 }
