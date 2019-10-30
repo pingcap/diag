@@ -119,6 +119,8 @@ func (s *Server) CreateRouter() http.Handler {
 		api.Handle("/emphasis/{uuid}", inspection.UploadInspection(s.config)).Methods("PUT")
 		// Delete emphasis by id
 		api.Handle("/emphasis/{uuid}", inspection.DeleteInspection(s.config, s.model)).Methods("DELETE")
+		// Load all problems
+		api.Handle("/emphasis/{uuid}/symptom", emphasis.LoadAllProblems(s.model)).Methods("GET")
 	}
 
 	// report
