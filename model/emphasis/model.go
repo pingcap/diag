@@ -4,6 +4,7 @@ import (
 	"github.com/pingcap/tidb-foresight/model/inspection"
 	"github.com/pingcap/tidb-foresight/utils"
 	"github.com/pingcap/tidb-foresight/wrapper/db"
+	"time"
 )
 
 type Model interface {
@@ -12,6 +13,10 @@ type Model interface {
 	CreateEmphasis(*Emphasis) error
 	//GenerateEmphasis(InstanceId string, InvestStart time.Time, InvestEnd time.Time, InvestProblem string) (*Emphasis, error)
 	GetEmphasis(uuid string) (*Emphasis, error)
+	// Add Problem for Emphasis
+	AddProblem(inspectionId string, problem *Problem) error
+	// Load all problems for Emphasis
+	LoadAllProblems(emp *Emphasis) ([]*Problem, error)
 }
 
 func New(db db.DB) Model {
@@ -23,16 +28,28 @@ type emphasis struct {
 	db db.DB
 }
 
+func (e *emphasis) AddProblem(inspectionId string, problem *Problem) error {
+	problem.InspectionId = inspectionId
+	problem.CreateTime = utils.FromTime(time.Now())
+	err := e.db.Create(problem).Error()
+	return err
+}
+
+func (e *emphasis) LoadAllProblems(emp *Emphasis) ([]*Problem, error) {
+	problems := []*Problem{}
+	err := e.db.Model(&Problem{}).Where("instance_id = ?", emp.Uuid).Order("create_time desc").Find(&problems).Error()
+	return problems, err
+}
+
 func (e *emphasis) CreateEmphasis(emp *Emphasis) error {
 	return e.db.Create(emp.CorrespondInspection()).Error()
 }
 
 // The helper function for paging.
-//
 func (e *emphasis) paging(query db.DB, page, size int64) ([]*Emphasis, int, error) {
 	insps := []*inspection.Inspection{}
 	count := 0
-	query = query.Where("type = ?", "emphasis")
+	//query = query.Where("type = ?", "emphasis")
 	if err := query.Offset((page - 1) * size).Limit(size).Find(&insps).Error(); err != nil {
 		return nil, 0, err
 	}
