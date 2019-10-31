@@ -146,7 +146,7 @@ if __name__ == '__main__':
     if not os.path.exists(prefix):
         os.makedirs(prefix)
 
-    to_copy_directories = ['bin', 'web-dist', 'conf']
+    to_copy_directories = ['bin', 'conf']
     # 最终的 $prefix/tidb-foresight 文件
     dest_dir = os.path.join(prefix, 'tidb-foresight')
     # override
@@ -171,9 +171,8 @@ if __name__ == '__main__':
     for to_copy_directory in to_copy_directories:
         os.system("'cp' -rf {} {}".format(to_copy_directory, dest_dir))
     # rename web-dist to web
-    print("mv {dest_dir}/web-dist {dest_dir}/web".format(dest_dir=dest_dir))
     os.system(
-        "rm -rf {dest_dir}/web {dest_dir}/web-dist && 'cp' -rf web-dist {dest_dir}/ && mv {dest_dir}/web-dist {dest_dir}/web"
+        "rm -rf {dest_dir}/web {dest_dir}/web-dist && 'cp' -rf web/dist {dest_dir}/ && mv {dest_dir}/dist {dest_dir}/web"
         .format(dest_dir=dest_dir))
 
     os.system("'cp' -rf *.service {}".format(dest_dir))
