@@ -68,17 +68,6 @@ export default [
             hideInMenu: true,
           },
           {
-            path: '/inspection/perfprofiles',
-            name: 'perf_profile',
-            component: './Misc/PerfProfileList',
-          },
-          {
-            path: '/inspection/perfprofiles/:id',
-            name: 'perf_profile_detail',
-            component: './Misc/PerfProfileDetail',
-            hideInMenu: true,
-          },
-          {
             path: '/inspection/emphasis',
             name: 'emphasis',
             component: './Emphasis/EmphasisList',
@@ -99,6 +88,17 @@ export default [
             path: '/inspection/instances/:instanceId/emphasis/:id',
             name: 'emphasis_detail',
             component: './Emphasis/EmphasisDetail',
+            hideInMenu: true,
+          },
+          {
+            path: '/inspection/perfprofiles',
+            name: 'perf_profile',
+            component: './Misc/PerfProfileList',
+          },
+          {
+            path: '/inspection/perfprofiles/:id',
+            name: 'perf_profile_detail',
+            component: './Misc/PerfProfileDetail',
             hideInMenu: true,
           },
         ],
