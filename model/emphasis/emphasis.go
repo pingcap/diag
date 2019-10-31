@@ -14,14 +14,14 @@ const (
 )
 
 type Emphasis struct {
-	Uuid              string    `json:"uuid"`
-	InstanceId        string    `json:"instance_id"`
-	InstanceName      string    `json:"instance_name"`
-	CreatedTime       time.Time `json:"created_time"`
-	InvestgatingStart time.Time `json:"investgating_start"`
-	InvestgatingEnd   time.Time `json:"investgating_end"`
-
-	InvestgatingProblem string `json:"investgating_problem"`
+	Uuid                string    `json:"uuid"`
+	InstanceId          string    `json:"instance_id"`
+	InstanceName        string    `json:"instance_name"`
+	CreatedTime         time.Time `json:"created_time"`
+	InvestgatingStart   time.Time `json:"investgating_start"`
+	InvestgatingEnd     time.Time `json:"investgating_end"`
+	User                string    `json:"user"`
+	InvestgatingProblem string    `json:"investgating_problem"`
 
 	Status string `json:"status"` // The status of "running" | "exception" | "success" .
 
@@ -38,8 +38,8 @@ func (emp *Emphasis) CorrespondInspection() *inspection.Inspection {
 		InstanceName: emp.InstanceName,
 		Status:       emp.Status,
 		Type:         "emphasis",
-
-		Message: emp.InvestgatingProblem,
+		User:         emp.User,
+		Message:      emp.InvestgatingProblem,
 	}
 }
 
@@ -53,5 +53,6 @@ func InspectionToEmphasis(insp *inspection.Inspection) *Emphasis {
 		Status:              insp.Status,
 		InvestgatingProblem: insp.Message,
 		InstanceName:        insp.InstanceName,
+		User:                insp.User,
 	}
 }

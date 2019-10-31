@@ -60,6 +60,7 @@ func (h *createEmphasisHandler) createEmphasis(req *createEmphasisRequest, r *ht
 		InvestgatingProblem: req.Problem,
 		Status:              "running",
 		InstanceName:        instance.InstanceName,
+		User:                instance.User,
 	}
 
 	config, err := h.m.GetInstanceConfig(instanceId)
