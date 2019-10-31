@@ -1,7 +1,6 @@
 package tidb
 
 import (
-	"database/sql"
 	"fmt"
 	"time"
 
@@ -10,6 +9,7 @@ import (
 	"github.com/pingcap/tidb-foresight/analyzer/input/config"
 	"github.com/pingcap/tidb-foresight/analyzer/output/metric"
 	"github.com/pingcap/tidb-foresight/model"
+	"github.com/pingcap/tidb-foresight/utils"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -33,7 +33,7 @@ func (t *heapChecker) Run(c *boot.Config, m *boot.Model, tc *config.TiDBConfigIn
 				m.InsertSymptom(status, msg, desc)
 				m.AddProblem(c.InspectionId, &model.EmphasisProblem{
 					RelatedGraph: "TiDB Heap Memory Usage",
-					Problem:      sql.NullString{msg, true},
+					Problem:      utils.NullStringFromString(msg),
 					Advise:       desc,
 				})
 				abnormal = true
@@ -46,7 +46,7 @@ func (t *heapChecker) Run(c *boot.Config, m *boot.Model, tc *config.TiDBConfigIn
 				m.InsertSymptom(status, msg, desc)
 				m.AddProblem(c.InspectionId, &model.EmphasisProblem{
 					RelatedGraph: "TiDB Heap Memory Usage",
-					Problem:      sql.NullString{msg, true},
+					Problem:      utils.NullStringFromString(msg),
 					Advise:       desc,
 				})
 				abnormal = true

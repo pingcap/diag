@@ -1,8 +1,8 @@
 package tidb
 
 import (
-	"database/sql"
 	"fmt"
+	"github.com/pingcap/tidb-foresight/utils"
 	"time"
 
 	"github.com/pingcap/tidb-foresight/analyzer/boot"
@@ -26,7 +26,7 @@ func (t *tsoRPCDurationChecker) Run(c *boot.Config, m *boot.Model, mtr *metric.M
 		m.InsertSymptom(status, msg, desc)
 		m.AddProblem(c.InspectionId, &model.EmphasisProblem{
 			RelatedGraph: "PD TSO RPC Duration",
-			Problem:      sql.NullString{msg, true},
+			Problem:      utils.NullStringFromString(msg),
 			Advise:       desc,
 		})
 	} else {
