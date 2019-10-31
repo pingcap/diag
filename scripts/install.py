@@ -165,18 +165,19 @@ if __name__ == '__main__':
     # if exists, then copy it to $prefix/tidb-foresight
     if os.path.exists('tidb-foresight.toml'):
         os.system(
-            'yes | cp -f tidb-foresight.toml {}/tidb-foresight.toml'.format(
+            "'cp' -f tidb-foresight.toml {}/tidb-foresight.toml".format(
                 dest_dir))
 
     for to_copy_directory in to_copy_directories:
-        os.system("yes | cp -rf {} {}".format(to_copy_directory, dest_dir))
+        os.system("'cp' -rf {} {}".format(to_copy_directory, dest_dir))
     # rename web-dist to web
     print("mv {dest_dir}/web-dist {dest_dir}/web".format(dest_dir=dest_dir))
     os.system(
-        "rm -rf {dest_dir}/web && mv -T web/dist {dest_dir}/web"
+        "rm -rf {dest_dir}/web {dest_dir}/web-dist && 'cp' -rf web-dist {dest_dir}/ && mv {dest_dir}/web-dist {dest_dir}/web"
         .format(dest_dir=dest_dir))
-    os.system("yes | cp -rf *.service {}".format(dest_dir))
-    os.system("yes | cp -f *.service /etc/systemd/system/")
+
+    os.system("'cp' -rf *.service {}".format(dest_dir))
+    os.system("'cp' -rf *.service /etc/systemd/system/")
     os.system('chown {} -R $prefix'.format(user))
     chmod_path(dest_dir)
 
