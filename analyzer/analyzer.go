@@ -17,7 +17,7 @@ type Analyzer struct {
 
 func NewAnalyzer(home, inspectionId string) *Analyzer {
 	analyzer := &Analyzer{
-		manager: manager.NewTaskManager(),
+		manager: manager.New(),
 	}
 
 	analyzer.manager.Register(boot.Bootstrap(inspectionId, home))

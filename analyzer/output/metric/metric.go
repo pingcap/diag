@@ -1,5 +1,9 @@
 package metric
 
+import (
+	"github.com/pingcap/tidb-foresight/wrapper/prometheus"
+)
+
 // metricT represents a metric returned from the prometheus api
 type metricT struct {
 	ResultType string  `json:"resultType"`
@@ -10,4 +14,6 @@ type metricT struct {
 // It's empty because other tasks should query prometheus
 // for result, this is just to make sure this taks is executed
 // before other tasks dependened on it.
-type Metric struct{}
+type Metric struct {
+	prometheus.Prometheus
+}

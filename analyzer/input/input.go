@@ -3,6 +3,7 @@ package input
 import (
 	"github.com/pingcap/tidb-foresight/analyzer/input/alert"
 	"github.com/pingcap/tidb-foresight/analyzer/input/args"
+	"github.com/pingcap/tidb-foresight/analyzer/input/config"
 	"github.com/pingcap/tidb-foresight/analyzer/input/dbinfo"
 	"github.com/pingcap/tidb-foresight/analyzer/input/dmesg"
 	"github.com/pingcap/tidb-foresight/analyzer/input/envs"
@@ -28,6 +29,7 @@ func Tasks() []interface{} {
 	tasks = append(tasks, alert.ParseAlert())
 	tasks = append(tasks, envs.ParseEnvs())
 	tasks = append(tasks, dmesg.ParseDmesg())
+	tasks = append(tasks, config.ParseConfigInfo())
 
 	return tasks
 }

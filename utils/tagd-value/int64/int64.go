@@ -29,7 +29,7 @@ func (tv *Int64) GetValue() int64 {
 }
 
 func (tv *Int64) SetValue(value int64) {
-	tv.String.SetValue(fmt.Sprintf("%f", value))
+	tv.String.SetValue(fmt.Sprintf("%d", value))
 }
 
 // MarshalJSON implements the json.Marshaler

@@ -79,3 +79,5 @@ type TopologyInfo = report.TopologyInfo
 type Symptom = report.Symptom
 
 type Emphasis = emphasis.Emphasis
+
+type EmphasisProblem = emphasis.Problem
