@@ -1,6 +1,7 @@
 package tikv
 
 import (
+	"database/sql"
 	"fmt"
 	"time"
 
@@ -8,6 +9,7 @@ import (
 	"github.com/pingcap/tidb-foresight/analyzer/input/args"
 	"github.com/pingcap/tidb-foresight/analyzer/input/config"
 	"github.com/pingcap/tidb-foresight/analyzer/output/metric"
+	"github.com/pingcap/tidb-foresight/model"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -18,6 +20,7 @@ func checkGrpc() *grpcChecker {
 }
 
 func (t *grpcChecker) Run(c *boot.Config, m *boot.Model, tc *config.TiKVConfigInfo, mtr *metric.Metric, args *args.Args) {
+	abnormal := false
 	for inst, cfg := range *tc {
 		cpu := t.cpu(mtr, c.InspectionId, inst, args.ScrapeBegin, args.ScrapeEnd)
 		if cpu > cfg.Server.GrpcConcurrency*90 {
@@ -25,7 +28,16 @@ func (t *grpcChecker) Run(c *boot.Config, m *boot.Model, tc *config.TiKVConfigIn
 			msg := fmt.Sprintf("cpu usage of gRPC exceed 90%% on node %s", inst)
 			desc := "The CPU usage of the gRPC thread pool should be less than grpc-concurrency * 90%"
 			m.InsertSymptom(status, msg, desc)
+			m.AddProblem(c.InspectionId, &model.EmphasisProblem{
+				RelatedGraph: "gRPC poll CPU",
+				Problem:      sql.NullString{msg, true},
+				Advise:       desc,
+			})
+			abnormal = true
 		}
+	}
+	if !abnormal {
+		m.AddProblem(c.InspectionId, &model.EmphasisProblem{RelatedGraph: "gRPC poll CPU"})
 	}
 }
 

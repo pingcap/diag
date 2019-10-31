@@ -1,6 +1,7 @@
 package tidb
 
 import (
+	"database/sql"
 	"fmt"
 	"time"
 
@@ -8,6 +9,7 @@ import (
 	"github.com/pingcap/tidb-foresight/analyzer/input/args"
 	"github.com/pingcap/tidb-foresight/analyzer/input/config"
 	"github.com/pingcap/tidb-foresight/analyzer/output/metric"
+	"github.com/pingcap/tidb-foresight/model"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -33,6 +35,13 @@ func (t *tokenChecker) Run(c *boot.Config, m *boot.Model, args *args.Args, mtr *
 		msg := "get token duration exceed 2us"
 		desc := `typically the "Get Token Duration" should be less than 2us`
 		m.InsertSymptom(status, msg, desc)
+		m.AddProblem(c.InspectionId, &model.EmphasisProblem{
+			RelatedGraph: "99% Get Token Duration",
+			Problem:      sql.NullString{msg, true},
+			Advise:       desc,
+		})
+	} else {
+		m.AddProblem(c.InspectionId, &model.EmphasisProblem{RelatedGraph: "99% Get Token Duration"})
 	}
 }
 

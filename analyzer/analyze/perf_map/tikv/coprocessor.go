@@ -1,6 +1,7 @@
 package tikv
 
 import (
+	"database/sql"
 	"fmt"
 	"time"
 
@@ -8,6 +9,7 @@ import (
 	"github.com/pingcap/tidb-foresight/analyzer/input/args"
 	"github.com/pingcap/tidb-foresight/analyzer/input/config"
 	"github.com/pingcap/tidb-foresight/analyzer/output/metric"
+	"github.com/pingcap/tidb-foresight/model"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -18,6 +20,8 @@ func checkCoprocessor() *coprocessorChecker {
 }
 
 func (t *coprocessorChecker) Run(c *boot.Config, m *boot.Model, tc *config.TiKVConfigInfo, mtr *metric.Metric, args *args.Args) {
+	cpuAbnormal := false
+	durationAbnormal := false
 	for inst, cfg := range *tc {
 		cpu := t.cpu(mtr, c.InspectionId, inst, args.ScrapeBegin, args.ScrapeEnd)
 		threadNum := cfg.ReadPool.Coprocessor.HighConcurrency + cfg.ReadPool.Coprocessor.NormalConcurrency + cfg.ReadPool.Coprocessor.LowConcurrency
@@ -26,6 +30,12 @@ func (t *coprocessorChecker) Run(c *boot.Config, m *boot.Model, tc *config.TiKVC
 			msg := fmt.Sprintf("cpu usage of coprocessor exceed 90%% on node %s", inst)
 			desc := "The CPU usage should be less than concurrency * 90%"
 			m.InsertSymptom(status, msg, desc)
+			m.AddProblem(c.InspectionId, &model.EmphasisProblem{
+				RelatedGraph: "Coprocessor CPU",
+				Problem:      sql.NullString{msg, true},
+				Advise:       desc,
+			})
+			cpuAbnormal = true
 		}
 		duration := t.duration(mtr, c.InspectionId, inst, args.ScrapeBegin, args.ScrapeEnd)
 		if duration > 20 {
@@ -33,7 +43,19 @@ func (t *coprocessorChecker) Run(c *boot.Config, m *boot.Model, tc *config.TiKVC
 			msg := fmt.Sprintf(".99 coprocessor wait duration exceed 50ms on node %s", inst)
 			desc := "It may because coprocessor thread pool is busy."
 			m.InsertSymptom(status, msg, desc)
+			m.AddProblem(c.InspectionId, &model.EmphasisProblem{
+				RelatedGraph: "Coprocessor Wait duration",
+				Problem:      sql.NullString{msg, true},
+				Advise:       desc,
+			})
+			durationAbnormal = true
 		}
+	}
+	if !cpuAbnormal {
+		m.AddProblem(c.InspectionId, &model.EmphasisProblem{RelatedGraph: "Coprocessor CPU"})
+	}
+	if !durationAbnormal {
+		m.AddProblem(c.InspectionId, &model.EmphasisProblem{RelatedGraph: "Coprocessor Wait duration"})
 	}
 }
 

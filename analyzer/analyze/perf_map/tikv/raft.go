@@ -1,6 +1,7 @@
 package tikv
 
 import (
+	"database/sql"
 	"fmt"
 	"time"
 
@@ -8,6 +9,7 @@ import (
 	"github.com/pingcap/tidb-foresight/analyzer/input/args"
 	"github.com/pingcap/tidb-foresight/analyzer/input/config"
 	"github.com/pingcap/tidb-foresight/analyzer/output/metric"
+	"github.com/pingcap/tidb-foresight/model"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -18,6 +20,7 @@ func checkRocksDBRaft() *rocksDBRaftChecker {
 }
 
 func (t *rocksDBRaftChecker) Run(c *boot.Config, m *boot.Model, tc *config.TiKVConfigInfo, mtr *metric.Metric, args *args.Args) {
+	abnormal := false
 	for inst := range *tc {
 		duration := t.duration(mtr, c.InspectionId, inst, args.ScrapeBegin, args.ScrapeEnd)
 		if duration > 50 {
@@ -25,7 +28,16 @@ func (t *rocksDBRaftChecker) Run(c *boot.Config, m *boot.Model, tc *config.TiKVC
 			msg := fmt.Sprintf(".99 raftstore append log duration exceed 50ms on node %s", inst)
 			desc := "maybe the disk is busy."
 			m.InsertSymptom(status, msg, desc)
+			m.AddProblem(c.InspectionId, &model.EmphasisProblem{
+				RelatedGraph: "Raftlog Append Duration",
+				Problem:      sql.NullString{msg, true},
+				Advise:       desc,
+			})
+			abnormal = true
 		}
+	}
+	if !abnormal {
+		m.AddProblem(c.InspectionId, &model.EmphasisProblem{RelatedGraph: "Raftlog Append Duration"})
 	}
 }
 

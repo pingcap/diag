@@ -1,12 +1,14 @@
 package tidb
 
 import (
+	"database/sql"
 	"fmt"
 	"time"
 
 	"github.com/pingcap/tidb-foresight/analyzer/boot"
 	"github.com/pingcap/tidb-foresight/analyzer/input/args"
 	"github.com/pingcap/tidb-foresight/analyzer/output/metric"
+	"github.com/pingcap/tidb-foresight/model"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -22,12 +24,26 @@ func (t *transactionChecker) Run(c *boot.Config, m *boot.Model, mtr *metric.Metr
 		msg := "transaction statement number exceed 500"
 		desc := "typically it should be less than 500"
 		m.InsertSymptom(status, msg, desc)
+		m.AddProblem(c.InspectionId, &model.EmphasisProblem{
+			RelatedGraph: "Transaction Duration",
+			Problem:      sql.NullString{msg, true},
+			Advise:       desc,
+		})
+	} else {
+		m.AddProblem(c.InspectionId, &model.EmphasisProblem{RelatedGraph: "Transaction Duration"})
 	}
 	if retry := t.retryNum(mtr, c.InspectionId, args.ScrapeEnd, args.ScrapeBegin); retry > 3 {
 		status := "error"
 		msg := "transaction retry number exceed 3"
 		desc := "there are many write-write conflicts"
 		m.InsertSymptom(status, msg, desc)
+		m.AddProblem(c.InspectionId, &model.EmphasisProblem{
+			RelatedGraph: "Transaction Retry Num",
+			Problem:      sql.NullString{msg, true},
+			Advise:       desc,
+		})
+	} else {
+		m.AddProblem(c.InspectionId, &model.EmphasisProblem{RelatedGraph: "Transaction Retry Num"})
 	}
 }
 

@@ -1,12 +1,14 @@
 package tidb
 
 import (
+	"database/sql"
 	"fmt"
 	"time"
 
 	"github.com/pingcap/tidb-foresight/analyzer/boot"
 	"github.com/pingcap/tidb-foresight/analyzer/input/args"
 	"github.com/pingcap/tidb-foresight/analyzer/output/metric"
+	"github.com/pingcap/tidb-foresight/model"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -22,16 +24,33 @@ func (t *kvChecker) Run(c *boot.Config, m *boot.Model, mtr *metric.Metric, args 
 		msg := "lock resolve OPS exceed 500"
 		desc := "too many write-write/read-write conflicts"
 		m.InsertSymptom(status, msg, desc)
+		m.AddProblem(c.InspectionId, &model.EmphasisProblem{
+			RelatedGraph: "Lock Resolve OPS",
+			Problem:      sql.NullString{msg, true},
+			Advise:       desc,
+		})
+	} else {
+		m.AddProblem(c.InspectionId, &model.EmphasisProblem{RelatedGraph: "Lock Resolve OPS"})
 	}
 
 	typs := []string{"txnLockFast", "txnLock", "regionMiss"}
+	abnormal := false
 	for _, tp := range typs {
 		if backoff := t.backoffOPS(mtr, c.InspectionId, args.ScrapeBegin, args.ScrapeEnd, tp); backoff > 500 {
 			status := "error"
 			msg := fmt.Sprintf("backoff OPS of %s exceed 500", tp)
 			desc := "too many times to wait and retry transactions are blocked by locks or region routing has been updated."
 			m.InsertSymptom(status, msg, desc)
+			m.AddProblem(c.InspectionId, &model.EmphasisProblem{
+				RelatedGraph: "KV Backoff OPS",
+				Problem:      sql.NullString{msg, true},
+				Advise:       desc,
+			})
+			abnormal = true
 		}
+	}
+	if !abnormal {
+		m.AddProblem(c.InspectionId, &model.EmphasisProblem{RelatedGraph: "KV Backoff OPS"})
 	}
 }
 

@@ -1,6 +1,7 @@
 package tidb
 
 import (
+	"database/sql"
 	"fmt"
 	"time"
 
@@ -29,6 +30,7 @@ func (ck *connectionChecker) Run(
 	info := ConnectionCountInfo{}
 	counts := []int{}
 	sum := 0
+	abnormal := false
 	for _, host := range topo.Hosts {
 		for _, comp := range host.Components {
 			// only check tidb connections here
@@ -38,9 +40,15 @@ func (ck *connectionChecker) Run(
 			count := ck.count(mtr, c.InspectionId, host.Ip, comp.Port, args.ScrapeBegin, args.ScrapeEnd)
 			if count > 500 {
 				status := "error"
-				msg := "the suggested connection count should be less than 500 under OLTP workload"
+				msg := fmt.Sprintf("the suggested connection count should be less than 500 under OLTP workload on node %s", host)
 				desc := "maybe you should add more tidb server"
 				m.InsertSymptom(status, msg, desc)
+				m.AddProblem(c.InspectionId, &model.EmphasisProblem{
+					RelatedGraph: "TiDB Connection count",
+					Problem:      sql.NullString{msg, true},
+					Advise:       desc,
+				})
+				abnormal = true
 			}
 			counts = append(counts, count)
 			sum += count
@@ -65,7 +73,17 @@ func (ck *connectionChecker) Run(
 			msg := "the number of connections is balanced between multiple tidb-server instances"
 			desc := "please check if your load balancer is working properly"
 			m.InsertSymptom(status, msg, desc)
+			m.AddProblem(c.InspectionId, &model.EmphasisProblem{
+				RelatedGraph: "TiDB Connection Count",
+				Problem:      sql.NullString{msg, true},
+				Advise:       desc,
+			})
+			abnormal = true
 		}
+	}
+
+	if !abnormal {
+		m.AddProblem(c.InspectionId, &model.EmphasisProblem{RelatedGraph: "TiDB Connection Count"})
 	}
 
 	return &info

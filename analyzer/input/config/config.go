@@ -7,39 +7,43 @@ type TiKVConfigInfo map[string]*TiKVConfig
 type PDConfigInfo map[string]*PDConfig
 
 type TiDBConfig struct {
-	TokenLimit      int `toml:"token-limit"`
-	TxnLocalLatches struct {
-		Enabled bool `toml:"enabled"`
-	} `toml:"txn-local-latches"`
+	TokenLimit      int                   `toml:"token-limit"`
+	TxnLocalLatches TxnLocalLatchesConfig `toml:"txn-local-latches"`
+}
+
+type TxnLocalLatchesConfig struct {
+	Enabled bool `toml:"enabled"`
 }
 
 type TiKVConfig struct {
-	Server struct {
-		GrpcConcurrency int `toml:"grpc-concurrency"`
-	} `toml:"server"`
-	Storage struct {
-		SchedulerWorkerPoolSize int `toml:"scheduler-worker-pool-size"`
-	} `toml:"storage"`
-	RaftStore struct {
-		StorePoolSize int `toml:"store-pool-size"`
-		ApplyPoolSize int `toml:"apply-pool-size"`
-	} `toml:"raftstore"`
-	ReadPool struct {
-		Storage struct {
-			HighConcurrency   int `toml:"high-concurrency"`
-			NormalConcurrency int `toml:"normal-concurrency"`
-			LowConcurrency    int `toml:"low-concurrency"`
-		} `toml:"storage"`
-		Coprocessor struct {
-			HighConcurrency   int `toml:"high-concurrency"`
-			NormalConcurrency int `toml:"normal-concurrency"`
-			LowConcurrency    int `toml:"low-concurrency"`
-		} `toml:"coprocessor"`
-	} `toml:"readpool"`
+	Server    ServerConfig    `toml:"server"`
+	Storage   StorageConfig   `toml:"storage"`
+	RaftStore RaftStoreConfig `toml:"raftstore"`
+	ReadPool  ReadPoolConfig  `toml:"readpool"`
 }
 
-type PDConfig struct {
-	Schedule struct {
-		LeaderScheduleLimit int `toml:"leader-schedule-limit"`
-	} `schedule`
+type ServerConfig struct {
+	GrpcConcurrency int `toml:"grpc-concurrency"`
 }
+
+type StorageConfig struct {
+	SchedulerWorkerPoolSize int `toml:"scheduler-worker-pool-size"`
+}
+
+type RaftStoreConfig struct {
+	StorePoolSize int `toml:"store-pool-size"`
+	ApplyPoolSize int `toml:"apply-pool-size"`
+}
+
+type ReadPoolConfig struct {
+	Storage     ConcurrencyConfig `toml:"storage"`
+	Coprocessor ConcurrencyConfig `toml:"coprocessor"`
+}
+
+type ConcurrencyConfig struct {
+	HighConcurrency   int `toml:"high-concurrency"`
+	NormalConcurrency int `toml:"normal-concurrency"`
+	LowConcurrency    int `toml:"low-concurrency"`
+}
+
+type PDConfig struct{}

@@ -1,12 +1,14 @@
 package tidb
 
 import (
+	"database/sql"
 	"fmt"
 	"time"
 
 	"github.com/pingcap/tidb-foresight/analyzer/boot"
 	"github.com/pingcap/tidb-foresight/analyzer/input/args"
 	"github.com/pingcap/tidb-foresight/analyzer/output/metric"
+	"github.com/pingcap/tidb-foresight/model"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -22,6 +24,13 @@ func (t *compileDurationChecker) Run(c *boot.Config, m *boot.Model, mtr *metric.
 		msg := "compile duration exceed 30ms"
 		desc := "typically it should be less than 30ms"
 		m.InsertSymptom(status, msg, desc)
+		m.AddProblem(c.InspectionId, &model.EmphasisProblem{
+			RelatedGraph: "TiDB Compile Duration",
+			Problem:      sql.NullString{msg, true},
+			Advise:       desc,
+		})
+	} else {
+		m.AddProblem(c.InspectionId, &model.EmphasisProblem{RelatedGraph: "TiDB Compile Duration"})
 	}
 }
 

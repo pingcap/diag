@@ -1,6 +1,7 @@
 package tikv
 
 import (
+	"database/sql"
 	"fmt"
 	"time"
 
@@ -8,6 +9,7 @@ import (
 	"github.com/pingcap/tidb-foresight/analyzer/input/args"
 	"github.com/pingcap/tidb-foresight/analyzer/input/config"
 	"github.com/pingcap/tidb-foresight/analyzer/output/metric"
+	"github.com/pingcap/tidb-foresight/model"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -18,6 +20,8 @@ func checkRaftstore() *raftstoreChecker {
 }
 
 func (t *raftstoreChecker) Run(c *boot.Config, m *boot.Model, tc *config.TiKVConfigInfo, mtr *metric.Metric, args *args.Args) {
+	cpuAbnormal := false
+	durationAbnormal := false
 	for inst, cfg := range *tc {
 		cpu := t.cpu(mtr, c.InspectionId, inst, args.ScrapeBegin, args.ScrapeEnd)
 		if cpu > cfg.RaftStore.StorePoolSize*85 {
@@ -25,6 +29,12 @@ func (t *raftstoreChecker) Run(c *boot.Config, m *boot.Model, tc *config.TiKVCon
 			msg := fmt.Sprintf("cpu usage of raftstore exceed 85%% on node %s", inst)
 			desc := "The CPU usage of the raftstore thread pool should be less than store-pool-size * 85%."
 			m.InsertSymptom(status, msg, desc)
+			m.AddProblem(c.InspectionId, &model.EmphasisProblem{
+				RelatedGraph: "Raft store CPU",
+				Problem:      sql.NullString{msg, true},
+				Advise:       desc,
+			})
+			cpuAbnormal = true
 		}
 		duration := t.duration(mtr, c.InspectionId, inst, args.ScrapeBegin, args.ScrapeEnd)
 		if duration > 20 {
@@ -32,7 +42,19 @@ func (t *raftstoreChecker) Run(c *boot.Config, m *boot.Model, tc *config.TiKVCon
 			msg := fmt.Sprintf(".99 propose wait duration exceed 50ms on node %s", inst)
 			desc := "It may because append raft log is slow or the CPU of raftstore is high."
 			m.InsertSymptom(status, msg, desc)
+			m.AddProblem(c.InspectionId, &model.EmphasisProblem{
+				RelatedGraph: "99% append log duration",
+				Problem:      sql.NullString{msg, true},
+				Advise:       desc,
+			})
+			durationAbnormal = true
 		}
+	}
+	if !cpuAbnormal {
+		m.AddProblem(c.InspectionId, &model.EmphasisProblem{RelatedGraph: "Raft store CPU"})
+	}
+	if !durationAbnormal {
+		m.AddProblem(c.InspectionId, &model.EmphasisProblem{RelatedGraph: "99% append log duration"})
 	}
 }
 

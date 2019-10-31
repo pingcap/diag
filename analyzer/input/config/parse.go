@@ -46,7 +46,12 @@ func (t *parseConfigTask) parseTiDBConfigInfo(dir string) *TiDBConfigInfo {
 }
 
 func (t *parseConfigTask) parseTiDBConfig(file string) *TiDBConfig {
-	config := TiDBConfig{}
+	config := TiDBConfig{
+		TokenLimit: 1000,
+		TxnLocalLatches: TxnLocalLatchesConfig{
+			Enabled: true,
+		},
+	}
 
 	if _, err := toml.DecodeFile(file, &config); err != nil {
 		log.Error("decode tidb config:", err)
@@ -75,7 +80,30 @@ func (t *parseConfigTask) parseTiKVConfigInfo(dir string) *TiKVConfigInfo {
 }
 
 func (t *parseConfigTask) parseTiKVConfig(file string) *TiKVConfig {
-	config := TiKVConfig{}
+	config := TiKVConfig{
+		Server: ServerConfig{
+			GrpcConcurrency: 4,
+		},
+		Storage: StorageConfig{
+			SchedulerWorkerPoolSize: 4,
+		},
+		RaftStore: RaftStoreConfig{
+			StorePoolSize: 2,
+			ApplyPoolSize: 2,
+		},
+		ReadPool: ReadPoolConfig{
+			Storage: ConcurrencyConfig{
+				HighConcurrency:   4,
+				NormalConcurrency: 4,
+				LowConcurrency:    4,
+			},
+			Coprocessor: ConcurrencyConfig{
+				HighConcurrency:   8,
+				NormalConcurrency: 8,
+				LowConcurrency:    8,
+			},
+		},
+	}
 
 	if _, err := toml.DecodeFile(file, &config); err != nil {
 		log.Error("decode tikv config:", err)
