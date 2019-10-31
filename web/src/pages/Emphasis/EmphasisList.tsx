@@ -282,20 +282,22 @@ function ReportList({
             ))}
           </Select>
         )}
+        {curUser.role === 'admin' && (
+          <Select
+            allowClear
+            placeholder="请选择重点问题"
+            style={{ width: 140, marginRight: 12, marginLeft: 12 }}
+            onChange={handleIssueChange}
+          >
+            {EMPHASIS_PROBLEMS.map(item => (
+              <Option value={item.value} key={item.value}>
+                {item.text}
+              </Option>
+            ))}
+          </Select>
+        )}
         {curUser.role === 'admin' && selectedInstance !== undefined && (
           <React.Fragment>
-            <Select
-              allowClear
-              placeholder="请选择重点问题"
-              style={{ width: 140, marginRight: 12, marginLeft: 12 }}
-              onChange={handleIssueChange}
-            >
-              {EMPHASIS_PROBLEMS.map(item => (
-                <Option value={item.value} key={item.value}>
-                  {item.text}
-                </Option>
-              ))}
-            </Select>
             <DatePicker.RangePicker
               style={{ marginRight: 12 }}
               showTime={{ format: 'HH:mm' }}

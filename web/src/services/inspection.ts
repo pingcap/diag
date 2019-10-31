@@ -5,6 +5,10 @@ export async function queryInstances(): Promise<any> {
   return request('/instances');
 }
 
+export async function createInstance(config: any) {
+  return request.post('/instances?by=text', { data: { config } });
+}
+
 export async function deleteInstance(instanceId: string): Promise<any> {
   return request.delete(`/instances/${instanceId}`);
 }
