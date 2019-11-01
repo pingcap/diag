@@ -170,9 +170,7 @@ if __name__ == '__main__':
     for to_copy_directory in to_copy_directories:
         os.system("'cp' -rf {} {}".format(to_copy_directory, dest_dir))
     # rename web-dist to web
-    os.system(
-        "rm -rf {dest_dir}/web {dest_dir}/web-dist && 'cp' -rf web/dist {dest_dir}/ && mv {dest_dir}/dist {dest_dir}/web"
-        .format(dest_dir=dest_dir))
+    os.system("rm -rf {dest_dir}/web && cp -rf web-dist {dest_dir}/web".format(dest_dir=dest_dir))
 
     os.system("'cp' -rf *.service {}".format(dest_dir))
     os.system("'cp' -rf *.service /etc/systemd/system/")
