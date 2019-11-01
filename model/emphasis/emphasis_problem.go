@@ -47,7 +47,7 @@ func (prob *Problem) ProblemToSymptom() *ProblemSymptom {
 		symptom.Prob = &ProblemSymptomInner{
 			Message: prob.Advise,
 			// TODO: Now forced warning
-			Status: "warning",
+			Status: "error",
 			Value:  prob.Problem.String,
 		}
 	}
