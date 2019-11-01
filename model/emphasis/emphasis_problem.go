@@ -47,7 +47,7 @@ func (prob *Problem) ProblemToSymptom() *ProblemSymptom {
 		symptom.Prob = &ProblemSymptomInner{
 			Message: prob.Advise,
 			// TODO: Now forced warning
-			Status: "alert",
+			Status: "warning",
 			Value:  prob.Problem.String,
 		}
 	}
@@ -64,8 +64,8 @@ func ArrayToSymptoms(problem []*Problem) map[string]interface{} {
 			// copy
 			newInnerProb := ProblemSymptomInner{
 				Message: fmt.Sprintf("[%s]: %s", v.RelatedGraph, symptomArray[i].Prob.Message),
-				// alert here
-				Status: symptomArray[i].Prob.Status,
+				// FIXME: error here, maybe fix it later.
+				Status: "error",
 			}
 			warnings = append(warnings, &newInnerProb)
 		}
