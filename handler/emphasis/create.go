@@ -59,7 +59,7 @@ func (h *createEmphasisHandler) createEmphasis(req *createEmphasisRequest, r *ht
 		InvestgatingEnd:     req.End,
 		InvestgatingProblem: req.Problem,
 		Status:              "running",
-		InstanceName:        instance.InstanceName,
+		InstanceName:        instance.Name,
 		User:                instance.User,
 	}
 
