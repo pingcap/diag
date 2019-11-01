@@ -23,7 +23,7 @@ func (h *loadProblemsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 	fn.Wrap(h.listAllProblems).ServeHTTP(w, r)
 }
 
-func (h *loadProblemsHandler) listAllProblems(r *http.Request) ([]*emphasis.Problem, utils.StatusError) {
+func (h *loadProblemsHandler) listAllProblems(r *http.Request) (map[string]interface{}, utils.StatusError) {
 	uuid := helper.LoadRouterVar(r, "uuid")
 	emp, err := h.m.GetEmphasis(uuid)
 	if err != nil {
@@ -36,5 +36,5 @@ func (h *loadProblemsHandler) listAllProblems(r *http.Request) ([]*emphasis.Prob
 	if err != nil {
 		return nil, utils.DatabaseQueryError
 	}
-	return problems, nil
+	return emphasis.ArrayToSymptoms(problems), nil
 }
