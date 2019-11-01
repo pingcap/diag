@@ -55,11 +55,15 @@ func (prob *Problem) ProblemToSymptom() *ProblemSymptom {
 func ArrayToSymptoms(problem []*Problem) map[string]interface{} {
 	// allocate memory for symptoms
 	symptomArray := make([]*ProblemSymptom, len(problem), len(problem))
+	warnings := make([]*ProblemSymptom, 0)
 	for i, v := range problem {
 		symptomArray[i] = v.ProblemToSymptom()
+		if symptomArray[i].Prob != nil {
+			warnings = append(warnings, symptomArray[i])
+		}
 	}
 	return map[string]interface{}{
-		"conclusion": map[string]interface{}{"message": "xxx", "status": "error|warning|info"},
-		"data":    symptomArray,
+		"conclusion": warnings,
+		"data":       symptomArray,
 	}
 }
