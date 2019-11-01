@@ -1,8 +1,8 @@
 package tikv
 
 import (
-	"database/sql"
 	"fmt"
+	"github.com/pingcap/tidb-foresight/utils"
 	"time"
 
 	"github.com/pingcap/tidb-foresight/analyzer/boot"
@@ -30,7 +30,7 @@ func (t *rocksDBRaftChecker) Run(c *boot.Config, m *boot.Model, tc *config.TiKVC
 			m.InsertSymptom(status, msg, desc)
 			m.AddProblem(c.InspectionId, &model.EmphasisProblem{
 				RelatedGraph: "Raftlog Append Duration",
-				Problem:      sql.NullString{msg, true},
+				Problem:      utils.NullStringFromString(msg),
 				Advise:       desc,
 			})
 			abnormal = true

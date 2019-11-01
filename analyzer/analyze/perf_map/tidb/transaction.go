@@ -1,7 +1,6 @@
 package tidb
 
 import (
-	"database/sql"
 	"fmt"
 	"time"
 
@@ -9,6 +8,7 @@ import (
 	"github.com/pingcap/tidb-foresight/analyzer/input/args"
 	"github.com/pingcap/tidb-foresight/analyzer/output/metric"
 	"github.com/pingcap/tidb-foresight/model"
+	"github.com/pingcap/tidb-foresight/utils"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -26,7 +26,7 @@ func (t *transactionChecker) Run(c *boot.Config, m *boot.Model, mtr *metric.Metr
 		m.InsertSymptom(status, msg, desc)
 		m.AddProblem(c.InspectionId, &model.EmphasisProblem{
 			RelatedGraph: "Transaction Duration",
-			Problem:      sql.NullString{msg, true},
+			Problem:      utils.NullStringFromString(msg),
 			Advise:       desc,
 		})
 	} else {
@@ -39,7 +39,7 @@ func (t *transactionChecker) Run(c *boot.Config, m *boot.Model, mtr *metric.Metr
 		m.InsertSymptom(status, msg, desc)
 		m.AddProblem(c.InspectionId, &model.EmphasisProblem{
 			RelatedGraph: "Transaction Retry Num",
-			Problem:      sql.NullString{msg, true},
+			Problem:      utils.NullStringFromString(msg),
 			Advise:       desc,
 		})
 	} else {

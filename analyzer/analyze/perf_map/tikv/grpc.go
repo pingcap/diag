@@ -1,7 +1,6 @@
 package tikv
 
 import (
-	"database/sql"
 	"fmt"
 	"time"
 
@@ -10,6 +9,7 @@ import (
 	"github.com/pingcap/tidb-foresight/analyzer/input/config"
 	"github.com/pingcap/tidb-foresight/analyzer/output/metric"
 	"github.com/pingcap/tidb-foresight/model"
+	"github.com/pingcap/tidb-foresight/utils"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -30,7 +30,7 @@ func (t *grpcChecker) Run(c *boot.Config, m *boot.Model, tc *config.TiKVConfigIn
 			m.InsertSymptom(status, msg, desc)
 			m.AddProblem(c.InspectionId, &model.EmphasisProblem{
 				RelatedGraph: "gRPC poll CPU",
-				Problem:      sql.NullString{msg, true},
+				Problem:      utils.NullStringFromString(msg),
 				Advise:       desc,
 			})
 			abnormal = true

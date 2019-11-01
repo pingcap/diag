@@ -1,7 +1,6 @@
 package tikv
 
 import (
-	"database/sql"
 	"fmt"
 	"time"
 
@@ -10,6 +9,7 @@ import (
 	"github.com/pingcap/tidb-foresight/analyzer/input/config"
 	"github.com/pingcap/tidb-foresight/analyzer/output/metric"
 	"github.com/pingcap/tidb-foresight/model"
+	"github.com/pingcap/tidb-foresight/utils"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -32,7 +32,7 @@ func (t *rocksDBKVChecker) Run(c *boot.Config, m *boot.Model, tc *config.TiKVCon
 			m.InsertSymptom(status, msg, desc)
 			m.AddProblem(c.InspectionId, &model.EmphasisProblem{
 				RelatedGraph: "Apply Wait Duration",
-				Problem:      sql.NullString{msg, true},
+				Problem:      utils.NullStringFromString(msg),
 				Advise:       desc,
 			})
 			waitAbnormal = true
@@ -45,7 +45,7 @@ func (t *rocksDBKVChecker) Run(c *boot.Config, m *boot.Model, tc *config.TiKVCon
 			m.InsertSymptom(status, msg, desc)
 			m.AddProblem(c.InspectionId, &model.EmphasisProblem{
 				RelatedGraph: "Apply Log Duration",
-				Problem:      sql.NullString{msg, true},
+				Problem:      utils.NullStringFromString(msg),
 				Advise:       desc,
 			})
 			applyAbnormal = true
@@ -58,7 +58,7 @@ func (t *rocksDBKVChecker) Run(c *boot.Config, m *boot.Model, tc *config.TiKVCon
 			m.InsertSymptom(status, msg, desc)
 			m.AddProblem(c.InspectionId, &model.EmphasisProblem{
 				RelatedGraph: "Async Apply CPU",
-				Problem:      sql.NullString{msg, true},
+				Problem:      utils.NullStringFromString(msg),
 				Advise:       desc,
 			})
 			cpuAbnormal = true

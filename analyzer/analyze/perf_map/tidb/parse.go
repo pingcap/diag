@@ -1,7 +1,6 @@
 package tidb
 
 import (
-	"database/sql"
 	"fmt"
 	"time"
 
@@ -9,6 +8,7 @@ import (
 	"github.com/pingcap/tidb-foresight/analyzer/input/args"
 	"github.com/pingcap/tidb-foresight/analyzer/output/metric"
 	"github.com/pingcap/tidb-foresight/model"
+	"github.com/pingcap/tidb-foresight/utils"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -26,7 +26,7 @@ func (t *parseDurationChecker) Run(c *boot.Config, m *boot.Model, mtr *metric.Me
 		m.InsertSymptom(status, msg, desc)
 		m.AddProblem(c.InspectionId, &model.EmphasisProblem{
 			RelatedGraph: "99% Parse Duration",
-			Problem:      sql.NullString{msg, true},
+			Problem:      utils.NullStringFromString(msg),
 			Advise:       desc,
 		})
 	} else {
