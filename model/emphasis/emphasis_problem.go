@@ -60,6 +60,6 @@ func ArrayToSymptoms(problem []*Problem) map[string]interface{} {
 	}
 	return map[string]interface{}{
 		"conclusion": map[string]interface{}{"message": "xxx", "status": "error|warning|info"},
-		"problem":    symptomArray,
+		"data":    symptomArray,
 	}
 }
