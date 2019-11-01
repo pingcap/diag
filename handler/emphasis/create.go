@@ -47,7 +47,7 @@ func (h *createEmphasisHandler) createEmphasis(req *createEmphasisRequest, r *ht
 
 	instance, err := h.m.GetInstance(instanceId)
 	if err != nil {
-		log.Error("get inspection config:", err)
+		log.Error("get instance:", err)
 		return nil, helper.GormErrorMapper(err, utils.DatabaseQueryError)
 	}
 
