@@ -60,10 +60,10 @@ func ArrayToSymptoms(problem []*Problem) map[string]interface{} {
 	warnings := make([]*ProblemSymptomInner, 0)
 	for i, v := range problem {
 		symptomArray[i] = v.ProblemToSymptom()
-		// copy
-		newInnerProb := *symptomArray[i].Prob
-		newInnerProb.Message = fmt.Sprintf("[%s]: %s", v.RelatedGraph, newInnerProb.Message)
 		if symptomArray[i].Prob != nil {
+			// copy
+			newInnerProb := *symptomArray[i].Prob
+			newInnerProb.Message = fmt.Sprintf("[%s]: %s", v.RelatedGraph, newInnerProb.Message)
 			warnings = append(warnings, symptomArray[i].Prob)
 		}
 	}
