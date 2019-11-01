@@ -1,6 +1,8 @@
 package emphasis
 
 import (
+	"fmt"
+
 	"github.com/pingcap/tidb-foresight/utils"
 )
 
@@ -45,7 +47,7 @@ func (prob *Problem) ProblemToSymptom() *ProblemSymptom {
 		symptom.Prob = &ProblemSymptomInner{
 			Message: prob.Advise,
 			// TODO: Now forced warning
-			Status: "warning",
+			Status: "alert",
 			Value:  prob.Problem.String,
 		}
 	}
@@ -58,6 +60,9 @@ func ArrayToSymptoms(problem []*Problem) map[string]interface{} {
 	warnings := make([]*ProblemSymptomInner, 0)
 	for i, v := range problem {
 		symptomArray[i] = v.ProblemToSymptom()
+		// copy
+		newInnerProb := *symptomArray[i].Prob
+		newInnerProb.Message = fmt.Sprintf("[%s]: %s", v.RelatedGraph, newInnerProb.Message)
 		if symptomArray[i].Prob != nil {
 			warnings = append(warnings, symptomArray[i].Prob)
 		}
