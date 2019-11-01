@@ -57,6 +57,9 @@ export function useReportItemQuery(apiUrl: string): [IConclusion[], any[], any[]
             dataIndex: key,
             key,
             render: (text: any, record: any) => {
+              if (text === null) {
+                return <span style={{ whiteSpace: 'pre-wrap' }}>none</span>;
+              }
               if (text.status === 'error') {
                 containsAbnormal = true;
                 return (

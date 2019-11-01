@@ -80,11 +80,12 @@ function EmphasisDetail({ dispatch, match, curUser }: EmphasisDetailProps) {
       </div>
 
       <div>
-        <h2>集群：</h2>
+        <h2>集群：{emphasisDetail && emphasisDetail.instance_name}</h2>
         <h2>
           排查时间段：
-          {emphasisDetail && formatDatetime(emphasisDetail.investgating_start)} ~{' '}
-          {emphasisDetail && formatDatetime(emphasisDetail.investgating_end)}
+          {emphasisDetail &&
+            `${formatDatetime(emphasisDetail.investgating_start)} ~
+          ${formatDatetime(emphasisDetail.investgating_end)}`}
         </h2>
         <h2>排查问题：</h2>
       </div>
