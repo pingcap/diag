@@ -45,7 +45,7 @@ func (h *createEmphasisHandler) createEmphasis(req *createEmphasisRequest, r *ht
 	instanceId := helper.LoadRouterVar(r, "instance_id")
 	newUuid := uuid.New().String()
 
-	instance, err := h.m.GetInspection(instanceId)
+	instance, err := h.m.GetInstance(instanceId)
 	if err != nil {
 		log.Error("get inspection config:", err)
 		return nil, helper.GormErrorMapper(err, utils.DatabaseQueryError)
