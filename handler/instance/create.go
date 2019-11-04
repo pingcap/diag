@@ -59,26 +59,35 @@ type requestInstance struct {
 
 func (h *createInstanceHandler) createInstanceByJson(req *requestInstance, r *http.Request) (*model.Instance, utils.StatusError) {
 	uid := uuid.New().String()
-	req.Status = "success"
-	instance := parseTopologyByRequest(req)
-	if instance.Status == "success" {
-		data, err := json.Marshal(instance)
-		if err != nil {
-			log.Error(err)
-			return nil, utils.ParamsMismatch
-		}
-		err = utils.SaveFile(bytes.NewReader(data), path.Join(h.c.Home, "topology", instance.Uuid+".json"))
-		if err != nil {
-			log.Error("save topology file: ", err)
-			return nil, utils.DatabaseUpdateError
-		}
+	req.Status = "pending"
+
+	instance := &model.Instance{Uuid: uid, User: h.c.User.Name, CreateTime: time.Now(), Status: "pending"}
+	err := h.m.CreateInstance(instance)
+	if err != nil {
+		log.Error("create instance: ", err)
+		return nil, utils.DatabaseInsertError
 	}
 
-	instance.Uuid = uid
-	if err := h.m.UpdateInstance(instance); err != nil {
-		log.Error("update instance:", err)
-		return nil, utils.DatabaseUpdateError
-	}
+	go func() {
+		instance2 := parseTopologyByRequest(req)
+		if instance2.Status == "success" {
+			data, err := json.Marshal(instance)
+			if err != nil {
+				log.Error(err)
+				return
+			}
+			err = utils.SaveFile(bytes.NewReader(data), path.Join(h.c.Home, "topology", instance.Uuid+".json"))
+			if err != nil {
+				log.Error("save topology file: ", err)
+				return
+			}
+		}
+		instance2.Uuid = uid
+		if err := h.m.UpdateInstance(instance2); err != nil {
+			log.Error("update instance:", err)
+			return
+		}
+	}()
 
 	return instance, nil
 }
