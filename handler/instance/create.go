@@ -3,7 +3,6 @@ package instance
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"os/exec"
 	"path"
@@ -59,17 +58,29 @@ type requestInstance struct {
 }
 
 func (h *createInstanceHandler) createInstanceByJson(req *requestInstance, r *http.Request) (*model.Instance, utils.StatusError) {
-	// TODO: remove all debug messages after debugging.
-	if req == nil {
-		log.Info(" createInstance got nil")
-	} else {
-		if data, err := json.Marshal(req); err != nil {
-			log.Info(fmt.Sprintf(" createInstance got %s", string(data)))
-		} else {
-			log.Info(" createInstance using json.Marshal but got nil")
+	uid := uuid.New().String()
+	req.Status = "success"
+	instance := parseTopologyByRequest(req)
+	if instance.Status == "success" {
+		data, err := json.Marshal(instance)
+		if err != nil {
+			log.Error(err)
+			return nil, utils.ParamsMismatch
+		}
+		err = utils.SaveFile(bytes.NewReader(data), path.Join(h.c.Home, "topology", instance.Uuid+".json"))
+		if err != nil {
+			log.Error("save topology file: ", err)
+			return nil, utils.DatabaseUpdateError
 		}
 	}
-	return &model.Instance{}, nil
+
+	instance.Uuid = uid
+	if err := h.m.UpdateInstance(instance); err != nil {
+		log.Error("update instance:", err)
+		return nil, utils.DatabaseUpdateError
+	}
+
+	return instance, nil
 }
 
 func (h *createInstanceHandler) createInstanceByFile(r *http.Request) (*model.Instance, utils.StatusError) {
@@ -128,32 +139,9 @@ func (h *createInstanceHandler) importInstance(pioneerPath, inventoryPath, insta
 	}
 }
 
-func parseTopology(topo []byte) *model.Instance {
-	result := struct {
-		Status      string `json:"status"`
-		Message     string `json:"message"`
-		ClusterName string `json:"cluster_name"`
-		Hosts       []struct {
-			Ip         string `json:"ip"`
-			Status     string `json:"status"`
-			Message    string `json:"message"`
-			Components []struct {
-				Name string `json:"name"`
-				Port string `json:"port"`
-			} `json:"components"`
-		} `json:"hosts"`
-	}{}
-
-	instance := &model.Instance{Status: "success"}
-	err := json.Unmarshal(topo, &result)
-	if err != nil {
-		log.Error("exception on parse topology: ", err)
-		instance.Status = "exception"
-		instance.Message = "集群拓扑解析异常"
-		return instance
-	}
-
+func parseTopologyByRequest(result *requestInstance) *model.Instance {
 	var tidb, tikv, pd, prometheus, grafana []string
+	instance := &model.Instance{Status: "success"}
 	for _, h := range result.Hosts {
 		if h.Status == "exception" {
 			instance.Status = "exception"
@@ -182,4 +170,19 @@ func parseTopology(topo []byte) *model.Instance {
 	instance.Grafana = strings.Join(grafana, ",")
 
 	return instance
+}
+
+func parseTopology(topo []byte) *model.Instance {
+	var result requestInstance
+
+	err := json.Unmarshal(topo, &result)
+	if err != nil {
+		log.Error("exception on parse topology: ", err)
+		instance := &model.Instance{Status: "success"}
+		instance.Status = "exception"
+		instance.Message = "集群拓扑解析异常"
+		return instance
+	}
+
+	return parseTopologyByRequest(&result)
 }
