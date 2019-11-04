@@ -3,6 +3,7 @@ package instance
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"os/exec"
 	"path"
@@ -68,8 +69,34 @@ func (h *createInstanceHandler) fromJsonRequest(r *http.Request) (*model.Instanc
 	return &model.Instance{}, nil
 }
 
-func (h *createInstanceHandler) createInstance(r *http.Request) (*model.Instance, utils.StatusError) {
+type requestInstance struct {
+	Status      string `json:"status"`
+	Message     string `json:"message"`
+	ClusterName string `json:"cluster_name"`
+	Hosts       []struct {
+		Ip         string `json:"ip"`
+		Status     string `json:"status"`
+		Message    string `json:"message"`
+		Components []struct {
+			Name string `json:"name"`
+			Port string `json:"port"`
+		} `json:"components"`
+	} `json:"hosts"`
+}
+
+func (h *createInstanceHandler) createInstance(req *requestInstance, r *http.Request) (*model.Instance, utils.StatusError) {
 	byType := r.URL.Query().Get("by")
+	// TODO: remove all debug messages after debugging.
+	if req == nil {
+		log.Info(" createInstance got nil")
+	} else {
+		if data, err := json.Marshal(req); err != nil {
+			log.Info(fmt.Sprintf(" createInstance got %s", string(data)))
+		} else {
+			log.Info(" createInstance using json.Marshal but got nil")
+		}
+	}
+
 	switch byType {
 	case "file":
 		return h.fromIniFile(r)
