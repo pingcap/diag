@@ -26,14 +26,16 @@ func CreateInstance(c *bootstrap.ForesightConfig, m model.Model) http.Handler {
 	return &createInstanceHandler{c, m}
 }
 
+const MAX_FILE_SIZE = 32 * 1024 * 1024
+
 func (h *createInstanceHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	fn.Wrap(h.createInstance).ServeHTTP(w, r)
 }
 
-func (h *createInstanceHandler) createInstance(r *http.Request) (*model.Instance, utils.StatusError) {
+// Adding instance by ini file.
+func (h *createInstanceHandler) fromIniFile(r *http.Request) (*model.Instance, utils.StatusError) {
 	uid := uuid.New().String()
 
-	const MAX_FILE_SIZE = 32 * 1024 * 1024
 	r.ParseMultipartForm(MAX_FILE_SIZE)
 	file, _, err := r.FormFile("file")
 	if err != nil {
@@ -59,6 +61,24 @@ func (h *createInstanceHandler) createInstance(r *http.Request) (*model.Instance
 	go h.importInstance(h.c.Pioneer, inventoryPath, uid)
 
 	return instance, nil
+}
+
+// adding by json request
+func (h *createInstanceHandler) fromJsonRequest(r *http.Request) (*model.Instance, utils.StatusError) {
+	return &model.Instance{}, nil
+}
+
+func (h *createInstanceHandler) createInstance(r *http.Request) (*model.Instance, utils.StatusError) {
+	byType := r.URL.Query().Get("by")
+	switch byType {
+	case "file":
+		return h.fromIniFile(r)
+	case "text":
+		return h.fromJsonRequest(r)
+	default:
+		log.Error("Bad Request for 'by' in createInstance(r *http.Request)")
+		return nil, utils.ParamsMismatch
+	}
 }
 
 func (h *createInstanceHandler) importInstance(pioneerPath, inventoryPath, instanceId string) {
