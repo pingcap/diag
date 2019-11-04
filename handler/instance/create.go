@@ -82,6 +82,9 @@ func (h *createInstanceHandler) createInstanceByJson(req *requestInstance, r *ht
 				return
 			}
 		}
+		instance2.User = h.c.User.Name
+		instance2.Name = req.ClusterName
+		instance2.CreateTime = instance.CreateTime
 		instance2.Uuid = uid
 		if err := h.m.UpdateInstance(instance2); err != nil {
 			log.Error("update instance:", err)
