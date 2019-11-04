@@ -30,11 +30,49 @@ func CreateInstance(c *bootstrap.ForesightConfig, m model.Model) http.Handler {
 const MAX_FILE_SIZE = 32 * 1024 * 1024
 
 func (h *createInstanceHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	fn.Wrap(h.createInstance).ServeHTTP(w, r)
+	byType := r.URL.Query().Get("by")
+	//var fnPtr func(req* requestInstance, r *http.Request) (*model.Instance, utils.StatusError)
+	switch byType {
+	case "file":
+		fn.Wrap(h.createInstanceByFile).ServeHTTP(w, r)
+	case "text":
+		fn.Wrap(h.createInstanceByJson).ServeHTTP(w, r)
+	default:
+		log.Error("Bad Request for 'by' in createInstance(r *http.Request)")
+	}
+
 }
 
-// Adding instance by ini file.
-func (h *createInstanceHandler) fromIniFile(r *http.Request) (*model.Instance, utils.StatusError) {
+type requestInstance struct {
+	Status      string `json:"status"`
+	Message     string `json:"message"`
+	ClusterName string `json:"cluster_name"`
+	Hosts       []struct {
+		Ip         string `json:"ip"`
+		Status     string `json:"status"`
+		Message    string `json:"message"`
+		Components []struct {
+			Name string `json:"name"`
+			Port string `json:"port"`
+		} `json:"components"`
+	} `json:"hosts"`
+}
+
+func (h *createInstanceHandler) createInstanceByJson(req *requestInstance, r *http.Request) (*model.Instance, utils.StatusError) {
+	// TODO: remove all debug messages after debugging.
+	if req == nil {
+		log.Info(" createInstance got nil")
+	} else {
+		if data, err := json.Marshal(req); err != nil {
+			log.Info(fmt.Sprintf(" createInstance got %s", string(data)))
+		} else {
+			log.Info(" createInstance using json.Marshal but got nil")
+		}
+	}
+	return &model.Instance{}, nil
+}
+
+func (h *createInstanceHandler) createInstanceByFile(r *http.Request) (*model.Instance, utils.StatusError) {
 	uid := uuid.New().String()
 
 	r.ParseMultipartForm(MAX_FILE_SIZE)
@@ -62,50 +100,6 @@ func (h *createInstanceHandler) fromIniFile(r *http.Request) (*model.Instance, u
 	go h.importInstance(h.c.Pioneer, inventoryPath, uid)
 
 	return instance, nil
-}
-
-// adding by json request
-func (h *createInstanceHandler) fromJsonRequest(r *http.Request) (*model.Instance, utils.StatusError) {
-	return &model.Instance{}, nil
-}
-
-type requestInstance struct {
-	Status      string `json:"status"`
-	Message     string `json:"message"`
-	ClusterName string `json:"cluster_name"`
-	Hosts       []struct {
-		Ip         string `json:"ip"`
-		Status     string `json:"status"`
-		Message    string `json:"message"`
-		Components []struct {
-			Name string `json:"name"`
-			Port string `json:"port"`
-		} `json:"components"`
-	} `json:"hosts"`
-}
-
-func (h *createInstanceHandler) createInstance(req *requestInstance, r *http.Request) (*model.Instance, utils.StatusError) {
-	byType := r.URL.Query().Get("by")
-	// TODO: remove all debug messages after debugging.
-	if req == nil {
-		log.Info(" createInstance got nil")
-	} else {
-		if data, err := json.Marshal(req); err != nil {
-			log.Info(fmt.Sprintf(" createInstance got %s", string(data)))
-		} else {
-			log.Info(" createInstance using json.Marshal but got nil")
-		}
-	}
-
-	switch byType {
-	case "file":
-		return h.fromIniFile(r)
-	case "text":
-		return h.fromJsonRequest(r)
-	default:
-		log.Error("Bad Request for 'by' in createInstance(r *http.Request)")
-		return nil, utils.ParamsMismatch
-	}
 }
 
 func (h *createInstanceHandler) importInstance(pioneerPath, inventoryPath, instanceId string) {
