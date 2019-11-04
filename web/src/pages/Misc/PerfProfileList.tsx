@@ -37,7 +37,11 @@ const tableColumns = (curUser: CurrentUser, onDelete: any, onUpload: any) => [
     render: (text: any, record: IPerfProfile) => {
       let content = '';
       if (record.items === null || record.items.length === 0) {
-        content = '获取中...';
+        if (record.status === 'running') {
+          content = '获取中...';
+        } else {
+          content = 'unknown';
+        }
       } else if (record.items.length > 1) {
         content = 'all';
       } else {
