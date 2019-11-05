@@ -81,6 +81,7 @@ func (h *createInstanceHandler) createInstanceByJson(req *requestInstance, r *ht
 		instance.Tidb = instance2.Tidb
 		instance.Tikv = instance2.Tikv
 		instance.Name = req.ClusterName
+		instance.User = h.c.User.Name
 
 		if instance.Status == "success" {
 			data, err := json.Marshal(*instance)
@@ -101,6 +102,7 @@ func (h *createInstanceHandler) createInstanceByJson(req *requestInstance, r *ht
 			log.Error("update instance:", err)
 			return
 		}
+
 		log.Info("importInstance UpdateInstance Got ", *instance)
 	}()
 
