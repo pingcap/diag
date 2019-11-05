@@ -206,30 +206,6 @@ def hostinfo(inv):
                 return True, 'get_info', [_port, name]
             else:
                 return False, 'get_info', [_info[ok], name]
-        elif name == 'pump':
-            _command = 'cat ' + deploy_dir + '/scripts/run_pump.sh | grep "\--addr"'
-            _task = [dict(action=dict(module='shell', args=_command))]
-            runAnsible = AnsibleApi(inv)
-            _info = json.loads(runAnsible.runansible(_host, _task))
-            del runAnsible
-            ok = check(_info)
-            if ok == 'success':
-                _port = re.search("([0-9]+)\"", _info['success'][ip]['stdout_lines'][0]).group(1)
-                return True, 'get_info', [_port, name]
-            else:
-                return False, 'get_info', [_info[ok], name]
-        elif name == 'drainer':
-            _command = 'cat ' + deploy_dir + '/scripts/run_drainer.sh | grep "\--addr"'
-            _task = [dict(action=dict(module='shell', args=_command))]
-            runAnsible = AnsibleApi(inv)
-            _info = json.loads(runAnsible.runansible(_host, _task))
-            del runAnsible
-            ok = check(_info)
-            if ok == 'success':
-                _port = re.search("([0-9]+)\"", _info['success'][ip]['stdout_lines'][0]).group(1)
-                return True, 'get_info', [_port, name]
-            else:
-                return False, 'get_info', [_info[ok], name]
         elif name == 'grafana':
             _command = 'cat ' + deploy_dir + '/opt/grafana/conf/grafana.ini | grep "^http_port"'
             _task = [dict(action=dict(module='shell', args=_command))]
