@@ -63,9 +63,8 @@ func (h *createInstanceHandler) byFieldError(r *http.Request) (*model.Instance, 
 
 func (h *createInstanceHandler) createInstanceByJson(req *requestInstance, r *http.Request) (*model.Instance, utils.StatusError) {
 	uid := uuid.New().String()
-	req.Status = "pending"
 
-	instance := &model.Instance{Uuid: uid, User: h.c.User.Name, CreateTime: time.Now(), Status: "pending"}
+	instance := &model.Instance{Uuid: uid, User: h.c.User.Name, CreateTime: time.Now(), Status: "pending", Name: req.ClusterName}
 	err := h.m.CreateInstance(instance)
 	if err != nil {
 		log.Error("create instance: ", err)
@@ -75,17 +74,20 @@ func (h *createInstanceHandler) createInstanceByJson(req *requestInstance, r *ht
 	go func() {
 		instance2 := parseTopologyByRequest(req)
 
-		instance2.User = h.c.User.Name
-		instance2.Name = req.ClusterName
-		instance2.CreateTime = instance.CreateTime
-		instance2.Uuid = uid
+		instance.Status = instance2.Status
+		instance.Message = instance2.Message
+		instance.Grafana = instance2.Grafana
+		instance.Prometheus = instance2.Prometheus
+		instance.Tidb = instance2.Tidb
+		instance.Tikv = instance2.Tikv
 
-		if instance2.Status == "success" {
-			data, err := json.Marshal(instance2)
+		if instance.Status == "success" {
+			data, err := json.Marshal(instance)
 			if err != nil {
 				log.Error(err)
 				return
 			}
+			log.Info("Success, try to save file")
 			err = utils.SaveFile(bytes.NewReader(data), path.Join(h.c.Home, "topology", instance.Uuid+".json"))
 			if err != nil {
 				log.Error("save topology file: ", err)
@@ -93,11 +95,11 @@ func (h *createInstanceHandler) createInstanceByJson(req *requestInstance, r *ht
 			}
 		}
 
-		if err := h.m.UpdateInstance(instance2); err != nil {
+		if err := h.m.UpdateInstance(instance); err != nil {
 			log.Error("update instance:", err)
 			return
 		}
-		log.Info("importInstance UpdateInstance Got ", *instance2)
+		log.Info("importInstance UpdateInstance Got ", *instance)
 	}()
 
 	return instance, nil
