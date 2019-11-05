@@ -37,9 +37,8 @@ func (h *createInstanceHandler) ServeHTTP(w http.ResponseWriter, r *http.Request
 	case "text":
 		fn.Wrap(h.createInstanceByJson).ServeHTTP(w, r)
 	default:
-		log.Error("Bad Request for 'by' in createInstance(r *http.Request)")
+		fn.Wrap(h.byFieldError).ServeHTTP(w, r)
 	}
-
 }
 
 type requestInstance struct {
@@ -57,6 +56,11 @@ type requestInstance struct {
 	} `json:"hosts"`
 }
 
+func (h *createInstanceHandler) byFieldError(r *http.Request) (*model.Instance, utils.StatusError) {
+	log.Error("Bad Request for 'by' in createInstance(r *http.Request)")
+	return nil, utils.ParamsMismatch
+}
+
 func (h *createInstanceHandler) createInstanceByJson(req *requestInstance, r *http.Request) (*model.Instance, utils.StatusError) {
 	uid := uuid.New().String()
 	req.Status = "pending"
@@ -70,8 +74,14 @@ func (h *createInstanceHandler) createInstanceByJson(req *requestInstance, r *ht
 
 	go func() {
 		instance2 := parseTopologyByRequest(req)
+
+		instance2.User = h.c.User.Name
+		instance2.Name = req.ClusterName
+		instance2.CreateTime = instance.CreateTime
+		instance2.Uuid = uid
+
 		if instance2.Status == "success" {
-			data, err := json.Marshal(instance)
+			data, err := json.Marshal(instance2)
 			if err != nil {
 				log.Error(err)
 				return
@@ -82,14 +92,12 @@ func (h *createInstanceHandler) createInstanceByJson(req *requestInstance, r *ht
 				return
 			}
 		}
-		instance2.User = h.c.User.Name
-		instance2.Name = req.ClusterName
-		instance2.CreateTime = instance.CreateTime
-		instance2.Uuid = uid
+
 		if err := h.m.UpdateInstance(instance2); err != nil {
 			log.Error("update instance:", err)
 			return
 		}
+		log.Info("importInstance UpdateInstance Got ", *instance2)
 	}()
 
 	return instance, nil
@@ -136,6 +144,8 @@ func (h *createInstanceHandler) importInstance(pioneerPath, inventoryPath, insta
 	}
 
 	instance := parseTopology(output)
+	instance.Uuid = instanceId
+
 	if instance.Status == "success" {
 		err = utils.SaveFile(bytes.NewReader(output), path.Join(h.c.Home, "topology", instanceId+".json"))
 		if err != nil {
@@ -144,13 +154,15 @@ func (h *createInstanceHandler) importInstance(pioneerPath, inventoryPath, insta
 		}
 	}
 
-	instance.Uuid = instanceId
 	if err := h.m.UpdateInstance(instance); err != nil {
 		log.Error("update instance:", err)
 		return
 	}
+
+	log.Info("importInstance UpdateInstance Got ", *instance)
 }
 
+// Uuid must be set by outer of this function.
 func parseTopologyByRequest(result *requestInstance) *model.Instance {
 	var tidb, tikv, pd, prometheus, grafana []string
 	instance := &model.Instance{Status: "success"}
@@ -184,6 +196,7 @@ func parseTopologyByRequest(result *requestInstance) *model.Instance {
 	return instance
 }
 
+// Uuid must be set by outer of this function.
 func parseTopology(topo []byte) *model.Instance {
 	var result requestInstance
 
