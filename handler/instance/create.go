@@ -80,17 +80,19 @@ func (h *createInstanceHandler) createInstanceByJson(req *requestInstance, r *ht
 		instance.Prometheus = instance2.Prometheus
 		instance.Tidb = instance2.Tidb
 		instance.Tikv = instance2.Tikv
+		instance.Name = req.ClusterName
 
 		if instance.Status == "success" {
-			data, err := json.Marshal(instance)
+			data, err := json.Marshal(*instance)
 			if err != nil {
 				log.Error(err)
 				return
 			}
 			log.Info("Success, try to save file")
+
 			err = utils.SaveFile(bytes.NewReader(data), path.Join(h.c.Home, "topology", instance.Uuid+".json"))
 			if err != nil {
-				log.Error("save topology file: ", err)
+				log.Error("save topology file error: ", err)
 				return
 			}
 		}
