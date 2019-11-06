@@ -1,33 +1,31 @@
 /// This directory checks the transparent huge page for the instance application.
 
-package thp
+package main
 
 import (
 	"bytes"
 	"errors"
 	"fmt"
-	"github.com/pingcap/tidb-foresight/model"
 	"os"
 	"os/exec"
-	"os/user"
-	"path"
 	"regexp"
 
 	log "github.com/sirupsen/logrus"
 )
 
-type Options interface {
-	GetHome() string
-	GetInspectionId() string
-	GetTopology() (*model.Topology, error)
+type Memory struct {
+	// Type of Transparent Huge page
+	ThpType string `json:"thp_type"`
 }
 
-type TransparentHugePageCollector struct {
-	opts Options
-}
-
-func New(opts Options) *TransparentHugePageCollector {
-	return &TransparentHugePageCollector{opts}
+//
+func (m* Memory) GetMemory() {
+	thp, err := collectThp()
+	if err != nil {
+		log.Fatal(err)
+	}
+	// it will not be nil if err is not nil
+	m.ThpType = *thp
 }
 
 type TransparentHugePage string
@@ -65,55 +63,17 @@ func catchString(s string) (*TransparentHugePage, error) {
 	}
 }
 
-func (c *TransparentHugePageCollector) Collect() error {
-	user, err := user.Current()
-	if err != nil {
-		return err
-	}
-
-	topo, err := c.opts.GetTopology()
-	if err != nil {
-		return err
-	}
-
-	for _, host := range topo.Hosts {
-		for _, comp := range host.Components {
-			if e := c.collectThp(user.Username, host.Ip, comp.Port, comp.Name); e != nil {
-				if err == nil {
-					err = e
-				}
-			}
-		}
-
-	}
-
-	return err
-}
-
 // TODO: this part of logic is paste from config/config, please find method to modify this.
-func (c *TransparentHugePageCollector) collectThp(user, ip, port, comp string) error {
-	if comp != "tidb" && comp != "pd" && comp != "tikv" {
-		return nil
-	}
-	p := path.Join(c.opts.GetHome(), "thp", c.opts.GetInspectionId(), "config", comp, ip+":"+port)
-	if err := os.MkdirAll(p, os.ModePerm); err != nil {
-		return err
-	}
-	f, err := os.Create(path.Join(p, comp+".toml"))
-	if err != nil {
-		return err
-	}
-	defer f.Close()
+func collectThp() (*string, error) {
 
+	// Note: this method can only be used in
 	cmd := exec.Command(
-		"ssh",
-		fmt.Sprintf("%s@%s", user, ip),
 		fmt.Sprintf("cat /sys/kernel/mm/redhat_transparent_huge"),
 	)
 	// parse buffer from thp
 	var out bytes.Buffer
 	cmd.Stdout = &out
-	err = cmd.Run()
+	err := cmd.Run()
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -122,18 +82,13 @@ func (c *TransparentHugePageCollector) collectThp(user, ip, port, comp string) e
 	log.Info(cmd.Args)
 	if err := cmd.Run(); err != nil {
 		log.Error("collect config file:", err)
-		return err
+		return nil, err
 	}
 
 	resp, err := catchString(out.String())
 	if err != nil {
-		return err
+		return nil, err
 	}
-
-	_, err = f.WriteString(string(*resp))
-	if err != nil {
-		return err
-	}
-
-	return nil
+	strResp := string(*resp)
+	return &strResp, nil
 }

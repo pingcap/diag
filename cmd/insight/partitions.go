@@ -158,7 +158,7 @@ func getUUIDs() map[string]string {
 	return diskByUUID
 }
 
-// matchUUIDs pair UUIDs and their other device infomation by names
+// matchUUIDs pair UUIDs and their other device information by names
 func matchUUIDs(devs []BlockDev, diskByUUID map[string]string) {
 	if len(devs) < 1 || diskByUUID == nil {
 		return
@@ -228,7 +228,7 @@ func checkMounts() map[string]MountInfo {
 	return mountPoints
 }
 
-// matchMounts pair mount point meta and their other device infomation by names
+// matchMounts pair mount point meta and their other device information by names
 func matchMounts(devs []BlockDev, mountPoints map[string]MountInfo) {
 	if len(devs) < 1 || mountPoints == nil {
 		return
