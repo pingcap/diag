@@ -7,7 +7,7 @@ import (
 	"github.com/pingcap/tidb-foresight/analyzer/boot"
 	"github.com/pingcap/tidb-foresight/analyzer/input/args"
 	"github.com/pingcap/tidb-foresight/analyzer/output/metric"
-	"github.com/pingcap/tidb-foresight/utils"
+	"github.com/pingcap/tidb-foresight/wrapper/prometheus"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -18,11 +18,11 @@ func ParseResource() *parseResourceTask {
 }
 
 // Parse resource usage in the metric time range
-func (t *parseResourceTask) Run(args *args.Args, c *boot.Config, m *metric.Metric /* DO NOT REMOVE THIS */) *Resource {
+func (t *parseResourceTask) Run(args *args.Args, c *boot.Config, m *metric.Metric) *Resource {
 	resource := Resource{}
 
 	cpu := t.resourceUtil(
-		args.ScrapeBegin, args.ScrapeEnd,
+		m, args.ScrapeBegin, args.ScrapeEnd,
 		fmt.Sprintf(`100 - avg (rate(node_cpu{mode="idle", inspectionid="%s"}[5m]) ) * 100`, c.InspectionId),
 		fmt.Sprintf(`100 - avg by (instance) (irate(node_cpu_seconds_total{mode="idle", inspectionid="%s"}[5m]) ) * 100`, c.InspectionId),
 	)
@@ -30,7 +30,7 @@ func (t *parseResourceTask) Run(args *args.Args, c *boot.Config, m *metric.Metri
 	resource.MaxCPU = cpu.Max()
 
 	mem := t.resourceUtil(
-		args.ScrapeBegin, args.ScrapeEnd,
+		m, args.ScrapeBegin, args.ScrapeEnd,
 		fmt.Sprintf(
 			`100 - (sum(node_memory_MemAvailable{inspectionid="%s"}) / sum(node_memory_MemTotal{inspectionid="%s"})) * 100`,
 			c.InspectionId,
@@ -46,7 +46,7 @@ func (t *parseResourceTask) Run(args *args.Args, c *boot.Config, m *metric.Metri
 	resource.MaxMem = mem.Max()
 
 	ioutil := t.resourceUtil(
-		args.ScrapeBegin, args.ScrapeEnd,
+		m, args.ScrapeBegin, args.ScrapeEnd,
 		fmt.Sprintf(
 			`100 * (avg(max(rate(node_disk_io_time_ms{inspectionid="%s"}[5m]) / 1000) by (instance)))`,
 			c.InspectionId,
@@ -60,7 +60,7 @@ func (t *parseResourceTask) Run(args *args.Args, c *boot.Config, m *metric.Metri
 	resource.MaxIoUtil = ioutil.Max()
 
 	disk := t.resourceUtil(
-		args.ScrapeBegin, args.ScrapeEnd,
+		m, args.ScrapeBegin, args.ScrapeEnd,
 		fmt.Sprintf(
 			`100 - (sum(node_filesystem_avail{inspectionid="%s"}) / sum(node_filesystem_size{inspectionid="%s"})) * 100`,
 			c.InspectionId,
@@ -78,14 +78,9 @@ func (t *parseResourceTask) Run(args *args.Args, c *boot.Config, m *metric.Metri
 	return &resource
 }
 
-func (t *parseResourceTask) resourceUtil(begin, end time.Time, querys ...string) utils.FloatArray {
-	const points = 11000
-	step := end.Sub(begin)/points + time.Second
-	if step < time.Second*15 {
-		step = time.Second * 15
-	}
+func (t *parseResourceTask) resourceUtil(m *metric.Metric, begin, end time.Time, querys ...string) prometheus.FloatArray {
 	for _, query := range querys {
-		v, e := utils.QueryPromRange(query, begin, end, step)
+		v, e := m.QueryRange(query, begin, end)
 		if e != nil {
 			log.Error("query prometheus:", e)
 			continue
@@ -95,5 +90,5 @@ func (t *parseResourceTask) resourceUtil(begin, end time.Time, querys ...string)
 		}
 		return v
 	}
-	return utils.FloatArray{}
+	return prometheus.FloatArray{}
 }

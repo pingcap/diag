@@ -56,6 +56,9 @@ export default {
   'menu.inspection.perf_profile': '火焰图 & Profile',
   'menu.inspection.perf_profile_detail': '火焰图 & Profile 详情',
 
+  'menu.inspection.emphasis': '重点问题',
+  'menu.inspection.emphasis_detail': '重点问题详情',
+
   // 'menu.misc': '其它管理',
   // 'menu.misc.flame_graph': '火焰图',
   // 'menu.misc.perf_profile': '火焰图 & Profile',

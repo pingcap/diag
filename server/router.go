@@ -10,6 +10,7 @@ import (
 	"github.com/pingcap/fn"
 	"github.com/pingcap/tidb-foresight/handler/auth"
 	"github.com/pingcap/tidb-foresight/handler/config"
+	"github.com/pingcap/tidb-foresight/handler/emphasis"
 	"github.com/pingcap/tidb-foresight/handler/inspection"
 	"github.com/pingcap/tidb-foresight/handler/instance"
 	"github.com/pingcap/tidb-foresight/handler/logs"
@@ -75,6 +76,7 @@ func (s *Server) CreateRouter() http.Handler {
 	r.Handle("/api/v1/instances/{id}/config", config.GetConfig(s.model)).Methods("GET")
 	r.Handle("/api/v1/instances/{id}/config", config.SetConfig(s.model, s.scheduler)).Methods("PUT")
 	r.Handle("/api/v1/instances/{id}/inspections", inspection.ListInspection(s.model)).Methods("GET")
+	// Attached worker here.
 	r.Handle("/api/v1/instances/{id}/inspections", inspection.CreateInspection(s.config, s.model, s.worker)).Methods("POST")
 	r.Handle("/api/v1/instances/{id}/perfprofiles", profile.ListProfile(s.config, s.model)).Methods("GET")
 	r.Handle("/api/v1/instances/{id}/perfprofiles", profile.CreateProfile(s.config, s.model, s.worker)).Methods("POST")
@@ -96,6 +98,30 @@ func (s *Server) CreateRouter() http.Handler {
 	r.Handle("/api/v1/inspections/{id}", inspection.UploadInspection(s.config)).Methods("PUT")
 	r.Handle("/api/v1/inspections/{id}", inspection.DeleteInspection(s.config, s.model)).Methods("DELETE")
 	r.Handle("/api/v1/inspections/{id}", inspection.UpdateInspectionEscapedLeft(s.model)).Methods("PUT")
+
+	// emphasis
+	api := r.PathPrefix("/api/v1").Subrouter()
+
+	{
+		// List
+		api.Handle("/emphasis", emphasis.ListAllEmphasis(s.model)).Methods("GET")
+		// List with instance_id
+		api.Handle("/instances/{instance_id}/emphasis", emphasis.ListAllEmphasisByInstance(s.model)).Methods("GET")
+		// Get Emphasis by id
+		api.Handle("/emphasis/{uuid}", emphasis.GetEmphasis(s.model)).Methods("GET")
+		// Upload and import local reports
+		api.Handle("/emphasis", inspection.ImportInspection(s.config, s.model, s.worker)).Methods("POST")
+		// Download zip resource of an emphasis
+		api.Handle("/emphasis/{uuid}.tar.gz", inspection.ExportInspection(s.config)).Methods("GET")
+		// Generate Report
+		api.Handle("/instances/{instance_id}/emphasis", emphasis.CreateEmphasis(s.config, s.model, s.worker)).Methods("POST")
+		// Upload emphasis
+		api.Handle("/emphasis/{uuid}", inspection.UploadInspection(s.config)).Methods("PUT")
+		// Delete emphasis by id
+		api.Handle("/emphasis/{uuid}", inspection.DeleteInspection(s.config, s.model)).Methods("DELETE")
+		// Load all problems
+		api.Handle("/emphasis/{uuid}/symptom", emphasis.LoadAllProblems(s.model)).Methods("GET")
+	}
 
 	// report
 	r.Handle("/api/v1/inspections/{id}/symptom", report.Symptom(s.model)).Methods("GET")

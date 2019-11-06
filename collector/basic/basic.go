@@ -66,8 +66,8 @@ func (b *BasicCollector) insight(user, ip string, ports []string) error {
 
 	install := exec.Command(
 		"scp",
-		fmt.Sprintf("%s@%s:%s", user, ip, path.Join(b.opts.GetHome(), "bin", "insight")),
-		"/tmp/",
+		path.Join(b.opts.GetHome(), "bin", "insight"),
+		fmt.Sprintf("%s@%s:/tmp/", user, ip),
 	)
 	install.Stdout = os.Stdout
 	install.Stderr = os.Stderr

@@ -32,6 +32,7 @@ func (t *parseInsightTask) Run(c *boot.Config) *Insight {
 		info, err := t.parse(path.Join(c.Src, "insight", ip.Name(), "collector.json"))
 		if err != nil {
 			log.Error("parse collect.json", err)
+			return nil
 		}
 		info.NodeIp = ip.Name()
 		insight = append(insight, info)

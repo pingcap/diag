@@ -15,6 +15,9 @@ type task struct {
 	// The method stored the reflect value of Run method in target type
 	method reflect.Value
 
+	// the resolve store the resolve mode of this task
+	resolve ResolveMode
+
 	// The inputs stored the types of input list of the Run method
 	// The format of each inputs element is {pkg_path}#{type_name}
 	// eg. github.com/pingcap/tidb-foresight/analyzer/boot#DB
@@ -30,8 +33,8 @@ type task struct {
 	cache []reflect.Value
 }
 
-// Genrate a task struct from any struct pointer having Run method
-// The Run method is required, however, it's signature is not important,
+// Generate a task struct from any struct pointer having `Run` method
+// The `Run` method is required, however, it's signature is not important,
 // the input list of the Run method will be filled by TaskManager, the
 // output list of the Run method will be collected for other taks' input
 // list.
@@ -51,18 +54,29 @@ type task struct {
 // The TaskManager will guarantee the Task1's Run method
 // will be called before Task2's, no matter how the register
 // to the TaskManager.
-func newTask(i interface{}) *task {
+func newTask(i interface{}, m ResolveMode) *task {
 	t := &task{}
-
+	// Take value of i, and it should be a pointer.
 	v := reflect.ValueOf(i)
 	if v.Kind() != reflect.Ptr {
 		panic("task is not a pointer:" + v.Type().PkgPath() + "#" + v.Type().Name())
 	}
-
+	// Load method for this type.
 	t.id = v.Elem().Type().PkgPath() + "#" + v.Elem().Type().Name()
+	// Load method run.
 	t.method = v.MethodByName("Run")
 	if !t.method.IsValid() {
 		panic(t.id + " does't have method Run")
+	}
+
+	// Matching types for Run.
+	mode := v.Elem().FieldByName("Mode")
+	if !mode.IsValid() {
+		t.resolve = m
+	} else if rm, ok := mode.Interface().(ResolveMode); !ok {
+		t.resolve = m
+	} else {
+		t.resolve = rm
 	}
 
 	for idx := 0; idx < t.method.Type().NumIn(); idx++ {
@@ -100,6 +114,10 @@ func (t *task) run(args []reflect.Value) []reflect.Value {
 	log.Info("run task ", t.id)
 	t.cache = t.method.Call(args)
 	return t.cache
+}
+
+func (t *task) mode() ResolveMode {
+	return t.resolve
 }
 
 type ResolveMode int16

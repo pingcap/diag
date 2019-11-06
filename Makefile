@@ -90,7 +90,8 @@ start:
 
 web: 
 	cd web && yarn && yarn build
-	cp -r web/dist web-dist/
+	rm -rf web-dist
+	mv web/dist web-dist
 
 fmt:
 	@echo "gofmt (simplify)"

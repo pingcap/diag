@@ -2,6 +2,7 @@ package analyze
 
 import (
 	"github.com/pingcap/tidb-foresight/analyzer/analyze/alert"
+	"github.com/pingcap/tidb-foresight/analyzer/analyze/perf_map"
 	"github.com/pingcap/tidb-foresight/analyzer/analyze/resource"
 	"github.com/pingcap/tidb-foresight/analyzer/analyze/slow_query"
 	"github.com/pingcap/tidb-foresight/analyzer/analyze/software"
@@ -20,6 +21,7 @@ func Tasks() []interface{} {
 	tasks = append(tasks, software.AnalyzeVersion())
 	tasks = append(tasks, slow_query.Analyze())
 	tasks = append(tasks, status.Analyze())
+	tasks = append(tasks, perf_map.Tasks()...)
 
 	// Keep this the last one
 	tasks = append(tasks, summary.Summary())

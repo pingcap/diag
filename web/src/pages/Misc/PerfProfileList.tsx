@@ -148,7 +148,7 @@ function PerfProfileList({
   useIntervalRun(fetchPerfProfiles);
 
   function fetchPerfProfiles(page?: number) {
-    dispatch({
+    return dispatch({
       type: 'misc/fetchPerfProfiles',
       payload: {
         page,
@@ -177,11 +177,11 @@ function PerfProfileList({
   }
 
   function handleAddPerfProfile(instanceId: string, node: string): Promise<any> {
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve, _reject) => {
       dispatch({
         type: 'misc/addPerfProfile',
         payload: { instanceId, node },
-      }).then((val: any) => resolve());
+      }).then((_val: any) => resolve());
     });
   }
 

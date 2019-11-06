@@ -1966,4 +1966,609 @@ export const PROM_CHARTS: { [key: string]: IPromChart } = {
       },
     ],
   },
+
+  //= ===============================================================================
+  // 重点问题排查
+  // cluster-performence-read/write
+  // tidb-server
+  tidb_server_duration: {
+    title: 'Duration',
+    queries: [
+      {
+        promQLTemplate:
+          'histogram_quantile(0.95, sum(rate(tidb_server_handle_query_duration_seconds_bucket{inspectionid="{{inspectionId}}"}[1m])) by (le))',
+        labelTemplate: '95',
+        valConverter: val => timeSecondsFormatter(val, 1),
+      },
+      {
+        promQLTemplate:
+          'histogram_quantile(0.8, sum(rate(tidb_server_handle_query_duration_seconds_bucket{inspectionid="{{inspectionId}}"}[1m])) by (le))',
+        labelTemplate: '80',
+      },
+    ],
+  },
+  tidb_server_99_get_token_duration: {
+    title: '99% Get Token Duration',
+    queries: [
+      {
+        promQLTemplate:
+          'histogram_quantile(0.99, sum(rate(tidb_server_get_token_duration_seconds_bucket{inspectionid="{{inspectionId}}"}[1m])) by (le))',
+        labelTemplate: '99',
+        valConverter: val => timeSecondsFormatter(val, 1),
+      },
+    ],
+  },
+  tidb_server_connection_count: {
+    title: 'Connection Count',
+    queries: [
+      {
+        promQLTemplate: 'tidb_server_connections{inspectionid="{{inspectionId}}"}',
+        labelTemplate: '{{instance}}',
+      },
+      {
+        promQLTemplate: 'sum(tidb_server_connections{inspectionid="{{inspectionId}}"})',
+        labelTemplate: 'total',
+      },
+    ],
+  },
+  tidb_server_heap_memory_usage: {
+    title: 'Heap Memory Usage',
+    queries: [
+      {
+        promQLTemplate:
+          'go_memstats_heap_inuse_bytes{job=~"tidb.*", inspectionid="{{inspectionId}}"}',
+        labelTemplate: '{{instance}}-{{job}}',
+        valConverter: bytesSizeFormatter,
+      },
+    ],
+  },
+  // parse
+  parse_99_parse_duration: {
+    title: '99% Parse Duration',
+    queries: [
+      {
+        promQLTemplate:
+          'histogram_quantile(0.99, sum(rate(tidb_session_parse_duration_seconds_bucket{inspectionid="{{inspectionId}}"}[1m])) by (le, sql_type))',
+        labelTemplate: '{{sql_type}}',
+        valConverter: val => timeSecondsFormatter(val, 1),
+      },
+    ],
+  },
+  // compile
+  compile_99_compile_duration: {
+    title: '99% Compile Duration',
+    queries: [
+      {
+        promQLTemplate:
+          'histogram_quantile(0.99, sum(rate(tidb_session_compile_duration_seconds_bucket{inspectionid="{{inspectionId}}"}[1m])) by (le, sql_type))',
+        labelTemplate: '{{sql_type}}',
+        valConverter: val => timeSecondsFormatter(val, 1),
+      },
+    ],
+  },
+  // transaction
+  transaction_duration: {
+    title: 'Duration',
+    queries: [
+      {
+        promQLTemplate:
+          'histogram_quantile(0.99, sum(rate(tidb_session_transaction_duration_seconds_bucket{inspectionid="{{inspectionId}}"}[1m])) by (le, sql_type))',
+        labelTemplate: '99-{{sql_type}}',
+        valConverter: val => timeSecondsFormatter(val, 1),
+      },
+      {
+        promQLTemplate:
+          'histogram_quantile(0.95, sum(rate(tidb_session_transaction_duration_seconds_bucket{inspectionid="{{inspectionId}}"}[1m])) by (le, sql_type))',
+        labelTemplate: '95-{{sql_type}}',
+      },
+      {
+        promQLTemplate:
+          'histogram_quantile(0.80, sum(rate(tidb_session_transaction_duration_seconds_bucket{inspectionid="{{inspectionId}}"}[1m])) by (le, sql_type))',
+        labelTemplate: '80-{{sql_type}}',
+      },
+    ],
+  },
+  transaction_statement_num: {
+    title: 'Transaction Statement Num',
+    queries: [
+      {
+        promQLTemplate:
+          'histogram_quantile(0.99, sum(rate(tidb_session_transaction_statement_num_bucket{inspectionid="{{inspectionId}}"}[30s])) by (le, sql_type))',
+        labelTemplate: '99-{{sql_type}}',
+      },
+      {
+        promQLTemplate:
+          'histogram_quantile(0.80, sum(rate(tidb_session_transaction_statement_num_bucket{inspectionid="{{inspectionId}}"}[30s])) by (le, sql_type))',
+        labelTemplate: '80-{{sql_type}}',
+      },
+    ],
+  },
+  transaction_retry_num: {
+    title: 'Transaction Retry Num',
+    queries: [
+      {
+        promQLTemplate:
+          'histogram_quantile(1.0, sum(rate(tidb_session_retry_num_bucket{inspectionid="{{inspectionId}}"}[30s])) by (le))',
+        labelTemplate: '100',
+      },
+      {
+        promQLTemplate:
+          'histogram_quantile(0.99, sum(rate(tidb_session_retry_num_bucket{inspectionid="{{inspectionId}}"}[30s])) by (le))',
+        labelTemplate: '99',
+      },
+      {
+        promQLTemplate:
+          'histogram_quantile(0.90, sum(rate(tidb_session_retry_num_bucket{inspectionid="{{inspectionId}}"}[30s])) by (le))',
+        labelTemplate: '90',
+      },
+    ],
+  },
+  // kv
+  kv_cmd_duration_9999: {
+    title: 'KV Cmd Duration 9999',
+    queries: [
+      {
+        promQLTemplate:
+          'histogram_quantile(0.999, sum(rate(tidb_tikvclient_txn_cmd_duration_seconds_bucket{type=~"get|batch_get|seek|seek_reverse", inspectionid="{{inspectionId}}"}[1m])) by (le, type))',
+        labelTemplate: '{{type}}',
+        valConverter: val => timeSecondsFormatter(val, 1),
+      },
+    ],
+  },
+  kv_cmd_duration_99: {
+    title: 'KV Cmd Duration 99',
+    queries: [
+      {
+        promQLTemplate:
+          'histogram_quantile(0.99, sum(rate(tidb_tikvclient_txn_cmd_duration_seconds_bucket{type=~"get|batch_get|seek|seek_reverse", inspectionid="{{inspectionId}}"}[1m])) by (le, type))',
+        labelTemplate: '{{type}}',
+        valConverter: val => timeSecondsFormatter(val, 1),
+      },
+    ],
+  },
+  kv_lock_resolve_ops: {
+    title: 'Lock Resolve OPS',
+    queries: [
+      {
+        promQLTemplate:
+          'sum(rate(tidb_tikvclient_lock_resolver_actions_total{inspectionid="{{inspectionId}}"}[1m])) by (type)',
+        labelTemplate: '{{type}}',
+      },
+    ],
+  },
+  kv_99_kv_backoff_duration: {
+    title: '99% KV Backoff Duration',
+    queries: [
+      {
+        promQLTemplate:
+          'histogram_quantile(0.99, sum(rate(tidb_tikvclient_backoff_seconds_bucket{inspectionid="{{inspectionId}}"}[5m])) by (le, type))',
+        labelTemplate: '{{type}}',
+        valConverter: val => timeSecondsFormatter(val, 1),
+      },
+    ],
+  },
+  kv_backoff_ops: {
+    title: 'KV Backoff OPS',
+    queries: [
+      {
+        promQLTemplate:
+          'sum(rate(tidb_tikvclient_backoff_total{inspectionid="{{inspectionId}}"}[1m])) by (type)',
+        labelTemplate: '{{type}}',
+      },
+    ],
+  },
+  // PD Client
+  pd_tso_wait_duration: {
+    title: 'PD TSO Wait Duration',
+    queries: [
+      {
+        promQLTemplate:
+          'histogram_quantile(0.999, sum(rate(pd_client_cmd_handle_cmds_duration_seconds_bucket{type="tso", inspectionid="{{inspectionId}}"}[1m])) by (le))',
+        labelTemplate: '999',
+        valConverter: val => timeSecondsFormatter(val, 1),
+      },
+      {
+        promQLTemplate:
+          'histogram_quantile(0.99, sum(rate(pd_client_cmd_handle_cmds_duration_seconds_bucket{type="tso", inspectionid="{{inspectionId}}"}[1m])) by (le))',
+        labelTemplate: '99',
+      },
+      {
+        promQLTemplate:
+          'histogram_quantile(0.90, sum(rate(pd_client_cmd_handle_cmds_duration_seconds_bucket{type="tso", inspectionid="{{inspectionId}}"}[1m])) by (le))',
+        labelTemplate: '90',
+      },
+    ],
+  },
+  // pd_tso_rpc_duration: existed above
+  // gRPC
+  grpc_99_grpc_message_duration: {
+    title: '99% gRPC messge duration',
+    queries: [
+      {
+        promQLTemplate:
+          'histogram_quantile(0.99, sum(rate(tikv_grpc_msg_duration_seconds_bucket{type=~"kv_get|kv_batch_get|coprocessor", inspectionid="{{inspectionId}}"}[5m])) by (le, type))',
+        labelTemplate: '{{type}}',
+        valConverter: val => timeSecondsFormatter(val, 1),
+      },
+    ],
+  },
+  grpc_poll_cpu_2: {
+    title: 'gRPC poll CPU',
+    queries: [
+      {
+        promQLTemplate:
+          'sum(rate(tikv_thread_cpu_seconds_total{name=~"raftstore_.*", inspectionid="{{inspectionId}}"}[1m])) by (instance, name)',
+        labelTemplate: '{{instance}} - {{name}}',
+        valConverter: val => toPercent(val, 2),
+      },
+    ],
+  },
+  // Disk
+  disk_latency: {
+    title: 'Disk Latency',
+    queries: [
+      {
+        promQLTemplate:
+          'irate(node_disk_read_time_seconds_total{inspectionid="{{inspectionId}}"}[5m]) / irate(node_disk_reads_completed_total{inspectionid="{{inspectionId}}"}[5m])',
+        labelTemplate: 'Read: {{instance}} - {{device}}',
+        valConverter: val => timeSecondsFormatter(val, 1),
+      },
+    ],
+  },
+  disk_operations: {
+    title: 'Disk Operations',
+    queries: [
+      {
+        promQLTemplate:
+          'irate(node_disk_reads_completed_total{inspectionid="{{inspectionId}}"}[5m])',
+        labelTemplate: 'Read: {{instance}} - {{device}}',
+        valConverter: val => toAnyUnit(val, 1, 0, 'iops'),
+      },
+    ],
+  },
+  disk_bandwidth: {
+    title: 'Disk Bandwidth',
+    queries: [
+      {
+        promQLTemplate: 'irate(node_disk_read_bytes_total{inspectionid="{{inspectionId}}"}[5m])',
+        labelTemplate: 'Read: {{instance}} - {{device}}',
+        valConverter: bytesSizeFormatter,
+      },
+    ],
+  },
+  disk_load: {
+    title: 'Disk Load',
+    queries: [
+      {
+        promQLTemplate:
+          'irate(node_disk_read_time_seconds_total{inspectionid="{{inspectionId}}"}[5m])',
+        labelTemplate: 'Read: {{instance}} - {{device}}',
+        valConverter: val => toFixed(val, 3),
+      },
+    ],
+  },
+  // Storage
+  storage_readpool_cpu_2: {
+    title: 'Storage ReadPool CPU',
+    queries: [
+      {
+        promQLTemplate:
+          'sum(rate(tikv_thread_cpu_seconds_total{name=~"store_read.*", inspectionid="{{inspectionId}}"}[1m])) by (instance)',
+        labelTemplate: '{{instance}}',
+        valConverter: val => toPercent(val, 1),
+      },
+    ],
+  },
+  // Coprocessor
+  coprocessor_wait_duration_2: {
+    title: 'Wait duration',
+    queries: [
+      {
+        promQLTemplate:
+          'histogram_quantile(1, sum(rate(tikv_coprocessor_request_wait_seconds_bucket{inspectionid="{{inspectionId}}"}[1m])) by (le,req))',
+        labelTemplate: '{{req}}-100%',
+        valConverter: val => timeSecondsFormatter(val, 1),
+      },
+      {
+        promQLTemplate:
+          'histogram_quantile(0.99, sum(rate(tikv_coprocessor_request_wait_seconds_bucket{inspectionid="{{inspectionId}}"}[1m])) by (le,req))',
+        labelTemplate: '{{req}}-99%',
+      },
+    ],
+  },
+  coprocessor_handle_duration: {
+    title: 'Handle duration',
+    queries: [
+      {
+        promQLTemplate:
+          'histogram_quantile(1, sum(rate(tikv_coprocessor_request_handle_seconds_bucket{inspectionid="{{inspectionId}}"}[1m])) by (le,req))',
+        labelTemplate: '{{req}}-100%',
+        valConverter: val => timeSecondsFormatter(val, 1),
+      },
+      {
+        promQLTemplate:
+          'histogram_quantile(0.99, sum(rate(tikv_coprocessor_request_handle_seconds_bucket{inspectionid="{{inspectionId}}"}[1m])) by (le,req))',
+        labelTemplate: '{{req}}-99%',
+      },
+    ],
+  },
+  coprocessor_cpu_2: {
+    title: 'Coprocessor CPU',
+    queries: [
+      {
+        promQLTemplate:
+          'sum(rate(tikv_thread_cpu_seconds_total{name=~"cop_.*", inspectionid="{{inspectionId}}"}[1m])) by (instance)',
+        labelTemplate: '{{instance}}',
+        valConverter: val => toPercent(val, 1),
+      },
+    ],
+  },
+  // RocksDB-KV
+  // rocksdb_kv_get_duration: existed above
+  rocksdb_kv_get_operation: {
+    title: 'Get operations',
+    queries: [
+      {
+        promQLTemplate:
+          'sum(rate(tikv_engine_memtable_efficiency{db="kv", type="memtable_hit", inspectionid="{{inspectionId}}"}[1m]))',
+        labelTemplate: 'memtable',
+        valConverter: val => toAnyUnit(val, 1, 1, 'ops'),
+      },
+      {
+        promQLTemplate:
+          'sum(rate(tikv_engine_cache_efficiency{db="kv", type=~"block_cache_data_hit|block_cache_filter_hit", inspectionid="{{inspectionId}}"}[1m]))',
+        labelTemplate: 'block_cache',
+      },
+      {
+        promQLTemplate:
+          'sum(rate(tikv_engine_get_served{db="kv", type="get_hit_l0", inspectionid="{{inspectionId}}"}[1m]))',
+        labelTemplate: 'l0',
+      },
+      {
+        promQLTemplate:
+          'sum(rate(tikv_engine_get_served{db="kv", type="get_hit_l1", inspectionid="{{inspectionId}}"}[1m]))',
+        labelTemplate: 'l1',
+      },
+      {
+        promQLTemplate:
+          'sum(rate(tikv_engine_get_served{db="kv", type="get_hit_l2_and_up", inspectionid="{{inspectionId}}"}[1m]))',
+        labelTemplate: 'l2_and_up',
+      },
+    ],
+  },
+  // rocksdb_kv_seek_duration: existed above
+  rocksdb_kv_seek_operation: {
+    title: 'Seek operations',
+    queries: [
+      {
+        promQLTemplate:
+          'sum(rate(tikv_engine_locate{db="kv", type="number_db_seek", inspectionid="{{inspectionId}}"}[1m]))',
+        labelTemplate: 'seek',
+        valConverter: val => toAnyUnit(val, 1, 1, 'ops'),
+      },
+      {
+        promQLTemplate:
+          'sum(rate(tikv_engine_locate{db="kv", type="number_db_seek_found", inspectionid="{{inspectionId}}"}[1m]))',
+        labelTemplate: 'seek_found',
+      },
+      {
+        promQLTemplate:
+          'sum(rate(tikv_engine_locate{db="kv", type="number_db_next", inspectionid="{{inspectionId}}"}[1m]))',
+        labelTemplate: 'next',
+      },
+      {
+        promQLTemplate:
+          'sum(rate(tikv_engine_locate{db="kv", type="number_db_next_found", inspectionid="{{inspectionId}}"}[1m]))',
+        labelTemplate: 'next_found',
+      },
+      {
+        promQLTemplate:
+          'sum(rate(tikv_engine_locate{db="kv", type="number_db_prev", inspectionid="{{inspectionId}}"}[1m]))',
+        labelTemplate: 'prev',
+      },
+      {
+        promQLTemplate:
+          'sum(rate(tikv_engine_locate{db="kv", type="number_db_prev_found", inspectionid="{{inspectionId}}"}[1m]))',
+        labelTemplate: 'prev_found',
+      },
+    ],
+  },
+  rocksdb_kv_block_cache_hit: {
+    title: 'Block Cache hit',
+    queries: [
+      {
+        promQLTemplate:
+          'sum(rate(tikv_engine_cache_efficiency{instance=~"$instance", db="$db", type="block_cache_hit", inspectionid="{{inspectionId}}"}[1m])) / (sum(rate(tikv_engine_cache_efficiency{db="$db", type="block_cache_hit", inspectionid="{{inspectionId}}"}[1m])) + sum(rate(tikv_engine_cache_efficiency{db="$db", type="block_cache_miss", inspectionid="{{inspectionId}}"}[1m])))',
+        labelTemplate: 'all',
+        valConverter: val => toPercent(val, 1),
+      },
+      {
+        promQLTemplate:
+          'sum(rate(tikv_engine_cache_efficiency{db="kv", type="block_cache_data_hit", inspectionid="{{inspectionId}}"}[1m])) / (sum(rate(tikv_engine_cache_efficiency{db="kv", type="block_cache_data_hit", inspectionid="{{inspectionId}}"}[1m])) + sum(rate(tikv_engine_cache_efficiency{db="kv", type="block_cache_data_miss", inspectionid="{{inspectionId}}"}[1m])))',
+        labelTemplate: 'data',
+      },
+      {
+        promQLTemplate:
+          'sum(rate(tikv_engine_cache_efficiency{db="kv", type="block_cache_filter_hit", inspectionid="{{inspectionId}}"}[1m])) / (sum(rate(tikv_engine_cache_efficiency{db="kv", type="block_cache_filter_hit", inspectionid="{{inspectionId}}"}[1m])) + sum(rate(tikv_engine_cache_efficiency{db="kv", type="block_cache_filter_miss", inspectionid="{{inspectionId}}"}[1m])))',
+        labelTemplate: 'filter',
+      },
+      {
+        promQLTemplate:
+          'sum(rate(tikv_engine_cache_efficiency{db="kv", type="block_cache_index_hit", inspectionid="{{inspectionId}}"}[1m])) / (sum(rate(tikv_engine_cache_efficiency{db="kv", type="block_cache_index_hit", inspectionid="{{inspectionId}}"}[1m])) + sum(rate(tikv_engine_cache_efficiency{db="kv", type="block_cache_index_miss", inspectionid="{{inspectionId}}"}[1m])))',
+        labelTemplate: 'index',
+      },
+      {
+        promQLTemplate:
+          'sum(rate(tikv_engine_bloom_efficiency{db="kv", type="bloom_prefix_useful", inspectionid="{{inspectionId}}"}[1m])) / sum(rate(tikv_engine_bloom_efficiency{db="kv", type="bloom_prefix_checked", inspectionid="{{inspectionId}}"}[1m]))',
+        labelTemplate: 'bloom prefix',
+      },
+    ],
+  },
+  //-------------------------
+  // scheduler
+  scheduler_latch_wait_duration: {
+    title: 'Scheduler latch wait duration',
+    queries: [
+      {
+        promQLTemplate:
+          'histogram_quantile(0.99, sum(rate(tikv_scheduler_latch_wait_duration_seconds_bucket{inspectionid="{{inspectionId}}"}[5m])) by (le, type))',
+        labelTemplate: '99%-{{type}}',
+        valConverter: val => timeSecondsFormatter(val, 1),
+      },
+      {
+        promQLTemplate:
+          'histogram_quantile(0.95, sum(rate(tikv_scheduler_latch_wait_duration_seconds_bucket{inspectionid="{{inspectionId}}"}[5m])) by (le, type))',
+        labelTemplate: '95%-{{type}}',
+      },
+      {
+        promQLTemplate:
+          'rate(tikv_scheduler_latch_wait_duration_seconds_sum{inspectionid="{{inspectionId}}"}[5m]) / rate(tikv_scheduler_latch_wait_duration_seconds_count{inspectionid="{{inspectionId}}"}[5m])',
+        labelTemplate: 'avg-{{type}}',
+      },
+    ],
+  },
+  scheduler_worker_cpu: {
+    title: 'Scheduler worker CPU',
+    queries: [
+      {
+        promQLTemplate:
+          'sum(rate(tikv_thread_cpu_seconds_total{name=~"sched_.*", inspectionid="{{inspectionId}}"}[1m])) by (instance)',
+        labelTemplate: '{{instance}}',
+        valConverter: val => toPercent(val, 1),
+      },
+    ],
+  },
+  scheduler_99_command_duration: {
+    title: '99% scheduler command duration',
+    queries: [
+      {
+        promQLTemplate:
+          'histogram_quantile(0.99, sum(rate(tikv_scheduler_command_duration_seconds_bucket{inspectionid="{{inspectionId}}"}[1m])) by (le, type))',
+        labelTemplate: '{{type}}',
+        valConverter: val => timeSecondsFormatter(val, 1),
+      },
+    ],
+  },
+  // raftstore
+  raftstore_99_propose_wait_duration: {
+    title: '99% propose wait duration by instance',
+    queries: [
+      {
+        promQLTemplate:
+          'histogram_quantile(0.99, sum(rate(tikv_raftstore_request_wait_time_duration_secs_bucket{inspectionid="{{inspectionId}}"}[1m])) by (le, instance))',
+        labelTemplate: '{{instance}}',
+        valConverter: val => timeSecondsFormatter(val, 1),
+      },
+    ],
+  },
+  raftstore_raft_store_cpu: {
+    title: 'Raft store CPU',
+    queries: [
+      {
+        promQLTemplate:
+          'sum(rate(tikv_thread_cpu_seconds_total{name=~"raftstore_.*", inspectionid="{{inspectionId}}"}[1m])) by (instance)',
+        labelTemplate: '{{instance}}',
+        valConverter: val => toPercent(val, 4),
+      },
+    ],
+  },
+  raftstore_storage_async_write_duration: {
+    title: 'Storage async write duration',
+    queries: [
+      {
+        promQLTemplate:
+          'histogram_quantile(0.99, sum(rate(tikv_storage_engine_async_request_duration_seconds_bucket{type="write", inspectionid="{{inspectionId}}"}[5m])) by (le))',
+        labelTemplate: '99%',
+        valConverter: val => timeSecondsFormatter(val, 1),
+      },
+      {
+        promQLTemplate:
+          'histogram_quantile(0.95, sum(rate(tikv_storage_engine_async_request_duration_seconds_bucket{type="write", inspectionid="{{inspectionId}}"}[5m])) by (le))',
+        labelTemplate: '95%',
+      },
+      {
+        promQLTemplate:
+          'sum(rate(tikv_storage_engine_async_request_duration_seconds_sum{type="write", inspectionid="{{inspectionId}}"}[5m])) / sum(rate(tikv_storage_engine_async_request_duration_seconds_count{type="write", inspectionid="{{inspectionId}}"}[5m]))',
+        labelTemplate: 'avg',
+      },
+    ],
+  },
+  // RocksDB-Raft
+  rocksdb_raft_99_append_log_duration: {
+    title: '99% append log duration by instance',
+    queries: [
+      {
+        promQLTemplate:
+          'histogram_quantile(0.99, sum(rate(tikv_raftstore_append_log_duration_seconds_bucket{inspectionid="{{inspectionId}}"}[1m])) by (le, instance))',
+        labelTemplate: '{{instance}}',
+        valConverter: val => timeSecondsFormatter(val / (1000 * 1000), 1),
+      },
+    ],
+  },
+  rocksdb_raft_write_duration_2: {
+    title: 'Write duration',
+    queries: [
+      {
+        promQLTemplate:
+          'max(tikv_engine_write_micro_seconds{db="raft",type="write_max", inspectionid="{{inspectionId}}"})',
+        labelTemplate: 'max',
+        valConverter: val => timeSecondsFormatter(val / (1000 * 1000), 1),
+      },
+      {
+        promQLTemplate:
+          'max(tikv_engine_write_micro_seconds{db="raft",type="write_percentile99", inspectionid="{{inspectionId}}"})',
+        labelTemplate: '99%',
+      },
+      {
+        promQLTemplate:
+          'max(tikv_engine_write_micro_seconds{db="raft",type="write_percentile95", inspectionid="{{inspectionId}}"})',
+        labelTemplate: '95%',
+      },
+      {
+        promQLTemplate:
+          'max(tikv_engine_write_micro_seconds{db="raft",type="write_average", inspectionid="{{inspectionId}}"})',
+        labelTemplate: 'avg',
+      },
+    ],
+  },
+  // RocksDB-KV
+  rocksdb_kv_99_apply_wait_duration: {
+    title: '99% apply wait duration by instance',
+    queries: [
+      {
+        promQLTemplate:
+          'histogram_quantile(0.99, sum(rate(tikv_raftstore_apply_wait_time_duration_secs_bucket{inspectionid="{{inspectionId}}"}[5m])) by (le, instance))',
+        labelTemplate: '{{instance}}',
+        valConverter: val => timeSecondsFormatter(val / (1000 * 1000), 1),
+      },
+    ],
+  },
+  // rocksdb_kv_apply_log_duration: same as tikv_apply_log_duration
+  rocksdb_kv_write_duration_2: {
+    title: 'Write duration',
+    queries: [
+      {
+        promQLTemplate:
+          'max(tikv_engine_write_micro_seconds{db="kv",type="write_max", inspectionid="{{inspectionId}}"})',
+        labelTemplate: 'max',
+        valConverter: val => timeSecondsFormatter(val / (1000 * 1000), 1),
+      },
+      {
+        promQLTemplate:
+          'max(tikv_engine_write_micro_seconds{db="kv",type="write_percentile99", inspectionid="{{inspectionId}}"})',
+        labelTemplate: '99%',
+      },
+      {
+        promQLTemplate:
+          'max(tikv_engine_write_micro_seconds{db="kv",type="write_percentile95", inspectionid="{{inspectionId}}"})',
+        labelTemplate: '95%',
+      },
+      {
+        promQLTemplate:
+          'max(tikv_engine_write_micro_seconds{db="kv",type="write_average", inspectionid="{{inspectionId}}"})',
+        labelTemplate: 'avg',
+      },
+    ],
+  },
+  // rocksdb_kv_async_apply_cpu: same as async_apply_cpu
 };

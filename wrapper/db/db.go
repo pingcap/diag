@@ -32,6 +32,7 @@ type DB interface {
 	Updates(values interface{}, ignoreProtectedAttrs ...bool) DB
 	Model(value interface{}) DB
 	Close() error
+	Debug() DB
 }
 
 // Open sqlite.db and return DB interface instead of a struct
@@ -44,12 +45,25 @@ func Open(fp string) (DB, error) {
 	}
 }
 
+func OpenDebug(fp string) (DB, error) {
+	db, err := Open(fp)
+	if err == nil {
+		return db.Debug(), nil
+	} else {
+		return nil, err
+	}
+}
+
 func wrap(ins *gorm.DB) DB {
 	return &wrapedDB{ins}
 }
 
 type wrapedDB struct {
 	*gorm.DB
+}
+
+func (db *wrapedDB) Debug() DB {
+	return wrap(db.DB.Debug())
 }
 
 func (db *wrapedDB) Model(value interface{}) DB {
@@ -118,4 +132,9 @@ func (db *wrapedDB) Create(value interface{}) DB {
 
 func (db *wrapedDB) Error() error {
 	return db.DB.Error
+}
+
+// If the error is a not found error.
+func IsNotFound(err error) bool {
+	return gorm.IsRecordNotFoundError(err)
 }

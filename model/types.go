@@ -2,6 +2,7 @@ package model
 
 import (
 	"github.com/pingcap/tidb-foresight/model/config"
+	"github.com/pingcap/tidb-foresight/model/emphasis"
 	"github.com/pingcap/tidb-foresight/model/inspection"
 	"github.com/pingcap/tidb-foresight/model/instance"
 	"github.com/pingcap/tidb-foresight/model/logs"
@@ -76,3 +77,7 @@ type NtpInfo = report.NtpInfo
 type TopologyInfo = report.TopologyInfo
 
 type Symptom = report.Symptom
+
+type Emphasis = emphasis.Emphasis
+
+type EmphasisProblem = emphasis.Problem
