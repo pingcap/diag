@@ -89,7 +89,6 @@ func (h *createInstanceHandler) createInstanceByJson(req *requestInstance, r *ht
 				log.Error(err)
 				return
 			}
-			log.Info("Success, try to save file")
 
 			err = utils.SaveFile(bytes.NewReader(data), path.Join(h.c.Home, "topology", instance.Uuid+".json"))
 			if err != nil {
@@ -102,8 +101,6 @@ func (h *createInstanceHandler) createInstanceByJson(req *requestInstance, r *ht
 			log.Error("update instance:", err)
 			return
 		}
-
-		log.Info("importInstance UpdateInstance Got ", *instance)
 	}()
 
 	return instance, nil
@@ -164,8 +161,6 @@ func (h *createInstanceHandler) importInstance(pioneerPath, inventoryPath, insta
 		log.Error("update instance:", err)
 		return
 	}
-
-	log.Info("importInstance UpdateInstance Got ", *instance)
 }
 
 // Uuid must be set by outer of this function.
