@@ -59,8 +59,10 @@ type requestInstance struct {
 		Status     string `json:"status"`
 		Message    string `json:"message"`
 		Components []struct {
-			Name string `json:"name"`
-			Port string `json:"port"`
+			Name      string `json:"name"`
+			Port      string `json:"port"`
+			Status    string `json:"status"`
+			DeployDir string `json:"deploy_dir"`
 		} `json:"components"`
 	} `json:"hosts"`
 }
