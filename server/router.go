@@ -69,7 +69,8 @@ func (s *Server) CreateRouter() http.Handler {
 
 	// instance
 	r.Handle("/api/v1/instances", instance.ListInstance(s.model)).Methods("GET")
-	r.Handle("/api/v1/instances", instance.CreateInstance(s.config, s.model)).Methods("POST")
+	r.Handle("/api/v1/instances/file", instance.CreateInstance(s.config, s.model)).Methods("POST")
+	r.Handle("/api/v1/instances/text", instance.CreateInstanceByText(s.config, s.model)).Methods("POST")
 	r.Handle("/api/v1/instances/{id}", instance.GetInstance(s.model)).Methods("GET")
 	r.Handle("/api/v1/instances/{id}", instance.DeleteInstance(s.config, s.model, s.scheduler)).Methods("DELETE")
 	r.Handle("/api/v1/instances/{id}/components", instance.ListComponent(s.model)).Methods("GET")

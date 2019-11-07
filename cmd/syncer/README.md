@@ -3,7 +3,7 @@
 监听 topology 目录下的 json 文件，解析出日志存放位置等信息，调用 rsync 将这些日志同步到中控机的指定目录中
 
 ```
-syncer --topo={topo_dir} --target={target_dir} --interval={interval} --bwlimit={bandwidth_limit} --threshold=threshold}
+syncer --topo={topo_dir} --target={target_dir} --interval={interval} --bwlimit={bandwidth_limit} --threshold={threshold}
 ```
 
 - topo: 需要监听的 topology 目录

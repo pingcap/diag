@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/mitchellh/mapstructure"
 	"github.com/pingcap/fn"
 	"github.com/pingcap/tidb-foresight/bootstrap"
 	"github.com/pingcap/tidb-foresight/model"
@@ -22,29 +23,38 @@ type createInstanceHandler struct {
 	m model.Model
 }
 
+type createInstanceByTextHandler struct {
+	c *bootstrap.ForesightConfig
+	m model.Model
+}
+
 func CreateInstance(c *bootstrap.ForesightConfig, m model.Model) http.Handler {
 	return &createInstanceHandler{c, m}
+}
+
+func CreateInstanceByText(c *bootstrap.ForesightConfig, m model.Model) http.Handler {
+	return &createInstanceByTextHandler{c, m}
+}
+
+func (h *createInstanceByTextHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	fn.Wrap(h.createInstanceByJson).ServeHTTP(w, r)
 }
 
 const MAX_FILE_SIZE = 32 * 1024 * 1024
 
 func (h *createInstanceHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	byType := r.URL.Query().Get("by")
-	//var fnPtr func(req* requestInstance, r *http.Request) (*model.Instance, utils.StatusError)
-	switch byType {
-	case "file":
-		fn.Wrap(h.createInstanceByFile).ServeHTTP(w, r)
-	case "text":
-		fn.Wrap(h.createInstanceByJson).ServeHTTP(w, r)
-	default:
-		fn.Wrap(h.byFieldError).ServeHTTP(w, r)
-	}
+	fn.Wrap(h.createInstanceByFile).ServeHTTP(w, r)
+}
+
+type wrappedRequestInstance struct {
+	Config map[string]interface{} `json:"config"`
 }
 
 type requestInstance struct {
 	Status      string `json:"status"`
 	Message     string `json:"message"`
 	ClusterName string `json:"cluster_name"`
+	TidbVersion string `json:"tidb_version"`
 	Hosts       []struct {
 		Ip         string `json:"ip"`
 		Status     string `json:"status"`
@@ -61,18 +71,30 @@ func (h *createInstanceHandler) byFieldError(r *http.Request) (*model.Instance, 
 	return nil, utils.ParamsMismatch
 }
 
-func (h *createInstanceHandler) createInstanceByJson(req *requestInstance, r *http.Request) (*model.Instance, utils.StatusError) {
+func (h *createInstanceByTextHandler) createInstanceByJson(req *wrappedRequestInstance, r *http.Request) (*model.Instance, utils.StatusError) {
 	uid := uuid.New().String()
+	realReqInterface := req.Config
+	var realReq requestInstance
 
-	instance := &model.Instance{Uuid: uid, User: h.c.User.Name, CreateTime: time.Now(), Status: "pending", Name: req.ClusterName}
-	err := h.m.CreateInstance(instance)
+	err := mapstructure.Decode(realReqInterface, &realReq)
+	realReq.ClusterName = realReqInterface["cluster_name"].(string)
+	if err != nil {
+		if bdata, err := json.Marshal(realReqInterface); err == nil {
+			log.Info("Param mismatch: ", err, string(bdata))
+		}
+		return nil, utils.ParamsMismatch
+	}
+
+	instance := &model.Instance{Uuid: uid, User: h.c.User.Name, CreateTime: time.Now(), Status: "pending", Name: realReq.ClusterName}
+	err = h.m.CreateInstance(instance)
 	if err != nil {
 		log.Error("create instance: ", err)
 		return nil, utils.DatabaseInsertError
 	}
 
 	go func() {
-		instance2 := parseTopologyByRequest(req)
+		log.Debug("Instance was called in go-routine")
+		instance2 := parseTopologyByRequest(&realReq)
 
 		instance.Status = instance2.Status
 		instance.Message = instance2.Message
@@ -80,11 +102,12 @@ func (h *createInstanceHandler) createInstanceByJson(req *requestInstance, r *ht
 		instance.Prometheus = instance2.Prometheus
 		instance.Tidb = instance2.Tidb
 		instance.Tikv = instance2.Tikv
-		instance.Name = req.ClusterName
+		instance.Pd = instance2.Pd
+		instance.Name = realReq.ClusterName
 		instance.User = h.c.User.Name
 
 		if instance.Status == "success" {
-			data, err := json.Marshal(*instance)
+			data, err := json.MarshalIndent(realReqInterface, "", "  ")
 			if err != nil {
 				log.Error(err)
 				return
