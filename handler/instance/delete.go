@@ -35,9 +35,12 @@ func (h *deleteInstanceHandler) deleteInstance(r *http.Request) (*model.Instance
 	uuid := mux.Vars(r)["id"]
 
 	var e utils.StatusError
+	
 	if err := os.Remove(path.Join(h.c.Home, "inventory", uuid+".ini")); err != nil {
-		log.Error("delete inventory failed: ", err)
-		e = utils.DatabaseDeleteError
+		// ini may not exists when creating by json, so here it's valid if the file not exists.
+		if !os.IsNotExist(err) {
+			e = utils.DatabaseDeleteError
+		}
 	}
 
 	if err := os.Remove(path.Join(h.c.Home, "topology", uuid+".json")); err != nil {
