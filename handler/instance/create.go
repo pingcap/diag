@@ -186,26 +186,26 @@ func (h *createInstanceHandler) importInstance(pioneerPath, inventoryPath, insta
 func parseTopologyByRequest(result *requestInstance) *model.Instance {
 	var tidb, tikv, pd, prometheus, grafana []string
 	instance := &model.Instance{Status: "success"}
-	//for _, h := range result.Hosts {
-	//	if h.Status == "exception" {
-	//		instance.Status = "exception"
-	//		instance.Message = h.Message
-	//	}
-	//	for _, c := range h.Components {
-	//		switch c.Name {
-	//		case "tidb":
-	//			tidb = append(tidb, h.Ip+":"+c.Port)
-	//		case "tikv":
-	//			tikv = append(tikv, h.Ip+":"+c.Port)
-	//		case "pd":
-	//			pd = append(pd, h.Ip+":"+c.Port)
-	//		case "prometheus":
-	//			prometheus = append(prometheus, h.Ip+":"+c.Port)
-	//		case "grafana":
-	//			grafana = append(grafana, h.Ip+":"+c.Port)
-	//		}
-	//	}
-	//}
+	for _, h := range result.Hosts {
+		if h.Status == "exception" {
+			instance.Status = "exception"
+			instance.Message = h.Message
+		}
+		for _, c := range h.Components {
+			switch c.Name {
+			case "tidb":
+				tidb = append(tidb, h.Ip+":"+c.Port)
+			case "tikv":
+				tikv = append(tikv, h.Ip+":"+c.Port)
+			case "pd":
+				pd = append(pd, h.Ip+":"+c.Port)
+			case "prometheus":
+				prometheus = append(prometheus, h.Ip+":"+c.Port)
+			case "grafana":
+				grafana = append(grafana, h.Ip+":"+c.Port)
+			}
+		}
+	}
 	instance.Name = result.ClusterName
 	instance.Tidb = strings.Join(tidb, ",")
 	instance.Tikv = strings.Join(tikv, ",")
