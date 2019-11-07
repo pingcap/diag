@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"strings"
 	"time"
 
 	log "github.com/sirupsen/logrus"
@@ -70,7 +71,7 @@ func (t *TaskManager) execCommand(ctx context.Context, cmd *exec.Cmd, task SyncT
 	log.Infoln("task start: key=", task.Key)
 	err = cmd.Start()
 	if err != nil {
-		log.Errorf("failed to start command %s ", task.Key)
+		log.Errorf("failed to start command %s and the command args is %s", task.Key, strings.Join(cmd.Args, " "))
 		return
 	}
 	// Wait for rsync execution finished ,
