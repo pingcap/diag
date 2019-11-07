@@ -77,6 +77,7 @@ func (h *createInstanceByTextHandler) createInstanceByJson(req *wrappedRequestIn
 	var realReq requestInstance
 
 	err := mapstructure.Decode(realReqInterface, &realReq)
+	realReq.ClusterName = realReqInterface["cluster_name"].(string)
 	if err != nil {
 		if bdata, err := json.Marshal(realReqInterface); err == nil {
 			log.Info("Param mismatch: ", err, string(bdata))
