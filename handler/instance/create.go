@@ -26,14 +26,89 @@ func CreateInstance(c *bootstrap.ForesightConfig, m model.Model) http.Handler {
 	return &createInstanceHandler{c, m}
 }
 
+const MAX_FILE_SIZE = 32 * 1024 * 1024
+
 func (h *createInstanceHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	fn.Wrap(h.createInstance).ServeHTTP(w, r)
+	byType := r.URL.Query().Get("by")
+	//var fnPtr func(req* requestInstance, r *http.Request) (*model.Instance, utils.StatusError)
+	switch byType {
+	case "file":
+		fn.Wrap(h.createInstanceByFile).ServeHTTP(w, r)
+	case "text":
+		fn.Wrap(h.createInstanceByJson).ServeHTTP(w, r)
+	default:
+		fn.Wrap(h.byFieldError).ServeHTTP(w, r)
+	}
 }
 
-func (h *createInstanceHandler) createInstance(r *http.Request) (*model.Instance, utils.StatusError) {
+type requestInstance struct {
+	Status      string `json:"status"`
+	Message     string `json:"message"`
+	ClusterName string `json:"cluster_name"`
+	Hosts       []struct {
+		Ip         string `json:"ip"`
+		Status     string `json:"status"`
+		Message    string `json:"message"`
+		Components []struct {
+			Name string `json:"name"`
+			Port string `json:"port"`
+		} `json:"components"`
+	} `json:"hosts"`
+}
+
+func (h *createInstanceHandler) byFieldError(r *http.Request) (*model.Instance, utils.StatusError) {
+	log.Error("Bad Request for 'by' in createInstance(r *http.Request)")
+	return nil, utils.ParamsMismatch
+}
+
+func (h *createInstanceHandler) createInstanceByJson(req *requestInstance, r *http.Request) (*model.Instance, utils.StatusError) {
 	uid := uuid.New().String()
 
-	const MAX_FILE_SIZE = 32 * 1024 * 1024
+	instance := &model.Instance{Uuid: uid, User: h.c.User.Name, CreateTime: time.Now(), Status: "pending", Name: req.ClusterName}
+	err := h.m.CreateInstance(instance)
+	if err != nil {
+		log.Error("create instance: ", err)
+		return nil, utils.DatabaseInsertError
+	}
+
+	go func() {
+		instance2 := parseTopologyByRequest(req)
+
+		instance.Status = instance2.Status
+		instance.Message = instance2.Message
+		instance.Grafana = instance2.Grafana
+		instance.Prometheus = instance2.Prometheus
+		instance.Tidb = instance2.Tidb
+		instance.Tikv = instance2.Tikv
+		instance.Name = req.ClusterName
+		instance.User = h.c.User.Name
+
+		if instance.Status == "success" {
+			data, err := json.Marshal(*instance)
+			if err != nil {
+				log.Error(err)
+				return
+			}
+
+			err = utils.SaveFile(bytes.NewReader(data), path.Join(h.c.Home, "topology", instance.Uuid+".json"))
+			if err != nil {
+				log.Error("save topology file error: ", err)
+				return
+			}
+		}
+
+		if err := h.m.UpdateInstance(instance); err != nil {
+			log.Error("update instance:", err)
+			return
+		}
+	}()
+
+	return instance, nil
+}
+
+func (h *createInstanceHandler) createInstanceByFile(r *http.Request) (*model.Instance, utils.StatusError) {
+	uid := uuid.New().String()
+
 	r.ParseMultipartForm(MAX_FILE_SIZE)
 	file, _, err := r.FormFile("file")
 	if err != nil {
@@ -72,6 +147,8 @@ func (h *createInstanceHandler) importInstance(pioneerPath, inventoryPath, insta
 	}
 
 	instance := parseTopology(output)
+	instance.Uuid = instanceId
+
 	if instance.Status == "success" {
 		err = utils.SaveFile(bytes.NewReader(output), path.Join(h.c.Home, "topology", instanceId+".json"))
 		if err != nil {
@@ -80,39 +157,16 @@ func (h *createInstanceHandler) importInstance(pioneerPath, inventoryPath, insta
 		}
 	}
 
-	instance.Uuid = instanceId
 	if err := h.m.UpdateInstance(instance); err != nil {
 		log.Error("update instance:", err)
 		return
 	}
 }
 
-func parseTopology(topo []byte) *model.Instance {
-	result := struct {
-		Status      string `json:"status"`
-		Message     string `json:"message"`
-		ClusterName string `json:"cluster_name"`
-		Hosts       []struct {
-			Ip         string `json:"ip"`
-			Status     string `json:"status"`
-			Message    string `json:"message"`
-			Components []struct {
-				Name string `json:"name"`
-				Port string `json:"port"`
-			} `json:"components"`
-		} `json:"hosts"`
-	}{}
-
-	instance := &model.Instance{Status: "success"}
-	err := json.Unmarshal(topo, &result)
-	if err != nil {
-		log.Error("exception on parse topology: ", err)
-		instance.Status = "exception"
-		instance.Message = "集群拓扑解析异常"
-		return instance
-	}
-
+// Uuid must be set by outer of this function.
+func parseTopologyByRequest(result *requestInstance) *model.Instance {
 	var tidb, tikv, pd, prometheus, grafana []string
+	instance := &model.Instance{Status: "success"}
 	for _, h := range result.Hosts {
 		if h.Status == "exception" {
 			instance.Status = "exception"
@@ -141,4 +195,20 @@ func parseTopology(topo []byte) *model.Instance {
 	instance.Grafana = strings.Join(grafana, ",")
 
 	return instance
+}
+
+// Uuid must be set by outer of this function.
+func parseTopology(topo []byte) *model.Instance {
+	var result requestInstance
+
+	err := json.Unmarshal(topo, &result)
+	if err != nil {
+		log.Error("exception on parse topology: ", err)
+		instance := &model.Instance{Status: "success"}
+		instance.Status = "exception"
+		instance.Message = "集群拓扑解析异常"
+		return instance
+	}
+
+	return parseTopologyByRequest(&result)
 }
