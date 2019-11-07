@@ -45,11 +45,11 @@ func (h *createInstanceHandler) ServeHTTP(w http.ResponseWriter, r *http.Request
 	fn.Wrap(h.createInstanceByFile).ServeHTTP(w, r)
 }
 
-type WrappedRequestInstance struct {
-	Config RequestInstance `json:"config"`
+type wrappedRequestInstance struct {
+	Config requestInstance `json:"config"`
 }
 
-type RequestInstance struct {
+type requestInstance struct {
 	Status      string `json:"status"`
 	Message     string `json:"message"`
 	ClusterName string `json:"cluster_name"`
@@ -70,14 +70,15 @@ func (h *createInstanceHandler) byFieldError(r *http.Request) (*model.Instance, 
 	return nil, utils.ParamsMismatch
 }
 
-func (h *createInstanceByTextHandler) createInstanceByJson(req *RequestInstance, r *http.Request) (*model.Instance, utils.StatusError) {
+func (h *createInstanceByTextHandler) createInstanceByJson(req *wrappedRequestInstance, r *http.Request) (*model.Instance, utils.StatusError) {
 	uid := uuid.New().String()
+	realReq := req.Config
 
 	if bdata, err := json.Marshal(req); err == nil {
 		log.Info(string(bdata))
 	}
 
-	instance := &model.Instance{Uuid: uid, User: h.c.User.Name, CreateTime: time.Now(), Status: "pending", Name: req.ClusterName}
+	instance := &model.Instance{Uuid: uid, User: h.c.User.Name, CreateTime: time.Now(), Status: "pending", Name: realReq.ClusterName}
 	err := h.m.CreateInstance(instance)
 	if err != nil {
 		log.Error("create instance: ", err)
@@ -86,7 +87,7 @@ func (h *createInstanceByTextHandler) createInstanceByJson(req *RequestInstance,
 
 	go func() {
 		log.Debug("Instance was called in go-routine")
-		instance2 := parseTopologyByRequest(req)
+		instance2 := parseTopologyByRequest(&realReq)
 
 		instance.Status = instance2.Status
 		instance.Message = instance2.Message
@@ -94,7 +95,7 @@ func (h *createInstanceByTextHandler) createInstanceByJson(req *RequestInstance,
 		instance.Prometheus = instance2.Prometheus
 		instance.Tidb = instance2.Tidb
 		instance.Tikv = instance2.Tikv
-		instance.Name = req.ClusterName
+		instance.Name = realReq.ClusterName
 		instance.User = h.c.User.Name
 		log.Info("Instance was called in go-routine")
 
@@ -182,7 +183,7 @@ func (h *createInstanceHandler) importInstance(pioneerPath, inventoryPath, insta
 }
 
 // Uuid must be set by outer of this function.
-func parseTopologyByRequest(result *RequestInstance) *model.Instance {
+func parseTopologyByRequest(result *requestInstance) *model.Instance {
 	var tidb, tikv, pd, prometheus, grafana []string
 	instance := &model.Instance{Status: "success"}
 	//for _, h := range result.Hosts {
@@ -227,7 +228,7 @@ func parseTopologyByRequest(result *RequestInstance) *model.Instance {
 
 // Uuid must be set by outer of this function.
 func parseTopology(topo []byte) *model.Instance {
-	var result RequestInstance
+	var result requestInstance
 
 	err := json.Unmarshal(topo, &result)
 	if err != nil {
