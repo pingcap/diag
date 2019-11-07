@@ -100,7 +100,7 @@ func (h *createInstanceByTextHandler) createInstanceByJson(req *wrappedRequestIn
 		instance.User = h.c.User.Name
 
 		if instance.Status == "success" {
-			data, err := json.MarshalIndent(instance, "", "  ")
+			data, err := json.MarshalIndent(realReq, "", "  ")
 			if err != nil {
 				log.Error(err)
 				return
