@@ -95,15 +95,12 @@ func (h *createInstanceByTextHandler) createInstanceByJson(req *wrappedRequestIn
 		instance.Prometheus = instance2.Prometheus
 		instance.Tidb = instance2.Tidb
 		instance.Tikv = instance2.Tikv
+		instance.Pd = instance2.Pd
 		instance.Name = realReq.ClusterName
 		instance.User = h.c.User.Name
-		log.Info("Instance was called in go-routine")
 
 		if instance.Status == "success" {
-
-			// TODO: remove these data when debug is over.
 			data, err := json.MarshalIndent(instance, "", "  ")
-			log.Info(string(data))
 			if err != nil {
 				log.Error(err)
 				return
@@ -212,16 +209,6 @@ func parseTopologyByRequest(result *requestInstance) *model.Instance {
 	instance.Pd = strings.Join(pd, ",")
 	instance.Prometheus = strings.Join(prometheus, ",")
 	instance.Grafana = strings.Join(grafana, ",")
-	// TODO: Remove these debug messages
-	{
-		if bdata, err := json.Marshal(*result); err == nil {
-			log.Info(string(bdata))
-		}
-		if bdata, err := json.Marshal(*instance); err == nil {
-			log.Info(string(bdata))
-		}
-
-	}
 
 	return instance
 }
