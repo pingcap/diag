@@ -22,29 +22,38 @@ type createInstanceHandler struct {
 	m model.Model
 }
 
+type createInstanceByTextHandler struct {
+	c *bootstrap.ForesightConfig
+	m model.Model
+}
+
 func CreateInstance(c *bootstrap.ForesightConfig, m model.Model) http.Handler {
 	return &createInstanceHandler{c, m}
+}
+
+func CreateInstanceByText(c *bootstrap.ForesightConfig, m model.Model) http.Handler {
+	return &createInstanceByTextHandler{c, m}
+}
+
+func (h *createInstanceByTextHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	fn.Wrap(h.createInstanceByJson).ServeHTTP(w, r)
 }
 
 const MAX_FILE_SIZE = 32 * 1024 * 1024
 
 func (h *createInstanceHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	byType := r.URL.Query().Get("by")
-	//var fnPtr func(req* requestInstance, r *http.Request) (*model.Instance, utils.StatusError)
-	switch byType {
-	case "file":
-		fn.Wrap(h.createInstanceByFile).ServeHTTP(w, r)
-	case "text":
-		fn.Wrap(h.createInstanceByJson).ServeHTTP(w, r)
-	default:
-		fn.Wrap(h.byFieldError).ServeHTTP(w, r)
-	}
+	fn.Wrap(h.createInstanceByFile).ServeHTTP(w, r)
 }
 
-type requestInstance struct {
+type WrappedRequestInstance struct {
+	Config RequestInstance `json:"config"`
+}
+
+type RequestInstance struct {
 	Status      string `json:"status"`
 	Message     string `json:"message"`
 	ClusterName string `json:"cluster_name"`
+	TidbVersion string `json:"tidb_version"`
 	Hosts       []struct {
 		Ip         string `json:"ip"`
 		Status     string `json:"status"`
@@ -61,8 +70,12 @@ func (h *createInstanceHandler) byFieldError(r *http.Request) (*model.Instance, 
 	return nil, utils.ParamsMismatch
 }
 
-func (h *createInstanceHandler) createInstanceByJson(req *requestInstance, r *http.Request) (*model.Instance, utils.StatusError) {
+func (h *createInstanceByTextHandler) createInstanceByJson(req *RequestInstance, r *http.Request) (*model.Instance, utils.StatusError) {
 	uid := uuid.New().String()
+
+	if bdata, err := json.Marshal(req); err == nil {
+		log.Info(string(bdata))
+	}
 
 	instance := &model.Instance{Uuid: uid, User: h.c.User.Name, CreateTime: time.Now(), Status: "pending", Name: req.ClusterName}
 	err := h.m.CreateInstance(instance)
@@ -89,7 +102,7 @@ func (h *createInstanceHandler) createInstanceByJson(req *requestInstance, r *ht
 
 			// TODO: remove these data when debug is over.
 			data, err := json.MarshalIndent(instance, "", "  ")
-			log.Debug(data)
+			log.Info(string(data))
 			if err != nil {
 				log.Error(err)
 				return
@@ -169,29 +182,29 @@ func (h *createInstanceHandler) importInstance(pioneerPath, inventoryPath, insta
 }
 
 // Uuid must be set by outer of this function.
-func parseTopologyByRequest(result *requestInstance) *model.Instance {
+func parseTopologyByRequest(result *RequestInstance) *model.Instance {
 	var tidb, tikv, pd, prometheus, grafana []string
 	instance := &model.Instance{Status: "success"}
-	for _, h := range result.Hosts {
-		if h.Status == "exception" {
-			instance.Status = "exception"
-			instance.Message = h.Message
-		}
-		for _, c := range h.Components {
-			switch c.Name {
-			case "tidb":
-				tidb = append(tidb, h.Ip+":"+c.Port)
-			case "tikv":
-				tikv = append(tikv, h.Ip+":"+c.Port)
-			case "pd":
-				pd = append(pd, h.Ip+":"+c.Port)
-			case "prometheus":
-				prometheus = append(prometheus, h.Ip+":"+c.Port)
-			case "grafana":
-				grafana = append(grafana, h.Ip+":"+c.Port)
-			}
-		}
-	}
+	//for _, h := range result.Hosts {
+	//	if h.Status == "exception" {
+	//		instance.Status = "exception"
+	//		instance.Message = h.Message
+	//	}
+	//	for _, c := range h.Components {
+	//		switch c.Name {
+	//		case "tidb":
+	//			tidb = append(tidb, h.Ip+":"+c.Port)
+	//		case "tikv":
+	//			tikv = append(tikv, h.Ip+":"+c.Port)
+	//		case "pd":
+	//			pd = append(pd, h.Ip+":"+c.Port)
+	//		case "prometheus":
+	//			prometheus = append(prometheus, h.Ip+":"+c.Port)
+	//		case "grafana":
+	//			grafana = append(grafana, h.Ip+":"+c.Port)
+	//		}
+	//	}
+	//}
 	instance.Name = result.ClusterName
 	instance.Tidb = strings.Join(tidb, ",")
 	instance.Tikv = strings.Join(tikv, ",")
@@ -200,8 +213,11 @@ func parseTopologyByRequest(result *requestInstance) *model.Instance {
 	instance.Grafana = strings.Join(grafana, ",")
 	// TODO: Remove these debug messages
 	{
+		if bdata, err := json.Marshal(*result); err == nil {
+			log.Info(string(bdata))
+		}
 		if bdata, err := json.Marshal(*instance); err == nil {
-			log.Debug(string(bdata))
+			log.Info(string(bdata))
 		}
 
 	}
@@ -211,7 +227,7 @@ func parseTopologyByRequest(result *requestInstance) *model.Instance {
 
 // Uuid must be set by outer of this function.
 func parseTopology(topo []byte) *model.Instance {
-	var result requestInstance
+	var result RequestInstance
 
 	err := json.Unmarshal(topo, &result)
 	if err != nil {
