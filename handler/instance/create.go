@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/mitchellh/mapstructure"
 	"github.com/pingcap/fn"
 	"github.com/pingcap/tidb-foresight/bootstrap"
 	"github.com/pingcap/tidb-foresight/model"
@@ -46,7 +47,7 @@ func (h *createInstanceHandler) ServeHTTP(w http.ResponseWriter, r *http.Request
 }
 
 type wrappedRequestInstance struct {
-	Config requestInstance `json:"config"`
+	Config map[string]interface{} `json:"config"`
 }
 
 type requestInstance struct {
@@ -59,10 +60,8 @@ type requestInstance struct {
 		Status     string `json:"status"`
 		Message    string `json:"message"`
 		Components []struct {
-			Name      string `json:"name"`
-			Port      string `json:"port"`
-			Status    string `json:"status"`
-			DeployDir string `json:"deploy_dir"`
+			Name string `json:"name"`
+			Port string `json:"port"`
 		} `json:"components"`
 	} `json:"hosts"`
 }
@@ -74,14 +73,19 @@ func (h *createInstanceHandler) byFieldError(r *http.Request) (*model.Instance, 
 
 func (h *createInstanceByTextHandler) createInstanceByJson(req *wrappedRequestInstance, r *http.Request) (*model.Instance, utils.StatusError) {
 	uid := uuid.New().String()
-	realReq := req.Config
+	realReqInterface := req.Config
+	var realReq requestInstance
 
-	if bdata, err := json.Marshal(req); err == nil {
-		log.Info(string(bdata))
+	err := mapstructure.Decode(realReqInterface, &realReq)
+	if err != nil {
+		if bdata, err := json.Marshal(realReqInterface); err == nil {
+			log.Info("Param mismatch: ", err, string(bdata))
+		}
+		return nil, utils.ParamsMismatch
 	}
 
 	instance := &model.Instance{Uuid: uid, User: h.c.User.Name, CreateTime: time.Now(), Status: "pending", Name: realReq.ClusterName}
-	err := h.m.CreateInstance(instance)
+	err = h.m.CreateInstance(instance)
 	if err != nil {
 		log.Error("create instance: ", err)
 		return nil, utils.DatabaseInsertError
@@ -102,7 +106,7 @@ func (h *createInstanceByTextHandler) createInstanceByJson(req *wrappedRequestIn
 		instance.User = h.c.User.Name
 
 		if instance.Status == "success" {
-			data, err := json.MarshalIndent(realReq, "", "  ")
+			data, err := json.MarshalIndent(realReqInterface, "", "  ")
 			if err != nil {
 				log.Error(err)
 				return
