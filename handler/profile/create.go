@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/exec"
 	"strings"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
@@ -83,6 +84,11 @@ func (h *createProfileHandler) createProfile(r *http.Request) (*model.Profile, u
 }
 
 func (h *createProfileHandler) collectProfile(instanceId, inspectionId, component string) error {
+	instance, err := h.m.GetInstance(instanceId)
+	if err != nil {
+		log.Error("get instance:", err)
+		return err
+	}
 	option := "profile"
 	if component != "" {
 		option += ":" + component
@@ -100,11 +106,11 @@ func (h *createProfileHandler) collectProfile(instanceId, inspectionId, componen
 	cmd.Env = append(
 		os.Environ(),
 		"FORESIGHT_USER="+h.c.User.Name,
+		"CLUSTER_CREATE_TIME="+instance.CreateTime.Format(time.RFC3339),
 		"INSPECTION_TYPE=profile",
 	)
 	log.Info(cmd.Args)
-	err := cmd.Run()
-	if err != nil {
+	if err := cmd.Run(); err != nil {
 		log.Error("run ", h.c.Collector, ": ", err)
 		return err
 	}

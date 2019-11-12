@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"path"
 	"strings"
+	"time"
 
 	"github.com/pingcap/tidb-foresight/analyzer/boot"
 	log "github.com/sirupsen/logrus"
@@ -51,6 +52,17 @@ func (t *parseArgsTask) Run(c *boot.Config, m *boot.Model) *Args {
 		log.Error("unmarshal:", err)
 		m.InsertSymptom("exception", "parse args.json", "contact developer")
 		return nil
+	}
+
+	if args.ScrapeEndPtr == nil {
+		args.ScrapeEnd = time.Now()
+	} else {
+		args.ScrapeEnd = *args.ScrapeEndPtr
+	}
+	if args.ScrapeBeginPtr == nil {
+		args.ScrapeBegin = args.ScrapeEnd.Add(time.Duration(-1) * time.Hour)
+	} else {
+		args.ScrapeBegin = *args.ScrapeBeginPtr
 	}
 
 	return args
