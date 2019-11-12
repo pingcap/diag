@@ -2,6 +2,7 @@ package emphasis
 
 import (
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/google/uuid"
@@ -67,6 +68,15 @@ func (h *createEmphasisHandler) createEmphasis(req *createEmphasisRequest, r *ht
 	if err != nil {
 		log.Error("get instance config:", err)
 		return nil, helper.GormErrorMapper(err, utils.DatabaseQueryError)
+	}
+
+	// dmesg = true to mark it.
+	collectDmesgPtr := helper.LoadSelectableRouterVar(r, "dmesg")
+	if collectDmesgPtr != nil {
+		CollectDemsg, err := strconv.ParseBool(*collectDmesgPtr)
+		if err != nil {
+			config.CollectDemsg = CollectDemsg
+		}
 	}
 
 	insp := emp.CorrespondInspection()

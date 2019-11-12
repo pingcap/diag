@@ -31,6 +31,7 @@ func (h *createInspectionHandler) ServeHTTP(w http.ResponseWriter, r *http.Reque
 	fn.Wrap(h.createInspection).ServeHTTP(w, r)
 }
 
+// Note: `c.CollectDmesg` is important here,
 func (h *createInspectionHandler) createInspection(r *http.Request, c *model.Config) (*model.Inspection, utils.StatusError) {
 	instanceId := mux.Vars(r)["id"]
 	inspectionId := uuid.New().String()
