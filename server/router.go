@@ -113,7 +113,7 @@ func (s *Server) CreateRouter() http.Handler {
 		// Upload and import local reports
 		api.Handle("/emphasis", inspection.ImportInspection(s.config, s.model, s.worker)).Methods("POST")
 		// Download zip resource of an emphasis
-		api.Handle("/emphasis/{uuid}.tar.gz", inspection.ExportInspection(s.config)).Methods("GET")
+		api.Handle("/emphasis/{id}.tar.gz", inspection.ExportInspection(s.config)).Methods("GET")
 		// Generate Report
 		api.Handle("/instances/{instance_id}/emphasis", emphasis.CreateEmphasis(s.config, s.model, s.worker)).Methods("POST")
 		// Upload emphasis
