@@ -2,7 +2,6 @@ package emphasis
 
 import (
 	"net/http"
-	"strconv"
 	"time"
 
 	"github.com/google/uuid"
@@ -40,6 +39,9 @@ type createEmphasisRequest struct {
 	Start   time.Time `json:"investgating_start"`
 	End     time.Time `json:"investgating_end"`
 	Problem string    `json:"investgating_problem"`
+
+	// TODO: ask for frontend if this is possible.
+	Config *model.Config `json:"config"`
 }
 
 func (h *createEmphasisHandler) createEmphasis(req *createEmphasisRequest, r *http.Request) (*model.Emphasis, utils.StatusError) {
@@ -64,21 +66,6 @@ func (h *createEmphasisHandler) createEmphasis(req *createEmphasisRequest, r *ht
 		User:                instance.User,
 	}
 
-	config, err := h.m.GetInstanceConfig(instanceId)
-	if err != nil {
-		log.Error("get instance config:", err)
-		return nil, helper.GormErrorMapper(err, utils.DatabaseQueryError)
-	}
-
-	// dmesg = true to mark it.
-	collectDmesgPtr := helper.LoadSelectableRouterVar(r, "dmesg")
-	if collectDmesgPtr != nil {
-		CollectDemsg, err := strconv.ParseBool(*collectDmesgPtr)
-		if err != nil {
-			config.CollectDemsg = CollectDemsg
-		}
-	}
-
 	insp := emp.CorrespondInspection()
 	inspectionId := insp.Uuid
 
@@ -88,7 +75,7 @@ func (h *createEmphasisHandler) createEmphasis(req *createEmphasisRequest, r *ht
 	}
 
 	go func() {
-		if err := h.w.Collect(inspectionId, "emphasis", config); err != nil {
+		if err := h.w.Collect(inspectionId, "emphasis", req.Config); err != nil {
 			log.Error("collect ", inspectionId, ": ", err)
 			insp.Status = "exception"
 			insp.Message = "collect failed"
