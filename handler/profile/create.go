@@ -54,7 +54,7 @@ func (h *createProfileHandler) createProfile(r *http.Request) (*model.Profile, u
 
 	err = h.m.SetInspection(inspection)
 	if err != nil {
-		log.Error("set inpsection: ", err)
+		log.Error("set inspection: ", err)
 		return nil, utils.DatabaseInsertError
 	}
 

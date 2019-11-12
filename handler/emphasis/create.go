@@ -73,7 +73,7 @@ func (h *createEmphasisHandler) createEmphasis(req *createEmphasisRequest, r *ht
 	inspectionId := insp.Uuid
 
 	if err := h.m.SetInspection(insp); err != nil {
-		log.Error("set inpsection: ", err)
+		log.Error("set inspection: ", err)
 		return nil, helper.GormErrorMapper(err, utils.DatabaseInsertError)
 	}
 

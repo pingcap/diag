@@ -44,7 +44,7 @@ func (h *createInspectionHandler) createInspection(r *http.Request, c *model.Con
 	}
 	err := h.m.SetInspection(inspection)
 	if err != nil {
-		log.Error("set inpsection: ", err)
+		log.Error("set inspection: ", err)
 		return nil, utils.DatabaseInsertError
 	}
 
