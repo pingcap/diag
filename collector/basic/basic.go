@@ -7,7 +7,9 @@ import (
 	"os/user"
 	"path"
 	"strings"
+	"sync"
 
+	multierror "github.com/hashicorp/go-multierror"
 	"github.com/pingcap/tidb-foresight/model"
 	"github.com/pingcap/tidb-foresight/utils"
 	log "github.com/sirupsen/logrus"
@@ -37,18 +39,29 @@ func (b *BasicCollector) Collect() error {
 	if err != nil {
 		return err
 	}
+	// mutex for err
+	var errMutex sync.Mutex
+	var wg sync.WaitGroup
 
 	for _, host := range topo.Hosts {
-		ports := []string{}
+		ports := make([]string, 0)
 		for _, comp := range host.Components {
 			ports = append(ports, comp.Port)
 		}
-		if e := b.insight(user.Username, host.Ip, ports); e != nil {
-			if err == nil {
-				err = e
+		wg.Add(1)
+		go func(currentHostIp string, currentPorts []string) {
+			defer wg.Done()
+			if e := b.insight(user.Username, currentHostIp, ports); e != nil {
+				errMutex.Lock()
+				defer errMutex.Unlock()
+				if err == nil {
+					err = multierror.Append(err, e)
+				}
 			}
-		}
+		}(host.Ip, ports)
 	}
+	// Note: this method thinks it will not blocked forever
+	wg.Wait()
 
 	return err
 }
