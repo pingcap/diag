@@ -27,8 +27,8 @@ func (w *worker) Collect(inspectionId, inspectionType string, config *model.Conf
 	if len(config.SchedRange) > 1 {
 		to = config.SchedRange[1]
 	}
-
-	items := []string{"alert", "dmesg", "basic", "config", "dbinfo", "log", "metric", "network"}
+	// TODO: put dmesg as a selectable arguments.
+	items := []string{"alert", "basic", "config", "dbinfo", "log", "metric", "network"}
 	if config != nil {
 		if config.CollectHardwareInfo {
 			//	items = append(items, "hardware")
@@ -39,8 +39,8 @@ func (w *worker) Collect(inspectionId, inspectionType string, config *model.Conf
 		if config.CollectLog {
 			//	items = append(items, "log")
 		}
-		if config.CollectDemsg {
-			//	items = append(items, "demsg")
+		if config.CollectDmesg {
+			items = append(items, "dmesg")
 		}
 	}
 

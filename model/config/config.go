@@ -21,7 +21,7 @@ type Config struct {
 	CollectLog bool `json:"collect_log"`
 
 	// should collector collect dmesg
-	CollectDemsg bool `json:"collect_demsg"`
+	CollectDmesg bool `json:"collect_dmesg"`
 
 	// auto schedule start time, eg. 00:00, 00:30, 01:00, 01:30
 	AutoSchedStart string `json:"auto_sched_start"`
