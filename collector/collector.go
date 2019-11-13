@@ -8,6 +8,7 @@ import (
 	"os"
 	"path"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/pingcap/tidb-foresight/collector/alert"
@@ -110,6 +111,7 @@ func (m *Manager) Collect() error {
 	inspection := m.opts.GetInspectionId()
 	start := time.Now()
 
+	// mkdir for collection results.
 	if err := os.MkdirAll(path.Join(home, "inspection", inspection), os.ModePerm); err != nil {
 		return err
 	}
@@ -131,6 +133,8 @@ func (m *Manager) Collect() error {
 	return m.collectMeta(start, end)
 }
 
+// collectTopology runs in local machine.
+// It move the topology file from topology/{instance_id}.json to inspection/{topology}.json
 func (m *Manager) collectTopology() error {
 	home := m.opts.GetHome()
 	instance := m.opts.GetInstanceId()
@@ -152,6 +156,8 @@ func (m *Manager) collectTopology() error {
 	return err
 }
 
+// collectArgs runs in local machine.
+// It generate an args.json by it's opts.
 func (m *Manager) collectArgs() error {
 	home := m.opts.GetHome()
 	inspection := m.opts.GetInspectionId()
@@ -163,6 +169,8 @@ func (m *Manager) collectArgs() error {
 	return ioutil.WriteFile(path.Join(home, "inspection", inspection, "args.json"), data, os.ModePerm)
 }
 
+// collectArgs runs in local machine.
+// It generate an args.json by it's environment variables.
 func (m *Manager) collectEnv() error {
 	home := m.opts.GetHome()
 	inspection := m.opts.GetInspectionId()
@@ -197,30 +205,50 @@ func (m *Manager) collectMeta(start, end time.Time) error {
 }
 
 func (m *Manager) collectRemote() error {
+	// mutex is using to protect status.
+	var wg sync.WaitGroup
+	var statusMutex sync.Mutex
 	status := make(map[string]error)
+
+	// build arrays for collector.
+	toCollectMap := make(map[string]Collector, 0)
+
 	for _, item := range m.opts.GetItems() {
 		switch item {
 		case "alert":
-			status[item] = alert.New(&WrappedOptions{m.opts}).Collect()
+			toCollectMap[item] = alert.New(&WrappedOptions{m.opts})
 		case "dmesg":
-			status[item] = dmesg.New(&WrappedOptions{m.opts}).Collect()
+			toCollectMap[item] = dmesg.New(&WrappedOptions{m.opts})
 		case "basic":
-			status[item] = basic.New(&WrappedOptions{m.opts}).Collect()
+			toCollectMap[item] = basic.New(&WrappedOptions{m.opts})
 		case "config":
-			status[item] = config.New(&WrappedOptions{m.opts}).Collect()
+			toCollectMap[item] = config.New(&WrappedOptions{m.opts})
 		case "dbinfo":
-			status[item] = dbinfo.New(&WrappedOptions{m.opts}).Collect()
+			toCollectMap[item] = dbinfo.New(&WrappedOptions{m.opts})
 		case "log":
-			status[item] = logc.New(&WrappedOptions{m.opts}).Collect()
+			toCollectMap[item] = logc.New(&WrappedOptions{m.opts})
 		case "metric":
-			status[item] = metric.New(&WrappedOptions{m.opts}).Collect()
+			toCollectMap[item] = metric.New(&WrappedOptions{m.opts})
 		case "profile":
-			status[item] = profile.New(&WrappedOptions{m.opts}).Collect()
+			toCollectMap[item] = profile.New(&WrappedOptions{m.opts})
 		case "network":
-			status[item] = network.New(&WrappedOptions{m.opts}).Collect()
+			toCollectMap[item] = network.New(&WrappedOptions{m.opts})
 		}
 	}
 
+	for item, collector := range toCollectMap {
+		wg.Add(1)
+		go func(innerCollector Collector, key string) {
+			defer wg.Done()
+			collected := collector.Collect()
+
+			statusMutex.Lock()
+			defer statusMutex.Unlock()
+			status[key] = collected
+		}(collector, item)
+	}
+
+	wg.Wait()
 	return m.collectStatus(status)
 }
 
