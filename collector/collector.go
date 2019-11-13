@@ -3,6 +3,7 @@ package collector
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"os"
@@ -236,12 +237,13 @@ func (m *Manager) collectRemote() error {
 		}
 	}
 
+	inspId :=  m.opts.GetInspectionId()
 	for item, collector := range toCollectMap {
 		wg.Add(1)
 		go func(innerCollector Collector, key string) {
 			defer wg.Done()
-			collected := collector.Collect()
-
+			collected := innerCollector.Collect()
+			log.Info(fmt.Sprintf("[Collector] Inspection %s collect %s done.", inspId, item))
 			statusMutex.Lock()
 			defer statusMutex.Unlock()
 			status[key] = collected
