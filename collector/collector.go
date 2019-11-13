@@ -3,7 +3,6 @@ package collector
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"io"
 	"io/ioutil"
 	"os"
@@ -133,11 +132,11 @@ func (m *Manager) Collect() error {
 		// if cannot, than panic.
 		log.Error(err)
 	} else {
-		log.Info(
-			fmt.Sprintf("Inspection %s collect with config: %s; and start from %s, ending in %s. Using time %s",
-				inspection, string(cfg), start.String(), end.String(), end.Sub(start).String(),
-			),
+		log.Infof(
+			"Inspection %s collect with config: %s; and start from %s, ending in %s. Using time %s",
+			inspection, string(cfg), start.String(), end.String(), end.Sub(start).String(),
 		)
+
 	}
 
 	return m.collectMeta(start, end)
