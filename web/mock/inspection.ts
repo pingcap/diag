@@ -57,7 +57,7 @@ export default {
 
         collect_metric_duration: 60, // 性能监控信息时长
 
-        collect_demsg: false, // 机器 demsg 信息
+        collect_dmesg: false, // 机器 dmesg 信息
 
         auto_sched_duration: '', // ??
         auto_sched_start: '01:00', // 开始时间
