@@ -412,7 +412,7 @@ export const ALL_PANELS: { [key: string]: IPanel } = {
   kv: {
     title: 'KV',
     charts: [
-      'kv_cmd_duration_9999',
+      'kv_cmd_duration_999',
       'kv_cmd_duration_99',
       'kv_lock_resolve_ops',
       'kv_99_kv_backoff_duration',
