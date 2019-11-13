@@ -68,7 +68,7 @@ function EmphasisDetail({ dispatch, match, curUser }: EmphasisDetailProps) {
               上传
             </Button>
             <Button type="primary" style={{ marginRight: 20 }}>
-              <a download href={`/api/v1/emphasis/${reportId}.tar.gz`}>
+              <a download href={`/api/v1/emphasis/zip/${reportId}.tar.gz`}>
                 下载
               </a>
             </Button>

@@ -89,7 +89,7 @@ const tableColumns = (
             <React.Fragment>
               <Divider type="vertical" />
               {record.status === 'success' ? (
-                <a download href={`/api/v1/emphasis/${record.uuid}.tar.gz`}>
+                <a download href={`/api/v1/emphasis/zip/${record.uuid}.tar.gz`}>
                   下载
                 </a>
               ) : (

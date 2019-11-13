@@ -110,18 +110,19 @@ func (s *Server) CreateRouter() http.Handler {
 		api.Handle("/instances/{instance_id}/emphasis", emphasis.ListAllEmphasisByInstance(s.model)).Methods("GET")
 		// Get Emphasis by id
 		api.Handle("/emphasis/{uuid}", emphasis.GetEmphasis(s.model)).Methods("GET")
+		// Generate Report
+		api.Handle("/instances/{instance_id}/emphasis", emphasis.CreateEmphasis(s.config, s.model, s.worker)).Methods("POST")
+		// Load all problems
+		api.Handle("/emphasis/{uuid}/symptom", emphasis.LoadAllProblems(s.model)).Methods("GET")
+
+		// Upload emphasis
+		api.Handle("/emphasis/{id}", inspection.UploadInspection(s.config)).Methods("PUT")
+		// Delete emphasis by id
+		api.Handle("/emphasis/{id}", inspection.DeleteInspection(s.config, s.model)).Methods("DELETE")
 		// Upload and import local reports
 		api.Handle("/emphasis", inspection.ImportInspection(s.config, s.model, s.worker)).Methods("POST")
 		// Download zip resource of an emphasis
-		api.Handle("/emphasis/{id}.tar.gz", inspection.ExportInspection(s.config)).Methods("GET")
-		// Generate Report
-		api.Handle("/instances/{instance_id}/emphasis", emphasis.CreateEmphasis(s.config, s.model, s.worker)).Methods("POST")
-		// Upload emphasis
-		api.Handle("/emphasis/{uuid}", inspection.UploadInspection(s.config)).Methods("PUT")
-		// Delete emphasis by id
-		api.Handle("/emphasis/{uuid}", inspection.DeleteInspection(s.config, s.model)).Methods("DELETE")
-		// Load all problems
-		api.Handle("/emphasis/{uuid}/symptom", emphasis.LoadAllProblems(s.model)).Methods("GET")
+		api.Handle("/emphasis/zip/{id}.tar.gz", inspection.ExportInspection(s.config)).Methods("GET")
 	}
 
 	// report
