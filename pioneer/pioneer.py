@@ -5,18 +5,19 @@ import re
 import sys
 import json
 import shutil
+from collections import namedtuple
 
 import ansible.constants as C
-from collections import namedtuple
 from ansible.playbook.play import Play
 from ansible.executor.task_queue_manager import TaskQueueManager
 from ansible.plugins.callback import CallbackBase
-from ansible.parsing.dataloader import DataLoader   
+from ansible.parsing.dataloader import DataLoader
 from ansible.inventory.manager import InventoryManager
 from ansible.vars.manager import VariableManager
 
 
 class ResultCallback(CallbackBase):
+
     def __init__(self, *args, **kwargs):
         super(ResultCallback, self).__init__(*args, **kwargs)
         self.host_ok = {}
@@ -34,52 +35,42 @@ class ResultCallback(CallbackBase):
 
 
 class AnsibleApi(object):
+
     def __init__(self, inv):
         self.inv = inv
-        self.Options = namedtuple('Options',
-                                  ['connection',
-                                   'remote_user',
-                                   'ask_sudo_pass',
-                                   'verbosity',
-                                   'ack_pass',
-                                   'module_path',
-                                   'forks',
-                                   'become',
-                                   'become_method',
-                                   'become_user',
-                                   'check',
-                                   'listhosts',
-                                   'listtasks',
-                                   'listtags',
-                                   'syntax',
-                                   'sudo_user',
-                                   'sudo',
-                                   'diff'])
+        self.Options = namedtuple('Options', [
+            'connection', 'remote_user', 'ask_sudo_pass', 'verbosity',
+            'ack_pass', 'module_path', 'forks', 'become', 'become_method',
+            'become_user', 'check', 'listhosts', 'listtasks', 'listtags',
+            'syntax', 'sudo_user', 'sudo', 'diff'
+        ])
 
-        self.ops = self.Options(connection='ssh',
-                                remote_user=None,
-                                ack_pass=None,
-                                sudo_user=None,
-                                forks=5,
-                                sudo=None,
-                                ask_sudo_pass=False,
-                                verbosity=5,
-                                module_path=None,
-                                become=None,
-                                become_method='sudo',
-                                become_user='root',
-                                check=False,
-                                diff=False,
-                                listhosts=None,
-                                listtasks=None,
-                                listtags=None,
-                                syntax=None)
+        self.ops = self.Options(
+            connection='ssh',
+            remote_user=None,
+            ack_pass=None,
+            sudo_user=None,
+            forks=5,
+            sudo=None,
+            ask_sudo_pass=False,
+            verbosity=5,
+            module_path=None,
+            become=None,
+            become_method='sudo',
+            become_user='root',
+            check=False,
+            diff=False,
+            listhosts=None,
+            listtasks=None,
+            listtags=None,
+            syntax=None)
 
         self.loader = DataLoader()
         self.passwords = dict()
         self.results_callback = ResultCallback()
         self.inventory = InventoryManager(loader=self.loader, sources=self.inv)
-        self.variable_manager = VariableManager(loader=self.loader, inventory=self.inventory)
+        self.variable_manager = VariableManager(
+            loader=self.loader, inventory=self.inventory)
 
     def runansible(self, host_list, task_list):
 
@@ -87,9 +78,11 @@ class AnsibleApi(object):
             name="Ansible Play",
             hosts=host_list,
             gather_facts='no',
-            tasks=task_list
-        )
-        play = Play().load(play_source, variable_manager=self.variable_manager, loader=self.loader)
+            tasks=task_list)
+        play = Play().load(
+            play_source,
+            variable_manager=self.variable_manager,
+            loader=self.loader)
 
         tqm = None
         try:
@@ -127,6 +120,7 @@ class AnsibleApi(object):
 
 
 def hostinfo(inv):
+
     def check_node(ip):
         _exist = False
         _dict = {}
@@ -144,7 +138,9 @@ def hostinfo(inv):
         _result1 = json.loads(runAnsible.runansible([ip], _task1))
         del runAnsible
         if _result1['unreachable']:
-            _connect = [False, 'unreachable', 'Failed to connect to the host via ssh']
+            _connect = [
+                False, 'unreachable', 'Failed to connect to the host via ssh'
+            ]
         elif _result1['failed']:
             _connect = [False, 'failed', _result1['failed'][ip]]
         else:
@@ -177,7 +173,9 @@ def hostinfo(inv):
             del runAnsible
             ok = check(_info)
             if ok == 'success':
-                _port = re.search("([0-9]+)\"", _info['success'][ip]['stdout_lines'][0]).group(1)
+                _port = re.search(
+                    "([0-9]+)\"",
+                    _info['success'][ip]['stdout_lines'][0]).group(1)
                 return True, 'get_info', [_port, name]
             else:
                 return False, 'get_info', [_info[ok], name]
@@ -189,8 +187,12 @@ def hostinfo(inv):
             del runAnsible
             ok = check(_info)
             if ok == 'success':
-                _port = re.search("([0-9]+)", _info['success'][ip]['stdout_lines'][0]).group(1)
-                _status_port = re.search("([0-9]+)\"", _info['success'][ip]['stdout_lines'][1]).group(1)
+                _port = re.search(
+                    "([0-9]+)",
+                    _info['success'][ip]['stdout_lines'][0]).group(1)
+                _status_port = re.search(
+                    "([0-9]+)\"",
+                    _info['success'][ip]['stdout_lines'][1]).group(1)
                 return True, 'get_info', [[_port, _status_port], name]
             else:
                 return False, 'get_info', [_info[ok], name]
@@ -202,7 +204,9 @@ def hostinfo(inv):
             del runAnsible
             ok = check(_info)
             if ok == 'success':
-                _port = re.search("([0-9]+)\"", _info['success'][ip]['stdout_lines'][0]).group(1)
+                _port = re.search(
+                    "([0-9]+)\"",
+                    _info['success'][ip]['stdout_lines'][0]).group(1)
                 return True, 'get_info', [_port, name]
             else:
                 return False, 'get_info', [_info[ok], name]
@@ -214,7 +218,9 @@ def hostinfo(inv):
             del runAnsible
             ok = check(_info)
             if ok == 'success':
-                _port = re.search("([0-9]+)", _info['success'][ip]['stdout_lines'][0]).group(1)
+                _port = re.search(
+                    "([0-9]+)",
+                    _info['success'][ip]['stdout_lines'][0]).group(1)
                 return True, 'get_info', [_port, name]
             else:
                 return False, 'get_info', [_info[ok], name]
@@ -230,8 +236,12 @@ def hostinfo(inv):
                 ok = check(_info)
                 if ok == 'success':
                     _check.append(True)
-                    _result.append([re.search("([0-9]+)\"", _info['success'][ip]['stdout_lines'][0]).group(1),
-                                    _server])
+                    _result.append([
+                        re.search(
+                            "([0-9]+)\"",
+                            _info['success'][ip]['stdout_lines'][0]).group(1),
+                        _server
+                    ])
                 else:
                     _check.append(False)
                     _result.append([_info[ok], _server])
@@ -248,8 +258,12 @@ def hostinfo(inv):
                 ok = check(_info)
                 if ok == 'success':
                     _check.append(True)
-                    _result.append([re.search("([0-9]+)\"", _info['success'][ip]['stdout_lines'][0]).group(1),
-                                    _server])
+                    _result.append([
+                        re.search(
+                            "([0-9]+)\"",
+                            _info['success'][ip]['stdout_lines'][0]).group(1),
+                        _server
+                    ])
                 else:
                     _check.append(False)
                     _result.append([_info[ok], _server])
@@ -260,20 +274,22 @@ def hostinfo(inv):
     loader = DataLoader()
     _inv = InventoryManager(loader=loader, sources=[inv])
     _vars = VariableManager(loader=loader, inventory=_inv)
-    server_group = {'pd_servers': 'pd',
-                    'tidb_servers': 'tidb',
-                    'tikv_servers': 'tikv',
-                    'monitoring_servers': 'monitoring',
-                    'monitored_servers': 'monitored',
-                    'alertmanager_servers': 'alertmanager',
-                    'drainer_servers': 'drainer',
-                    'pump_servers': 'pump',
-                    'spark_master': 'spark_master',
-                    'spark_slaves': 'spark_slave',
-                    'lightning_server': 'lightning',
-                    'importer_server': 'importer',
-                    'kafka_exporter_servers': 'kafka_exporter',
-                    'grafana_servers': 'grafana'}
+    server_group = {
+        'pd_servers': 'pd',
+        'tidb_servers': 'tidb',
+        'tikv_servers': 'tikv',
+        'monitoring_servers': 'monitoring',
+        'monitored_servers': 'monitored',
+        'alertmanager_servers': 'alertmanager',
+        'drainer_servers': 'drainer',
+        'pump_servers': 'pump',
+        'spark_master': 'spark_master',
+        'spark_slaves': 'spark_slave',
+        'lightning_server': 'lightning',
+        'importer_server': 'importer',
+        'kafka_exporter_servers': 'kafka_exporter',
+        'grafana_servers': 'grafana'
+    }
 
     cluster_info = {}
     hosts = []
@@ -284,7 +300,8 @@ def hostinfo(inv):
         if not _host_list:
             continue
         for _host in _host_list:
-            _hostvars = _vars.get_vars(host=_inv.get_host(hostname=str(_host)))  # get all varibles for one node
+            _hostvars = _vars.get_vars(host=_inv.get_host(
+                hostname=str(_host)))  # get all variables for one node
             _deploy_dir = _hostvars['deploy_dir']
             _cluster_name = _hostvars['cluster_name']
             _tidb_version = _hostvars['tidb_version']
@@ -311,7 +328,8 @@ def hostinfo(inv):
                     _host_dict['message'] = _enable_connect[2]
                 hosts.append(_host_dict)
 
-            _status, _type, _info = get_node_info(_ip, _deploy_dir, server_group[_group])
+            _status, _type, _info = get_node_info(_ip, _deploy_dir,
+                                                  server_group[_group])
             for _index_id in range(len(hosts)):
                 if hosts[_index_id]['ip'] == _ip:
                     if hosts[_index_id]['status'] == 'exception':
@@ -374,4 +392,3 @@ if __name__ == '__main__':
     inventory = sys.argv[1]
     result = hostinfo(inventory)
     print json.dumps(result, indent=4)
-
