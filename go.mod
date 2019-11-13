@@ -10,6 +10,7 @@ require (
 	github.com/google/uuid v1.1.1
 	github.com/gorilla/mux v1.7.3
 	github.com/gpmgo/gopm v0.6.5 // indirect
+	github.com/hashicorp/go-multierror v1.0.0
 	github.com/influxdata/influxdb1-client v0.0.0-20190809212627-fc22c7df067e
 	github.com/jessevdk/go-flags v1.4.0
 	github.com/jinzhu/gorm v1.9.10

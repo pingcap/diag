@@ -9,6 +9,7 @@ import (
 	"strings"
 	"sync"
 
+	multierror "github.com/hashicorp/go-multierror"
 	"github.com/pingcap/tidb-foresight/model"
 	"github.com/pingcap/tidb-foresight/utils"
 	log "github.com/sirupsen/logrus"
@@ -43,7 +44,7 @@ func (b *BasicCollector) Collect() error {
 	var wg sync.WaitGroup
 
 	for _, host := range topo.Hosts {
-		ports := []string{}
+		ports := make([]string, 0)
 		for _, comp := range host.Components {
 			ports = append(ports, comp.Port)
 		}
@@ -53,9 +54,8 @@ func (b *BasicCollector) Collect() error {
 			if e := b.insight(user.Username, currentHostIp, ports); e != nil {
 				errMutex.Lock()
 				defer errMutex.Unlock()
-				// TODO: think about using multiple errors.
 				if err == nil {
-					err = e
+					err = multierror.Append(err, e)
 				}
 			}
 		}(host.Ip, ports)
