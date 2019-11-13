@@ -228,7 +228,7 @@ function ConfigInstanceModal({ visible, onClose, dispatch, manual, instanceId }:
             </Checkbox>
           </Form.Item>
           <Form.Item {...formItemLayoutWithOutLabel}>
-            <Checkbox onChange={handleChange} name="collect_demsg" checked={config.collect_demsg}>
+            <Checkbox onChange={handleChange} name="collect_dmesg" checked={config.collect_dmesg}>
               机器 dmesg 信息
             </Checkbox>
           </Form.Item>
