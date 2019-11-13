@@ -1994,7 +1994,7 @@ export const PROM_CHARTS: { [key: string]: IPromChart } = {
         promQLTemplate:
           'histogram_quantile(0.99, sum(rate(tidb_server_get_token_duration_seconds_bucket{inspectionid="{{inspectionId}}"}[1m])) by (le))',
         labelTemplate: '99',
-        valConverter: val => timeSecondsFormatter(val, 1),
+        valConverter: val => timeSecondsFormatter(val / (1000 * 1000), 1),
       },
     ],
   },
@@ -2104,8 +2104,8 @@ export const PROM_CHARTS: { [key: string]: IPromChart } = {
     ],
   },
   // kv
-  kv_cmd_duration_9999: {
-    title: 'KV Cmd Duration 9999',
+  kv_cmd_duration_999: {
+    title: 'KV Cmd Duration 999',
     queries: [
       {
         promQLTemplate:
@@ -2163,18 +2163,18 @@ export const PROM_CHARTS: { [key: string]: IPromChart } = {
     queries: [
       {
         promQLTemplate:
-          'histogram_quantile(0.999, sum(rate(pd_client_cmd_handle_cmds_duration_seconds_bucket{type="tso", inspectionid="{{inspectionId}}"}[1m])) by (le))',
+          'histogram_quantile(0.999, sum(rate(pd_client_cmd_handle_cmds_duration_seconds_bucket{type="wait", inspectionid="{{inspectionId}}"}[1m])) by (le))',
         labelTemplate: '999',
         valConverter: val => timeSecondsFormatter(val, 1),
       },
       {
         promQLTemplate:
-          'histogram_quantile(0.99, sum(rate(pd_client_cmd_handle_cmds_duration_seconds_bucket{type="tso", inspectionid="{{inspectionId}}"}[1m])) by (le))',
+          'histogram_quantile(0.99, sum(rate(pd_client_cmd_handle_cmds_duration_seconds_bucket{type="wait", inspectionid="{{inspectionId}}"}[1m])) by (le))',
         labelTemplate: '99',
       },
       {
         promQLTemplate:
-          'histogram_quantile(0.90, sum(rate(pd_client_cmd_handle_cmds_duration_seconds_bucket{type="tso", inspectionid="{{inspectionId}}"}[1m])) by (le))',
+          'histogram_quantile(0.90, sum(rate(pd_client_cmd_handle_cmds_duration_seconds_bucket{type="wait", inspectionid="{{inspectionId}}"}[1m])) by (le))',
         labelTemplate: '90',
       },
     ],

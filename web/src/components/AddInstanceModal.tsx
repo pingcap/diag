@@ -18,27 +18,30 @@ interface Props {
 }
 
 function AddInstanceModal({ visible, onClose, onData }: Props) {
+  const [instanceConfig, setInstanceConfig] = useState('');
+  const [configTemplate, setConfigTemplate] = useState('');
+  const [configTemplateVisible, setConfigTemplateVisible] = useState(false);
+  const [activeTab, setActiveTab] = useState('1');
+  const [fileList, setFileList] = useState<any[]>([]);
+
   const uploadProps: UploadProps = {
     name: 'file',
     accept: '.ini',
     action: '/api/v1/instances/file',
     showUploadList: true,
     onChange(info: UploadChangeParam) {
+      setFileList(info.fileList.slice(-1));
       const { status } = info.file;
       if (status === 'done') {
         message.success(`${info.file.name} 上传成功！`);
         onData(info.file.response as IInstance);
         onClose();
+        setFileList([]);
       } else if (status === 'error') {
         message.error(`${info.file.name} 上传失败，错误：${info.file.response.message}`);
       }
     },
   };
-
-  const [instanceConfig, setInstanceConfig] = useState('');
-  const [configTemplate, setConfigTemplate] = useState('');
-  const [configTemplateVisible, setConfigTemplateVisible] = useState(false);
-  const [activeTab, setActiveTab] = useState('1');
 
   useEffect(() => {
     oriRequest('/add-instance-config-template.json').then(data => {
@@ -60,6 +63,7 @@ function AddInstanceModal({ visible, onClose, onData }: Props) {
         message.success('创建实例成功！');
         onData(res as IInstance);
         onClose();
+        setInstanceConfig('');
       } else {
         message.error('创建实例失败！');
       }
@@ -76,7 +80,7 @@ function AddInstanceModal({ visible, onClose, onData }: Props) {
     >
       <Tabs type="card" activeKey={activeTab} onChange={setActiveTab}>
         <TabPane tab="通过上传配置文件" key="1">
-          <Dragger {...uploadProps}>
+          <Dragger {...uploadProps} fileList={fileList}>
             <p className="ant-upload-drag-icon">
               <Icon type="inbox" />
             </p>
@@ -99,9 +103,7 @@ function AddInstanceModal({ visible, onClose, onData }: Props) {
             />
           </div>
           {configTemplateVisible && (
-            <div className={styles.config_template_content}>
-              <pre>{configTemplate}</pre>
-            </div>
+            <TextArea autosize={{ minRows: 6, maxRows: 8 }} value={configTemplate} />
           )}
         </TabPane>
       </Tabs>
