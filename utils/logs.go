@@ -24,6 +24,7 @@ func CollectLog(collector, home, user, instanceId, inspectionId string, begin, e
 	cmd.Env = append(
 		os.Environ(),
 		"FORESIGHT_USER="+user,
+		"CLUSTER_CREATE_TIME="+time.Now().Format(time.RFC3339), // it's not important
 		"INSPECTION_TYPE=log",
 	)
 	log.Info(cmd.Args)

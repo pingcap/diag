@@ -64,6 +64,15 @@ func (b *BasicCollector) insight(user, ip string, ports []string) error {
 	}
 	defer f.Close()
 
+	clean := exec.Command(
+		"ssh",
+		fmt.Sprintf("%s@%s", user, ip),
+		"sudo rm -f /tmp/insight",
+	)
+	clean.Stdout = os.Stdout
+	clean.Stderr = os.Stderr
+	log.Info(clean.Args)
+
 	install := exec.Command(
 		"scp",
 		path.Join(b.opts.GetHome(), "bin", "insight"),
@@ -71,7 +80,6 @@ func (b *BasicCollector) insight(user, ip string, ports []string) error {
 	)
 	install.Stdout = os.Stdout
 	install.Stderr = os.Stderr
-	log.Info(install.Args)
 
 	execute := exec.Command(
 		"ssh",
@@ -80,15 +88,9 @@ func (b *BasicCollector) insight(user, ip string, ports []string) error {
 	)
 	execute.Stdout = f
 	execute.Stderr = os.Stderr
-	log.Info(execute.Args)
 
-	if err := utils.StartCommands(install, execute); err != nil {
-		log.Error("start remote insight:", err)
-		return err
-	}
-
-	if err := utils.WaitCommands(install, execute); err != nil {
-		log.Error("wait remote insight:", err)
+	if err := utils.RunCommands(clean, install, execute); err != nil {
+		log.Error("run remote insight:", err)
 		return err
 	}
 

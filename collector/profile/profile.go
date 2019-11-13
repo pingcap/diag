@@ -11,6 +11,7 @@ import (
 	"sync"
 
 	"github.com/pingcap/tidb-foresight/model"
+	"github.com/pingcap/tidb-foresight/utils"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -40,6 +41,9 @@ func (c *ProfileCollector) Collect() error {
 	for _, host := range topo.Hosts {
 		for _, comp := range host.Components {
 			if c.shouldProfile(comp.Name, host.Ip, comp.Port) {
+				// avoid wrong closure binding
+				host := host
+				comp := comp
 				wg.Add(1)
 				go func() {
 					switch comp.Name {
@@ -55,6 +59,7 @@ func (c *ProfileCollector) Collect() error {
 			}
 		}
 	}
+	wg.Wait()
 
 	return nil
 }
@@ -115,17 +120,24 @@ func (c *ProfileCollector) perfRustProcess(name, ip, port string) {
 	}
 	defer f.Close()
 
-	cmd := exec.Command(
+	perf := exec.Command(
 		"ssh",
-		fmt.Sprintf("%s@%s", user, ip),
-		fmt.Sprintf("perf record -F 99 -g -p $(lsof -tiTCP:%s -sTCP:LISTEN -P -n) -o /dev/stdout -- sleep 60", port),
+		fmt.Sprintf("%s@%s", user.Username, ip),
+		fmt.Sprintf("perf record -F 99 -g -p $(/usr/sbin/lsof -tiTCP:%s -sTCP:LISTEN -P -n) -o /tmp/perf.data -- sleep 60", port),
 	)
-	cmd.Stdout = f
-	cmd.Stderr = os.Stderr
+	perf.Stdout = os.Stdout
+	perf.Stderr = os.Stderr
 
-	log.Info(cmd.Args)
-	if err := cmd.Run(); err != nil {
-		log.Error("perf record:", err)
+	scp := exec.Command(
+		"scp",
+		fmt.Sprintf("%s@%s:/tmp/perf.data", user.Username, ip),
+		path.Join(p, "perf.data"),
+	)
+	scp.Stdout = os.Stdout
+	scp.Stderr = os.Stderr
+
+	if err := utils.RunCommands(perf, scp); err != nil {
+		log.Error("run remote perf:", err)
 		return
 	}
 }

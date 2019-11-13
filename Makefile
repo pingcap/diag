@@ -56,7 +56,7 @@ ifeq ($(user), )
 user=tidb
 endif
 
-.PHONY: all server collector insight analyzer spliter syncer install stop start web fmt
+.PHONY: all server collector insight analyzer spliter syncer install stop start web fmt pioneer
 
 default: all	
 
@@ -66,6 +66,7 @@ prepare:
 	chmod 755 ./scripts/*
 	eval './scripts/prepare.py $(DOWNLOAD_PREFIX) $(NEEDS_INSTALL)'
 	@$(MAKE) web
+	@$(MAKE) pioneer
 
 # If prefix is now provided, please abort
 # it will execute after all the target is already build
@@ -92,6 +93,10 @@ web:
 	cd web && yarn && yarn build
 	rm -rf web-dist
 	mv web/dist web-dist
+
+pioneer:
+	mkdir -p bin
+	cp pioneer/pioneer.py bin/pioneer
 
 fmt:
 	@echo "gofmt (simplify)"

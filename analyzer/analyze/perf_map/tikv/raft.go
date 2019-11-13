@@ -2,8 +2,9 @@ package tikv
 
 import (
 	"fmt"
-	"github.com/pingcap/tidb-foresight/utils"
 	"time"
+
+	"github.com/pingcap/tidb-foresight/utils"
 
 	"github.com/pingcap/tidb-foresight/analyzer/boot"
 	"github.com/pingcap/tidb-foresight/analyzer/input/args"
