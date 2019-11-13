@@ -128,6 +128,17 @@ func (m *Manager) Collect() error {
 	}
 
 	end := time.Now()
+	if cfg, err := json.Marshal(m.opts); err != nil {
+		// if cannot, than panic.
+		log.Error(err)
+	} else {
+		log.Infof(
+			"Inspection %s collect with config: %s; and start from %s, ending in %s. Using time %s",
+			inspection, string(cfg), start.String(), end.String(), end.Sub(start).String(),
+		)
+
+	}
+
 	return m.collectMeta(start, end)
 }
 
