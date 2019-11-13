@@ -63,6 +63,7 @@ function AddInstanceModal({ visible, onClose, onData }: Props) {
         message.success('创建实例成功！');
         onData(res as IInstance);
         onClose();
+        setInstanceConfig('');
       } else {
         message.error('创建实例失败！');
       }
@@ -102,9 +103,7 @@ function AddInstanceModal({ visible, onClose, onData }: Props) {
             />
           </div>
           {configTemplateVisible && (
-            <div className={styles.config_template_content}>
-              <pre>{configTemplate}</pre>
-            </div>
+            <TextArea autosize={{ minRows: 6, maxRows: 8 }} value={configTemplate} />
           )}
         </TabPane>
       </Tabs>
