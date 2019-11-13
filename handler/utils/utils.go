@@ -29,10 +29,19 @@ func LoadHttpPaging(r *http.Request) (page int64, size int64) {
 
 // Load from route. The route must exists, otherwise the program will panic.
 func LoadRouterVar(r *http.Request, route string) string {
-	if v, ok := mux.Vars(r)[route]; !ok {
+	s := LoadSelectableRouterVar(r, route)
+	if s == nil {
 		panic(fmt.Sprintf("%s in LoadRouterVar not exists", route))
+	}
+	return *s
+}
+
+// Load from route. The route must exists, otherwise the program will panic.
+func LoadSelectableRouterVar(r *http.Request, route string) *string {
+	if v, ok := mux.Vars(r)[route]; !ok {
+		return nil
 	} else {
-		return v
+		return &v
 	}
 }
 

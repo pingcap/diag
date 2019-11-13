@@ -39,6 +39,9 @@ type createEmphasisRequest struct {
 	Start   time.Time `json:"investgating_start"`
 	End     time.Time `json:"investgating_end"`
 	Problem string    `json:"investgating_problem"`
+
+	//TODO: ask for frontend if this is possible.
+	//Config *model.Config `json:"config"`
 }
 
 func (h *createEmphasisHandler) createEmphasis(req *createEmphasisRequest, r *http.Request) (*model.Emphasis, utils.StatusError) {
@@ -63,18 +66,18 @@ func (h *createEmphasisHandler) createEmphasis(req *createEmphasisRequest, r *ht
 		User:                instance.User,
 	}
 
-	config, err := h.m.GetInstanceConfig(instanceId)
-	if err != nil {
-		log.Error("get instance config:", err)
-		return nil, helper.GormErrorMapper(err, utils.DatabaseQueryError)
-	}
-
 	insp := emp.CorrespondInspection()
 	inspectionId := insp.Uuid
 
 	if err := h.m.SetInspection(insp); err != nil {
-		log.Error("set inpsection: ", err)
+		log.Error("set inspection: ", err)
 		return nil, helper.GormErrorMapper(err, utils.DatabaseInsertError)
+	}
+
+	config, err := h.m.GetInstanceConfig(instanceId)
+	if err != nil {
+		log.Error("get instance config:", err)
+		return nil, helper.GormErrorMapper(err, utils.DatabaseQueryError)
 	}
 
 	go func() {
