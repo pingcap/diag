@@ -30,7 +30,12 @@ const tableColumns = (onDelete: any) => [
     title: 'PD 地址:端口',
     dataIndex: 'pd',
     key: 'pd',
-    render: (text: any, record: IFormatInstance) => <span>{text || '获取中...'}</span>,
+    render: (text: any, record: IFormatInstance) => {
+      if (text === '' && record.status === 'pending') {
+        return <span>获取中...</span>;
+      }
+      return <span>{text || 'unknown'}</span>;
+    },
   },
   {
     title: '创建时间',
