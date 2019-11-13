@@ -40,8 +40,8 @@ type createEmphasisRequest struct {
 	End     time.Time `json:"investgating_end"`
 	Problem string    `json:"investgating_problem"`
 
-	// TODO: ask for frontend if this is possible.
-	Config *model.Config `json:"config"`
+	//TODO: ask for frontend if this is possible.
+	//Config *model.Config `json:"config"`
 }
 
 func (h *createEmphasisHandler) createEmphasis(req *createEmphasisRequest, r *http.Request) (*model.Emphasis, utils.StatusError) {
@@ -74,8 +74,14 @@ func (h *createEmphasisHandler) createEmphasis(req *createEmphasisRequest, r *ht
 		return nil, helper.GormErrorMapper(err, utils.DatabaseInsertError)
 	}
 
+	config, err := h.m.GetInstanceConfig(instanceId)
+	if err != nil {
+		log.Error("get instance config:", err)
+		return nil, helper.GormErrorMapper(err, utils.DatabaseQueryError)
+	}
+
 	go func() {
-		if err := h.w.Collect(inspectionId, "emphasis", req.Config); err != nil {
+		if err := h.w.Collect(inspectionId, "emphasis", config); err != nil {
 			log.Error("collect ", inspectionId, ": ", err)
 			insp.Status = "exception"
 			insp.Message = "collect failed"
