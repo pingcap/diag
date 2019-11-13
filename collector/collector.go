@@ -131,7 +131,7 @@ func (m *Manager) Collect() error {
 	end := time.Now()
 	if cfg, err := json.Marshal(m.opts); err != nil {
 		// if cannot, than panic.
-		panic(err)
+		log.Error(err)
 	} else {
 		log.Info(
 			fmt.Sprintf("Inspection %s collect with config: %s; and start from %s, ending in %s. Using time %s",
