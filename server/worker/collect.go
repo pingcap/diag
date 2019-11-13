@@ -39,7 +39,7 @@ func (w *worker) Collect(inspectionId, inspectionType string, config *model.Conf
 		if config.CollectLog {
 			//	items = append(items, "log")
 		}
-		if config.CollectDemsg {
+		if config.CollectDmesg {
 			items = append(items, "dmesg")
 		}
 	}
