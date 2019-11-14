@@ -24,7 +24,7 @@ func (t *saveHardwareInfoTask) Run(m *boot.Model, c *boot.Config, insight *insig
 
 		// TODO: this fucking messages are only for fucking debugging.
 		fuckingDistStorage, err := json.Marshal(insight.Sysinfo.Storage)
-		if err != nil {
+		if err == nil {
 			log.Infof("Collected message for %s", string(fuckingDistStorage))
 		}
 
