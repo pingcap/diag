@@ -43,7 +43,17 @@ func (h *createInspectionHandler) createInspection(r *http.Request, c *model.Con
 		Status:     "running",
 		Type:       "manual",
 	}
-	err := h.m.SetInspection(inspection)
+
+	instance, err := h.m.GetInstance(instanceId)
+	if err != nil {
+		log.Error("get instance:", err)
+		instance = nil
+	}
+	if instance != nil {
+		inspection.InstanceName = instance.Name
+		inspection.User = instance.User
+	}
+	err = h.m.SetInspection(inspection)
 	if err != nil {
 		log.Error("set inspection: ", err)
 		return nil, utils.DatabaseInsertError
