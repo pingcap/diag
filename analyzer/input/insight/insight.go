@@ -48,6 +48,8 @@ type InsightInfo struct {
 		Storage []struct {
 			// eg. nvme0n1
 			Name string `json:"name"`
+			// eg. sd
+			Driver string `json:"driver"`
 		} `json:"storage"`
 		Network []struct {
 			// eg. eth0

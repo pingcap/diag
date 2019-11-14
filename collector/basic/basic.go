@@ -51,6 +51,7 @@ func (b *BasicCollector) Collect() error {
 		wg.Add(1)
 		go func(currentHostIp string, currentPorts []string) {
 			defer wg.Done()
+			// collect insight on remote machine.
 			if e := b.insight(user.Username, currentHostIp, ports); e != nil {
 				errMutex.Lock()
 				defer errMutex.Unlock()

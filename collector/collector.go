@@ -248,7 +248,7 @@ func (m *Manager) collectRemote() error {
 		}
 	}
 
-	inspId :=  m.opts.GetInspectionId()
+	inspId := m.opts.GetInspectionId()
 	for item, collector := range toCollectMap {
 		wg.Add(1)
 		go func(innerCollector Collector, key string) {

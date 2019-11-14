@@ -29,7 +29,8 @@ func (t *saveHardwareInfoTask) Run(m *boot.Model, c *boot.Config, insight *insig
 		}
 
 		for _, disk := range insight.Sysinfo.Storage {
-			disks = append(disks, disk.Name)
+			disks = append(disks, fmt.Sprintf("%s(%s)", disk.Name, disk.Driver))
+
 		}
 		networks := []string{}
 		for _, network := range insight.Sysinfo.Network {
