@@ -49,6 +49,7 @@ export function useReportItemQuery(apiUrl: string): [IConclusion[], any[], any[]
     async function fetchData() {
       const res: IResReportItem = await request(apiUrl);
       if (res !== undefined) {
+        // exist res.data filed, and res.data is an array
         if (res.data) {
           let containsAbnormal =
             (res.conclusion as IConclusion[]).find(item => item.status === 'error') !== undefined;
@@ -110,6 +111,8 @@ export function useReportItemQuery(apiUrl: string): [IConclusion[], any[], any[]
           setConclusion(res.conclusion);
           setHasAbnormal(containsAbnormal);
         } else {
+          // res.data doesn't exist
+          // res is an object
           const columns = [
             {
               title: '信息',

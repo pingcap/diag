@@ -10,6 +10,7 @@ import { CurrentUser } from '@/models/user';
 import UploadLocalReportModal from '@/components/UploadLocalReportModal';
 import ConfigInstanceModal from '@/components/ConfigInstanceModal';
 import { useIntervalRun } from '@/custom-hooks/use-interval-run';
+import ShortUUID from '@/components/ShortUUID';
 
 const { Option } = Select;
 
@@ -29,9 +30,10 @@ const tableColumns = (
 ) => {
   const columns = [
     {
-      title: '诊断报告 ID',
+      title: '报告 ID',
       dataIndex: 'uuid',
       key: 'uuid',
+      render: (text: any, record: IFormatInspection) => <ShortUUID uuid={text} />,
     },
     {
       title: '用户名',

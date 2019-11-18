@@ -74,10 +74,10 @@ const tableColumns = (onDelete: any) => [
                   <Link to={`/inspection/instances/${record.uuid}/reports`}>诊断报告</Link>
                 </Menu.Item>
                 <Menu.Item>
-                  <Link to="/inspection/perfprofiles">火焰图 & profile</Link>
+                  <Link to={`/inspection/instances/${record.uuid}/emphasis`}>重点问题</Link>
                 </Menu.Item>
                 <Menu.Item>
-                  <Link to={`/inspection/instances/${record.uuid}/emphasis`}>重点问题</Link>
+                  <Link to="/inspection/perfprofiles">火焰图 & profile</Link>
                 </Menu.Item>
               </Menu>
             }

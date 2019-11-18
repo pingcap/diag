@@ -10,6 +10,7 @@ import UploadRemoteReportModal from '@/components/UploadRemoteReportModal';
 import { CurrentUser } from '@/models/user';
 import UploadLocalReportModal from '@/components/UploadLocalReportModal';
 import { IFormatInstance } from '@/models/inspection';
+import ShortUUID from '@/components/ShortUUID';
 
 const styles = require('../style.less');
 
@@ -18,6 +19,7 @@ const tableColumns = (curUser: CurrentUser, onDelete: any, onUpload: any) => [
     title: '火焰图报告 ID',
     dataIndex: 'uuid',
     key: 'uuid',
+    render: (text: any, record: IFlameGraph) => <ShortUUID uuid={text} />,
   },
   {
     title: '用户名',
