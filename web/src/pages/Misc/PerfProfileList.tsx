@@ -11,6 +11,7 @@ import { CurrentUser } from '@/models/user';
 import UploadLocalReportModal from '@/components/UploadLocalReportModal';
 import { IFormatInstance } from '@/models/inspection';
 import { useIntervalRun } from '@/custom-hooks/use-interval-run';
+import ShortUUID from '@/components/ShortUUID';
 
 const styles = require('../style.less');
 
@@ -19,6 +20,7 @@ const tableColumns = (curUser: CurrentUser, onDelete: any, onUpload: any) => [
     title: '报告 ID',
     dataIndex: 'uuid',
     key: 'uuid',
+    render: (text: any, record: IPerfProfile) => <ShortUUID uuid={text} />,
   },
   {
     title: '用户名',

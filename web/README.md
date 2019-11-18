@@ -1,12 +1,12 @@
 # TiDB Foresight Web
 
-web for tidb foresight
+Web for tidb foresight, use React and [Ant Design Pro](https://pro.ant.design) framework.
 
----
+Quick to start develop mode:
 
-# Ant Design Pro
-
-This project is initialized with [Ant Design Pro](https://pro.ant.design). Follow is the quick guide for how to use.
+```bash
+yarn run start:no-mock
+```
 
 ## Environment Prepare
 
@@ -57,7 +57,3 @@ npm run lint:fix
 ```bash
 npm test
 ```
-
-## More
-
-You can view full document on our [official website](https://pro.ant.design). And welcome any feedback in our [github](https://github.com/ant-design/ant-design-pro).

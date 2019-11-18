@@ -59,7 +59,9 @@ function AutoTable({ title, expand = true, apiUrl }: AutoTableProps) {
                   dataSource={dataSource}
                   columns={tableColumns}
                   pagination={false}
-                  scroll={_.endsWith(apiUrl, '/dmesg') ? { y: 600 } : {}}
+                  scroll={
+                    _.endsWith(apiUrl, '/dmesg') || _.endsWith(apiUrl, '/dbinfo') ? { y: 600 } : {}
+                  }
                 />
               </React.Fragment>
             ))}

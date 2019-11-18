@@ -29,18 +29,17 @@ const codeMessage = {
  */
 const errorHandler = (error: any): void => {
   const { response, data } = error;
-
   if (response && response.status) {
     const errorText = data.message || codeMessage[response.status] || response.statusText;
     const { status, url } = response;
 
-    notification.error({
-      message: `请求错误 ${status}: ${url}`,
-      description: errorText,
-    });
-
     if (response.status === 401) {
       router.replace('/user/login');
+    } else {
+      notification.error({
+        message: `请求错误 ${status}: ${url}`,
+        description: errorText,
+      });
     }
   }
 };

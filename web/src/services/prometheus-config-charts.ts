@@ -286,7 +286,7 @@ export const PROM_CHARTS: { [key: string]: IPromChart } = {
   },
 
   storage_capacity: {
-    title: 'Store Capacity',
+    title: 'Storage Capacity',
     queries: [
       {
         promQLTemplate:
@@ -631,7 +631,7 @@ export const PROM_CHARTS: { [key: string]: IPromChart } = {
     queries: [
       {
         promQLTemplate:
-          '(time() - process_start_time_seconds{job="tidb", inspectionid="{{inspectionId}}"})',
+          'time() - process_start_time_seconds{job="tidb", inspectionid="{{inspectionId}}"}',
         labelTemplate: '{{instance}}',
         valConverter: val => timeSecondsFormatter(val, 1),
       },

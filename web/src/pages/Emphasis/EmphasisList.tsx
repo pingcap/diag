@@ -13,6 +13,7 @@ import { IFormatInstance } from '@/models/inspection';
 import { IEmphasis } from '@/models/emphasis';
 import { formatDatetime } from '@/utils/datetime-util';
 import { useIntervalRun } from '@/custom-hooks/use-interval-run';
+import ShortUUID from '@/components/ShortUUID';
 
 const { Option } = Select;
 
@@ -35,6 +36,7 @@ const tableColumns = (
       title: '报告 ID',
       dataIndex: 'uuid',
       key: 'uuid',
+      render: (text: any, record: IEmphasis) => <ShortUUID uuid={text} />,
     },
     {
       title: '用户名',
@@ -324,6 +326,7 @@ function ReportList({
         )}
       </div>
       <Table
+        rowKey="uuid"
         loading={loading}
         dataSource={emphasis.emphasis.list}
         columns={columns}
