@@ -19,6 +19,7 @@ func SaveHardwareInfo() *saveHardwareInfoTask {
 
 // Save hardware info to database, the hardware info comes from insight collector
 func (t *saveHardwareInfoTask) Run(m *boot.Model, c *boot.Config, insight *insight.Insight) {
+
 	for _, insight := range *insight {
 		disks := []string{}
 
@@ -29,8 +30,25 @@ func (t *saveHardwareInfoTask) Run(m *boot.Model, c *boot.Config, insight *insig
 		}
 
 		for _, disk := range insight.Sysinfo.Storage {
-			disks = append(disks, fmt.Sprintf("%s(%s)", disk.Name, disk.Driver))
-
+			filled := false
+			for _, harddisks := range insight.BlockInfo.Disks {
+				if filled {
+					break
+				}
+				for _, partitions := range harddisks.Partitions {
+					if filled {
+						break
+					}
+					if partitions.Name == disk.Name {
+						disks = append(disks, fmt.Sprintf("Disk type: %s, disk_controller: %s, %s(%s)",
+							harddisks.DriveType, harddisks.StorageController, disk.Name, disk.Driver))
+						filled = true
+					}
+				}
+			}
+			if !filled {
+				disks = append(disks, fmt.Sprintf("%s(%s)", disk.Name, disk.Driver))
+			}
 		}
 		networks := []string{}
 		for _, network := range insight.Sysinfo.Network {

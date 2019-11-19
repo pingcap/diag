@@ -78,7 +78,7 @@ type InsightInfo struct {
 	} `json:"partitions"`
 
 	BlockInfo struct {
-		Disks struct {
+		Disks []struct {
 			Name string `json:"name"`
 			// can be "unknown", "hdd", "ssd", etc
 			DriveType string `json:"drive_type"`
