@@ -8,7 +8,7 @@ import CollpasePanel from './CollapsePanel';
 import PrometheusChart from './PrometheusChart';
 import PrometheusTable from './PrometheusTable';
 import { IPromQuery, PROM_CHARTS } from '@/services/prometheus-config-charts';
-import { INSPECTION_DETAILS } from '@/services/report-detail-config';
+import { INSPECTION_DETAILS, ReportDetailConfig } from '@/services/report-detail-config';
 import {
   IPanel,
   ALL_PANELS,
@@ -75,8 +75,8 @@ function InspectionReport({ inspection }: InspectionReportProps) {
     return panelKeys.map(renderPromPanel);
   }
 
-  function renderNormalSections() {
-    return INSPECTION_DETAILS.map(section => (
+  function renderNormalSections(config: ReportDetailConfig) {
+    return config.map(section => (
       <div key={section.sectionKey}>
         <h2>{section.sectionTitle}</h2>
         {section.panels.map(panel => (
@@ -92,7 +92,7 @@ function InspectionReport({ inspection }: InspectionReportProps) {
 
   return (
     <div style={{ marginTop: 20 }}>
-      {renderNormalSections()}
+      {renderNormalSections(INSPECTION_DETAILS)}
 
       <h2>三、监控信息</h2>
       {renderPromPanels(DBA_PANELS)}

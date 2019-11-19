@@ -140,3 +140,18 @@ export const INSPECTION_DETAILS: ReportDetailConfig = [
     ],
   },
 ];
+
+export const EMPHASIS_DETAILS: ReportDetailConfig = [
+  {
+    sectionKey: 'global_overview',
+    sectionTitle: '一、问题定位',
+    panels: [
+      {
+        panelTitle: 'overview',
+        apiUrl: '/symptom',
+        dataType: 'arr',
+        panelTitleColor: 'red',
+      },
+    ],
+  },
+];
