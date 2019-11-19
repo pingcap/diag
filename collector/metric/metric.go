@@ -16,8 +16,8 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-// the prometheus can give at most 11000 points for every series
-// so, for precision you can set MAX_POINTS with a higher value
+// The prometheus can give at most 11000 points for every series.
+// So, for precision you can set MAX_POINTS with a higher value
 // but no more than 11000.
 const MAX_POINTS = 11000
 

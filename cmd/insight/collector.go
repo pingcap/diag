@@ -17,6 +17,7 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"github.com/jaypipes/ghw"
 	"log"
 	"runtime"
 	"strings"
@@ -45,6 +46,8 @@ type Metrics struct {
 	NTP        TimeStat        `json:"ntp,omitempty"`
 	Partitions []BlockDev      `json:"partitions,omitempty"`
 	ProcStats  []ProcessStat   `json:"proc_stats,omitempty"`
+
+	BlockInfo *ghw.BlockInfo `json:"block_info"`
 }
 
 type options struct {
@@ -88,6 +91,7 @@ func (metric *Metrics) getMetrics(opts options) {
 		metric.SysInfo.GetSysInfo()
 		metric.NTP.getNTPInfo()
 		metric.Partitions = GetPartitionStats()
+		metric.BlockInfo, _ = ghw.Block()
 	}
 }
 

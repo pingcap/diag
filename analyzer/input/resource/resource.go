@@ -10,4 +10,7 @@ type Resource struct {
 	MaxIoUtil float64
 	AvgDisk   float64
 	MaxDisk   float64
+
+	MaxDuration float64
+	MinDuration float64
 }
