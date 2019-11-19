@@ -26,13 +26,15 @@ interface IAbnormalValue {
   value: string | number;
 }
 
-export function useReportItemQuery(apiUrl: string): [IConclusion[], any[], any[], boolean] {
+export function useReportItemQuery(
+  fullApiUrl: string,
+  dataType: 'obj' | 'arr',
+  lessMoreColumns: string[],
+): [IConclusion[], any[], any[], boolean] {
   const [conclusion, setConclusion] = useState<IConclusion[]>([]);
   const [tableColumns, setTableColumns] = useState<any[]>([]);
   const [dataSource, setDataSource] = useState<any[]>([]);
   const [hasAbnormal, setHasAbnormal] = useState(false);
-
-  const itemType = apiUrl.split('/').pop();
 
   function toggleExpand(record: any, expand: boolean) {
     const configCellEl = document.getElementById(`config_table_cell_${record.key}`);
@@ -47,7 +49,7 @@ export function useReportItemQuery(apiUrl: string): [IConclusion[], any[], any[]
 
   useEffect(() => {
     async function fetchData() {
-      const res: IResReportItem = await request(apiUrl);
+      const res: IResReportItem = await request(fullApiUrl);
       if (res !== undefined) {
         // exist res.data filed, and res.data is an array
         if (res.data) {
@@ -83,7 +85,7 @@ export function useReportItemQuery(apiUrl: string): [IConclusion[], any[], any[]
               if (key === 'time' || key.endsWith('_time')) {
                 text = formatDatetime(text);
               }
-              if (itemType === 'config' && key === 'config') {
+              if (lessMoreColumns.includes(key)) {
                 return (
                   <div className="config_table_cell" id={`config_table_cell_${record.key}`}>
                     <div className="config_table_cell_summary">
@@ -110,7 +112,7 @@ export function useReportItemQuery(apiUrl: string): [IConclusion[], any[], any[]
           setDataSource(dataArr);
           setConclusion(res.conclusion);
           setHasAbnormal(containsAbnormal);
-        } else {
+        } else if (dataType === 'obj') {
           // res.data doesn't exist
           // res is an object
           const columns = [
@@ -139,10 +141,10 @@ export function useReportItemQuery(apiUrl: string): [IConclusion[], any[], any[]
       }
     }
 
-    if (apiUrl !== '') {
+    if (fullApiUrl !== '') {
       fetchData();
     }
-  }, [apiUrl]);
+  }, [fullApiUrl]);
 
   return [conclusion, tableColumns, dataSource, hasAbnormal];
 }

@@ -1,7 +1,7 @@
 import React from 'react';
 import moment from 'moment';
 import _ from 'lodash';
-import AutoTable from './AutoTable';
+import AutoPanelTable from './AutoPanelTable';
 import { IPromParams } from '@/services/prometheus-query';
 import CollpasePanel from './CollapsePanel';
 import PrometheusChart from './PrometheusChart';

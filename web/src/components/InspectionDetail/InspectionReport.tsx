@@ -2,7 +2,7 @@ import React from 'react';
 import moment from 'moment';
 import _ from 'lodash';
 import { IInspectionDetail } from '@/models/inspection';
-import AutoTable from './AutoTable';
+import AutoPanelTable from './AutoPanelTable';
 import { IPromParams } from '@/services/prometheus-query';
 import CollpasePanel from './CollapsePanel';
 import PrometheusChart from './PrometheusChart';
@@ -80,11 +80,10 @@ function InspectionReport({ inspection }: InspectionReportProps) {
       <div key={section.sectionKey}>
         <h2>{section.sectionTitle}</h2>
         {section.panels.map(panel => (
-          <AutoTable
+          <AutoPanelTable
             key={panel.apiUrl}
-            title={panel.panelTitle}
             fullApiUrl={genItemApiUrl(inspection.uuid, panel.apiUrl)}
-            expand={!(panel.collapse || false)}
+            panelConfig={panel}
           />
         ))}
       </div>

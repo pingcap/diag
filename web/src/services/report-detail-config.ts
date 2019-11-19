@@ -7,11 +7,17 @@ export interface IReportDetailConfigPanel {
 
   // style
   collapse?: boolean;
+  panelTitleColor?: string; // default is 'inherit'
   limitHeight?: boolean;
   height?: number;
 
   // unit
   columnUnits?: { [key: string]: string };
+
+  // less more columns
+  // if the content of one column is too much, we display only a few content at first,
+  // then we can toggle to display more
+  lessMoreColumns?: string[];
 }
 
 export interface IReportDetailConfigSection {
@@ -31,6 +37,7 @@ export const INSPECTION_DETAILS: ReportDetailConfig = [
         panelTitle: 'overview',
         apiUrl: '/symptom',
         dataType: 'arr',
+        panelTitleColor: 'red',
       },
     ],
   },
@@ -48,6 +55,8 @@ export const INSPECTION_DETAILS: ReportDetailConfig = [
         apiUrl: '/dbinfo',
         dataType: 'arr',
         collapse: true,
+        limitHeight: true,
+        height: 400,
       },
       {
         panelTitle: '3、资源信息 (使用率%)',
@@ -78,6 +87,7 @@ export const INSPECTION_DETAILS: ReportDetailConfig = [
         panelTitle: '8、软件配置信息',
         apiUrl: '/config',
         dataType: 'arr',
+        lessMoreColumns: ['config'],
       },
       {
         panelTitle: '9、机器 NTP 时间同步信息',
@@ -99,6 +109,8 @@ export const INSPECTION_DETAILS: ReportDetailConfig = [
         apiUrl: '/dmesg',
         dataType: 'arr',
         collapse: true,
+        limitHeight: true,
+        height: 400,
       },
     ],
   },
