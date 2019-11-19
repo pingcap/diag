@@ -29,6 +29,7 @@ const INTERVALS_IN_SECONDS: IntervalsInSeconds = {
   [Interval.Millisecond]: 0.001,
 };
 
+// 原始数值的单位就是 ns
 export function toNanoSeconds(
   size: number,
   decimals?: DecimalCount,

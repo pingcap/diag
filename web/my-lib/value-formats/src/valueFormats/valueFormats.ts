@@ -78,15 +78,16 @@ export function toFixedScaled(
   scaledDecimals: DecimalCount,
   additionalDecimals: number,
   ext?: string,
-) {
+): string {
   if (scaledDecimals === null || scaledDecimals === undefined) {
     return toFixed(value, decimals) + ext;
   } else {
     return toFixed(value, scaledDecimals + additionalDecimals) + ext;
   }
-
-  return toFixed(value, decimals) + ext;
+  // return toFixed(value, decimals) + ext;
 }
+
+////////////////////////////////////////////
 
 export function toFixedUnit(unit: string): ValueFormatter {
   return (size: number, decimals?: DecimalCount) => {
@@ -97,6 +98,7 @@ export function toFixedUnit(unit: string): ValueFormatter {
   };
 }
 
+// 动态转换单位
 // Formatter which scales the unit string geometrically according to the given
 // numeric factor. Repeatedly scales the value down by the factor until it is
 // less than the factor in magnitude, or the end of the array is reached.
@@ -198,4 +200,50 @@ export function getValueFormats() {
       }),
     };
   });
+}
+
+////////////////////////////////////////////////////////
+
+// auto decimals
+// 自动计算小数点，算法还没整明白
+// 原始算法在 grafana 的 public/app/core/utils/ticks.ts#getFlotTickDecimals
+// 这个函数对它进行了精简
+export function getDecimalsForValue(value: any) {
+  const delta = value / 2;
+  let dec = -Math.floor(Math.log(delta) / Math.LN10);
+
+  const magn = Math.pow(10, -dec);
+  const norm = delta / magn; // norm is between 1.0 and 10.0
+  let size;
+
+  if (norm < 1.5) {
+    size = 1;
+  } else if (norm < 3) {
+    size = 2;
+    // special case for 2.5, requires an extra decimal
+    if (norm > 2.25) {
+      size = 2.5;
+      ++dec;
+    }
+  } else if (norm < 7.5) {
+    size = 5;
+  } else {
+    size = 10;
+  }
+
+  size *= magn;
+
+  // reduce starting decimals if not needed
+  if (Math.floor(value) === value) {
+    dec = 0;
+  }
+
+  const result = {
+    decimals: 0,
+    scaledDecimals: 0,
+  };
+  result.decimals = Math.max(0, dec);
+  result.scaledDecimals = result.decimals - Math.floor(Math.log(size) / Math.LN10) + 2;
+
+  return result;
 }
