@@ -81,7 +81,7 @@ func (t *saveMetricTask) Run(c *boot.Config, m *boot.Model) *Metric {
 			}
 		}(tl.Get())
 		elapsed := int(time.Now().Sub(start).Seconds())
-		left := int32(elapsed*10000/(idx+1)*(len(files)-idx-1)) / 10000
+		left := int32(elapsed*10000/(idx+1)*(len(files)-idx-1))/10000 + 1 // Keep one second left
 		if err := m.UpdateInspectionEstimateLeftSec(c.InspectionId, left); err != nil {
 			log.Error("update estimate left sec:", err)
 		}
