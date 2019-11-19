@@ -9,13 +9,13 @@ interface AutoTableProps {
   title?: string;
   expand?: boolean;
 
-  apiUrl: string;
+  fullApiUrl: string;
 }
 
-function AutoTable({ title, expand = true, apiUrl }: AutoTableProps) {
+function AutoTable({ title, expand = true, fullApiUrl }: AutoTableProps) {
   const [collapsed, setCollapsed] = useState(!expand);
 
-  const [conclusion, tableColumns, dataSource, hasAbnormal] = useReportItemQuery(apiUrl);
+  const [conclusion, tableColumns, dataSource, hasAbnormal] = useReportItemQuery(fullApiUrl);
 
   function handleCollapseChange(expandKeys: string[] | string) {
     setCollapsed(expandKeys.length === 0);
@@ -60,7 +60,9 @@ function AutoTable({ title, expand = true, apiUrl }: AutoTableProps) {
                   columns={tableColumns}
                   pagination={false}
                   scroll={
-                    _.endsWith(apiUrl, '/dmesg') || _.endsWith(apiUrl, '/dbinfo') ? { y: 600 } : {}
+                    _.endsWith(fullApiUrl, '/dmesg') || _.endsWith(fullApiUrl, '/dbinfo')
+                      ? { y: 600 }
+                      : {}
                   }
                 />
               </React.Fragment>

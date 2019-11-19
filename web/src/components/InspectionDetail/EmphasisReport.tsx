@@ -70,7 +70,7 @@ function EmphasisReport({ emphasis }: EmphasisReportProps) {
   return (
     <div style={{ marginTop: 20 }}>
       <h2>一、问题定位</h2>
-      <AutoTable title="overview" apiUrl={`/emphasis/${emphasis.uuid}/symptom`} />
+      {/* <AutoTable title="overview" apiUrl={`/emphasis/${emphasis.uuid}/symptom`} /> */}
 
       <h2>二、问题排查监控信息</h2>
       {renderPanels(EMPHASIS_DB_PERFORMANCE_PANELS)}
