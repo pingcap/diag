@@ -1,3 +1,12 @@
+export interface IUnitConfig {
+  unitFormat: string;
+  decimals?: number; // precision
+}
+
+export interface IColumnsUnit {
+  [key: string]: IUnitConfig;
+}
+
 export interface IReportDetailConfigPanel {
   panelTitle: string;
 
@@ -12,7 +21,7 @@ export interface IReportDetailConfigPanel {
   height?: number;
 
   // unit
-  columnUnits?: { [key: string]: string };
+  columnsUnit?: IColumnsUnit;
 
   // less more columns
   // if the content of one column is too much, we display only a few content at first,
@@ -93,11 +102,27 @@ export const INSPECTION_DETAILS: ReportDetailConfig = [
         panelTitle: '9、机器 NTP 时间同步信息',
         apiUrl: '/ntp',
         dataType: 'arr',
+        columnsUnit: {
+          offset: {
+            unitFormat: 's',
+            decimals: 3,
+          },
+        },
       },
       {
         panelTitle: '10、网络质量信息',
         apiUrl: '/network',
         dataType: 'arr',
+        columnsUnit: {
+          recv: {
+            unitFormat: 'bytes',
+            decimals: 2,
+          },
+          send: {
+            unitFormat: 'bytes',
+            decimals: 2,
+          },
+        },
       },
       {
         panelTitle: '11、集群拓扑结构信息',

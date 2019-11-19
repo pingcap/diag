@@ -3,6 +3,8 @@ import React, { useEffect, useState } from 'react';
 import { Tooltip, Icon } from 'antd';
 import request from '@/utils/request';
 import { formatDatetime } from '@/utils/datetime-util';
+import { IColumnsUnit } from '@/services/report-detail-config';
+import { getValueFormat } from 'value-formats';
 
 interface IResObj {
   [key: string]: any;
@@ -30,6 +32,7 @@ export function useReportItemQuery(
   fullApiUrl: string,
   dataType: 'obj' | 'arr',
   lessMoreColumns: string[],
+  columnsUnit: IColumnsUnit,
 ): [IConclusion[], any[], any[], boolean] {
   const [conclusion, setConclusion] = useState<IConclusion[]>([]);
   const [tableColumns, setTableColumns] = useState<any[]>([]);
@@ -45,6 +48,23 @@ export function useReportItemQuery(
         configCellEl.classList.remove('show_detail');
       }
     }
+  }
+
+  function formatValueWithUnit(columnKey: string, value: any) {
+    const unitConfig = columnsUnit[columnKey];
+    if (unitConfig === undefined) {
+      return value;
+    }
+
+    const formatFunc = getValueFormat(unitConfig.unitFormat);
+    if (formatFunc === undefined) {
+      return value;
+    }
+
+    if (unitConfig.decimals !== undefined) {
+      return formatFunc(value, unitConfig.decimals, null);
+    }
+    return formatFunc(value, 2, null);
   }
 
   function parseResAsArr(res: IResConclusionWithData) {
@@ -63,7 +83,7 @@ export function useReportItemQuery(
           return (
             <div style={{ display: 'flex' }}>
               <span style={{ color: 'red', marginRight: '8px', whiteSpace: 'pre-wrap' }}>
-                {(text as IAbnormalValue).value}
+                {formatValueWithUnit(key, (text as IAbnormalValue).value)}
               </span>
               {(text as IAbnormalValue).message && (
                 <Tooltip title={(text as IAbnormalValue).message}>
@@ -74,7 +94,9 @@ export function useReportItemQuery(
           );
         }
         if (text.status === 'warning' || text.status === 'info') {
-          return <span style={{ whiteSpace: 'pre-wrap' }}>{text.value}</span>;
+          return (
+            <span style={{ whiteSpace: 'pre-wrap' }}>{formatValueWithUnit(key, text.value)}</span>
+          );
         }
         // convert the server time format to local time
         if (key === 'time' || key.endsWith('_time')) {
@@ -96,7 +118,7 @@ export function useReportItemQuery(
             </div>
           );
         }
-        return <span style={{ whiteSpace: 'pre-wrap' }}>{text}</span>;
+        return <span style={{ whiteSpace: 'pre-wrap' }}>{formatValueWithUnit(key, text)}</span>;
       },
     }));
     const dataArr = (res as IResConclusionWithData).data.map((item, index) => ({

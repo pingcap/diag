@@ -19,6 +19,7 @@ function AutoPanelTable({ fullApiUrl, panelConfig }: AutoPanelTableProps) {
     fullApiUrl,
     panelConfig.dataType,
     panelConfig.lessMoreColumns || [],
+    panelConfig.columnsUnit || {},
   );
 
   function handleCollapseChange(expandKeys: string[] | string) {
