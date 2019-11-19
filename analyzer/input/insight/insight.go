@@ -58,6 +58,7 @@ type InsightInfo struct {
 			Speed int `json:"speed"`
 		} `json:"network"`
 	} `json:"sysinfo"`
+
 	Ntp struct {
 		// Tpical value is "sync_ntp"
 		Sync string `json:"sync"`
@@ -66,6 +67,7 @@ type InsightInfo struct {
 		// Status code of ntp
 		Status string `json:"status"`
 	} `json:"ntp"`
+
 	Partitions []struct {
 		// eg. sda
 		Name   string `json:"name"`
@@ -74,4 +76,20 @@ type InsightInfo struct {
 			Name string `json:"name"`
 		} `json:"subdev"`
 	} `json:"partitions"`
+
+	BlockInfo struct {
+		Disks struct {
+			Name string `json:"name"`
+			// can be "unknown", "hdd", "ssd", etc
+			DriveType string `json:"drive_type"`
+			// can be "scsi", "nvme", etc
+			StorageController string `json:"storage_controller"`
+
+			Partitions []struct {
+				// eg. sda
+				Name       string `json:"name"`
+				MountPoint string `json:"mount_point"`
+			} `json:"partitions"`
+		} `json:"disks"`
+	} `json:"block_info"`
 }
