@@ -47,7 +47,7 @@ type Metrics struct {
 	Partitions []BlockDev      `json:"partitions,omitempty"`
 	ProcStats  []ProcessStat   `json:"proc_stats,omitempty"`
 
-	BlockInfo *ghw.BlockInfo `json:"block_info"`
+	BlockInfo  ghw.BlockInfo `json:"block_info"`
 }
 
 type options struct {
@@ -91,7 +91,10 @@ func (metric *Metrics) getMetrics(opts options) {
 		metric.SysInfo.GetSysInfo()
 		metric.NTP.getNTPInfo()
 		metric.Partitions = GetPartitionStats()
-		metric.BlockInfo, _ = ghw.Block()
+		info, err := ghw.Block()
+		if err == nil {
+			metric.BlockInfo = *info
+		}
 	}
 }
 

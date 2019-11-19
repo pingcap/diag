@@ -23,6 +23,7 @@ func Bootstrap(inspectionId, home string) *bootstrapTask {
 	return &bootstrapTask{inspectionId, home, db}
 }
 
+// `Run()` in `bootstrapTask` create config of current collected files' pathes and db model.
 func (t *bootstrapTask) Run() (*Config, *Model) {
 	return NewConfig(t.inspectionId, t.home), NewModel(t.inspectionId, model.New(t.db))
 }

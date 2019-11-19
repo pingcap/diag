@@ -8,6 +8,7 @@ import (
 
 // The task is an abstraction of analyze task
 // It must work with TaskManager
+// TODO: Later we may use a mutex here to make tasks run concurrency.
 type task struct {
 	// The id identity the path and name of the task: {pkg_path}#{type_name}
 	id string
@@ -18,12 +19,12 @@ type task struct {
 	// the resolve store the resolve mode of this task
 	resolve ResolveMode
 
-	// The inputs stored the types of input list of the Run method
+	// The inputs stored the types of input list of the Run method.
 	// The format of each inputs element is {pkg_path}#{type_name}
 	// eg. github.com/pingcap/tidb-foresight/analyzer/boot#DB
 	inputs []string
 
-	// The outputs stored the types of output list of the Run method
+	// The outputs stored the types of output list of the Run method.
 	// The format of each inputs element is {pkg_path}#{type_name}
 	// eg. github.com/pingcap/tidb-foresight/analyzer/boot#DB
 	outputs []string

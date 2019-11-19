@@ -1,0 +1,30 @@
+{
+  "name": "disk0",
+  "size_bytes": 500107862016,
+  "physical_block_size_bytes": 512,
+  "drive_type": "ssd",
+  "storage_controller": "nvme",
+  "bus_path": "/PCI0@0/PEG0@1/SSD0@0/IONVMeController",
+  "vendor": "Generic",
+  "model": "WDC WDS500G1B0C-00S6U0",
+  "serial_number": "191378801401",
+  "wwn": "",
+  "partitions": [
+    {
+      "name": "disk0s1",
+      "label": "EFI",
+      "mount_point": "",
+      "size_bytes": 209715200,
+      "type": "EFI",
+      "read_only": true
+    },
+    {
+      "name": "disk0s2",
+      "label": "",
+      "mount_point": "",
+      "size_bytes": 499898105856,
+      "type": "Apple_APFS",
+      "read_only": true
+    }
+  ]
+}

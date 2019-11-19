@@ -1,6 +1,7 @@
 package manager
 
 import (
+	"github.com/prometheus/common/log"
 	"reflect"
 )
 
@@ -41,7 +42,10 @@ func (tm *TaskManager) Run() {
 
 func (tm *TaskManager) value(output string) reflect.Value {
 	for _, t := range tm.tasks {
+		// traverse all already output data.
 		for idx, o := range t.outputs {
+			// TODO: this message is used to debugging, you can remove it later.
+			log.Info("idx is: %v, o is %v", idx, o)
 			if o == output {
 				return tm.outputs(t)[idx]
 			}
@@ -57,7 +61,7 @@ func (tm *TaskManager) outputs(t *task) []reflect.Value {
 	for i := 0; i < len(args); i++ {
 		args[i] = tm.value(t.inputs[i])
 	}
-
+	// checking arguments if using strict mode.
 	if t.mode() == Strict {
 		for _, arg := range args {
 			if !arg.IsValid() || arg.IsNil() {

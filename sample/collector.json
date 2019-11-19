@@ -1,8 +1,8 @@
 {
   "meta": {
-    "timestamp": "2019-11-13T21:10:04.366241521-05:00",
-    "uptime": 8083504.53,
-    "idle_time": 52661890.37,
+    "timestamp": "2019-11-18T22:46:04.280113909-05:00",
+    "uptime": 8521264.45,
+    "idle_time": 53071242.6,
     "sysinfo_ver": "0.9.1",
     "git_branch": "Not Provided",
     "git_commit": "Not Provided",
@@ -19,7 +19,7 @@
     ],
     "tikv": [
       {
-        "pid": 21922,
+        "pid": 25400,
         "release_version": "4.0.0-alpha",
         "git_commit": "31f3ee31fd82e291e3ce842ca231ba103e9a5e89",
         "git_branch": "master",
@@ -146,8 +146,8 @@
     "version": "ntpd 4.2.6p5@1.2349-o Fri Apr 13 12:52:27 UTC 2018 (1)",
     "sync": "clock_sync",
     "stratum": 3,
-    "offset": -0.401,
-    "jitter": 5.907,
+    "offset": 3.589,
+    "jitter": 1.515,
     "status": "0615"
   },
   "partitions": [
