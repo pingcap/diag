@@ -39,6 +39,7 @@ func (t *saveHardwareInfoTask) Run(m *boot.Model, c *boot.Config, insight *insig
 					if filled {
 						break
 					}
+					log.Info("%s-%s", partitions.Name, disk.Name)
 					if partitions.Name == disk.Name {
 						disks = append(disks, fmt.Sprintf("Disk type: %s, disk_controller: %s, %s(%s)",
 							harddisks.DriveType, harddisks.StorageController, disk.Name, disk.Driver))
