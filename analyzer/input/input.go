@@ -1,3 +1,8 @@
+/**
+ * Package will used by `analyzer/manager`, it parse the input files or arguments from file system
+ * or analyzer/boot.
+ * Then it runs
+ */
 package input
 
 import (

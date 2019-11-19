@@ -1,7 +1,6 @@
 package manager
 
 import (
-	"github.com/prometheus/common/log"
 	"reflect"
 )
 
@@ -44,8 +43,6 @@ func (tm *TaskManager) value(output string) reflect.Value {
 	for _, t := range tm.tasks {
 		// traverse all already output data.
 		for idx, o := range t.outputs {
-			// TODO: this message is used to debugging, you can remove it later.
-			log.Info("idx is: %v, o is %v", idx, o)
 			if o == output {
 				return tm.outputs(t)[idx]
 			}
