@@ -54,13 +54,15 @@ func (t *saveNetworkTask) Run(m *boot.Model, c *boot.Config, metric *metric.Metr
 			query := fmt.Sprintf(`probe_duration_seconds{ping="%s", inspectionid="%s"}`, host, c.InspectionId)
 			durationSeconds, err := metric.QueryRange(query, args.ScrapeBegin, args.ScrapeEnd)
 			if err != nil {
-				log.Error(fmt.Sprintf("saveNetworkTask.Run query %v, startTime %v, endtime %v, got error %v",
-					query, args.ScrapeBegin, args.ScrapeEnd, err))
-				return
+				log.Errorf("saveNetworkTask.Run query %v, startTime %v, endtime %v, got error %v",
+					query, args.ScrapeBegin, args.ScrapeEnd, err)
+			} else {
+
+				maxDuration = durationSeconds.Max()
+				minDuration = durationSeconds.Min()
+				avgDuration = durationSeconds.Avg()
+				log.Infof("saveNetworkTask.Run run query %v and get durations(%v, %v, %v)", query, maxDuration, minDuration, avgDuration)
 			}
-			maxDuration = durationSeconds.Max()
-			minDuration = durationSeconds.Min()
-			avgDuration = durationSeconds.Avg()
 		}
 
 		if err := m.InsertInspectionNetworkInfo(&model.NetworkInfo{
