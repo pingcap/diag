@@ -28,8 +28,8 @@ function AutoPanelTable({ fullApiUrl, panelConfig }: AutoPanelTableProps) {
 
   function renderHeader() {
     return (
-      <strong style={{ color: panelConfig.panelTitleColor || (hasAbnormal ? 'red' : 'inherit') }}>
-        {panelConfig.panelTitle} {collapsed && `(${dataSource.length})`}
+      <strong style={{ color: panelConfig.titleColor || (hasAbnormal ? 'red' : 'inherit') }}>
+        {panelConfig.title} {collapsed && `(${dataSource.length})`}
       </strong>
     );
   }

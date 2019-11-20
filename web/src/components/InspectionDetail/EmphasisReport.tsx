@@ -75,7 +75,7 @@ function EmphasisReport({ emphasis }: EmphasisReportProps) {
   function renderNormalSections(config: ReportDetailConfig) {
     return config.map(section => (
       <div key={section.sectionKey}>
-        <h2>{section.sectionTitle}</h2>
+        <h2>{section.title}</h2>
         {section.panels.map(panel => (
           <AutoPanelTable
             key={panel.apiUrl}
