@@ -68,7 +68,7 @@ func New(db db.DB) Model {
 		&Symptom{},
 	)
 	// TODO: adding AutoMigrate
-
+	db.Debug().AutoMigrate(&NetworkInfo{})
 	return &report{db}
 }
 

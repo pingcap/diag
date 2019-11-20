@@ -12,6 +12,5 @@ func MustInitSchema(db db.DB, schemas ...interface{}) {
 				log.Panic("init schema:", err)
 			}
 		}
-		db.Debug().AutoMigrate(schemas)
 	}
 }
