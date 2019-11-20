@@ -67,6 +67,8 @@ func New(db db.DB) Model {
 		&TopologyInfo{},
 		&Symptom{},
 	)
+	// TODO: deciding where we should better placing the `AutoMigrate`.
+	db.Debug().AutoMigrate(&SoftwareInfo{})
 	return &report{db}
 }
 
