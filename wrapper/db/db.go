@@ -136,7 +136,7 @@ func (db *wrapedDB) Error() error {
 }
 
 func (db *wrapedDB) AutoMigrate(values ...interface{}) DB {
-	return wrap(db.DB.AutoMigrate(values))
+	return wrap(db.DB.AutoMigrate(values...))
 }
 
 // If the error is a not found error.
