@@ -1,5 +1,9 @@
 package report
 
+import (
+	tf "github.com/pingcap/tidb-foresight/utils/tagd-value/float64"
+)
+
 type NetworkInfo struct {
 	InspectionId string `json:"-"`
 	NodeIp       string `json:"node_ip"`
@@ -10,9 +14,9 @@ type NetworkInfo struct {
 	Retrans      int64  `json:"retrans"`
 
 	// max duration seconds.
-	MaxDuration float64 `json:"max_duration"`
-	MinDuration float64 `json:"min_duration"`
-	AvgDuration float64 `json:"avg_duration"`
+	MaxDuration tf.Float64 `json:"max_duration"`
+	MinDuration tf.Float64 `json:"min_duration"`
+	AvgDuration tf.Float64 `json:"avg_duration"`
 }
 
 func (m *report) GetInspectionNetworkInfo(inspectionId string) ([]*NetworkInfo, error) {

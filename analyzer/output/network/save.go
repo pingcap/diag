@@ -12,6 +12,7 @@ import (
 	"github.com/pingcap/tidb-foresight/analyzer/input/args"
 	"github.com/pingcap/tidb-foresight/analyzer/output/metric"
 	"github.com/pingcap/tidb-foresight/model"
+	tf "github.com/pingcap/tidb-foresight/utils/tagd-value/float64"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -73,9 +74,9 @@ func (t *saveNetworkTask) Run(m *boot.Model, c *boot.Config, metric *metric.Metr
 			BadSeg:       ns.bad_seg,
 			Retrans:      ns.retrans,
 
-			MaxDuration: maxDuration,
-			MinDuration: minDuration,
-			AvgDuration: avgDuration,
+			MaxDuration: tf.New(maxDuration, nil),
+			MinDuration: tf.New(minDuration, nil),
+			AvgDuration: tf.New(avgDuration, nil),
 		}); err != nil {
 			log.Error("insert network info:", err)
 			return
