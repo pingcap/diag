@@ -1,7 +1,7 @@
 import React from 'react';
 import moment from 'moment';
 import _ from 'lodash';
-import AutoTable from './AutoTable';
+import AutoPanelTable from './AutoPanelTable';
 import { IPromParams } from '@/services/prometheus-query';
 import CollpasePanel from './CollapsePanel';
 import PrometheusChart from './PrometheusChart';
@@ -13,12 +13,17 @@ import {
   EMPHASIS_DB_PERFORMANCE_PANELS,
 } from '@/services/prometheus-config-panels';
 import { IEmphasisDetail } from '@/models/emphasis';
+import { ReportDetailConfig, EMPHASIS_DETAILS } from '@/services/report-detail-config';
 
 interface EmphasisReportProps {
   emphasis: IEmphasisDetail;
 }
 
 const CHART_SAMPLE_COUNT = 15;
+
+function genItemApiUrl(emphasisId: string, itemType: string) {
+  return `/emphasis/${emphasisId}${itemType}`;
+}
 
 // TODO: 提取重复代码
 function EmphasisReport({ emphasis }: EmphasisReportProps) {
@@ -67,10 +72,24 @@ function EmphasisReport({ emphasis }: EmphasisReportProps) {
     return panelKeys.map(renderPanel);
   }
 
+  function renderNormalSections(config: ReportDetailConfig) {
+    return config.map(section => (
+      <div key={section.sectionKey}>
+        <h2>{section.sectionTitle}</h2>
+        {section.panels.map(panel => (
+          <AutoPanelTable
+            key={panel.apiUrl}
+            fullApiUrl={genItemApiUrl(emphasis.uuid, panel.apiUrl)}
+            panelConfig={panel}
+          />
+        ))}
+      </div>
+    ));
+  }
+
   return (
     <div style={{ marginTop: 20 }}>
-      <h2>一、问题定位</h2>
-      <AutoTable title="overview" apiUrl={`/emphasis/${emphasis.uuid}/symptom`} />
+      {renderNormalSections(EMPHASIS_DETAILS)}
 
       <h2>二、问题排查监控信息</h2>
       {renderPanels(EMPHASIS_DB_PERFORMANCE_PANELS)}

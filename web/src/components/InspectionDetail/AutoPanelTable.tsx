@@ -2,20 +2,25 @@ import React, { useState } from 'react';
 import { Table, Collapse } from 'antd';
 import _ from 'lodash';
 import { useReportItemQuery } from './use-report-item-query';
+import { IReportDetailConfigPanel } from '@/services/report-detail-config';
 
 const styles = require('./inspection-detail-style.less');
 
-interface AutoTableProps {
-  title?: string;
-  expand?: boolean;
+interface AutoPanelTableProps {
+  fullApiUrl: string;
 
-  apiUrl: string;
+  panelConfig: IReportDetailConfigPanel;
 }
 
-function AutoTable({ title, expand = true, apiUrl }: AutoTableProps) {
-  const [collapsed, setCollapsed] = useState(!expand);
+function AutoPanelTable({ fullApiUrl, panelConfig }: AutoPanelTableProps) {
+  const [collapsed, setCollapsed] = useState(panelConfig.collapse || false);
 
-  const [conclusion, tableColumns, dataSource, hasAbnormal] = useReportItemQuery(apiUrl);
+  const [conclusion, tableColumns, dataSource, hasAbnormal] = useReportItemQuery(
+    fullApiUrl,
+    panelConfig.dataType,
+    panelConfig.lessMoreColumns || [],
+    panelConfig.columnsUnit || {},
+  );
 
   function handleCollapseChange(expandKeys: string[] | string) {
     setCollapsed(expandKeys.length === 0);
@@ -23,8 +28,8 @@ function AutoTable({ title, expand = true, apiUrl }: AutoTableProps) {
 
   function renderHeader() {
     return (
-      <strong style={{ color: hasAbnormal || title === 'overview' ? 'red' : 'inherit' }}>
-        {title} {collapsed && `(${dataSource.length})`}
+      <strong style={{ color: panelConfig.panelTitleColor || (hasAbnormal ? 'red' : 'inherit') }}>
+        {panelConfig.panelTitle} {collapsed && `(${dataSource.length})`}
       </strong>
     );
   }
@@ -59,9 +64,7 @@ function AutoTable({ title, expand = true, apiUrl }: AutoTableProps) {
                   dataSource={dataSource}
                   columns={tableColumns}
                   pagination={false}
-                  scroll={
-                    _.endsWith(apiUrl, '/dmesg') || _.endsWith(apiUrl, '/dbinfo') ? { y: 600 } : {}
-                  }
+                  scroll={panelConfig.limitHeight ? { y: panelConfig.height || 400 } : {}}
                 />
               </React.Fragment>
             ))}
@@ -71,4 +74,4 @@ function AutoTable({ title, expand = true, apiUrl }: AutoTableProps) {
   );
 }
 
-export default AutoTable;
+export default AutoPanelTable;

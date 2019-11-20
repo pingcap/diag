@@ -2,12 +2,13 @@ import React from 'react';
 import moment from 'moment';
 import _ from 'lodash';
 import { IInspectionDetail } from '@/models/inspection';
-import AutoTable from './AutoTable';
+import AutoPanelTable from './AutoPanelTable';
 import { IPromParams } from '@/services/prometheus-query';
 import CollpasePanel from './CollapsePanel';
 import PrometheusChart from './PrometheusChart';
 import PrometheusTable from './PrometheusTable';
 import { IPromQuery, PROM_CHARTS } from '@/services/prometheus-config-charts';
+import { INSPECTION_DETAILS, ReportDetailConfig } from '@/services/report-detail-config';
 import {
   IPanel,
   ALL_PANELS,
@@ -25,7 +26,7 @@ interface InspectionReportProps {
 const CHART_SAMPLE_COUNT = 15;
 
 function genItemApiUrl(inspectionId: string, itemType: string) {
-  return `/inspections/${inspectionId}/${itemType}`;
+  return `/inspections/${inspectionId}${itemType}`;
 }
 
 function InspectionReport({ inspection }: InspectionReportProps) {
@@ -61,7 +62,7 @@ function InspectionReport({ inspection }: InspectionReportProps) {
     );
   }
 
-  function renderPanel(panelKey: string) {
+  function renderPromPanel(panelKey: string) {
     const panel: IPanel = ALL_PANELS[panelKey];
     return (
       <CollpasePanel title={panel.title} expand={panel.expand || false} key={panelKey}>
@@ -70,50 +71,31 @@ function InspectionReport({ inspection }: InspectionReportProps) {
     );
   }
 
-  function renderPanels(panelKeys: string[]) {
-    return panelKeys.map(renderPanel);
+  function renderPromPanels(panelKeys: string[]) {
+    return panelKeys.map(renderPromPanel);
+  }
+
+  function renderNormalSections(config: ReportDetailConfig) {
+    return config.map(section => (
+      <div key={section.sectionKey}>
+        <h2>{section.sectionTitle}</h2>
+        {section.panels.map(panel => (
+          <AutoPanelTable
+            key={panel.apiUrl}
+            fullApiUrl={genItemApiUrl(inspection.uuid, panel.apiUrl)}
+            panelConfig={panel}
+          />
+        ))}
+      </div>
+    ));
   }
 
   return (
     <div style={{ marginTop: 20 }}>
-      <h2>一、全局诊断</h2>
-      <AutoTable title="overview" apiUrl={`/inspections/${inspection.uuid}/symptom`} />
-
-      <h2>二、基本信息</h2>
-      <AutoTable title="1、基本信息" apiUrl={`/inspections/${inspection.uuid}/basic`} />
-      <AutoTable
-        title="2、数据库基本信息"
-        apiUrl={genItemApiUrl(inspection.uuid, 'dbinfo')}
-        expand={false}
-      />
-      <AutoTable
-        title="3、资源信息 (使用率%)"
-        apiUrl={genItemApiUrl(inspection.uuid, 'resource')}
-      />
-      <AutoTable title="4、告警信息" apiUrl={genItemApiUrl(inspection.uuid, 'alert')} />
-      <AutoTable title="5、慢查询信息" apiUrl={genItemApiUrl(inspection.uuid, 'slowlog')} />
-      <AutoTable title="6、硬件信息" apiUrl={genItemApiUrl(inspection.uuid, 'hardware')} />
-      <AutoTable title="7、软件信息" apiUrl={genItemApiUrl(inspection.uuid, 'software')} />
-      <AutoTable title="8、软件配置信息" apiUrl={genItemApiUrl(inspection.uuid, 'config')} />
-      <AutoTable title="9、机器 NTP 时间同步信息" apiUrl={genItemApiUrl(inspection.uuid, 'ntp')} />
-      <AutoTable title="10、网络质量信息" apiUrl={genItemApiUrl(inspection.uuid, 'network')} />
-      <AutoTable title="11、集群拓扑结构信息" apiUrl={genItemApiUrl(inspection.uuid, 'topology')} />
-      <AutoTable
-        title="12、dmesg 信息"
-        apiUrl={genItemApiUrl(inspection.uuid, 'dmesg')}
-        expand={false}
-      />
+      {renderNormalSections(INSPECTION_DETAILS)}
 
       <h2>三、监控信息</h2>
-      {/* <h3>1、全局监控</h3>
-      {renderPanels(GLOBAL_PANNELS)}
-      <h3>2、PD</h3>
-      {renderPanels(PD_PANELS)}
-      <h3>3、TiDB</h3>
-      {renderPanels(TIDB_PANELS)}
-      <h3>4、TiKV</h3>
-      {renderPanels(TIKV_PANELS)} */}
-      {renderPanels(DBA_PANELS)}
+      {renderPromPanels(DBA_PANELS)}
     </div>
   );
 }
