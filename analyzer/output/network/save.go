@@ -50,6 +50,16 @@ func (t *saveNetworkTask) Run(m *boot.Model, c *boot.Config, metric *metric.Metr
 			return
 		}
 
+		{
+			query := fmt.Sprintf("probe_duration_seconds{ping=%s}", host)
+			durationSeconds, err := metric.QueryRange(query, args.ScrapeBegin, args.ScrapeEnd)
+			if err != nil {
+				log.Error("saveNetworkTask.Run query ")
+			}
+			// TODO: this task may cannot query, please fix the query later.
+			log.Info(durationSeconds)
+		}
+
 		if err := m.InsertInspectionNetworkInfo(&model.NetworkInfo{
 			InspectionId: c.InspectionId,
 			NodeIp:       host,
@@ -63,13 +73,6 @@ func (t *saveNetworkTask) Run(m *boot.Model, c *boot.Config, metric *metric.Metr
 			return
 		}
 	}
-
-	durationSeconds, err := metric.QueryRange("probe_duration_seconds", args.ScrapeBegin, args.ScrapeEnd)
-	if err != nil {
-		log.Error("saveNetworkTask.Run query")
-	}
-	// TODO: this task may cannot query, please fix the query later.
-	log.Info(durationSeconds)
 
 	return
 }
