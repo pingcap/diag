@@ -7,17 +7,14 @@ import { IPromParams } from '@/services/prometheus-query';
 import CollpasePanel from './CollapsePanel';
 import PrometheusChart from './PrometheusChart';
 import PrometheusTable from './PrometheusTable';
-import { IPromQuery, PROM_CHARTS } from '@/services/prometheus-config-charts';
+import { IPromQuery } from '@/services/prometheus-config-charts';
 import { INSPECTION_DETAILS, ReportDetailConfig } from '@/services/report-detail-config';
 import {
-  IPanel,
-  ALL_PANELS,
-  // TIKV_PANELS,
-  // TIDB_PANELS,
-  // PD_PANELS,
-  // GLOBAL_PANNELS,
-  DBA_PANELS,
-} from '@/services/prometheus-config-panels';
+  IPromConfigSection,
+  INSPECTION_PROM_DETAIL,
+  IPromConfigSubPanel,
+} from '@/services/promtheus-panel-config';
+import { getValueFormat } from 'value-formats';
 
 interface InspectionReportProps {
   inspection: IInspectionDetail;
@@ -29,50 +26,44 @@ function genItemApiUrl(inspectionId: string, itemType: string) {
   return `/inspections/${inspectionId}${itemType}`;
 }
 
+_.templateSettings.interpolate = /{{([\s\S]+?)}}/g;
+
 function InspectionReport({ inspection }: InspectionReportProps) {
   const start = moment(inspection.scrape_begin).unix();
   const end = moment(inspection.scrape_end).unix();
   const step = Math.floor((end - start) / CHART_SAMPLE_COUNT);
   const promParams: IPromParams = { start, end, step };
 
-  function renderPromethuesChart(chartKey: string) {
-    const promChart = PROM_CHARTS[chartKey];
-    const promQueries: IPromQuery[] = promChart.queries.map(promQuery => ({
-      ...promQuery,
-      promQL: _.template(promQuery.promQLTemplate)({ inspectionId: inspection.uuid }),
+  function renderPromChart(subPanel: IPromConfigSubPanel) {
+    const promQueries: IPromQuery[] = subPanel.targets.map(target => ({
+      promQL: _.template(target.expr)({ inspectionId: inspection.uuid }),
+      labelTemplate: target.legendFormat,
     }));
-    if (promChart.chartType === 'table') {
-      return (
-        <PrometheusTable
-          key={chartKey}
-          title={promChart.title}
-          tableColumns={promChart.tableColumns || ['', '']}
-          promQueries={promQueries}
-          promParams={promParams}
-        />
-      );
-    }
+
+    // TODO: extract
+    const formatFunc = getValueFormat(subPanel.yaxis.format);
+    const valConverter = (val: number) => formatFunc(val, subPanel.yaxis.decimals || 2);
+
+    // if (promChart.chartType === 'table') {
+    //   return (
+    //     <PrometheusTable
+    //       key={chartKey}
+    //       title={promChart.title}
+    //       tableColumns={promChart.tableColumns || ['', '']}
+    //       promQueries={promQueries}
+    //       promParams={promParams}
+    //     />
+    //   );
+    // }
     return (
       <PrometheusChart
-        key={chartKey}
-        title={promChart.title}
+        key={subPanel.subPanelKey}
+        title={subPanel.title}
         promQueries={promQueries}
         promParams={promParams}
+        valConverter={valConverter}
       />
     );
-  }
-
-  function renderPromPanel(panelKey: string) {
-    const panel: IPanel = ALL_PANELS[panelKey];
-    return (
-      <CollpasePanel title={panel.title} expand={panel.expand || false} key={panelKey}>
-        {panel.charts.map(renderPromethuesChart)}
-      </CollpasePanel>
-    );
-  }
-
-  function renderPromPanels(panelKeys: string[]) {
-    return panelKeys.map(renderPromPanel);
   }
 
   // TODO: extract to individual component
@@ -91,12 +82,23 @@ function InspectionReport({ inspection }: InspectionReportProps) {
     ));
   }
 
+  function renderPromSections(config: IPromConfigSection) {
+    return (
+      <div>
+        <h2>{config.title}</h2>
+        {config.panels.map(panel => (
+          <CollpasePanel title={panel.title} key={panel.panelKey} expand={panel.expand || false}>
+            {panel.subPanels.map(renderPromChart)}
+          </CollpasePanel>
+        ))}
+      </div>
+    );
+  }
+
   return (
     <div style={{ marginTop: 20 }}>
       {renderNormalSections(INSPECTION_DETAILS)}
-
-      <h2>三、监控信息</h2>
-      {/* {renderPromPanels(DBA_PANELS)} */}
+      {renderPromSections(INSPECTION_PROM_DETAIL)}
     </div>
   );
 }
