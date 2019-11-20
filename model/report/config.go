@@ -7,7 +7,8 @@ type ConfigInfo struct {
 	Component    string `json:"component"`
 	Config       string `json:"config"`
 	// TODO: filling the open file limit here.
-	OpenFileLimit int `json:"open_file_limit"`
+	OpenFileLimit   int `json:"open_file_limit"`
+	OpenFileCurrent int `json:"open_file_current"`
 }
 
 func (m *report) GetInspectionConfigInfo(inspectionId string) ([]*ConfigInfo, error) {

@@ -38,6 +38,8 @@ func (t *saveSoftwareConfigTask) Run(m *boot.Model, c *boot.Config) {
 			Port:         strconv.Itoa(cfg.port),
 			Component:    cfg.component,
 			Config:       cfg.config,
+			OpenFileCurrent: 0,
+			OpenFileLimit: 0,
 		}); err != nil {
 			log.Error("insert component config:", err)
 			return
