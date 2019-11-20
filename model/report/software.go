@@ -9,6 +9,11 @@ type SoftwareInfo struct {
 	NodeIp       string    `json:"node_ip"`
 	Component    string    `json:"component"`
 	Version      ts.String `json:"version"`
+
+	// TODO: please fill them in this pr.
+	OS           string `json:"os"`
+	FileSystem   string `json:"file_system"`
+	NetworkDrive string `json:"network_drive"`
 }
 
 func (m *report) GetInspectionSoftwareInfo(inspectionId string) ([]*SoftwareInfo, error) {
