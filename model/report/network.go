@@ -8,6 +8,11 @@ type NetworkInfo struct {
 	Send         int64  `json:"send"`
 	BadSeg       int64  `json:"bad_seg"`
 	Retrans      int64  `json:"retrans"`
+
+	// max duration seconds.
+	MaxDuration float64 `json:"max_duration"`
+	MinDuration float64 `json:"min_duration"`
+	AvgDuration float64 `json:"avg_duration"`
 }
 
 func (m *report) GetInspectionNetworkInfo(inspectionId string) ([]*NetworkInfo, error) {
