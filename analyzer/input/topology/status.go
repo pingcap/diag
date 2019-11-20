@@ -35,6 +35,7 @@ func (t *parseStatusTask) online(m *metric.Metric, inspectionId, component, ip, 
 		return true
 	}
 
+	// Using prometheus to query if the service is online.
 	v, err := m.Query(
 		fmt.Sprintf(
 			`count(probe_success{group="%s", inspectionid="%s", instance="%s:%s"} == 1)`,

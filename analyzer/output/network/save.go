@@ -9,6 +9,8 @@ import (
 	"strconv"
 
 	"github.com/pingcap/tidb-foresight/analyzer/boot"
+	"github.com/pingcap/tidb-foresight/analyzer/input/args"
+	"github.com/pingcap/tidb-foresight/analyzer/output/metric"
 	"github.com/pingcap/tidb-foresight/model"
 	log "github.com/sirupsen/logrus"
 )
@@ -28,7 +30,7 @@ type netstat struct {
 }
 
 // Parse and save network information from output of netstat -s
-func (t *saveNetworkTask) Run(m *boot.Model, c *boot.Config) {
+func (t *saveNetworkTask) Run(m *boot.Model, c *boot.Config, metric *metric.Metric, args *args.Args) {
 	netDir := path.Join(c.Src, "net")
 	ls, err := ioutil.ReadDir(netDir)
 	if err != nil {
@@ -61,6 +63,13 @@ func (t *saveNetworkTask) Run(m *boot.Model, c *boot.Config) {
 			return
 		}
 	}
+
+	durationSeconds, err := metric.QueryRange("probe_duration_seconds", args.ScrapeBegin, args.ScrapeEnd)
+	if err != nil {
+		log.Error("saveNetworkTask.Run query")
+	}
+	// TODO: this task may cannot query, please fix the query later.
+	log.Info(durationSeconds)
 
 	return
 }

@@ -17,12 +17,12 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"github.com/jaypipes/ghw"
 	"log"
 	"runtime"
 	"strings"
 	"time"
 
+	"github.com/jaypipes/ghw"
 	"github.com/pingcap/tidb-foresight/cmd/insight/sysinfo"
 )
 
@@ -56,7 +56,7 @@ type options struct {
 }
 
 func parseOpts() options {
-	optPort := flag.String("port", "", "The port of process to collect info. Multiple ports can be seperatted by ','.")
+	optPort := flag.String("port", "", "The port of process to collect info. Multiple ports can be separated by ','.")
 	optProc := flag.Bool("proc", false, "Only collect process info, disabled (Collect everything except process info) by default.")
 	flag.Parse()
 

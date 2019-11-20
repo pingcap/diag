@@ -11,6 +11,10 @@ type Resource struct {
 	AvgDisk   float64
 	MaxDisk   float64
 
+	// max ping duration.
 	MaxDuration float64
+	// minimum ping duration.
 	MinDuration float64
+	// average ping duration.
+	AvgDuration float64
 }

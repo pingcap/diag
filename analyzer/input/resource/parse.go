@@ -75,6 +75,19 @@ func (t *parseResourceTask) Run(args *args.Args, c *boot.Config, m *metric.Metri
 	resource.AvgDisk = disk.Avg()
 	resource.MaxDisk = disk.Max()
 
+	//// todo: filling the query of here
+	//scrape := t.resourceUtil(
+	//	m, args.ScrapeBegin, args.ScrapeBegin,
+	//	fmt.Sprintf(`probe_duration_seconds{inspectionid="%s"}`, c.InspectionId),
+	//	fmt.Sprintf(`%s, %s`, c.InspectionId, c.InspectionId),
+	//)
+	//
+	//resource.AvgDuration = scrape.Avg()
+	//resource.MaxDuration = scrape.Max()
+	//resource.MinDuration = scrape.Min()
+	//
+	//// println data for resource and scrape.
+	//log.Info("Collected resource %v, scrape %v", resource, scrape)
 	return &resource
 }
 
