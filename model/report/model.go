@@ -67,6 +67,8 @@ func New(db db.DB) Model {
 		&TopologyInfo{},
 		&Symptom{},
 	)
+	// TODO: adding AutoMigrate
+
 	return &report{db}
 }
 

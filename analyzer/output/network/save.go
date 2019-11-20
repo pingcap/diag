@@ -57,7 +57,6 @@ func (t *saveNetworkTask) Run(m *boot.Model, c *boot.Config, metric *metric.Metr
 				log.Errorf("saveNetworkTask.Run query %v, startTime %v, endtime %v, got error %v",
 					query, args.ScrapeBegin, args.ScrapeEnd, err)
 			} else {
-
 				maxDuration = durationSeconds.Max()
 				minDuration = durationSeconds.Min()
 				avgDuration = durationSeconds.Avg()
