@@ -1,7 +1,7 @@
 import _ from 'lodash';
 import {
   bytesSizeFormatter,
-  NumberConverer,
+  NumberConverter,
   toPercentUnit,
   toFixed,
   networkBitSizeFormatter,
@@ -29,13 +29,12 @@ export interface IPromQueryTemplate {
   version?: 'all' | 'v_2_x' | 'v_3_x'; // default is 'all'
   promQLTemplate: string;
   labelTemplate: string;
-  valConverter?: NumberConverer;
+  valConverter?: NumberConverter;
 }
 
 export interface IPromQuery {
   promQL: string;
   labelTemplate: string;
-  valConverter?: NumberConverer;
 }
 
 export interface IPromChart {

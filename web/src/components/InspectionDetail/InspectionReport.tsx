@@ -96,7 +96,7 @@ function InspectionReport({ inspection }: InspectionReportProps) {
       {renderNormalSections(INSPECTION_DETAILS)}
 
       <h2>三、监控信息</h2>
-      {renderPromPanels(DBA_PANELS)}
+      {/* {renderPromPanels(DBA_PANELS)} */}
     </div>
   );
 }

@@ -1,10 +1,10 @@
-import React, { useState } from 'react';
-import { Button } from 'antd';
+import React from 'react';
 import SerialLineChart from '../Chart/SerialLineChart';
 import { IPromParams } from '@/services/prometheus-query';
 import { IPromQuery } from '@/services/prometheus-config-charts';
 import { usePromQueries } from './use-prom-queries';
 import PrometheusChartHeader from './PrometheusChartHeader';
+import { NumberConverter } from '@/utils/formatter';
 
 const styles = require('./inspection-detail-style.less');
 
@@ -28,9 +28,10 @@ interface PrometheusChartProps {
 
   promQueries: IPromQuery[];
   promParams: IPromParams;
+  valConverter: NumberConverter;
 }
 
-function PrometheusChart({ title, promQueries, promParams }: PrometheusChartProps) {
+function PrometheusChart({ title, promQueries, promParams, valConverter }: PrometheusChartProps) {
   const [loading, chartLabels, oriChartData] = usePromQueries(promQueries, promParams);
 
   return (
@@ -41,11 +42,7 @@ function PrometheusChart({ title, promQueries, promParams }: PrometheusChartProp
       {!loading && oriChartData.length === 0 && <p style={{ textAlign: 'center' }}>No Data</p>}
       {!loading && oriChartData.length > 0 && (
         <div style={{ height: 200 }}>
-          <SerialLineChart
-            data={oriChartData}
-            labels={chartLabels}
-            valConverter={promQueries[0].valConverter}
-          />
+          <SerialLineChart data={oriChartData} labels={chartLabels} valConverter={valConverter} />
         </div>
       )}
     </div>

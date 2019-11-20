@@ -1,4 +1,4 @@
-export type NumberConverer = (val: number) => string;
+export type NumberConverter = (val: number) => string;
 
 export type DecimalCount = number | null | undefined;
 
@@ -33,9 +33,9 @@ export const toFixed = (value: number, decimals?: DecimalCount): string => {
 
 const toFixedN = (n: number) => (val: number) => toFixed(val, n);
 
-export const toFixed1: NumberConverer = toFixedN(1);
-export const toFixed2: NumberConverer = toFixedN(2);
-export const toFixed4: NumberConverer = toFixedN(4);
+export const toFixed1: NumberConverter = toFixedN(1);
+export const toFixed2: NumberConverter = toFixedN(2);
+export const toFixed4: NumberConverter = toFixedN(4);
 
 export const bytesSizeFormatter = (bytes = 0, si = true, fixed = 0) => {
   const thresh = si ? 1000 : 1024;

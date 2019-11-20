@@ -11,7 +11,7 @@ import {
 } from 'recharts';
 import moment from 'moment';
 import _ from 'lodash';
-import { NumberConverer } from '@/utils/formatter';
+import { NumberConverter } from '@/utils/formatter';
 
 // const styles = require('./Chart.less');
 
@@ -26,7 +26,7 @@ interface ISerailLineChartProps {
   labels: string[];
 
   timeFormat?: string;
-  valConverter?: NumberConverer;
+  valConverter?: NumberConverter;
 }
 
 function convertChartData(oriData: number[][], chartLabels: string[], timeFormat: string) {
