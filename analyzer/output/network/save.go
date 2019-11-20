@@ -54,10 +54,12 @@ func (t *saveNetworkTask) Run(m *boot.Model, c *boot.Config, metric *metric.Metr
 			query := fmt.Sprintf("probe_duration_seconds{ping=%s}", host)
 			durationSeconds, err := metric.QueryRange(query, args.ScrapeBegin, args.ScrapeEnd)
 			if err != nil {
-				log.Error("saveNetworkTask.Run query ")
+				log.Error(fmt.Sprintf("saveNetworkTask.Run query %v, startTime %v, endtime %v, got error %v",
+					query, args.ScrapeBegin, args.ScrapeEnd, err))
+			} else {
+				// TODO: this task may cannot query, please fix the query later.
+				log.Info("Receive duration Seconds", durationSeconds)
 			}
-			// TODO: this task may cannot query, please fix the query later.
-			log.Info(durationSeconds)
 		}
 
 		if err := m.InsertInspectionNetworkInfo(&model.NetworkInfo{
