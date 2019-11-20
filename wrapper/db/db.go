@@ -33,6 +33,7 @@ type DB interface {
 	Model(value interface{}) DB
 	Close() error
 	Debug() DB
+	AutoMigrate(values ...interface{}) DB
 }
 
 // Open sqlite.db and return DB interface instead of a struct
@@ -132,6 +133,10 @@ func (db *wrapedDB) Create(value interface{}) DB {
 
 func (db *wrapedDB) Error() error {
 	return db.DB.Error
+}
+
+func (db *wrapedDB) AutoMigrate(values ...interface{}) DB {
+	return wrap(db.DB.AutoMigrate(values...))
 }
 
 // If the error is a not found error.
