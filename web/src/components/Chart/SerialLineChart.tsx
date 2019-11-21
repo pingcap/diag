@@ -11,22 +11,34 @@ import {
 } from 'recharts';
 import moment from 'moment';
 import _ from 'lodash';
-import { NumberConverter } from '@/utils/formatter';
-
-// const styles = require('./Chart.less');
+import { getValueFormat } from 'value-formats';
+import { IPromConfigYaxis } from '@/services/promtheus-panel-config';
 
 const DEF_COLORS: string[] = '#E79FD5,#B3AD9E,#89DAC1,#17B8BE,#4DC19C,#88572C,#DDB27C,#19CDD7,#FF9833,#79C7E3,#12939A'.split(
   ',',
 );
 
-interface ISerailLineChartProps {
-  style?: object;
+// const dumbData = [
+//   [1540982900657, 23.45678],
+//   [1540982930657, 12.345678],
+//   [1540982960657, 21.123457],
+//   [1540982990657, 33.555555],
+//   [1540983020657, 1.6789769],
+//   [1540983050657, 0],
+//   [1540983080657, 12.3432543],
+//   [1540983110657, 46.4356546],
+//   [1540983140657, 11.546345657],
+//   [1540983170657, 22.111111],
+//   [1540983200657, 11.11111],
+// ];
+// const dumbLables = ['timestamp', 'qps'];
 
+interface ISerailLineChartProps {
   data: number[][];
   labels: string[];
 
   timeFormat?: string;
-  valConverter?: NumberConverter;
+  yaxis: IPromConfigYaxis;
 }
 
 function convertChartData(oriData: number[][], chartLabels: string[], timeFormat: string) {
@@ -71,12 +83,19 @@ function uniqLabels(oriLabels: string[]): string[] {
   return newLabels;
 }
 
-function SerialLineChart({
-  labels,
-  data,
-  timeFormat = 'HH:mm:ss',
-  valConverter,
-}: ISerailLineChartProps) {
+function genNumberConverter(yaxis: IPromConfigYaxis) {
+  const formatFunc = getValueFormat(yaxis.format);
+  const valConverter = (val: number): string => {
+    let { decimals } = yaxis;
+    if (decimals === undefined) {
+      decimals = 2;
+    }
+    return formatFunc(val, decimals);
+  };
+  return valConverter;
+}
+
+function SerialLineChart({ labels, data, timeFormat = 'HH:mm:ss', yaxis }: ISerailLineChartProps) {
   const chartLabels: string[] = useMemo(() => uniqLabels(labels), [labels]);
   const chartData = useMemo(() => convertChartData(data, chartLabels, timeFormat), [
     chartLabels,
@@ -84,6 +103,7 @@ function SerialLineChart({
     timeFormat,
   ]);
   const shuffedColors: string[] = useMemo(() => _.shuffle(DEF_COLORS), []);
+  const valConverter = useMemo(() => genNumberConverter(yaxis), []);
 
   return (
     <ResponsiveContainer width="100%" height="100%">
@@ -96,15 +116,11 @@ function SerialLineChart({
         }}
       >
         <XAxis dataKey={chartLabels[0]} />
-        <YAxis
-          width={80}
-          type="number"
-          tickFormatter={val => (valConverter ? valConverter(val) : val)}
-        />
+        <YAxis width={80} type="number" tickFormatter={valConverter} />
 
         <CartesianGrid strokeDasharray="3 3" />
         <Tooltip
-          formatter={val => (valConverter ? valConverter(val as number) : val)}
+          formatter={val => valConverter(val as number)}
           wrapperStyle={{
             zIndex: 1,
           }}

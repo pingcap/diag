@@ -14,7 +14,6 @@ import {
   INSPECTION_PROM_DETAIL,
   IPromConfigSubPanel,
 } from '@/services/promtheus-panel-config';
-import { getValueFormat } from 'value-formats';
 
 interface InspectionReportProps {
   inspection: IInspectionDetail;
@@ -40,10 +39,6 @@ function InspectionReport({ inspection }: InspectionReportProps) {
       labelTemplate: target.legendFormat,
     }));
 
-    // TODO: extract
-    const formatFunc = getValueFormat(subPanel.yaxis.format);
-    const valConverter = (val: number) => formatFunc(val, subPanel.yaxis.decimals || 2);
-
     // if (promChart.chartType === 'table') {
     //   return (
     //     <PrometheusTable
@@ -61,7 +56,7 @@ function InspectionReport({ inspection }: InspectionReportProps) {
         title={subPanel.title}
         promQueries={promQueries}
         promParams={promParams}
-        valConverter={valConverter}
+        yaxis={subPanel.yaxis}
       />
     );
   }

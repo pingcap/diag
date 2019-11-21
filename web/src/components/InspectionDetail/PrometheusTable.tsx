@@ -5,21 +5,6 @@ import { IPromQuery } from '@/services/prometheus-config-charts';
 import { usePromQueries } from './use-prom-queries';
 import PrometheusChartHeader from './PrometheusChartHeader';
 
-// const dumbData = [
-//   [1540982900657, 23.45678],
-//   [1540982930657, 12.345678],
-//   [1540982960657, 21.123457],
-//   [1540982990657, 33.555555],
-//   [1540983020657, 1.6789769],
-//   [1540983050657, 0],
-//   [1540983080657, 12.3432543],
-//   [1540983110657, 46.4356546],
-//   [1540983140657, 11.546345657],
-//   [1540983170657, 22.111111],
-//   [1540983200657, 11.11111],
-// ];
-// const dumbLables = ['timestamp', 'qps'];
-
 interface PrometheusTableProps {
   title: string;
 

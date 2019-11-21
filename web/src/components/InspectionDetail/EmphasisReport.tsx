@@ -14,7 +14,6 @@ import {
   EMPHASIS_PROM_DETAIL,
   IPromConfigSubPanel,
 } from '@/services/promtheus-panel-config';
-import { getValueFormat } from 'value-formats';
 
 interface EmphasisReportProps {
   emphasis: IEmphasisDetail;
@@ -41,10 +40,6 @@ function EmphasisReport({ emphasis }: EmphasisReportProps) {
       labelTemplate: target.legendFormat,
     }));
 
-    // TODO: extract
-    const formatFunc = getValueFormat(subPanel.yaxis.format);
-    const valConverter = (val: number) => formatFunc(val, subPanel.yaxis.decimals || 2);
-
     // if (promChart.chartType === 'table') {
     //   return (
     //     <PrometheusTable
@@ -62,7 +57,7 @@ function EmphasisReport({ emphasis }: EmphasisReportProps) {
         title={subPanel.title}
         promQueries={promQueries}
         promParams={promParams}
-        valConverter={valConverter}
+        yaxis={subPanel.yaxis}
       />
     );
   }
