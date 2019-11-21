@@ -12,8 +12,8 @@ type metricT struct {
 
 // This is used for other tasks for dependency reason.
 // It's empty because other tasks should query prometheus
-// for result, this is just to make sure this taks is executed
-// before other tasks dependened on it.
+// for result, this is just to make sure this task is executed
+// before other tasks depending on it.
 type Metric struct {
 	prometheus.Prometheus
 }

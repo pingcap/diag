@@ -11,7 +11,7 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-// Check if a specified item is choised to collect by user
+// Check if a specified item is choosed to collect by user
 func (a *Args) Collect(iname string) bool {
 	items := strings.Split(a.Collects, ",")
 	for _, item := range items {

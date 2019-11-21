@@ -23,6 +23,8 @@ func main() {
 		log.Panic("the inspection-id must be specified")
 	}
 
+	log.Infof(`[Analyzer] Run analyzer with arguments -V %v --home %v --inspection-id %v`, printVersion, home, inspectionId)
+
 	analyzer := analyzer.NewAnalyzer(*home, *inspectionId)
 	analyzer.Run()
 }

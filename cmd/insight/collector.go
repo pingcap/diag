@@ -22,6 +22,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/jaypipes/ghw"
 	"github.com/pingcap/tidb-foresight/cmd/insight/sysinfo"
 )
 
@@ -45,6 +46,8 @@ type Metrics struct {
 	NTP        TimeStat        `json:"ntp,omitempty"`
 	Partitions []BlockDev      `json:"partitions,omitempty"`
 	ProcStats  []ProcessStat   `json:"proc_stats,omitempty"`
+
+	BlockInfo  ghw.BlockInfo `json:"block_info"`
 }
 
 type options struct {
@@ -53,7 +56,7 @@ type options struct {
 }
 
 func parseOpts() options {
-	optPort := flag.String("port", "", "The port of process to collect info. Multiple ports can be seperatted by ','.")
+	optPort := flag.String("port", "", "The port of process to collect info. Multiple ports can be separated by ','.")
 	optProc := flag.Bool("proc", false, "Only collect process info, disabled (Collect everything except process info) by default.")
 	flag.Parse()
 
@@ -88,6 +91,10 @@ func (metric *Metrics) getMetrics(opts options) {
 		metric.SysInfo.GetSysInfo()
 		metric.NTP.getNTPInfo()
 		metric.Partitions = GetPartitionStats()
+		info, err := ghw.Block()
+		if err == nil {
+			metric.BlockInfo = *info
+		}
 	}
 }
 
