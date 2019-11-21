@@ -2,18 +2,11 @@ import React from 'react';
 import moment from 'moment';
 import _ from 'lodash';
 import { IInspectionDetail } from '@/models/inspection';
-import AutoPanelTable from './AutoPanelTable';
 import { IPromParams } from '@/services/prometheus-query';
-import CollpasePanel from './CollapsePanel';
-import PromChart from './PromChart';
-import PromTable from './PromTable';
-import { IPromQuery } from '@/services/prometheus-config-charts';
 import { INSPECTION_DETAILS, ReportDetailConfig } from '@/services/report-detail-config';
-import {
-  IPromConfigSection,
-  INSPECTION_PROM_DETAIL,
-  IPromConfigSubPanel,
-} from '@/services/promtheus-panel-config';
+import { INSPECTION_PROM_DETAIL } from '@/services/promtheus-panel-config';
+import PromSection from './PromSection';
+import AutoPanelTable from './AutoPanelTable';
 
 interface InspectionReportProps {
   inspection: IInspectionDetail;
@@ -25,42 +18,11 @@ function genItemApiUrl(inspectionId: string, itemType: string) {
   return `/inspections/${inspectionId}${itemType}`;
 }
 
-_.templateSettings.interpolate = /{{([\s\S]+?)}}/g;
-
 function InspectionReport({ inspection }: InspectionReportProps) {
   const start = moment(inspection.scrape_begin).unix();
   const end = moment(inspection.scrape_end).unix();
   const step = Math.floor((end - start) / CHART_SAMPLE_COUNT);
   const promParams: IPromParams = { start, end, step };
-
-  function renderPromChart(subPanel: IPromConfigSubPanel) {
-    const promQueries: IPromQuery[] = subPanel.targets.map(target => ({
-      promQL: _.template(target.expr)({ inspectionId: inspection.uuid }),
-      labelTemplate: target.legendFormat,
-    }));
-
-    if (subPanel.subPanelType === 'table') {
-      return (
-        <PromTable
-          key={subPanel.subPanelKey}
-          title={subPanel.title}
-          tableColumns={subPanel.tableColumns || ['', '']}
-          promQueries={promQueries}
-          promParams={promParams}
-          valUnit={subPanel.yaxis}
-        />
-      );
-    }
-    return (
-      <PromChart
-        key={subPanel.subPanelKey}
-        title={subPanel.title}
-        promQueries={promQueries}
-        promParams={promParams}
-        yaxis={subPanel.yaxis}
-      />
-    );
-  }
 
   // TODO: extract to individual component
   function renderNormalSections(config: ReportDetailConfig) {
@@ -78,23 +40,14 @@ function InspectionReport({ inspection }: InspectionReportProps) {
     ));
   }
 
-  function renderPromSections(config: IPromConfigSection) {
-    return (
-      <div>
-        <h2>{config.title}</h2>
-        {config.panels.map(panel => (
-          <CollpasePanel title={panel.title} key={panel.panelKey} expand={panel.expand || false}>
-            {panel.subPanels.map(renderPromChart)}
-          </CollpasePanel>
-        ))}
-      </div>
-    );
-  }
-
   return (
     <div style={{ marginTop: 20 }}>
       {renderNormalSections(INSPECTION_DETAILS)}
-      {renderPromSections(INSPECTION_PROM_DETAIL)}
+      <PromSection
+        promConfigSection={INSPECTION_PROM_DETAIL}
+        promParams={promParams}
+        inspectionId={inspection.uuid}
+      />
     </div>
   );
 }

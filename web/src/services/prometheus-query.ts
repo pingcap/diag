@@ -8,6 +8,14 @@ export interface IPromParams {
   step: number;
 }
 
+// https://www.lodashjs.com/docs/latest#_templatestring-options
+// 使用自定义的模板分隔符
+// _.templateSettings.interpolate = /{{([\s\S]+?)}}/g;
+// var compiled = _.template('hello {{ user }}!');
+// compiled({ 'user': 'mustache' });
+// // => 'hello mustache!'
+_.templateSettings.interpolate = /{{([\s\S]+?)}}/g;
+
 // request:
 // http://localhost:8000/api/v1/metric/query_range?query=pd_cluster_status%7Btype%3D%22storage_size%22%7D&start=1560836237&end=1560836537&step=20
 // response:

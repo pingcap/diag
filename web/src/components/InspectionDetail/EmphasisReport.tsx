@@ -1,19 +1,12 @@
 import React from 'react';
 import moment from 'moment';
 import _ from 'lodash';
-import AutoPanelTable from './AutoPanelTable';
 import { IPromParams } from '@/services/prometheus-query';
-import CollpasePanel from './CollapsePanel';
-import PromChart from './PromChart';
-import PromTable from './PromTable';
-import { IPromQuery } from '@/services/prometheus-config-charts';
 import { IEmphasisDetail } from '@/models/emphasis';
 import { ReportDetailConfig, EMPHASIS_DETAILS } from '@/services/report-detail-config';
-import {
-  IPromConfigSection,
-  EMPHASIS_PROM_DETAIL,
-  IPromConfigSubPanel,
-} from '@/services/promtheus-panel-config';
+import { EMPHASIS_PROM_DETAIL } from '@/services/promtheus-panel-config';
+import PromSection from './PromSection';
+import AutoPanelTable from './AutoPanelTable';
 
 interface EmphasisReportProps {
   emphasis: IEmphasisDetail;
@@ -25,43 +18,12 @@ function genItemApiUrl(emphasisId: string, itemType: string) {
   return `/emphasis/${emphasisId}${itemType}`;
 }
 
-_.templateSettings.interpolate = /{{([\s\S]+?)}}/g;
-
 // TODO: 提取重复代码
 function EmphasisReport({ emphasis }: EmphasisReportProps) {
   const start = moment(emphasis.investgating_start).unix();
   const end = moment(emphasis.investgating_end).unix();
   const step = Math.floor((end - start) / CHART_SAMPLE_COUNT);
   const promParams: IPromParams = { start, end, step };
-
-  function renderPromChart(subPanel: IPromConfigSubPanel) {
-    const promQueries: IPromQuery[] = subPanel.targets.map(target => ({
-      promQL: _.template(target.expr)({ inspectionId: emphasis.uuid }),
-      labelTemplate: target.legendFormat,
-    }));
-
-    if (subPanel.subPanelType === 'table') {
-      return (
-        <PromTable
-          key={subPanel.subPanelKey}
-          title={subPanel.title}
-          tableColumns={subPanel.tableColumns || ['', '']}
-          promQueries={promQueries}
-          promParams={promParams}
-          valUnit={subPanel.yaxis}
-        />
-      );
-    }
-    return (
-      <PromChart
-        key={subPanel.subPanelKey}
-        title={subPanel.title}
-        promQueries={promQueries}
-        promParams={promParams}
-        yaxis={subPanel.yaxis}
-      />
-    );
-  }
 
   function renderNormalSections(config: ReportDetailConfig) {
     return config.map(section => (
@@ -78,23 +40,14 @@ function EmphasisReport({ emphasis }: EmphasisReportProps) {
     ));
   }
 
-  function renderPromSections(config: IPromConfigSection) {
-    return (
-      <div>
-        <h2>{config.title}</h2>
-        {config.panels.map(panel => (
-          <CollpasePanel title={panel.title} key={panel.panelKey} expand={panel.expand || false}>
-            {panel.subPanels.map(renderPromChart)}
-          </CollpasePanel>
-        ))}
-      </div>
-    );
-  }
-
   return (
     <div style={{ marginTop: 20 }}>
       {renderNormalSections(EMPHASIS_DETAILS)}
-      {renderPromSections(EMPHASIS_PROM_DETAIL)}
+      <PromSection
+        promConfigSection={EMPHASIS_PROM_DETAIL}
+        promParams={promParams}
+        inspectionId={emphasis.uuid}
+      />
     </div>
   );
 }

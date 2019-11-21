@@ -20,7 +20,6 @@ import {
 // var compiled = _.template('hello {{ user }}!');
 // compiled({ 'user': 'mustache' });
 // // => 'hello mustache!'
-
 _.templateSettings.interpolate = /{{([\s\S]+?)}}/g;
 
 // ///////////////////////////////////
