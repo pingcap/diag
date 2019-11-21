@@ -11,7 +11,7 @@ import {
 } from 'recharts';
 import moment from 'moment';
 import _ from 'lodash';
-import { IPromConfigYaxis, genNumberConverter } from '@/services/prom-panel-config';
+import { IPromConfigYaxis, genValueConverter } from '@/services/prom-panel-config';
 
 const DEF_COLORS: string[] = '#E79FD5,#B3AD9E,#89DAC1,#17B8BE,#4DC19C,#88572C,#DDB27C,#19CDD7,#FF9833,#79C7E3,#12939A'.split(
   ',',
@@ -40,6 +40,15 @@ interface ISerailLineChartProps {
   yaxis: IPromConfigYaxis;
 }
 
+// input:
+// oriData: [[1540982900657, 10, 12, 15], [1540982900657, 20, 22, 25]]
+// labels:  ['timestampe', 'foo', 'bar', 'foo-1']
+// timeFormat: 'HH:mm:ss'
+// output:
+// [
+//   {timestamp: 'xx:yy:zz', foo: 10, bar: 12, 'foo-1': 15},
+//   {timestamp: 'xx:yy:zz', foo: 20, bar: 22, 'foo-1': 25}
+// ]
 function convertChartData(oriData: number[][], chartLabels: string[], timeFormat: string) {
   return oriData.map(d => {
     const obj = {};
@@ -66,6 +75,9 @@ function loopGenUniqName(
   return loopGenUniqName(oriName, existNames, tryCount + 1);
 }
 
+// oriLabels 中可能包含相同的元素，不能用于图表绘制，所以需要进行处理
+// input:  ['timestamp', 'foo', 'bar', 'foo',   'bar',   'foo']
+// oputpu: ['timestamp', 'foo', 'bar', 'foo-1', 'bar-1', 'foo-2']
 function uniqLabels(oriLabels: string[]): string[] {
   let newLabels: string[] = [];
   const duplicatedLabels: string[] = [];
@@ -89,8 +101,8 @@ function SerialLineChart({ labels, data, timeFormat = 'HH:mm:ss', yaxis }: ISera
     data,
     timeFormat,
   ]);
+  const valConverter = useMemo(() => genValueConverter(yaxis), []);
   const shuffedColors: string[] = useMemo(() => _.shuffle(DEF_COLORS), []);
-  const valConverter = useMemo(() => genNumberConverter(yaxis), []);
 
   return (
     <ResponsiveContainer width="100%" height="100%">

@@ -13,12 +13,15 @@ import { getValueFormat } from 'value-formats';
 //       subPanels: [
 //         {
 //           subPanelKey: string,
+//           subPanelType?: 'line' | 'table',
+//           tableColumns?: [string, string],
 //           title: string,
 
 //           targets: [
 //             {
 //               expr: string,
 //               legendFormat: string,
+//               desc?: string,
 //             }
 //           ],
 //           yaxis: {
@@ -75,7 +78,7 @@ export const EMPHASIS_PROM_DETAIL = require('./prom-emphasis.json') as IPromConf
 /* eslint-disable-next-line */
 export const INSPECTION_PROM_DETAIL = require('./prom-inspection.json') as IPromConfigSection;
 
-export function genNumberConverter(yaxis: IPromConfigYaxis) {
+export function genValueConverter(yaxis: IPromConfigYaxis) {
   const formatFunc = getValueFormat(yaxis.format);
   const valConverter = (val: number): string => {
     let { decimals } = yaxis;
