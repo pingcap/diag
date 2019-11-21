@@ -1,9 +1,9 @@
 import React from 'react';
-import SerialLineChart from '../Chart/SerialLineChart';
 import { IPromParams, IPromQuery } from '@/services/prom-query';
 import { usePromQueries } from './use-prom-queries';
 import PromChartHeader from './PromChartHeader';
-import { IPromConfigYaxis } from '@/services/prom-panel-config';
+import { IPromConfigYaxis } from './prom-panel-config';
+import SerialLineChart from '../Chart/SerialLineChart';
 
 const styles = require('./report-detail-style.less');
 

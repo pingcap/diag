@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import moment from 'moment';
 import _ from 'lodash';
+import { oriRequest } from '@/utils/request';
 import { IPromParams } from '@/services/prom-query';
 import { IEmphasisDetail } from '@/models/emphasis';
-import { EMPHASIS_DETAILS } from '@/services/report-detail-config';
-import { IPromConfigSection } from '@/services/prom-panel-config';
+import { EMPHASIS_DETAILS } from './report-detail-config';
+import { IPromConfigSection } from './prom-panel-config';
 import PromSection from './PromSection';
 import ReportSection from './ReportSection';
-import { oriRequest } from '@/utils/request';
 
 interface EmphasisReportProps {
   emphasis: IEmphasisDetail;

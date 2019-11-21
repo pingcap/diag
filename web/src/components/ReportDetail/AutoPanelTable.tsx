@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Table, Collapse } from 'antd';
 import _ from 'lodash';
 import { useReportItemQuery } from './use-report-item-query';
-import { IReportDetailConfigPanel } from '@/services/report-detail-config';
+import { IReportDetailConfigPanel } from './report-detail-config';
 
 const styles = require('./report-detail-style.less');
 

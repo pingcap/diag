@@ -93,4 +93,6 @@ function InspectionDetail({ dispatch, match, curUser }: InspectionDetailProps) {
   );
 }
 
-export default connect(({ user }: ConnectState) => ({ curUser: user.currentUser }))(InspectionDetail);
+export default connect(({ user }: ConnectState) => ({ curUser: user.currentUser }))(
+  InspectionDetail,
+);

@@ -3,7 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { Tooltip, Icon } from 'antd';
 import request from '@/utils/request';
 import { formatDatetime } from '@/utils/datetime-util';
-import { IColumnsUnit } from '@/services/report-detail-config';
+import { IColumnsUnit } from './report-detail-config';
 import { getValueFormat } from 'value-formats';
 
 interface IResObj {

@@ -1,6 +1,6 @@
 import React from 'react';
 import _ from 'lodash';
-import { ReportDetailConfig } from '@/services/report-detail-config';
+import { ReportDetailConfig } from './report-detail-config';
 import AutoPanelTable from './AutoPanelTable';
 
 interface ReportSectionProps {

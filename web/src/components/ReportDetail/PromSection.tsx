@@ -1,7 +1,7 @@
 import React from 'react';
 import _ from 'lodash';
 import { IPromParams, IPromQuery } from '@/services/prom-query';
-import { IPromConfigSection, IPromConfigSubPanel } from '@/services/prom-panel-config';
+import { IPromConfigSection, IPromConfigSubPanel } from './prom-panel-config';
 import CollpasePanel from './CollapsePanel';
 import PromChart from './PromChart';
 import PromTable from './PromTable';
