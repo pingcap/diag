@@ -1,7 +1,6 @@
 package hardware
 
 import (
-	"encoding/json"
 	"fmt"
 	"strings"
 
@@ -21,13 +20,7 @@ func SaveHardwareInfo() *saveHardwareInfoTask {
 func (t *saveHardwareInfoTask) Run(m *boot.Model, c *boot.Config, insight *insight.Insight) {
 	for _, insight := range *insight {
 		disks := []string{}
-
-		// TODO: this fucking messages are only for fucking debugging.
-		fuckingDistStorage, err := json.Marshal(insight.Sysinfo)
-		if err == nil {
-			log.Infof("Collected message for %s", string(fuckingDistStorage))
-		}
-
+		
 		for _, disk := range insight.Sysinfo.Storage {
 			marked := false
 			for _, hardDisks := range insight.BlockInfo.Disks {
