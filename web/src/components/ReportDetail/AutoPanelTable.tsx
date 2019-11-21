@@ -4,7 +4,7 @@ import _ from 'lodash';
 import { useReportItemQuery } from './use-report-item-query';
 import { IReportDetailConfigPanel } from '@/services/report-detail-config';
 
-const styles = require('./inspection-detail-style.less');
+const styles = require('./report-detail-style.less');
 
 interface AutoPanelTableProps {
   fullApiUrl: string;

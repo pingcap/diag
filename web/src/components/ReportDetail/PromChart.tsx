@@ -5,7 +5,7 @@ import { usePromQueries } from './use-prom-queries';
 import PromChartHeader from './PromChartHeader';
 import { IPromConfigYaxis } from '@/services/prom-panel-config';
 
-const styles = require('./inspection-detail-style.less');
+const styles = require('./report-detail-style.less');
 
 interface PromChartProps {
   title: string;

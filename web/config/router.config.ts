@@ -47,24 +47,24 @@ export default [
           {
             path: '/inspection/reports',
             name: 'report_list',
-            component: './Inspection/ReportList',
+            component: './Inspection/InspectionList',
           },
           {
             path: '/inspection/instances/:id/reports',
             name: 'report_list',
-            component: './Inspection/ReportList',
+            component: './Inspection/InspectionList',
             hideInMenu: true,
           },
           {
             path: '/inspection/instances/:instanceId/reports/:id',
             name: 'report_detail',
-            component: './Inspection/ReportDetail',
+            component: './Inspection/InspectionDetail',
             hideInMenu: true,
           },
           {
             path: '/inspection/reports/:id',
             name: 'report_detail',
-            component: './Inspection/ReportDetail',
+            component: './Inspection/InspectionDetail',
             hideInMenu: true,
           },
           {
@@ -103,28 +103,6 @@ export default [
           },
         ],
       },
-      // {
-      //   path: '/misc',
-      //   name: 'misc',
-      //   icon: 'dashboard',
-      //   routes: [
-      //     {
-      //       path: '/misc',
-      //       redirect: '/misc/perfprofiles',
-      //     },
-      //     {
-      //       path: '/misc/perfprofiles',
-      //       name: 'perf_profile',
-      //       component: './Misc/PerfProfileList',
-      //     },
-      //     {
-      //       path: '/misc/perfprofiles/:id',
-      //       name: 'perf_profile_detail',
-      //       component: './Misc/PerfProfileDetail',
-      //       hideInMenu: true,
-      //     },
-      //   ],
-      // },
       {
         path: '/logs',
         name: 'logs',

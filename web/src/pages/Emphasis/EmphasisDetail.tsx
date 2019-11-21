@@ -7,7 +7,7 @@ import { ConnectProps, Dispatch, ConnectState } from '@/models/connect';
 import { CurrentUser } from '@/models/user';
 import { IEmphasisDetail } from '@/models/emphasis';
 import { queryEmphasisDetail } from '@/services/emphasis';
-import EmphasisReport from '@/components/InspectionDetail/EmphasisReport';
+import EmphasisReport from '@/components/ReportDetail/EmphasisReport';
 import { formatDatetime } from '@/utils/datetime-util';
 
 const styles = require('../style.less');

@@ -7,17 +7,17 @@ import { CurrentUser } from '@/models/user';
 import UploadRemoteReportModal from '@/components/UploadRemoteReportModal';
 import { IInspectionDetail } from '@/models/inspection';
 import { queryInspection } from '@/services/inspection';
-import InspectionReport from '@/components/InspectionDetail/InspectionReport';
+import InspectionReport from '@/components/ReportDetail/InspectionReport';
 
 const styles = require('../style.less');
 
-interface ReportDetailProps extends ConnectProps {
+interface InspectionDetailProps extends ConnectProps {
   dispatch: Dispatch;
 
   curUser: CurrentUser;
 }
 
-function ReportDetail({ dispatch, match, curUser }: ReportDetailProps) {
+function InspectionDetail({ dispatch, match, curUser }: InspectionDetailProps) {
   const reportId: string | undefined = match && match.params && (match.params as any).id;
 
   const [uploadRemoteModalVisible, setUploadRemoteModalVisible] = useState(false);
@@ -93,4 +93,4 @@ function ReportDetail({ dispatch, match, curUser }: ReportDetailProps) {
   );
 }
 
-export default connect(({ user }: ConnectState) => ({ curUser: user.currentUser }))(ReportDetail);
+export default connect(({ user }: ConnectState) => ({ curUser: user.currentUser }))(InspectionDetail);
