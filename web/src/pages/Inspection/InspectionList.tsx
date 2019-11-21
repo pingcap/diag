@@ -132,7 +132,7 @@ const tableColumns = (
   return columns;
 };
 
-interface ReportListProps extends ConnectProps {
+interface InspectionListProps extends ConnectProps {
   dispatch: Dispatch;
 
   curUser: CurrentUser;
@@ -141,14 +141,14 @@ interface ReportListProps extends ConnectProps {
   loadingInstances: boolean;
 }
 
-function ReportList({
+function InspectionList({
   dispatch,
   curUser,
   inspection,
   match,
   loading,
   loadingInstances,
-}: ReportListProps) {
+}: InspectionListProps) {
   const initInstanceId: string | undefined = match && match.params && (match.params as any).id;
 
   // TODO: try to use useReducer to replace so many useState
@@ -308,4 +308,4 @@ export default connect(({ user, inspection, loading }: ConnectState) => ({
   inspection,
   loading: loading.effects['inspection/fetchInspections'],
   loadingInstances: loading.effects['inspection/fetchInstances'],
-}))(ReportList);
+}))(InspectionList);
