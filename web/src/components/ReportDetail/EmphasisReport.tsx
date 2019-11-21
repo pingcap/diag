@@ -1,12 +1,13 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import moment from 'moment';
 import _ from 'lodash';
 import { IPromParams } from '@/services/prom-query';
 import { IEmphasisDetail } from '@/models/emphasis';
 import { EMPHASIS_DETAILS } from '@/services/report-detail-config';
-import { EMPHASIS_PROM_DETAIL } from '@/services/prom-panel-config';
+import { IPromConfigSection } from '@/services/prom-panel-config';
 import PromSection from './PromSection';
 import ReportSection from './ReportSection';
+import { oriRequest } from '@/utils/request';
 
 interface EmphasisReportProps {
   emphasis: IEmphasisDetail;
@@ -23,6 +24,11 @@ function EmphasisReport({ emphasis }: EmphasisReportProps) {
   const end = moment(emphasis.investgating_end).unix();
   const step = Math.floor((end - start) / CHART_SAMPLE_COUNT);
   const promParams: IPromParams = { start, end, step };
+  const [emphasisPromConfig, setEmphasisConfig] = useState<IPromConfigSection | null>(null);
+
+  useEffect(() => {
+    oriRequest('/prom-emphasis.json').then(data => setEmphasisConfig(data));
+  }, []);
 
   return (
     <div style={{ marginTop: 20 }}>
@@ -30,11 +36,13 @@ function EmphasisReport({ emphasis }: EmphasisReportProps) {
         reportDetailConfig={EMPHASIS_DETAILS}
         fullApiUrlGenerator={(val: string) => genItemApiUrl(emphasis.uuid, val)}
       />
-      <PromSection
-        promConfigSection={EMPHASIS_PROM_DETAIL}
-        promParams={promParams}
-        inspectionId={emphasis.uuid}
-      />
+      {emphasisPromConfig && (
+        <PromSection
+          promConfigSection={emphasisPromConfig}
+          promParams={promParams}
+          inspectionId={emphasis.uuid}
+        />
+      )}
     </div>
   );
 }

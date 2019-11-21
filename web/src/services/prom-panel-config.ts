@@ -73,11 +73,6 @@ export interface IPromConfigYaxis {
   decimals?: number;
 }
 
-/* eslint-disable-next-line */
-export const EMPHASIS_PROM_DETAIL = require('./prom-emphasis.json') as IPromConfigSection;
-/* eslint-disable-next-line */
-export const INSPECTION_PROM_DETAIL = require('./prom-inspection.json') as IPromConfigSection;
-
 export function genValueConverter(yaxis: IPromConfigYaxis) {
   const formatFunc = getValueFormat(yaxis.format);
   const valConverter = (val: number): string => {
