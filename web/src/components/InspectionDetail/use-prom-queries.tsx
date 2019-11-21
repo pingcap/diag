@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
-import { IPromQuery } from '@/services/prometheus-config-charts';
-import { IPromParams, promRangeQueries } from '@/services/prometheus-query';
+import { IPromQuery, IPromParams, promRangeQueries } from '@/services/prom-query';
 
 export function usePromQueries(
   promQueries: IPromQuery[],

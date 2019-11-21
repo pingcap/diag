@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Button } from 'antd';
-import { IPromQuery } from '@/services/prometheus-config-charts';
+import { IPromQuery } from '@/services/prom-query';
 
 const styles = require('./inspection-detail-style.less');
 

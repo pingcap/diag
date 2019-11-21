@@ -2,9 +2,9 @@ import React from 'react';
 import moment from 'moment';
 import _ from 'lodash';
 import { IInspectionDetail } from '@/models/inspection';
-import { IPromParams } from '@/services/prometheus-query';
+import { IPromParams } from '@/services/prom-query';
 import { INSPECTION_DETAILS } from '@/services/report-detail-config';
-import { INSPECTION_PROM_DETAIL } from '@/services/promtheus-panel-config';
+import { INSPECTION_PROM_DETAIL } from '@/services/prom-panel-config';
 import PromSection from './PromSection';
 import ReportSection from './ReportSection';
 

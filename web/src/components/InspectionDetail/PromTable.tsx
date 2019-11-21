@@ -1,10 +1,9 @@
 import React, { useMemo } from 'react';
 import { Table } from 'antd';
-import { IPromParams } from '@/services/prometheus-query';
-import { IPromQuery } from '@/services/prometheus-config-charts';
+import { IPromParams, IPromQuery } from '@/services/prom-query';
 import { usePromQueries } from './use-prom-queries';
 import PromChartHeader from './PromChartHeader';
-import { IPromConfigYaxis, genNumberConverter } from '@/services/promtheus-panel-config';
+import { IPromConfigYaxis, genNumberConverter } from '@/services/prom-panel-config';
 
 interface PromTableProps {
   title: string;
@@ -16,13 +15,7 @@ interface PromTableProps {
   valUnit: IPromConfigYaxis;
 }
 
-function PromTable({
-  title,
-  tableColumns,
-  promQueries,
-  promParams,
-  valUnit,
-}: PromTableProps) {
+function PromTable({ title, tableColumns, promQueries, promParams, valUnit }: PromTableProps) {
   const [loading, chartLabels, oriChartData] = usePromQueries(promQueries, promParams);
   const valConverter = useMemo(() => genNumberConverter(valUnit), []);
 

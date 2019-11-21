@@ -1,5 +1,3 @@
-import { IPanel, ALL_PANELS } from './prometheus-config-panels';
-import { PROM_CHARTS } from './prometheus-config-charts';
 import { getValueFormat } from 'value-formats';
 
 // export interface IPromConfigSection {
@@ -76,41 +74,6 @@ export interface IPromConfigYaxis {
 export const EMPHASIS_PROM_DETAIL = require('./prom-emphasis.json') as IPromConfigSection;
 /* eslint-disable-next-line */
 export const INSPECTION_PROM_DETAIL = require('./prom-inspection.json') as IPromConfigSection;
-
-// TODO: remove it later
-export function convertOldConfigToNewConfig(panelKeys: string[]) {
-  const section: IPromConfigSection = {
-    sectionKey: 'prom_monitor',
-    title: '三、监控信息',
-
-    panels: panelKeys.map(panelKey => {
-      const panel: IPanel = ALL_PANELS[panelKey];
-      return {
-        panelKey,
-        title: panel.title,
-        expand: panel.expand,
-
-        subPanels: panel.charts.map(chartKey => {
-          const promChart = PROM_CHARTS[chartKey];
-          return {
-            subPanelKey: chartKey,
-            title: promChart.title,
-            targets: promChart.queries.map(query => ({
-              expr: query.promQLTemplate,
-              legendFormat: query.labelTemplate,
-              desc: query.version,
-            })),
-            yaxis: {
-              format: 'short',
-              logBase: 1,
-            },
-          };
-        }),
-      };
-    }),
-  };
-  console.log(JSON.stringify(section, null, 2));
-}
 
 export function genNumberConverter(yaxis: IPromConfigYaxis) {
   const formatFunc = getValueFormat(yaxis.format);

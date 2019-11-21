@@ -1,11 +1,15 @@
 import _ from 'lodash';
 import request from '@/utils/request';
-import { IPromQuery } from './prometheus-config-charts';
 
 export interface IPromParams {
   start: number;
   end: number;
   step: number;
+}
+
+export interface IPromQuery {
+  promQL: string;
+  labelTemplate: string;
 }
 
 // https://www.lodashjs.com/docs/latest#_templatestring-options

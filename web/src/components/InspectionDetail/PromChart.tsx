@@ -1,10 +1,9 @@
 import React from 'react';
 import SerialLineChart from '../Chart/SerialLineChart';
-import { IPromParams } from '@/services/prometheus-query';
-import { IPromQuery } from '@/services/prometheus-config-charts';
+import { IPromParams, IPromQuery } from '@/services/prom-query';
 import { usePromQueries } from './use-prom-queries';
 import PromChartHeader from './PromChartHeader';
-import { IPromConfigYaxis } from '@/services/promtheus-panel-config';
+import { IPromConfigYaxis } from '@/services/prom-panel-config';
 
 const styles = require('./inspection-detail-style.less');
 
