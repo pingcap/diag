@@ -3,12 +3,12 @@ import SerialLineChart from '../Chart/SerialLineChart';
 import { IPromParams } from '@/services/prometheus-query';
 import { IPromQuery } from '@/services/prometheus-config-charts';
 import { usePromQueries } from './use-prom-queries';
-import PrometheusChartHeader from './PrometheusChartHeader';
+import PromChartHeader from './PromChartHeader';
 import { IPromConfigYaxis } from '@/services/promtheus-panel-config';
 
 const styles = require('./inspection-detail-style.less');
 
-interface PrometheusChartProps {
+interface PromChartProps {
   title: string;
 
   promQueries: IPromQuery[];
@@ -16,12 +16,12 @@ interface PrometheusChartProps {
   yaxis: IPromConfigYaxis;
 }
 
-function PrometheusChart({ title, promQueries, promParams, yaxis }: PrometheusChartProps) {
+function PromChart({ title, promQueries, promParams, yaxis }: PromChartProps) {
   const [loading, chartLabels, oriChartData] = usePromQueries(promQueries, promParams);
 
   return (
     <div className={styles.chart_container}>
-      <PrometheusChartHeader title={title} promQueries={promQueries} />
+      <PromChartHeader title={title} promQueries={promQueries} />
 
       {loading && <p style={{ textAlign: 'center' }}>loading...</p>}
       {!loading && oriChartData.length === 0 && <p style={{ textAlign: 'center' }}>No Data</p>}
@@ -34,4 +34,4 @@ function PrometheusChart({ title, promQueries, promParams, yaxis }: PrometheusCh
   );
 }
 
-export default PrometheusChart;
+export default PromChart;

@@ -4,12 +4,12 @@ import { IPromQuery } from '@/services/prometheus-config-charts';
 
 const styles = require('./inspection-detail-style.less');
 
-interface PrometheusChartHeaderProps {
+interface PromChartHeaderProps {
   title: string;
   promQueries: IPromQuery[];
 }
 
-function PrometheusChartHeader({ title, promQueries }: PrometheusChartHeaderProps) {
+function PromChartHeader({ title, promQueries }: PromChartHeaderProps) {
   const [showPromQLs, setShowPromQLs] = useState(false);
   function renderPromSQLs() {
     return (
@@ -35,4 +35,4 @@ function PrometheusChartHeader({ title, promQueries }: PrometheusChartHeaderProp
   );
 }
 
-export default PrometheusChartHeader;
+export default PromChartHeader;

@@ -3,10 +3,10 @@ import { Table } from 'antd';
 import { IPromParams } from '@/services/prometheus-query';
 import { IPromQuery } from '@/services/prometheus-config-charts';
 import { usePromQueries } from './use-prom-queries';
-import PrometheusChartHeader from './PrometheusChartHeader';
+import PromChartHeader from './PromChartHeader';
 import { IPromConfigYaxis, genNumberConverter } from '@/services/promtheus-panel-config';
 
-interface PrometheusTableProps {
+interface PromTableProps {
   title: string;
 
   tableColumns: [string, string];
@@ -16,13 +16,13 @@ interface PrometheusTableProps {
   valUnit: IPromConfigYaxis;
 }
 
-function PrometheusTable({
+function PromTable({
   title,
   tableColumns,
   promQueries,
   promParams,
   valUnit,
-}: PrometheusTableProps) {
+}: PromTableProps) {
   const [loading, chartLabels, oriChartData] = usePromQueries(promQueries, promParams);
   const valConverter = useMemo(() => genNumberConverter(valUnit), []);
 
@@ -47,7 +47,7 @@ function PrometheusTable({
 
   return (
     <div>
-      <PrometheusChartHeader title={title} promQueries={promQueries} />
+      <PromChartHeader title={title} promQueries={promQueries} />
 
       {loading && <p style={{ textAlign: 'center' }}>loading...</p>}
       {!loading && dataSource.length === 0 && <p style={{ textAlign: 'center' }}>No Data</p>}
@@ -58,4 +58,4 @@ function PrometheusTable({
   );
 }
 
-export default PrometheusTable;
+export default PromTable;

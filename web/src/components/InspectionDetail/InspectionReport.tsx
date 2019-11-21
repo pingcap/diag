@@ -5,8 +5,8 @@ import { IInspectionDetail } from '@/models/inspection';
 import AutoPanelTable from './AutoPanelTable';
 import { IPromParams } from '@/services/prometheus-query';
 import CollpasePanel from './CollapsePanel';
-import PrometheusChart from './PrometheusChart';
-import PrometheusTable from './PrometheusTable';
+import PromChart from './PromChart';
+import PromTable from './PromTable';
 import { IPromQuery } from '@/services/prometheus-config-charts';
 import { INSPECTION_DETAILS, ReportDetailConfig } from '@/services/report-detail-config';
 import {
@@ -41,7 +41,7 @@ function InspectionReport({ inspection }: InspectionReportProps) {
 
     if (subPanel.subPanelType === 'table') {
       return (
-        <PrometheusTable
+        <PromTable
           key={subPanel.subPanelKey}
           title={subPanel.title}
           tableColumns={subPanel.tableColumns || ['', '']}
@@ -52,7 +52,7 @@ function InspectionReport({ inspection }: InspectionReportProps) {
       );
     }
     return (
-      <PrometheusChart
+      <PromChart
         key={subPanel.subPanelKey}
         title={subPanel.title}
         promQueries={promQueries}
