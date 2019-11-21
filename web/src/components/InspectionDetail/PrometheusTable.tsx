@@ -1,9 +1,10 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Table } from 'antd';
 import { IPromParams } from '@/services/prometheus-query';
 import { IPromQuery } from '@/services/prometheus-config-charts';
 import { usePromQueries } from './use-prom-queries';
 import PrometheusChartHeader from './PrometheusChartHeader';
+import { IPromConfigYaxis, genNumberConverter } from '@/services/promtheus-panel-config';
 
 interface PrometheusTableProps {
   title: string;
@@ -12,10 +13,18 @@ interface PrometheusTableProps {
 
   promQueries: IPromQuery[];
   promParams: IPromParams;
+  valUnit: IPromConfigYaxis;
 }
 
-function PrometheusTable({ title, tableColumns, promQueries, promParams }: PrometheusTableProps) {
+function PrometheusTable({
+  title,
+  tableColumns,
+  promQueries,
+  promParams,
+  valUnit,
+}: PrometheusTableProps) {
   const [loading, chartLabels, oriChartData] = usePromQueries(promQueries, promParams);
+  const valConverter = useMemo(() => genNumberConverter(valUnit), []);
 
   // can replace it by useMemo
   function genDataSource() {
@@ -24,9 +33,7 @@ function PrometheusTable({ title, tableColumns, promQueries, promParams }: Prome
     }
     return chartLabels.slice(1).map((label, index) => ({
       label,
-      val: promQueries[0].valConverter
-        ? promQueries[0].valConverter(oriChartData[0][index + 1])
-        : oriChartData[0][index + 1],
+      val: valConverter(oriChartData[0][index + 1]),
       key: `${index}`,
     }));
   }

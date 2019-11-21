@@ -39,17 +39,18 @@ function InspectionReport({ inspection }: InspectionReportProps) {
       labelTemplate: target.legendFormat,
     }));
 
-    // if (promChart.chartType === 'table') {
-    //   return (
-    //     <PrometheusTable
-    //       key={chartKey}
-    //       title={promChart.title}
-    //       tableColumns={promChart.tableColumns || ['', '']}
-    //       promQueries={promQueries}
-    //       promParams={promParams}
-    //     />
-    //   );
-    // }
+    if (subPanel.subPanelType === 'table') {
+      return (
+        <PrometheusTable
+          key={subPanel.subPanelKey}
+          title={subPanel.title}
+          tableColumns={subPanel.tableColumns || ['', '']}
+          promQueries={promQueries}
+          promParams={promParams}
+          valUnit={subPanel.yaxis}
+        />
+      );
+    }
     return (
       <PrometheusChart
         key={subPanel.subPanelKey}

@@ -1,5 +1,6 @@
 import { IPanel, ALL_PANELS } from './prometheus-config-panels';
 import { PROM_CHARTS } from './prometheus-config-charts';
+import { getValueFormat } from 'value-formats';
 
 // export interface IPromConfigSection {
 //   sectionKey: string,
@@ -49,6 +50,10 @@ export interface IPromConfigPanel {
 
 export interface IPromConfigSubPanel {
   subPanelKey: string;
+
+  subPanelType?: 'line' | 'table';
+  tableColumns?: [string, string];
+
   title: string;
   targets: IPromConfigTarget[];
   yaxis: IPromConfigYaxis;
@@ -105,4 +110,16 @@ export function convertOldConfigToNewConfig(panelKeys: string[]) {
     }),
   };
   console.log(JSON.stringify(section, null, 2));
+}
+
+export function genNumberConverter(yaxis: IPromConfigYaxis) {
+  const formatFunc = getValueFormat(yaxis.format);
+  const valConverter = (val: number): string => {
+    let { decimals } = yaxis;
+    if (decimals === undefined) {
+      decimals = 2;
+    }
+    return formatFunc(val, decimals);
+  };
+  return valConverter;
 }

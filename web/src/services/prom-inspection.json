@@ -252,6 +252,8 @@
       "subPanels": [
         {
           "subPanelKey": "vcores",
+          "subPanelType": "table",
+          "tableColumns": ["Host", "CPU Num"],
           "title": "Vcores",
           "targets": [
             {
@@ -267,7 +269,8 @@
           ],
           "yaxis": {
             "format": "short",
-            "logBase": 1
+            "logBase": 1,
+            "decimals": 0
           }
         },
         {
@@ -370,6 +373,8 @@
         },
         {
           "subPanelKey": "memory_total",
+          "subPanelType": "table",
+          "tableColumns": ["Host", "Memory"],
           "title": "Memory Total",
           "targets": [
             {
@@ -384,7 +389,7 @@
             }
           ],
           "yaxis": {
-            "format": "short",
+            "format": "bytes",
             "logBase": 1
           }
         },

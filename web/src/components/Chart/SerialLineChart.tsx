@@ -11,8 +11,7 @@ import {
 } from 'recharts';
 import moment from 'moment';
 import _ from 'lodash';
-import { getValueFormat } from 'value-formats';
-import { IPromConfigYaxis } from '@/services/promtheus-panel-config';
+import { IPromConfigYaxis, genNumberConverter } from '@/services/promtheus-panel-config';
 
 const DEF_COLORS: string[] = '#E79FD5,#B3AD9E,#89DAC1,#17B8BE,#4DC19C,#88572C,#DDB27C,#19CDD7,#FF9833,#79C7E3,#12939A'.split(
   ',',
@@ -81,18 +80,6 @@ function uniqLabels(oriLabels: string[]): string[] {
     newLabels = newLabels.map(label => (duplicatedLabels.includes(label) ? `${label}-1` : label));
   }
   return newLabels;
-}
-
-function genNumberConverter(yaxis: IPromConfigYaxis) {
-  const formatFunc = getValueFormat(yaxis.format);
-  const valConverter = (val: number): string => {
-    let { decimals } = yaxis;
-    if (decimals === undefined) {
-      decimals = 2;
-    }
-    return formatFunc(val, decimals);
-  };
-  return valConverter;
 }
 
 function SerialLineChart({ labels, data, timeFormat = 'HH:mm:ss', yaxis }: ISerailLineChartProps) {
