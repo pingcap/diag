@@ -2,9 +2,9 @@ import React, { useState } from 'react';
 import { Table, Collapse } from 'antd';
 import _ from 'lodash';
 import { useReportItemQuery } from './use-report-item-query';
-import { IReportDetailConfigPanel } from '@/services/report-detail-config';
+import { IReportDetailConfigPanel } from './report-detail-config';
 
-const styles = require('./inspection-detail-style.less');
+const styles = require('./report-detail-style.less');
 
 interface AutoPanelTableProps {
   fullApiUrl: string;
@@ -28,8 +28,8 @@ function AutoPanelTable({ fullApiUrl, panelConfig }: AutoPanelTableProps) {
 
   function renderHeader() {
     return (
-      <strong style={{ color: panelConfig.panelTitleColor || (hasAbnormal ? 'red' : 'inherit') }}>
-        {panelConfig.panelTitle} {collapsed && `(${dataSource.length})`}
+      <strong style={{ color: panelConfig.titleColor || (hasAbnormal ? 'red' : 'inherit') }}>
+        {panelConfig.title} {collapsed && `(${dataSource.length})`}
       </strong>
     );
   }

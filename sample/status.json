@@ -1,0 +1,23 @@
+{
+  "alert": {
+    "status": "success"
+  },
+  "basic": {
+    "status": "success"
+  },
+  "config": {
+    "status": "success"
+  },
+  "dbinfo": {
+    "status": "success"
+  },
+  "log": {
+    "status": "success"
+  },
+  "metric": {
+    "status": "success"
+  },
+  "network": {
+    "status": "success"
+  }
+}

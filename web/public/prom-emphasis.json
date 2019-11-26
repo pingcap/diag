@@ -1,0 +1,882 @@
+{
+  "sectionKey": "4aVOvxcWk",
+  "title": "二、问题排查监控信息",
+  "panels": [
+    {
+      "panelKey": 33,
+      "title": "TiDB-Server",
+      "subPanels": [
+        {
+          "subPanelKey": 3,
+          "title": "Duration",
+          "targets": [
+            {
+              "expr": "histogram_quantile(0.999, sum(rate(tidb_server_handle_query_duration_seconds_bucket{inspectionid=\"{{inspectionId}}\"}[1m])) by (le))",
+              "legendFormat": "999"
+            },
+            {
+              "expr": "histogram_quantile(0.99, sum(rate(tidb_server_handle_query_duration_seconds_bucket{inspectionid=\"{{inspectionId}}\"}[1m])) by (le))",
+              "legendFormat": "99"
+            },
+            {
+              "expr": "histogram_quantile(0.95, sum(rate(tidb_server_handle_query_duration_seconds_bucket{inspectionid=\"{{inspectionId}}\"}[1m])) by (le))",
+              "legendFormat": "95"
+            },
+            {
+              "expr": "histogram_quantile(0.80, sum(rate(tidb_server_handle_query_duration_seconds_bucket{inspectionid=\"{{inspectionId}}\"}[1m])) by (le))",
+              "legendFormat": "80"
+            }
+          ],
+          "yaxis": {
+            "format": "s",
+            "logBase": 2
+          }
+        },
+        {
+          "subPanelKey": 31,
+          "title": "99% Get Token Duration",
+          "targets": [
+            {
+              "expr": "histogram_quantile(0.99, sum(rate(tidb_server_get_token_duration_seconds_bucket{inspectionid=\"{{inspectionId}}\"}[1m])) by (le))",
+              "legendFormat": "99"
+            }
+          ],
+          "yaxis": {
+            "format": "µs",
+            "logBase": 1
+          }
+        },
+        {
+          "subPanelKey": 1,
+          "title": "Connection Count",
+          "targets": [
+            {
+              "expr": "tidb_server_connections{inspectionid=\"{{inspectionId}}\"}",
+              "legendFormat": "{{instance}}"
+            },
+            {
+              "expr": "sum(tidb_server_connections{inspectionid=\"{{inspectionId}}\"})",
+              "legendFormat": "total"
+            }
+          ],
+          "yaxis": {
+            "format": "short",
+            "logBase": 1
+          }
+        },
+        {
+          "subPanelKey": 2,
+          "title": "Heap Memory Usage",
+          "targets": [
+            {
+              "expr": "go_memstats_heap_inuse_bytes{job=~\"tidb.*\", inspectionid=\"{{inspectionId}}\"}",
+              "legendFormat": "{{instance}}-{{job}}"
+            }
+          ],
+          "yaxis": {
+            "format": "bytes",
+            "logBase": 1
+          }
+        }
+      ]
+    },
+    {
+      "panelKey": 34,
+      "title": "Parse",
+      "subPanels": [
+        {
+          "subPanelKey": 4,
+          "title": "99% Parse Duration",
+          "targets": [
+            {
+              "expr": "histogram_quantile(0.99, sum(rate(tidb_session_parse_duration_seconds_bucket{inspectionid=\"{{inspectionId}}\"}[1m])) by (le, sql_type))",
+              "legendFormat": "{{sql_type}}"
+            }
+          ],
+          "yaxis": {
+            "format": "s",
+            "logBase": 1
+          }
+        }
+      ]
+    },
+    {
+      "panelKey": 35,
+      "title": "Compile",
+      "subPanels": [
+        {
+          "subPanelKey": 5,
+          "title": "99% Compile Duration",
+          "targets": [
+            {
+              "expr": "histogram_quantile(0.99, sum(rate(tidb_session_compile_duration_seconds_bucket{inspectionid=\"{{inspectionId}}\"}[1m])) by (le, sql_type))",
+              "legendFormat": "{{sql_type}}"
+            }
+          ],
+          "yaxis": {
+            "format": "s",
+            "logBase": 1
+          }
+        }
+      ]
+    },
+    {
+      "panelKey": 36,
+      "title": "Transaction",
+      "subPanels": [
+        {
+          "subPanelKey": 30,
+          "title": "Duration",
+          "targets": [
+            {
+              "expr": "histogram_quantile(0.99, sum(rate(tidb_session_transaction_duration_seconds_bucket{inspectionid=\"{{inspectionId}}\"}[1m])) by (le, sql_type))",
+              "legendFormat": "99-{{sql_type}}"
+            },
+            {
+              "expr": "histogram_quantile(0.95, sum(rate(tidb_session_transaction_duration_seconds_bucket{inspectionid=\"{{inspectionId}}\"}[1m])) by (le, sql_type))",
+              "legendFormat": "95-{{sql_type}}"
+            },
+            {
+              "expr": "histogram_quantile(0.80, sum(rate(tidb_session_transaction_duration_seconds_bucket{inspectionid=\"{{inspectionId}}\"}[1m])) by (le, sql_type))",
+              "legendFormat": "80-{{sql_type}}"
+            }
+          ],
+          "yaxis": {
+            "format": "s",
+            "logBase": 2
+          }
+        },
+        {
+          "subPanelKey": 6,
+          "title": "Transaction Statement Num",
+          "targets": [
+            {
+              "expr": "histogram_quantile(0.99, sum(rate(tidb_session_transaction_statement_num_bucket{inspectionid=\"{{inspectionId}}\"}[30s])) by (le, sql_type))",
+              "legendFormat": "99-{{sql_type}}"
+            },
+            {
+              "expr": "histogram_quantile(0.80, sum(rate(tidb_session_transaction_statement_num_bucket{inspectionid=\"{{inspectionId}}\"}[30s])) by (le, sql_type))",
+              "legendFormat": "80-{{sql_type}}"
+            }
+          ],
+          "yaxis": {
+            "format": "short",
+            "logBase": 1
+          }
+        },
+        {
+          "subPanelKey": 7,
+          "title": "Transaction Retry Num",
+          "targets": [
+            {
+              "expr": "histogram_quantile(1.0, sum(rate(tidb_session_retry_num_bucket{inspectionid=\"{{inspectionId}}\"}[30s])) by (le))",
+              "legendFormat": "100"
+            },
+            {
+              "expr": "histogram_quantile(0.99, sum(rate(tidb_session_retry_num_bucket{inspectionid=\"{{inspectionId}}\"}[30s])) by (le))",
+              "legendFormat": "99"
+            },
+            {
+              "expr": "histogram_quantile(0.90, sum(rate(tidb_session_retry_num_bucket{inspectionid=\"{{inspectionId}}\"}[30s])) by (le))",
+              "legendFormat": "90"
+            }
+          ],
+          "yaxis": {
+            "format": "short",
+            "logBase": 1
+          }
+        }
+      ]
+    },
+    {
+      "panelKey": 37,
+      "title": "KV",
+      "subPanels": [
+        {
+          "subPanelKey": 10,
+          "title": "KV Cmd Duration 999",
+          "targets": [
+            {
+              "expr": "histogram_quantile(0.999, sum(rate(tidb_tikvclient_txn_cmd_duration_seconds_bucket{type=~\"get|batch_get|seek|seek_reverse\", inspectionid=\"{{inspectionId}}\"}[1m])) by (le, type))",
+              "legendFormat": "{{type}}"
+            }
+          ],
+          "yaxis": {
+            "format": "s",
+            "logBase": 1
+          }
+        },
+        {
+          "subPanelKey": 11,
+          "title": "KV Cmd Duration 99",
+          "targets": [
+            {
+              "expr": "histogram_quantile(0.99, sum(rate(tidb_tikvclient_txn_cmd_duration_seconds_bucket{type=~\"get|batch_get|seek|seek_reverse\", inspectionid=\"{{inspectionId}}\"}[1m])) by (le, type))",
+              "legendFormat": "{{type}}"
+            }
+          ],
+          "yaxis": {
+            "format": "s",
+            "logBase": 1
+          }
+        },
+        {
+          "subPanelKey": 8,
+          "title": "Lock Resolve OPS",
+          "targets": [
+            {
+              "expr": "sum(rate(tidb_tikvclient_lock_resolver_actions_total{inspectionid=\"{{inspectionId}}\"}[1m])) by (type)",
+              "legendFormat": "{{type}}"
+            }
+          ],
+          "yaxis": {
+            "format": "short",
+            "logBase": 1
+          }
+        },
+        {
+          "subPanelKey": 79,
+          "title": "99% KV Backoff Duration",
+          "targets": [
+            {
+              "expr": "histogram_quantile(0.99, sum(rate(tidb_tikvclient_backoff_seconds_bucket{inspectionid=\"{{inspectionId}}\"}[5m])) by (le, type))",
+              "legendFormat": "{{type}}"
+            }
+          ],
+          "yaxis": {
+            "format": "s",
+            "logBase": 1
+          }
+        },
+        {
+          "subPanelKey": 9,
+          "title": "KV Backoff OPS",
+          "targets": [
+            {
+              "expr": "sum(rate(tidb_tikvclient_backoff_total{inspectionid=\"{{inspectionId}}\"}[1m])) by (type)",
+              "legendFormat": "{{type}}"
+            }
+          ],
+          "yaxis": {
+            "format": "short",
+            "logBase": 1
+          }
+        }
+      ]
+    },
+    {
+      "panelKey": 38,
+      "title": "PD Client",
+      "subPanels": [
+        {
+          "subPanelKey": 12,
+          "title": "PD TSO Wait Duration",
+          "targets": [
+            {
+              "expr": "histogram_quantile(0.999, sum(rate(pd_client_cmd_handle_cmds_duration_seconds_bucket{type=\"tso\", inspectionid=\"{{inspectionId}}\"}[1m])) by (le))",
+              "legendFormat": "999"
+            },
+            {
+              "expr": "histogram_quantile(0.99, sum(rate(pd_client_cmd_handle_cmds_duration_seconds_bucket{type=\"tso\", inspectionid=\"{{inspectionId}}\"}[1m])) by (le))",
+              "legendFormat": "99"
+            },
+            {
+              "expr": "histogram_quantile(0.90, sum(rate(pd_client_cmd_handle_cmds_duration_seconds_bucket{type=\"tso\", inspectionid=\"{{inspectionId}}\"}[1m])) by (le))",
+              "legendFormat": "90"
+            }
+          ],
+          "yaxis": {
+            "format": "s",
+            "logBase": 1
+          }
+        },
+        {
+          "subPanelKey": 13,
+          "title": "PD TSO RPC Duration",
+          "targets": [
+            {
+              "expr": "histogram_quantile(0.999, sum(rate(pd_client_request_handle_requests_duration_seconds_bucket{type=\"tso\", inspectionid=\"{{inspectionId}}\"}[1m])) by (le))",
+              "legendFormat": "999"
+            },
+            {
+              "expr": "histogram_quantile(0.99, sum(rate(pd_client_request_handle_requests_duration_seconds_bucket{type=\"tso\", inspectionid=\"{{inspectionId}}\"}[1m])) by (le))",
+              "legendFormat": "99"
+            },
+            {
+              "expr": "histogram_quantile(0.90, sum(rate(pd_client_request_handle_requests_duration_seconds_bucket{type=\"tso\", inspectionid=\"{{inspectionId}}\"}[1m])) by (le))",
+              "legendFormat": "90"
+            }
+          ],
+          "yaxis": {
+            "format": "s",
+            "logBase": 1
+          }
+        }
+      ]
+    },
+    {
+      "panelKey": 39,
+      "title": "gRPC",
+      "subPanels": [
+        {
+          "subPanelKey": 29,
+          "title": "99% gRPC messge duration",
+          "targets": [
+            {
+              "expr": "histogram_quantile(0.99, sum(rate(tikv_grpc_msg_duration_seconds_bucket{type=~\"kv_get|kv_batch_get|coprocessor\", inspectionid=\"{{inspectionId}}\"}[5m])) by (le, type))",
+              "legendFormat": "{{type}}"
+            }
+          ],
+          "yaxis": {
+            "format": "s",
+            "logBase": 2
+          }
+        },
+        {
+          "subPanelKey": 14,
+          "title": "gRPC poll CPU",
+          "targets": [
+            {
+              "expr": "sum(rate(tikv_thread_cpu_seconds_total{name=~\"raftstore_.*\", inspectionid=\"{{inspectionId}}\"}[1m])) by (instance, name)",
+              "legendFormat": "{{ instance }} - {{name}}"
+            }
+          ],
+          "yaxis": {
+            "format": "percentunit",
+            "logBase": 1
+          }
+        }
+      ]
+    },
+    {
+      "panelKey": 61,
+      "title": "Disk",
+      "subPanels": [
+        {
+          "subPanelKey": 59,
+          "title": "Disk Latency",
+          "targets": [
+            {
+              "expr": "irate(node_disk_read_time_seconds_total{inspectionid=\"{{inspectionId}}\"}[5m]) / irate(node_disk_reads_completed_total{inspectionid=\"{{inspectionId}}\"}[5m])",
+              "legendFormat": "Read: {{ instance }} - {{ device }}"
+            }
+          ],
+          "yaxis": {
+            "format": "s",
+            "logBase": 2
+          }
+        },
+        {
+          "subPanelKey": 63,
+          "title": "Disk Operations",
+          "targets": [
+            {
+              "expr": "irate(node_disk_reads_completed_total{inspectionid=\"{{inspectionId}}\"}[5m])",
+              "legendFormat": "Read: {{ instance }} - {{ device }}"
+            }
+          ],
+          "yaxis": {
+            "format": "iops",
+            "logBase": 1
+          }
+        },
+        {
+          "subPanelKey": 65,
+          "title": "Disk Bandwidth",
+          "targets": [
+            {
+              "expr": "irate(node_disk_read_bytes_total{inspectionid=\"{{inspectionId}}\"}[5m])",
+              "legendFormat": "Read: {{ instance }} - {{ device }}"
+            }
+          ],
+          "yaxis": {
+            "format": "Bps",
+            "logBase": 1
+          }
+        },
+        {
+          "subPanelKey": 67,
+          "title": "Disk Load",
+          "targets": [
+            {
+              "expr": "irate(node_disk_read_time_seconds_total{inspectionid=\"{{inspectionId}}\"}[5m])",
+              "legendFormat": "Read: {{instance}} - {{ device }}"
+            }
+          ],
+          "yaxis": {
+            "format": "short",
+            "logBase": 1
+          }
+        }
+      ]
+    },
+    {
+      "panelKey": 47,
+      "title": "Storage (only for read)",
+      "subPanels": [
+        {
+          "subPanelKey": 57,
+          "title": "Storage ReadPool CPU",
+          "targets": [
+            {
+              "expr": "sum(rate(tikv_thread_cpu_seconds_total{name=~\"store_read.*\", inspectionid=\"{{inspectionId}}\"}[1m])) by (instance)",
+              "legendFormat": "{{instance}}"
+            }
+          ],
+          "yaxis": {
+            "format": "percentunit",
+            "logBase": 1
+          }
+        }
+      ]
+    },
+    {
+      "panelKey": 49,
+      "title": "Coprocessor (only for read)",
+      "subPanels": [
+        {
+          "subPanelKey": 53,
+          "title": "Wait duration",
+          "targets": [
+            {
+              "expr": "histogram_quantile(1, sum(rate(tikv_coprocessor_request_wait_seconds_bucket{inspectionid=\"{{inspectionId}}\"}[1m])) by (le,req))",
+              "legendFormat": "{{req}}-100%"
+            },
+            {
+              "expr": "histogram_quantile(0.99, sum(rate(tikv_coprocessor_request_wait_seconds_bucket{inspectionid=\"{{inspectionId}}\"}[1m])) by (le,req))",
+              "legendFormat": "{{req}}-99%"
+            }
+          ],
+          "yaxis": {
+            "format": "s",
+            "logBase": 1
+          }
+        },
+        {
+          "subPanelKey": 51,
+          "title": "Handle duration",
+          "targets": [
+            {
+              "expr": "histogram_quantile(1, sum(rate(tikv_coprocessor_request_handle_seconds_bucket{inspectionid=\"{{inspectionId}}\"}[1m])) by (le,req))",
+              "legendFormat": "{{req}}-100%"
+            },
+            {
+              "expr": "histogram_quantile(0.99, sum(rate(tikv_coprocessor_request_handle_seconds_bucket{inspectionid=\"{{inspectionId}}\"}[1m])) by (le,req))",
+              "legendFormat": "{{req}}-99%"
+            }
+          ],
+          "yaxis": {
+            "format": "s",
+            "logBase": 1
+          }
+        },
+        {
+          "subPanelKey": 55,
+          "title": "Coprocessor CPU",
+          "targets": [
+            {
+              "expr": "sum(rate(tikv_thread_cpu_seconds_total{name=~\"cop_.*\", inspectionid=\"{{inspectionId}}\"}[1m])) by (instance)",
+              "legendFormat": "{{instance}}"
+            }
+          ],
+          "yaxis": {
+            "format": "percentunit",
+            "logBase": 1
+          }
+        }
+      ]
+    },
+    {
+      "panelKey": 45,
+      "title": "RocksDB-KV (only for read)",
+      "subPanels": [
+        {
+          "subPanelKey": 77,
+          "title": "Get duration",
+          "targets": [
+            {
+              "expr": "max(tikv_engine_get_micro_seconds{db=\"kv\", type=\"get_max\", inspectionid=\"{{inspectionId}}\"})",
+              "legendFormat": "max"
+            },
+            {
+              "expr": "max(tikv_engine_get_micro_seconds{db=\"kv\", type=\"get_percentile99\", inspectionid=\"{{inspectionId}}\"})",
+              "legendFormat": "99%"
+            },
+            {
+              "expr": "max(tikv_engine_get_micro_seconds{db=\"kv\", type=\"get_percentile95\", inspectionid=\"{{inspectionId}}\"})",
+              "legendFormat": "95%"
+            },
+            {
+              "expr": "max(tikv_engine_get_micro_seconds{db=\"kv\", type=\"get_average\", inspectionid=\"{{inspectionId}}\"})",
+              "legendFormat": "avg"
+            }
+          ],
+          "yaxis": {
+            "format": "µs",
+            "logBase": 2
+          }
+        },
+        {
+          "subPanelKey": 75,
+          "title": "Get operations",
+          "targets": [
+            {
+              "expr": "sum(rate(tikv_engine_memtable_efficiency{db=\"kv\", type=\"memtable_hit\", inspectionid=\"{{inspectionId}}\"}[1m]))",
+              "legendFormat": "memtable"
+            },
+            {
+              "expr": "sum(rate(tikv_engine_cache_efficiency{db=\"kv\", type=~\"block_cache_data_hit|block_cache_filter_hit\", inspectionid=\"{{inspectionId}}\"}[1m]))",
+              "legendFormat": "block_cache"
+            },
+            {
+              "expr": "sum(rate(tikv_engine_get_served{db=\"kv\", type=\"get_hit_l0\", inspectionid=\"{{inspectionId}}\"}[1m]))",
+              "legendFormat": "l0"
+            },
+            {
+              "expr": "sum(rate(tikv_engine_get_served{db=\"kv\", type=\"get_hit_l1\", inspectionid=\"{{inspectionId}}\"}[1m]))",
+              "legendFormat": "l1"
+            },
+            {
+              "expr": "sum(rate(tikv_engine_get_served{db=\"kv\", type=\"get_hit_l2_and_up\", inspectionid=\"{{inspectionId}}\"}[1m]))",
+              "legendFormat": "l2_and_up"
+            }
+          ],
+          "yaxis": {
+            "format": "ops",
+            "logBase": 1
+          }
+        },
+        {
+          "subPanelKey": 73,
+          "title": "Seek duration",
+          "targets": [
+            {
+              "expr": "max(tikv_engine_seek_micro_seconds{db=\"kv\", type=\"seek_max\", inspectionid=\"{{inspectionId}}\"})",
+              "legendFormat": "max"
+            },
+            {
+              "expr": "max(tikv_engine_seek_micro_seconds{db=\"kv\", type=\"seek_percentile99\", inspectionid=\"{{inspectionId}}\"})",
+              "legendFormat": "99%"
+            },
+            {
+              "expr": "max(tikv_engine_seek_micro_seconds{db=\"kv\", type=\"seek_percentile95\", inspectionid=\"{{inspectionId}}\"})",
+              "legendFormat": "95%"
+            },
+            {
+              "expr": "max(tikv_engine_seek_micro_seconds{db=\"kv\", type=\"seek_average\", inspectionid=\"{{inspectionId}}\"})",
+              "legendFormat": "avg"
+            }
+          ],
+          "yaxis": {
+            "format": "µs",
+            "logBase": 2
+          }
+        },
+        {
+          "subPanelKey": 71,
+          "title": "Seek operations",
+          "targets": [
+            {
+              "expr": "sum(rate(tikv_engine_locate{db=\"kv\", type=\"number_db_seek\", inspectionid=\"{{inspectionId}}\"}[1m]))",
+              "legendFormat": "seek"
+            },
+            {
+              "expr": "sum(rate(tikv_engine_locate{db=\"kv\", type=\"number_db_seek_found\", inspectionid=\"{{inspectionId}}\"}[1m]))",
+              "legendFormat": "seek_found"
+            },
+            {
+              "expr": "sum(rate(tikv_engine_locate{db=\"kv\", type=\"number_db_next\", inspectionid=\"{{inspectionId}}\"}[1m]))",
+              "legendFormat": "next"
+            },
+            {
+              "expr": "sum(rate(tikv_engine_locate{db=\"kv\", type=\"number_db_next_found\", inspectionid=\"{{inspectionId}}\"}[1m]))",
+              "legendFormat": "next_found"
+            },
+            {
+              "expr": "sum(rate(tikv_engine_locate{db=\"kv\", type=\"number_db_prev\", inspectionid=\"{{inspectionId}}\"}[1m]))",
+              "legendFormat": "prev"
+            },
+            {
+              "expr": "sum(rate(tikv_engine_locate{db=\"kv\", type=\"number_db_prev_found\", inspectionid=\"{{inspectionId}}\"}[1m]))",
+              "legendFormat": "prev_found"
+            }
+          ],
+          "yaxis": {
+            "format": "ops",
+            "logBase": 1
+          }
+        },
+        {
+          "subPanelKey": 69,
+          "title": "Block cache hit",
+          "targets": [
+            {
+              "expr": "sum(rate(tikv_engine_cache_efficiency{type=\"block_cache_hit\", inspectionid=\"{{inspectionId}}\"}[1m])) / (sum(rate(tikv_engine_cache_efficiency{type=\"block_cache_hit\", inspectionid=\"{{inspectionId}}\"}[1m])) + sum(rate(tikv_engine_cache_efficiency{type=\"block_cache_miss\", inspectionid=\"{{inspectionId}}\"}[1m])))",
+              "legendFormat": "all"
+            },
+            {
+              "expr": "sum(rate(tikv_engine_cache_efficiency{db=\"kv\", type=\"block_cache_data_hit\", inspectionid=\"{{inspectionId}}\"}[1m])) / (sum(rate(tikv_engine_cache_efficiency{db=\"kv\", type=\"block_cache_data_hit\", inspectionid=\"{{inspectionId}}\"}[1m])) + sum(rate(tikv_engine_cache_efficiency{db=\"kv\", type=\"block_cache_data_miss\", inspectionid=\"{{inspectionId}}\"}[1m])))",
+              "legendFormat": "data"
+            },
+            {
+              "expr": "sum(rate(tikv_engine_cache_efficiency{db=\"kv\", type=\"block_cache_filter_hit\", inspectionid=\"{{inspectionId}}\"}[1m])) / (sum(rate(tikv_engine_cache_efficiency{db=\"kv\", type=\"block_cache_filter_hit\", inspectionid=\"{{inspectionId}}\"}[1m])) + sum(rate(tikv_engine_cache_efficiency{db=\"kv\", type=\"block_cache_filter_miss\", inspectionid=\"{{inspectionId}}\"}[1m])))",
+              "legendFormat": "filter"
+            },
+            {
+              "expr": "sum(rate(tikv_engine_cache_efficiency{db=\"kv\", type=\"block_cache_index_hit\", inspectionid=\"{{inspectionId}}\"}[1m])) / (sum(rate(tikv_engine_cache_efficiency{db=\"kv\", type=\"block_cache_index_hit\", inspectionid=\"{{inspectionId}}\"}[1m])) + sum(rate(tikv_engine_cache_efficiency{db=\"kv\", type=\"block_cache_index_miss\", inspectionid=\"{{inspectionId}}\"}[1m])))",
+              "legendFormat": "index"
+            },
+            {
+              "expr": "sum(rate(tikv_engine_bloom_efficiency{db=\"kv\", type=\"bloom_prefix_useful\", inspectionid=\"{{inspectionId}}\"}[1m])) / sum(rate(tikv_engine_bloom_efficiency{db=\"kv\", type=\"bloom_prefix_checked\", inspectionid=\"{{inspectionId}}\"}[1m]))",
+              "legendFormat": "bloom prefix"
+            }
+          ],
+          "yaxis": {
+            "format": "percentunit",
+            "logBase": 1
+          }
+        }
+      ]
+    },
+    {
+      "panelKey": 40,
+      "title": "Scheduler (only for write)",
+      "subPanels": [
+        {
+          "subPanelKey": 15,
+          "title": "Scheduler latch wait duration",
+          "targets": [
+            {
+              "expr": "histogram_quantile(0.99, sum(rate(tikv_scheduler_latch_wait_duration_seconds_bucket{inspectionid=\"{{inspectionId}}\"}[5m])) by (le, type))",
+              "legendFormat": "99% - {{ type }}"
+            },
+            {
+              "expr": "histogram_quantile(0.95, sum(rate(tikv_scheduler_latch_wait_duration_seconds_bucket{inspectionid=\"{{inspectionId}}\"}[5m])) by (le, type))",
+              "legendFormat": "95% - {{ type }}"
+            },
+            {
+              "expr": "rate(tikv_scheduler_latch_wait_duration_seconds_sum{inspectionid=\"{{inspectionId}}\"}[5m]) / rate(tikv_scheduler_latch_wait_duration_seconds_count{inspectionid=\"{{inspectionId}}\"}[5m])",
+              "legendFormat": "avg - {{ type }}"
+            }
+          ],
+          "yaxis": {
+            "format": "s",
+            "logBase": 1
+          }
+        },
+        {
+          "subPanelKey": 16,
+          "title": "Scheduler worker CPU",
+          "targets": [
+            {
+              "expr": "sum(rate(tikv_thread_cpu_seconds_total{name=~\"sched_.*\", inspectionid=\"{{inspectionId}}\"}[1m])) by (instance)",
+              "legendFormat": "{{instance}}"
+            }
+          ],
+          "yaxis": {
+            "format": "percentunit",
+            "logBase": 1
+          }
+        },
+        {
+          "subPanelKey": 67,
+          "title": "99% scheduler command duration",
+          "targets": [
+            {
+              "expr": "histogram_quantile(0.99, sum(rate(tikv_scheduler_command_duration_seconds_bucket{inspectionid=\"{{inspectionId}}\"}[1m])) by (le, type))",
+              "legendFormat": "{{ type }}"
+            }
+          ],
+          "yaxis": {
+            "format": "s",
+            "logBase": 1
+          }
+        }
+      ]
+    },
+    {
+      "panelKey": 43,
+      "title": "raftstore (only for write)",
+      "subPanels": [
+        {
+          "subPanelKey": 19,
+          "title": "99% propose wait duration by instance",
+          "targets": [
+            {
+              "expr": "histogram_quantile(0.99, sum(rate(tikv_raftstore_request_wait_time_duration_secs_bucket{inspectionid=\"{{inspectionId}}\"}[1m])) by (le, instance))",
+              "legendFormat": "{{ instance }}"
+            }
+          ],
+          "yaxis": {
+            "format": "s",
+            "logBase": 1
+          }
+        },
+        {
+          "subPanelKey": 21,
+          "title": "Raft store CPU",
+          "targets": [
+            {
+              "expr": "sum(rate(tikv_thread_cpu_seconds_total{name=~\"raftstore_.*\", inspectionid=\"{{inspectionId}}\"}[1m])) by (instance)",
+              "legendFormat": "{{instance}}"
+            }
+          ],
+          "yaxis": {
+            "format": "percentunit",
+            "logBase": 1
+          }
+        },
+        {
+          "subPanelKey": 65,
+          "title": "Storage async write duration",
+          "targets": [
+            {
+              "expr": "histogram_quantile(0.99, sum(rate(tikv_storage_engine_async_request_duration_seconds_bucket{type=\"write\", inspectionid=\"{{inspectionId}}\"}[5m])) by (le))",
+              "legendFormat": "99%"
+            },
+            {
+              "expr": "histogram_quantile(0.95, sum(rate(tikv_storage_engine_async_request_duration_seconds_bucket{type=\"write\", inspectionid=\"{{inspectionId}}\"}[5m])) by (le))",
+              "legendFormat": "95%"
+            },
+            {
+              "expr": "sum(rate(tikv_storage_engine_async_request_duration_seconds_sum{type=\"write\", inspectionid=\"{{inspectionId}}\"}[5m])) / sum(rate(tikv_storage_engine_async_request_duration_seconds_count{type=\"write\", inspectionid=\"{{inspectionId}}\"}[5m]))",
+              "legendFormat": "avg"
+            }
+          ],
+          "yaxis": {
+            "format": "s",
+            "logBase": 1
+          }
+        }
+      ]
+    },
+    {
+      "panelKey": 44,
+      "title": "RocksDB-Raft (only for write)",
+      "subPanels": [
+        {
+          "subPanelKey": 32,
+          "title": "99% append log duration by instance",
+          "targets": [
+            {
+              "expr": "histogram_quantile(0.99, sum(rate(tikv_raftstore_append_log_duration_seconds_bucket{inspectionid=\"{{inspectionId}}\"}[1m])) by (le, instance))",
+              "legendFormat": "{{ instance }}"
+            }
+          ],
+          "yaxis": {
+            "format": "s",
+            "logBase": 1
+          }
+        },
+        {
+          "subPanelKey": 63,
+          "title": "Write duration",
+          "targets": [
+            {
+              "expr": "max(tikv_engine_write_micro_seconds{db=\"raft\", type=\"write_max\", inspectionid=\"{{inspectionId}}\"})",
+              "legendFormat": "max"
+            },
+            {
+              "expr": "max(tikv_engine_write_micro_seconds{db=\"raft\", type=\"write_percentile99\", inspectionid=\"{{inspectionId}}\"})",
+              "legendFormat": "99%"
+            },
+            {
+              "expr": "max(tikv_engine_write_micro_seconds{db=\"raft\", type=\"write_percentile95\", inspectionid=\"{{inspectionId}}\"})",
+              "legendFormat": "95%"
+            },
+            {
+              "expr": "max(tikv_engine_write_micro_seconds{db=\"raft\", type=\"write_average\", inspectionid=\"{{inspectionId}}\"})",
+              "legendFormat": "avg"
+            }
+          ],
+          "yaxis": {
+            "format": "µs",
+            "logBase": 2
+          }
+        }
+      ]
+    },
+    {
+      "panelKey": 46,
+      "title": "RocksDB-KV (only for write)",
+      "subPanels": [
+        {
+          "subPanelKey": 49,
+          "title": "99% apply wait duration by instance",
+          "targets": [
+            {
+              "expr": "histogram_quantile(0.99, sum(rate(tikv_raftstore_apply_wait_time_duration_secs_bucket{inspectionid=\"{{inspectionId}}\"}[5m])) by (le, instance))",
+              "legendFormat": "{{ instance }}"
+            }
+          ],
+          "yaxis": {
+            "format": "s",
+            "logBase": 1
+          }
+        },
+        {
+          "subPanelKey": 22,
+          "title": "Apply log duration",
+          "targets": [
+            {
+              "expr": "histogram_quantile(0.99, sum(rate(tikv_raftstore_apply_log_duration_seconds_bucket{inspectionid=\"{{inspectionId}}\"}[1m])) by (le))",
+              "legendFormat": " 99%"
+            },
+            {
+              "expr": "histogram_quantile(0.95, sum(rate(tikv_raftstore_apply_log_duration_seconds_bucket{inspectionid=\"{{inspectionId}}\"}[1m])) by (le))",
+              "legendFormat": "95%"
+            },
+            {
+              "expr": "sum(rate(tikv_raftstore_apply_log_duration_seconds_sum{inspectionid=\"{{inspectionId}}\"}[1m])) / sum(rate(tikv_raftstore_apply_log_duration_seconds_count{inspectionid=\"{{inspectionId}}\"}[1m]))",
+              "legendFormat": "avg"
+            }
+          ],
+          "yaxis": {
+            "format": "s",
+            "logBase": 1
+          }
+        },
+        {
+          "subPanelKey": 51,
+          "title": "Write duration",
+          "targets": [
+            {
+              "expr": "max(tikv_engine_write_micro_seconds{db=\"kv\", type=\"write_max\", inspectionid=\"{{inspectionId}}\"})",
+              "legendFormat": "max"
+            },
+            {
+              "expr": "max(tikv_engine_write_micro_seconds{db=\"kv\", type=\"write_percentile99\", inspectionid=\"{{inspectionId}}\"})",
+              "legendFormat": "99%"
+            },
+            {
+              "expr": "max(tikv_engine_write_micro_seconds{db=\"kv\", type=\"write_percentile95\", inspectionid=\"{{inspectionId}}\"})",
+              "legendFormat": "95%"
+            },
+            {
+              "expr": "max(tikv_engine_write_micro_seconds{db=\"kv\", type=\"write_average\", inspectionid=\"{{inspectionId}}\"})",
+              "legendFormat": "avg"
+            }
+          ],
+          "yaxis": {
+            "format": "µs",
+            "logBase": 2
+          }
+        },
+        {
+          "subPanelKey": 47,
+          "title": "Async apply CPU",
+          "targets": [
+            {
+              "expr": "sum(rate(tikv_thread_cpu_seconds_total{name=~\"apply_[0-9]+\", inspectionid=\"{{inspectionId}}\"}[1m])) by (instance)",
+              "legendFormat": "{{instance}}"
+            }
+          ],
+          "yaxis": {
+            "format": "percentunit",
+            "logBase": 1
+          }
+        }
+      ]
+    }
+  ]
+}

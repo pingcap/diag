@@ -20,8 +20,19 @@ func SaveHardwareInfo() *saveHardwareInfoTask {
 func (t *saveHardwareInfoTask) Run(m *boot.Model, c *boot.Config, insight *insight.Insight) {
 	for _, insight := range *insight {
 		disks := []string{}
+		
 		for _, disk := range insight.Sysinfo.Storage {
-			disks = append(disks, disk.Name)
+			marked := false
+			for _, hardDisks := range insight.BlockInfo.Disks {
+				if hardDisks.Name == disk.Name {
+					disks = append(disks, fmt.Sprintf("Disk type: %s, disk_controller: %s, %s(%s)",
+						hardDisks.DriveType, hardDisks.StorageController, disk.Name, disk.Driver))
+					marked = true
+				}
+			}
+			if !marked {
+				disks = append(disks, fmt.Sprintf("%s(%s)", disk.Name, disk.Driver))
+			}
 		}
 		networks := []string{}
 		for _, network := range insight.Sysinfo.Network {

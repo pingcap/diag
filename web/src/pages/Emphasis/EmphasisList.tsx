@@ -267,7 +267,7 @@ function ReportList({
   return (
     <div className={styles.container}>
       <div className={styles.list_header}>
-        <h2>报告列表</h2>
+        <h2>重点问题报告列表</h2>
         {curUser.role === 'admin' && (
           <Select
             value={selectedInstance}

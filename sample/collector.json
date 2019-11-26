@@ -1,0 +1,310 @@
+{
+  "meta": {
+    "timestamp": "2019-11-19T03:51:04.748662991-05:00",
+    "uptime": 8539564.92,
+    "idle_time": 53088630.76,
+    "sysinfo_ver": "0.9.1",
+    "git_branch": "Not Provided",
+    "git_commit": "Not Provided",
+    "utc_build_time": "Not Provided",
+    "go_version": "go1.13.1 linux/amd64",
+    "tidb": [
+      {
+        "pid": 12678,
+        "release_version": "v4.0.0-alpha-350-g74eaf327e-dirty",
+        "git_commit": "74eaf327e95332d840c5a7a9008fbc6ab6d78788",
+        "utc_build_time": "2019-09-25 09:58:36",
+        "go_version": "go1.12 linux/amd64"
+      }
+    ],
+    "tikv": [
+      {
+        "pid": 11748,
+        "release_version": "4.0.0-alpha",
+        "git_commit": "31f3ee31fd82e291e3ce842ca231ba103e9a5e89",
+        "git_branch": "master",
+        "utc_build_time": "2019-09-25 03:55:38",
+        "rust_version": "rustc 1.39.0-nightly (c6e9c76c5 2019-09-04)"
+      }
+    ],
+    "pd": [
+      {
+        "pid": 11039,
+        "release_version": "v4.0.0-alpha-69-g30172689",
+        "git_commit": "30172689a91f07dad669fc65084bcc7672cbb4c3",
+        "git_branch": "master",
+        "utc_build_time": "2019-09-25 07:41:48"
+      }
+    ]
+  },
+  "sysinfo": {
+    "node": {
+      "hostname": "localhost.localdomain",
+      "machineid": "ff4feea99c434ae3ae6bfdeabc61afb8",
+      "hypervisor": "kvm",
+      "timezone": "America/New_York"
+    },
+    "os": {
+      "name": "CentOS Linux 7 (Core)",
+      "vendor": "centos",
+      "version": "7",
+      "release": "7.6.1810",
+      "architecture": "amd64"
+    },
+    "kernel": {
+      "release": "3.10.0-957.el7.x86_64",
+      "version": "#1 SMP Thu Nov 8 23:39:32 UTC 2018",
+      "architecture": "x86_64"
+    },
+    "product": {
+      "name": "Standard PC (i440FX + PIIX, 1996)",
+      "vendor": "QEMU",
+      "version": "pc-i440fx-2.12"
+    },
+    "board": {},
+    "chassis": {
+      "type": 1,
+      "vendor": "QEMU",
+      "version": "pc-i440fx-2.12"
+    },
+    "bios": {
+      "vendor": "SeaBIOS",
+      "version": "rel-1.11.1-0-g0551a4be2c-prebuilt.qemu-project.org",
+      "date": "04/01/2014"
+    },
+    "cpu": {
+      "vendor": "GenuineIntel",
+      "model": "Common KVM processor",
+      "speed": 2000,
+      "cache": 16384,
+      "threads": 8
+    },
+    "memory": {
+      "type": "RAM",
+      "size": 16384
+    },
+    "storage": [
+      {
+        "name": "sda",
+        "driver": "sd",
+        "vendor": "QEMU",
+        "model": "QEMU HARDDISK",
+        "serial": "drive-scsi0",
+        "size": 536
+      }
+    ],
+    "lvm": [
+      {
+        "lvname": "home",
+        "vgname": "centos",
+        "lvsize": 451704
+      },
+      {
+        "lvname": "root",
+        "vgname": "centos",
+        "lvsize": 51200
+      },
+      {
+        "lvname": "swap",
+        "vgname": "centos",
+        "lvsize": 8064
+      }
+    ],
+    "network": [
+      {
+        "name": "docker0",
+        "macaddress": "02:42:0a:8e:6b:43",
+        "ipaddress": [
+          "172.17.0.1/16",
+          "fe80::42:aff:fe8e:6b43/64"
+        ],
+        "mtu": 1500
+      },
+      {
+        "name": "eth0",
+        "driver": "virtio_net",
+        "macaddress": "ae:ea:1d:5f:4d:3d",
+        "ipaddress": [
+          "172.16.5.175/23",
+          "fe80::c6e8:ec2:8dee:7a46/64",
+          "fe80::dd5:c9dd:219e:728/64",
+          "fe80::6c48:8337:4e40:fc22/64"
+        ],
+        "mtu": 1500
+      },
+      {
+        "name": "veth9306dd0",
+        "macaddress": "4e:dc:88:e6:b0:e7",
+        "ipaddress": [
+          "fe80::4cdc:88ff:fee6:b0e7/64"
+        ],
+        "mtu": 1500
+      }
+    ]
+  },
+  "ntp": {
+    "version": "ntpd 4.2.6p5@1.2349-o Fri Apr 13 12:52:27 UTC 2018 (1)",
+    "sync": "clock_sync",
+    "stratum": 3,
+    "offset": 0.484,
+    "jitter": 4.397,
+    "status": "0615"
+  },
+  "partitions": [
+    {
+      "name": "sda",
+      "mount": {},
+      "sectors": 1048576000,
+      "size": 536870912000,
+      "subdev": [
+        {
+          "name": "sda1",
+          "partition": true,
+          "mount": {
+            "mount_point": "/boot",
+            "filesystem": "xfs",
+            "mount_options": "rw,seclabel,relatime,attr2,inode64,noquota"
+          },
+          "uuid": "baf1f4fd-953d-4f73-b57e-dd6a7b668d72",
+          "sectors": 2097152,
+          "size": 1073741824
+        },
+        {
+          "name": "sda2",
+          "partition": true,
+          "mount": {},
+          "sectors": 1046476800,
+          "size": 535796121600
+        }
+      ],
+      "rotational": "1"
+    },
+    {
+      "name": "sr0",
+      "mount": {},
+      "sectors": 2097151,
+      "size": 1073741312,
+      "rotational": "1"
+    },
+    {
+      "name": "dm-0",
+      "mount": {},
+      "uuid": "96dc4f5d-fe8f-4d9d-8dd5-49a9a076546a",
+      "sectors": 104857600,
+      "size": 53687091200,
+      "slave_of": [
+        "sda2"
+      ],
+      "rotational": "1"
+    },
+    {
+      "name": "dm-1",
+      "mount": {},
+      "uuid": "ae5e7600-990d-492a-9cd6-7de57edb6cac",
+      "sectors": 16515072,
+      "size": 8455716864,
+      "slave_of": [
+        "sda2"
+      ],
+      "rotational": "1"
+    },
+    {
+      "name": "dm-2",
+      "mount": {},
+      "uuid": "71861964-3e9c-411e-a101-3ee5d8bd43c3",
+      "sectors": 925089792,
+      "size": 473645973504,
+      "slave_of": [
+        "sda2"
+      ],
+      "rotational": "1"
+    }
+  ],
+  "block_info": {
+    "total_size_bytes": 1073733434880,
+    "disks": [
+      {
+        "name": "dm-0",
+        "size_bytes": 53687091200,
+        "physical_block_size_bytes": 512,
+        "drive_type": "unknown",
+        "storage_controller": "unknown",
+        "bus_path": "unknown",
+        "vendor": "unknown",
+        "model": "unknown",
+        "serial_number": "unknown",
+        "wwn": "unknown",
+        "partitions": []
+      },
+      {
+        "name": "dm-1",
+        "size_bytes": 8455716864,
+        "physical_block_size_bytes": 512,
+        "drive_type": "unknown",
+        "storage_controller": "unknown",
+        "bus_path": "unknown",
+        "vendor": "unknown",
+        "model": "unknown",
+        "serial_number": "unknown",
+        "wwn": "unknown",
+        "partitions": []
+      },
+      {
+        "name": "dm-2",
+        "size_bytes": 473645973504,
+        "physical_block_size_bytes": 512,
+        "drive_type": "unknown",
+        "storage_controller": "unknown",
+        "bus_path": "unknown",
+        "vendor": "unknown",
+        "model": "unknown",
+        "serial_number": "unknown",
+        "wwn": "unknown",
+        "partitions": []
+      },
+      {
+        "name": "sda",
+        "size_bytes": 536870912000,
+        "physical_block_size_bytes": 512,
+        "drive_type": "hdd",
+        "storage_controller": "scsi",
+        "bus_path": "pci-0000:00:05.0-scsi-0:0:0:0",
+        "vendor": "QEMU",
+        "model": "QEMU_HARDDISK",
+        "serial_number": "drive-scsi0",
+        "wwn": "unknown",
+        "partitions": [
+          {
+            "name": "sda1",
+            "label": "",
+            "mount_point": "/boot",
+            "size_bytes": 1073741824,
+            "type": "xfs",
+            "read_only": false
+          },
+          {
+            "name": "sda2",
+            "label": "",
+            "mount_point": "",
+            "size_bytes": 535796121600,
+            "type": "",
+            "read_only": true
+          }
+        ]
+      },
+      {
+        "name": "sr0",
+        "size_bytes": 1073741312,
+        "physical_block_size_bytes": 512,
+        "drive_type": "odd",
+        "storage_controller": "scsi",
+        "bus_path": "pci-0000:00:01.1-ata-2.0",
+        "vendor": "QEMU",
+        "model": "QEMU_DVD-ROM",
+        "serial_number": "QM00003",
+        "wwn": "unknown",
+        "partitions": []
+      }
+    ]
+  }
+}

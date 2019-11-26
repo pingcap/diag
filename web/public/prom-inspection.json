@@ -1,0 +1,1027 @@
+{
+  "sectionKey": "prom_monitor",
+  "title": "三、监控信息",
+  "panels": [
+    {
+      "panelKey": "dba_error_1",
+      "title": "Error 信息 (一级)",
+      "subPanels": [
+        {
+          "subPanelKey": "failed_query_opm",
+          "title": "Failed Query OPM",
+          "targets": [
+            {
+              "expr": "sum(increase(tidb_server_execute_error_total{inspectionid=\"{{inspectionId}}\"}[1m])) by (type, instance)",
+              "legendFormat": "{{type}}-{{instance}}"
+            }
+          ],
+          "yaxis": {
+            "format": "short",
+            "logBase": 1,
+            "decimals": 0
+          }
+        },
+        {
+          "subPanelKey": "pd_client_cmd_fail_ops",
+          "title": "PD Client CMD Fail OPS",
+          "targets": [
+            {
+              "expr": "sum(rate(pd_client_cmd_handle_failed_cmds_duration_seconds_count{inspectionid=\"{{inspectionId}}\"}[1m])) by (type)",
+              "legendFormat": "{{type}}"
+            }
+          ],
+          "yaxis": {
+            "format": "short",
+            "logBase": 1,
+            "decimals": 0
+          }
+        }
+      ]
+    },
+    {
+      "panelKey": "dba_error_2",
+      "title": "Error 信息 (二级)",
+      "subPanels": [
+        {
+          "subPanelKey": "ticlient_region_error",
+          "title": "TiClient Region Error OPS",
+          "targets": [
+            {
+              "expr": "sum(rate(tidb_tikvclient_region_err_total{inspectionid=\"{{inspectionId}}\"}[1m])) by (type)",
+              "legendFormat": "{{type}}"
+            },
+            {
+              "expr": "sum(rate(tidb_tikvclient_region_err_total{type=\"server_is_busy\", inspectionid=\"{{inspectionId}}\"}[1m]))",
+              "legendFormat": "sum"
+            }
+          ],
+          "yaxis": {
+            "format": "short",
+            "logBase": 1,
+            "decimals": 0
+          }
+        },
+        {
+          "subPanelKey": "lock_resolve_ops",
+          "title": "Lock Resolve OPS",
+          "targets": [
+            {
+              "expr": "sum(rate(tidb_tikvclient_lock_resolver_actions_total{inspectionid=\"{{inspectionId}}\"}[1m])) by (type)",
+              "legendFormat": "{{type}}"
+            }
+          ],
+          "yaxis": {
+            "format": "short",
+            "logBase": 1,
+            "decimals": 0
+          }
+        },
+        {
+          "subPanelKey": "tikv_server_busy",
+          "title": "Server is Busy",
+          "targets": [
+            {
+              "expr": "sum(rate(tikv_scheduler_too_busy_total{inspectionid=\"{{inspectionId}}\"}[1m])) by (job)",
+              "legendFormat": "scheduler-{{job}}"
+            },
+            {
+              "expr": "sum(rate(tikv_channel_full_total{inspectionid=\"{{inspectionId}}\"}[1m])) by (job, type)",
+              "legendFormat": "channelfull-{{job}}-{{type}}"
+            },
+            {
+              "expr": "sum(rate(tikv_coprocessor_request_error{type=\"full\", inspectionid=\"{{inspectionId}}\"}[1m])) by (job)",
+              "legendFormat": "coprocessor-{{job}}"
+            },
+            {
+              "expr": "avg(tikv_engine_write_stall{type=\"write_stall_percentile99\", inspectionid=\"{{inspectionId}}\"}) by (job)",
+              "legendFormat": "stall-{{job}}"
+            }
+          ],
+          "yaxis": {
+            "format": "short",
+            "logBase": 1,
+            "decimals": 0
+          }
+        },
+        {
+          "subPanelKey": "tikv_raftstore_error",
+          "title": "Raftstore Error",
+          "targets": [
+            {
+              "expr": "sum(rate(tikv_storage_engine_async_request_total{status!~\"success|all\", inspectionid=\"{{inspectionId}}\"}[1m])) by (job, status)",
+              "legendFormat": "{{job}}-{{status}}"
+            }
+          ],
+          "yaxis": {
+            "format": "short",
+            "logBase": 1,
+            "decimals": 0
+          }
+        },
+        {
+          "subPanelKey": "tikv_coprocessor_error",
+          "title": "Coprocessor Error",
+          "targets": [
+            {
+              "expr": "sum(rate(tikv_coprocessor_request_error{inspectionid=\"{{inspectionId}}\"}[1m])) by (job, reason)",
+              "legendFormat": "{{job}}-{{reason}}"
+            }
+          ],
+          "yaxis": {
+            "format": "short",
+            "logBase": 1,
+            "decimals": 0
+          }
+        },
+        {
+          "subPanelKey": "tikv_grpc_message_error",
+          "title": "gRPC message error",
+          "targets": [
+            {
+              "expr": "sum(rate(tikv_grpc_msg_fail_total{inspectionid=\"{{inspectionId}}\"}[1m])) by (job, type)",
+              "legendFormat": "{{job}}-{{type}}"
+            }
+          ],
+          "yaxis": {
+            "format": "short",
+            "logBase": 1,
+            "decimals": 0
+          }
+        },
+        {
+          "subPanelKey": "tikv_leader_drop",
+          "title": "Leader drop",
+          "targets": [
+            {
+              "expr": "sum(delta(tikv_pd_heartbeat_tick_total{type=\"leader\", inspectionid=\"{{inspectionId}}\"}[1m])) by (job)",
+              "legendFormat": "{{job}}",
+              "desc": "v_2_x"
+            },
+            {
+              "expr": "sum(delta(tikv_raftstore_region_count{type=\"leader\", inspectionid=\"{{inspectionId}}\"}[1m])) by (instance)",
+              "legendFormat": "{{instance}}",
+              "desc": "v_3_x"
+            }
+          ],
+          "yaxis": {
+            "format": "short",
+            "logBase": 1,
+            "decimals": 0
+          }
+        },
+        {
+          "subPanelKey": "tikv_leader_missing",
+          "title": "Leader missing",
+          "targets": [
+            {
+              "expr": "sum(tikv_raftstore_leader_missing{inspectionid=\"{{inspectionId}}\"}) by (job)",
+              "legendFormat": "{{job}}"
+            }
+          ],
+          "yaxis": {
+            "format": "short",
+            "logBase": 1,
+            "decimals": 0
+          }
+        },
+        {
+          "subPanelKey": "tikv_scheduler_error",
+          "title": "Scheduler Error",
+          "targets": [
+            {
+              "expr": "sum(rate(tikv_scheduler_stage_total{stage=~\"snapshot_err|prepare_write_err\", inspectionid=\"{{inspectionId}}\"}[1m])) by (job, stage)",
+              "legendFormat": "{{job}}-{{stage}}"
+            }
+          ],
+          "yaxis": {
+            "format": "short",
+            "logBase": 1,
+            "decimals": 0
+          }
+        },
+        {
+          "subPanelKey": "tikv_server_report_failures",
+          "title": "Server Report Failures",
+          "targets": [
+            {
+              "expr": "sum(rate(tikv_server_report_failure_msg_total{inspectionid=\"{{inspectionId}}\"}[1m])) by (type,instance,job,store_id)",
+              "legendFormat": "{{job}} - {{type}} - to - {{store_id}}"
+            }
+          ],
+          "yaxis": {
+            "format": "short",
+            "logBase": 1,
+            "decimals": 0
+          }
+        },
+        {
+          "subPanelKey": "schema_lease_error_opm",
+          "title": "Schema Lease Error OPM",
+          "targets": [
+            {
+              "expr": "sum(increase(tidb_session_schema_lease_error_total{inspectionid=\"{{inspectionId}}\"}[1m])) by (instance)",
+              "legendFormat": "{{instance}}"
+            }
+          ],
+          "yaxis": {
+            "format": "short",
+            "logBase": 1,
+            "decimals": 0
+          }
+        },
+        {
+          "subPanelKey": "tidb_gc_failure_opm",
+          "title": "GC Failure OPM",
+          "targets": [
+            {
+              "expr": "sum(increase(tidb_tikvclient_gc_failure{inspectionid=\"{{inspectionId}}\"}[1m])) by (type)",
+              "legendFormat": "{{type}}"
+            }
+          ],
+          "yaxis": {
+            "format": "short",
+            "logBase": 1,
+            "decimals": 0
+          }
+        },
+        {
+          "subPanelKey": "tidb_gc_delete_range_failure_opm",
+          "title": "Delete Range Failure OPM",
+          "targets": [
+            {
+              "expr": "sum(increase(tidb_tikvclient_gc_unsafe_destroy_range_failures{inspectionid=\"{{inspectionId}}\"}[1m])) by (type)",
+              "legendFormat": "{{type}}"
+            }
+          ],
+          "yaxis": {
+            "format": "short",
+            "logBase": 1,
+            "decimals": 0
+          }
+        }
+      ]
+    },
+    {
+      "panelKey": "dba_resources",
+      "title": "资源信息",
+      "subPanels": [
+        {
+          "subPanelKey": "vcores",
+          "subPanelType": "table",
+          "tableColumns": ["Host", "CPU Num"],
+          "title": "Vcores",
+          "targets": [
+            {
+              "expr": "count(node_cpu{mode=\"user\", inspectionid=\"{{inspectionId}}\"}) by (instance)",
+              "legendFormat": "{{instance}}",
+              "desc": "v_2_x"
+            },
+            {
+              "expr": "count(node_cpu_seconds_total{mode=\"user\", inspectionid=\"{{inspectionId}}\"}) by (instance)",
+              "legendFormat": "{{instance}}",
+              "desc": "v_3_x"
+            }
+          ],
+          "yaxis": {
+            "format": "short",
+            "logBase": 1,
+            "decimals": 0
+          }
+        },
+        {
+          "subPanelKey": "uptime",
+          "title": "Uptime",
+          "targets": [
+            {
+              "expr": "time() - process_start_time_seconds{job=\"tidb\", inspectionid=\"{{inspectionId}}\"}",
+              "legendFormat": "{{instance}}"
+            }
+          ],
+          "yaxis": {
+            "format": "s",
+            "logBase": 1,
+            "decimals": 1
+          }
+        },
+        {
+          "subPanelKey": "pd_cpu_usage",
+          "title": "PD CPU Usage",
+          "targets": [
+            {
+              "expr": "rate(process_cpu_seconds_total{job=\"pd\", inspectionid=\"{{inspectionId}}\"}[1m])",
+              "legendFormat": "{{instance}}"
+            }
+          ],
+          "yaxis": {
+            "format": "percentunit",
+            "logBase": 1,
+            "decimals": 1
+          }
+        },
+        {
+          "subPanelKey": "tidb_cpu_usage",
+          "title": "TiDB CPU Usage",
+          "targets": [
+            {
+              "expr": "rate(process_cpu_seconds_total{job=\"tidb\", inspectionid=\"{{inspectionId}}\"}[1m])",
+              "legendFormat": "{{instance}}"
+            }
+          ],
+          "yaxis": {
+            "format": "percentunit",
+            "logBase": 1,
+            "decimals": 1
+          }
+        },
+        {
+          "subPanelKey": "tikv_cpu_usage",
+          "title": "TiKV CPU Usage",
+          "targets": [
+            {
+              "expr": "rate(process_cpu_seconds_total{job=\"tikv\", inspectionid=\"{{inspectionId}}\"}[1m])",
+              "legendFormat": "{{instance}}"
+            }
+          ],
+          "yaxis": {
+            "format": "percentunit",
+            "logBase": 1,
+            "decimals": 1
+          }
+        },
+        {
+          "subPanelKey": "tikv_thread_cpu",
+          "title": "TiKV Thread CPU",
+          "targets": [
+            {
+              "expr": "sum(rate(tikv_thread_cpu_seconds_total{inspectionid=\"{{inspectionId}}\"}[1m])) by (instance,job)",
+              "legendFormat": "{{instance}}-{{job}}"
+            }
+          ],
+          "yaxis": {
+            "format": "percentunit",
+            "logBase": 1,
+            "decimals": 3
+          }
+        },
+        {
+          "subPanelKey": "raft_store_cpu",
+          "title": "Raft store CPU",
+          "targets": [
+            {
+              "expr": "sum(rate(tikv_thread_cpu_seconds_total{name=~\"raftstore_.*\", inspectionid=\"{{inspectionId}}\"}[1m])) by (job, name)",
+              "legendFormat": "{{job}}"
+            }
+          ],
+          "yaxis": {
+            "format": "percentunit",
+            "logBase": 1,
+            "decimals": 2
+          }
+        },
+        {
+          "subPanelKey": "coprocessor_cpu",
+          "title": "Coprocessor CPU",
+          "targets": [
+            {
+              "expr": "sum(rate(tikv_thread_cpu_seconds_total{name=~\"cop_.*\", inspectionid=\"{{inspectionId}}\"}[1m])) by (job)",
+              "legendFormat": "{{job}}"
+            }
+          ],
+          "yaxis": {
+            "format": "percentunit",
+            "logBase": 1,
+            "decimals": 2
+          }
+        },
+        {
+          "subPanelKey": "memory_total",
+          "subPanelType": "table",
+          "tableColumns": ["Host", "Memory"],
+          "title": "Memory Total",
+          "targets": [
+            {
+              "expr": "node_memory_MemTotal{inspectionid=\"{{inspectionId}}\"}",
+              "legendFormat": "{{instance}}",
+              "desc": "v_2_x"
+            },
+            {
+              "expr": "node_memory_MemTotal_bytes{inspectionid=\"{{inspectionId}}\"}",
+              "legendFormat": "{{ instance }}",
+              "desc": "v_3_x"
+            }
+          ],
+          "yaxis": {
+            "format": "bytes",
+            "logBase": 1
+          }
+        },
+        {
+          "subPanelKey": "memory_available",
+          "title": "Memory Available",
+          "targets": [
+            {
+              "expr": "node_memory_MemAvailable{inspectionid=\"{{inspectionId}}\"}",
+              "legendFormat": "{{instance}}",
+              "desc": "v_2_x"
+            },
+            {
+              "expr": "node_memory_MemAvailable_bytes{inspectionid=\"{{inspectionId}}\"}",
+              "legendFormat": "{{instance}}",
+              "desc": "v_3_x"
+            }
+          ],
+          "yaxis": {
+            "format": "bytes",
+            "logBase": 1
+          }
+        },
+        {
+          "subPanelKey": "load_1",
+          "title": "Load[1m]",
+          "targets": [
+            {
+              "expr": "node_load1{inspectionid=\"{{inspectionId}}\"}",
+              "legendFormat": "{{instance}}"
+            }
+          ],
+          "yaxis": {
+            "format": "short",
+            "logBase": 1,
+            "decimals": 1
+          }
+        },
+        {
+          "subPanelKey": "load_5",
+          "title": "Load[5m]",
+          "targets": [
+            {
+              "expr": "node_load5{inspectionid=\"{{inspectionId}}\"}",
+              "legendFormat": "{{instance}}"
+            }
+          ],
+          "yaxis": {
+            "format": "short",
+            "logBase": 1,
+            "decimals": 1
+          }
+        },
+        {
+          "subPanelKey": "load_15",
+          "title": "Load[15m]",
+          "targets": [
+            {
+              "expr": "node_load15{inspectionid=\"{{inspectionId}}\"}",
+              "legendFormat": "{{instance}}"
+            }
+          ],
+          "yaxis": {
+            "format": "short",
+            "logBase": 1,
+            "decimals": 1
+          }
+        },
+        {
+          "subPanelKey": "storage_capacity",
+          "title": "Storage Capacity",
+          "targets": [
+            {
+              "expr": "sum(pd_cluster_status{type=\"storage_capacity\", inspectionid=\"{{inspectionId}}\" })",
+              "legendFormat": "storage capacity"
+            }
+          ],
+          "yaxis": {
+            "format": "bytes",
+            "logBase": 1
+          }
+        },
+        {
+          "subPanelKey": "storage_size",
+          "title": "Storage Size",
+          "targets": [
+            {
+              "expr": "pd_cluster_status{type=\"storage_size\", inspectionid=\"{{inspectionId}}\"}",
+              "legendFormat": "storage size"
+            }
+          ],
+          "yaxis": {
+            "format": "bytes",
+            "logBase": 1
+          }
+        },
+        {
+          "subPanelKey": "storage_size_ratio",
+          "title": "Storage Size Ratio",
+          "targets": [
+            {
+              "expr": "avg(pd_cluster_status{type=\"storage_size\", inspectionid=\"{{inspectionId}}\"}) / avg(pd_cluster_status{type=\"storage_capacity\", inspectionid=\"{{inspectionId}}\"})",
+              "legendFormat": "used ratio"
+            }
+          ],
+          "yaxis": {
+            "format": "percentunit",
+            "logBase": 1
+          }
+        },
+        {
+          "subPanelKey": "io_util",
+          "title": "IO Util",
+          "targets": [
+            {
+              "expr": "rate(node_disk_io_time_ms{inspectionid=\"{{inspectionId}}\"}[1m]) / 1000",
+              "legendFormat": "{{instance}} - {{device}}",
+              "desc": "v_2_x"
+            },
+            {
+              "expr": "irate(node_disk_io_time_seconds_total{inspectionid=\"{{inspectionId}}\"}[1m])",
+              "legendFormat": "{{instance}} - {{device}}",
+              "desc": "v_3_x"
+            }
+          ],
+          "yaxis": {
+            "format": "percentunit",
+            "logBase": 1
+          }
+        },
+        {
+          "subPanelKey": "network_traffic",
+          "title": "Network Traffic",
+          "targets": [
+            {
+              "expr": "irate(node_network_receive_bytes{device!=\"lo\", inspectionid=\"{{inspectionId}}\"}[5m]) * 8",
+              "legendFormat": "Inbound: {{instance}}",
+              "desc": "v_2_x"
+            },
+            {
+              "expr": "irate(node_network_transmit_bytes{device!=\"lo\", inspectionid=\"{{inspectionId}}\"}[5m]) * 8",
+              "legendFormat": "Outbound: {{instance}}",
+              "desc": "v_2_x"
+            },
+            {
+              "expr": "irate(node_network_receive_bytes_total{device!=\"lo\", inspectionid=\"{{inspectionId}}\"}[5m])",
+              "legendFormat": "Inbound: {{instance}}",
+              "desc": "v_3_x"
+            },
+            {
+              "expr": "irate(node_network_transmit_bytes_total{device!=\"lo\", inspectionid=\"{{inspectionId}}\"}[5m])",
+              "legendFormat": "Outbound: {{instance}}",
+              "desc": "v_3_x"
+            }
+          ],
+          "yaxis": {
+            "format": "bps",
+            "logBase": 1
+          }
+        },
+        {
+          "subPanelKey": "connection_count",
+          "title": "Connection Count",
+          "targets": [
+            {
+              "expr": "tidb_server_connections{inspectionid=\"{{inspectionId}}\"}",
+              "legendFormat": "{{instance}}"
+            },
+            {
+              "expr": "sum(tidb_server_connections{inspectionid=\"{{inspectionId}}\"})",
+              "legendFormat": "total"
+            }
+          ],
+          "yaxis": {
+            "format": "short",
+            "logBase": 1,
+            "decimals": 0
+          }
+        },
+        {
+          "subPanelKey": "tcp_retrans",
+          "title": "TCP Retrans",
+          "targets": [
+            {
+              "expr": "irate(node_netstat_TcpExt_TCPSynRetrans{inspectionid=\"{{inspectionId}}\"}[1m])",
+              "legendFormat": "{{instance}} - TCPSynRetrans",
+              "desc": "v_2_x"
+            },
+            {
+              "expr": "irate(node_netstat_TcpExt_TCPSlowStartRetrans{inspectionid=\"{{inspectionId}}\"}[1m])",
+              "legendFormat": "{{instance}} - TCPSlowStartRetrans",
+              "desc": "v_2_x"
+            },
+            {
+              "expr": "irate(node_netstat_TcpExt_TCPForwardRetrans{inspectionid=\"{{inspectionId}}\"}[1m])",
+              "legendFormat": "{{instance}} - TCPForwardRetrans",
+              "desc": "v_2_x"
+            },
+            {
+              "expr": "irate(node_netstat_Tcp_RetransSegs{inspectionid=\"{{inspectionId}}\"}[1m])",
+              "legendFormat": "{{instance}} - TCPSlowStartRetrans",
+              "desc": "v_3_x"
+            }
+          ],
+          "yaxis": {
+            "format": "short",
+            "logBase": 1
+          }
+        },
+        {
+          "subPanelKey": "regions_label_level",
+          "title": "Region Label Isolation Level",
+          "targets": [
+            {
+              "expr": "pd_regions_label_level{inspectionid=\"{{inspectionId}}\"}",
+              "legendFormat": "{{type}}"
+            }
+          ],
+          "yaxis": {
+            "format": "short",
+            "logBase": 1,
+            "decimals": 0
+          }
+        },
+        {
+          "subPanelKey": "region_health",
+          "title": "Region Health",
+          "targets": [
+            {
+              "expr": "pd_regions_status{inspectionid=\"{{inspectionId}}\"}",
+              "legendFormat": "{{type}}"
+            },
+            {
+              "expr": "sum(pd_regions_status{inspectionid=\"{{inspectionId}}\"}) by (instance, type)",
+              "legendFormat": "{{type}}"
+            }
+          ],
+          "yaxis": {
+            "format": "short",
+            "logBase": 1,
+            "decimals": 0
+          }
+        },
+        {
+          "subPanelKey": "region_heartbeat_latency_99",
+          "title": "99% region heartbeat latency",
+          "targets": [
+            {
+              "expr": "round(histogram_quantile(0.99, sum(rate(pd_scheduler_region_heartbeat_latency_seconds_bucket{inspectionid=\"{{inspectionId}}\"}[5m])) by (store, le)), 1000)",
+              "legendFormat": "store{{store}}"
+            }
+          ],
+          "yaxis": {
+            "format": "s",
+            "logBase": 1,
+            "decimals": 1
+          }
+        },
+        {
+          "subPanelKey": "qps",
+          "title": "TiDB QPS",
+          "targets": [
+            {
+              "expr": "sum(rate(tidb_server_query_total{inspectionid=\"{{inspectionId}}\"}[1m])) by (result)",
+              "legendFormat": "query {{result}}"
+            },
+            {
+              "expr": "sum(rate(tidb_server_query_total{result=\"OK\", inspectionid=\"{{inspectionId}}\"}[1m]  offset 1d))",
+              "legendFormat": "yesterday"
+            },
+            {
+              "expr": "sum(tidb_server_connections{inspectionid=\"{{inspectionId}}\"}) * sum(rate(tidb_server_handle_query_duration_seconds_count{inspectionid=\"{{inspectionId}}\"}[1m])) / sum(rate(tidb_server_handle_query_duration_seconds_sum{inspectionid=\"{{inspectionId}}\"}[1m]))",
+              "legendFormat": "ideal QPS"
+            }
+          ],
+          "yaxis": {
+            "format": "short",
+            "logBase": 1,
+            "decimals": 0
+          }
+        },
+        {
+          "subPanelKey": "tidb_duration",
+          "title": "TiDB Duration",
+          "targets": [
+            {
+              "expr": "histogram_quantile(0.999, sum(rate(tidb_server_handle_query_duration_seconds_bucket{inspectionid=\"{{inspectionId}}\"}[1m])) by (le))",
+              "legendFormat": "999"
+            },
+            {
+              "expr": "histogram_quantile(0.99, sum(rate(tidb_server_handle_query_duration_seconds_bucket{inspectionid=\"{{inspectionId}}\"}[1m])) by (le))",
+              "legendFormat": "99"
+            },
+            {
+              "expr": "histogram_quantile(0.95, sum(rate(tidb_server_handle_query_duration_seconds_bucket{inspectionid=\"{{inspectionId}}\"}[1m])) by (le))",
+              "legendFormat": "95"
+            },
+            {
+              "expr": "histogram_quantile(0.80, sum(rate(tidb_server_handle_query_duration_seconds_bucket{inspectionid=\"{{inspectionId}}\"}[1m])) by (le))",
+              "legendFormat": "80"
+            }
+          ],
+          "yaxis": {
+            "format": "s",
+            "logBase": 1
+          }
+        },
+        {
+          "subPanelKey": "handle_request_duration_seconds",
+          "title": "PD TSO handle requests duration",
+          "targets": [
+            {
+              "expr": "histogram_quantile(0.98, sum(rate(pd_client_request_handle_requests_duration_seconds_bucket{inspectionid=\"{{inspectionId}}\"}[30s])) by (type, le))",
+              "legendFormat": "{{type}} 98th percentile"
+            },
+            {
+              "expr": "avg(rate(pd_client_request_handle_requests_duration_seconds_sum{inspectionid=\"{{inspectionId}}\"}[30s])) by (type) /  avg(rate(pd_client_request_handle_requests_duration_seconds_count{inspectionid=\"{{inspectionId}}\"}[30s])) by (type)",
+              "legendFormat": "{{type}} average"
+            }
+          ],
+          "yaxis": {
+            "format": "s",
+            "logBase": 1
+          }
+        },
+        {
+          "subPanelKey": "pd_tso_rpc_duration",
+          "title": "PD TSO RPC Duration",
+          "targets": [
+            {
+              "expr": "histogram_quantile(0.999, sum(rate(pd_client_request_handle_requests_duration_seconds_bucket{type=\"tso\", inspectionid=\"{{inspectionId}}\"}[1m])) by (le))",
+              "legendFormat": "999"
+            },
+            {
+              "expr": "histogram_quantile(0.99, sum(rate(pd_client_request_handle_requests_duration_seconds_bucket{type=\"tso\", inspectionid=\"{{inspectionId}}\"}[1m])) by (le))",
+              "legendFormat": "99"
+            },
+            {
+              "expr": "histogram_quantile(0.90, sum(rate(pd_client_request_handle_requests_duration_seconds_bucket{type=\"tso\", inspectionid=\"{{inspectionId}}\"}[1m])) by (le))",
+              "legendFormat": "90"
+            }
+          ],
+          "yaxis": {
+            "format": "s",
+            "logBase": 1
+          }
+        },
+        {
+          "subPanelKey": "handle_txn_count",
+          "title": "handle transactions count",
+          "targets": [
+            {
+              "expr": "sum(rate(pd_txn_handle_txns_duration_seconds_count{inspectionid=\"{{inspectionId}}\"}[5m])) by (instance, result)",
+              "legendFormat": "{{instance}} : {{result}}"
+            }
+          ],
+          "yaxis": {
+            "format": "short",
+            "logBase": 1,
+            "decimals": 0
+          }
+        },
+        {
+          "subPanelKey": "wal_fsync_duration_seconds_99",
+          "title": "99% WAL fsync duration",
+          "targets": [
+            {
+              "expr": "histogram_quantile(0.99, sum(rate(etcd_disk_wal_fsync_duration_seconds_bucket{inspectionid=\"{{inspectionId}}\"}[5m])) by (instance, le))",
+              "legendFormat": "{{instance}}"
+            }
+          ],
+          "yaxis": {
+            "format": "s",
+            "logBase": 1
+          }
+        },
+        {
+          "subPanelKey": "tikv_qps",
+          "title": "TiKV QPS",
+          "targets": [
+            {
+              "expr": "sum(rate(tikv_grpc_msg_duration_seconds_count{type!=\"kv_gc\", inspectionid=\"{{inspectionId}}\"}[1m])) by (job,type)",
+              "legendFormat": "{{job}} - {{type}}"
+            }
+          ],
+          "yaxis": {
+            "format": "ops",
+            "logBase": 1
+          }
+        },
+        {
+          "subPanelKey": "ddl_opm",
+          "title": "DDL META OPM",
+          "targets": [
+            {
+              "expr": "increase(tidb_ddl_worker_operation_total{inspectionid=\"{{inspectionId}}\"}[1m])",
+              "legendFormat": "{{instance}}-{{type}}"
+            }
+          ],
+          "yaxis": {
+            "format": "short",
+            "logBase": 1,
+            "decimals": 0
+          }
+        }
+      ]
+    },
+    {
+      "panelKey": "dba_background_task_info",
+      "title": "后台任务信息",
+      "subPanels": [
+        {
+          "subPanelKey": "load_schema_duration",
+          "title": "Load Schema Duration",
+          "targets": [
+            {
+              "expr": "histogram_quantile(0.99, sum(rate(tidb_domain_load_schema_duration_seconds_bucket{inspectionid=\"{{inspectionId}}\"}[1m])) by (le, instance))",
+              "legendFormat": "{{instance}}"
+            }
+          ],
+          "yaxis": {
+            "format": "s",
+            "logBase": 1
+          }
+        },
+        {
+          "subPanelKey": "schema_lease_error_opm",
+          "title": "Schema Lease Error OPM",
+          "targets": [
+            {
+              "expr": "sum(increase(tidb_session_schema_lease_error_total{inspectionid=\"{{inspectionId}}\"}[1m])) by (instance)",
+              "legendFormat": "{{instance}}"
+            }
+          ],
+          "yaxis": {
+            "format": "short",
+            "logBase": 1,
+            "decimals": 0
+          }
+        },
+        {
+          "subPanelKey": "tikv_scheduler_prewrite_latch_wait_duration",
+          "title": "Scheduler latch wait duration (prewrite)",
+          "targets": [
+            {
+              "expr": "histogram_quantile(0.99, sum(rate(tikv_scheduler_latch_wait_duration_seconds_bucket{type=\"prewrite\", inspectionid=\"{{inspectionId}}\"}[1m])) by (le))",
+              "legendFormat": "99%"
+            },
+            {
+              "expr": "histogram_quantile(0.95, sum(rate(tikv_scheduler_latch_wait_duration_seconds_bucket{type=\"prewrite\", inspectionid=\"{{inspectionId}}\"}[1m])) by (le))",
+              "legendFormat": "95%"
+            },
+            {
+              "expr": "sum(rate(tikv_scheduler_latch_wait_duration_seconds_sum{type=\"prewrite\", inspectionid=\"{{inspectionId}}\"}[1m])) / sum(rate(tikv_scheduler_latch_wait_duration_seconds_count{type=\"prewrite\", inspectionid=\"{{inspectionId}}\"}[1m]))",
+              "legendFormat": "avg"
+            }
+          ],
+          "yaxis": {
+            "format": "s",
+            "logBase": 1
+          }
+        },
+        {
+          "subPanelKey": "tivk_scheduler_prewrite_command_duration",
+          "title": "Scheduler command duration (prewrite)",
+          "targets": [
+            {
+              "expr": "histogram_quantile(0.99, sum(rate(tikv_scheduler_command_duration_seconds_bucket{type=\"prewrite\", inspectionid=\"{{inspectionId}}\"}[1m])) by (le))",
+              "legendFormat": "99%"
+            },
+            {
+              "expr": "histogram_quantile(0.95, sum(rate(tikv_scheduler_command_duration_seconds_bucket{type=\"prewrite\", inspectionid=\"{{inspectionId}}\"}[1m])) by (le))",
+              "legendFormat": "95%"
+            },
+            {
+              "expr": "sum(rate(tikv_scheduler_command_duration_seconds_sum{type=\"prewrite\", inspectionid=\"{{inspectionId}}\"}[1m])) / sum(rate(tikv_scheduler_command_duration_seconds_count{type=\"prewrite\", inspectionid=\"{{inspectionId}}\"}[1m]))",
+              "legendFormat": "avg"
+            }
+          ],
+          "yaxis": {
+            "format": "s",
+            "logBase": 1
+          }
+        },
+        {
+          "subPanelKey": "tikv_scheduler_commit_latch_wait_duration",
+          "title": "Scheduler latch wait duration (commit)",
+          "targets": [
+            {
+              "expr": "histogram_quantile(0.99, sum(rate(tikv_scheduler_latch_wait_duration_seconds_bucket{type=\"commit\", inspectionid=\"{{inspectionId}}\"}[1m])) by (le))",
+              "legendFormat": "99%"
+            },
+            {
+              "expr": "histogram_quantile(0.95, sum(rate(tikv_scheduler_latch_wait_duration_seconds_bucket{type=\"commit\", inspectionid=\"{{inspectionId}}\"}[1m])) by (le))",
+              "legendFormat": "95%"
+            },
+            {
+              "expr": "sum(rate(tikv_scheduler_command_duration_seconds_sum{type=\"commit\", inspectionid=\"{{inspectionId}}\"}[1m])) / sum(rate(tikv_scheduler_command_duration_seconds_count{type=\"commit\", inspectionid=\"{{inspectionId}}\"}[1m]))",
+              "legendFormat": "avg"
+            }
+          ],
+          "yaxis": {
+            "format": "s",
+            "logBase": 1
+          }
+        },
+        {
+          "subPanelKey": "tivk_scheduler_commit_command_duration",
+          "title": "Scheduler command duration (commit)",
+          "targets": [
+            {
+              "expr": "histogram_quantile(0.99, sum(rate(tikv_scheduler_command_duration_seconds_bucket{type=\"commit\", inspectionid=\"{{inspectionId}}\"}[1m])) by (le))",
+              "legendFormat": "99%"
+            },
+            {
+              "expr": "histogram_quantile(0.95, sum(rate(tikv_scheduler_command_duration_seconds_bucket{type=\"commit\", inspectionid=\"{{inspectionId}}\"}[1m])) by (le))",
+              "legendFormat": "95%"
+            },
+            {
+              "expr": "sum(rate(tikv_scheduler_command_duration_seconds_sum{type=\"commit\", inspectionid=\"{{inspectionId}}\"}[1m])) / sum(rate(tikv_scheduler_command_duration_seconds_count{type=\"commit\", inspectionid=\"{{inspectionId}}\"}[1m]))",
+              "legendFormat": "avg"
+            }
+          ],
+          "yaxis": {
+            "format": "s",
+            "logBase": 1
+          }
+        },
+        {
+          "subPanelKey": "scheduler_pending_commands",
+          "title": "Scheduler pending commands",
+          "targets": [
+            {
+              "expr": "sum(tikv_scheduler_contex_total{inspectionid=\"{{inspectionId}}\"}) by (job)",
+              "legendFormat": "{{job}}"
+            }
+          ],
+          "yaxis": {
+            "format": "short",
+            "logBase": 1,
+            "decimals": 0
+          }
+        },
+        {
+          "subPanelKey": "schedule_operator_create",
+          "title": "Schedule Operator Create",
+          "targets": [
+            {
+              "expr": "sum(delta(pd_schedule_operators_count{inspectionid=\"{{inspectionId}}\", event=\"create\"}[1m])) by (type)",
+              "legendFormat": "{{type}}"
+            }
+          ],
+          "yaxis": {
+            "format": "short",
+            "logBase": 1,
+            "decimals": 0
+          }
+        },
+        {
+          "subPanelKey": "schedule_operator_timeout",
+          "title": "Schedule Operator Timeout",
+          "targets": [
+            {
+              "expr": "sum(delta(pd_schedule_operators_count{inspectionid=\"{{inspectionId}}\", event=\"timeout\"}[1m])) by (type)",
+              "legendFormat": "{{type}}"
+            }
+          ],
+          "yaxis": {
+            "format": "short",
+            "logBase": 1,
+            "decimals": 0
+          }
+        },
+        {
+          "subPanelKey": "handle_snapshot_duration_99",
+          "title": "99% Handle snapshot duration",
+          "targets": [
+            {
+              "expr": "histogram_quantile(0.99, sum(rate(tikv_server_send_snapshot_duration_seconds_bucket{inspectionid=\"{{inspectionId}}\"}[1m])) by (le))",
+              "legendFormat": "send"
+            },
+            {
+              "expr": "histogram_quantile(0.99, sum(rate(tikv_raftstore_snapshot_duration_seconds_bucket{type=\"apply\", inspectionid=\"{{inspectionId}}\"}[1m])) by (le))",
+              "legendFormat": "apply"
+            },
+            {
+              "expr": "histogram_quantile(0.99, sum(rate(tikv_raftstore_snapshot_duration_seconds_bucket{type=\"generate\", inspectionid=\"{{inspectionId}}\"}[1m])) by (le))",
+              "legendFormat": "generate"
+            }
+          ],
+          "yaxis": {
+            "format": "s",
+            "logBase": 1
+          }
+        },
+        {
+          "subPanelKey": "tikv_raft_vote",
+          "title": "Vote",
+          "targets": [
+            {
+              "expr": "sum(rate(tikv_raftstore_raft_sent_message_total{type=\"vote\", inspectionid=\"{{inspectionId}}\"}[1m])) by (job)",
+              "legendFormat": "{{job}}"
+            }
+          ],
+          "yaxis": {
+            "format": "ops",
+            "logBase": 1
+          }
+        }
+      ]
+    }
+  ]
+}

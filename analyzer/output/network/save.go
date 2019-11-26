@@ -9,7 +9,10 @@ import (
 	"strconv"
 
 	"github.com/pingcap/tidb-foresight/analyzer/boot"
+	"github.com/pingcap/tidb-foresight/analyzer/input/args"
+	"github.com/pingcap/tidb-foresight/analyzer/output/metric"
 	"github.com/pingcap/tidb-foresight/model"
+	tf "github.com/pingcap/tidb-foresight/utils/tagd-value/float64"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -28,7 +31,7 @@ type netstat struct {
 }
 
 // Parse and save network information from output of netstat -s
-func (t *saveNetworkTask) Run(m *boot.Model, c *boot.Config) {
+func (t *saveNetworkTask) Run(m *boot.Model, c *boot.Config, metric *metric.Metric, args *args.Args) {
 	netDir := path.Join(c.Src, "net")
 	ls, err := ioutil.ReadDir(netDir)
 	if err != nil {
@@ -47,6 +50,20 @@ func (t *saveNetworkTask) Run(m *boot.Model, c *boot.Config) {
 		if err != nil {
 			return
 		}
+		var maxDuration, minDuration, avgDuration float64
+		{
+			query := fmt.Sprintf(`probe_duration_seconds{ping="%s", inspectionid="%s"}`, host, c.InspectionId)
+			durationSeconds, err := metric.QueryRange(query, args.ScrapeBegin, args.ScrapeEnd)
+			if err != nil {
+				log.Errorf("saveNetworkTask.Run query %v, startTime %v, endtime %v, got error %v",
+					query, args.ScrapeBegin, args.ScrapeEnd, err)
+			} else {
+				maxDuration = durationSeconds.Max()
+				minDuration = durationSeconds.Min()
+				avgDuration = durationSeconds.Avg()
+				log.Infof("saveNetworkTask.Run run query %v and get durations(%v, %v, %v)", query, maxDuration, minDuration, avgDuration)
+			}
+		}
 
 		if err := m.InsertInspectionNetworkInfo(&model.NetworkInfo{
 			InspectionId: c.InspectionId,
@@ -56,6 +73,10 @@ func (t *saveNetworkTask) Run(m *boot.Model, c *boot.Config) {
 			Send:         ns.send,
 			BadSeg:       ns.bad_seg,
 			Retrans:      ns.retrans,
+
+			MaxDuration: tf.New(maxDuration, nil),
+			MinDuration: tf.New(minDuration, nil),
+			AvgDuration: tf.New(avgDuration, nil),
 		}); err != nil {
 			log.Error("insert network info:", err)
 			return

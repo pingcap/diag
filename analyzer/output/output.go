@@ -25,6 +25,7 @@ func Tasks() []interface{} {
 	tasks = append(tasks, basic.SaveBasicInfo())
 	tasks = append(tasks, dbinfo.SaveDBInfo())
 	tasks = append(tasks, dmesg.SaveDmesg())
+	// store messages in table `hardware`.
 	tasks = append(tasks, hardware.SaveHardwareInfo())
 	tasks = append(tasks, software.SaveSoftwareConfig())
 	tasks = append(tasks, software.SaveSoftwareVersion())
@@ -33,10 +34,13 @@ func Tasks() []interface{} {
 	tasks = append(tasks, profile.SaveProfile())
 	tasks = append(tasks, logs.CopyLogs())
 	tasks = append(tasks, logs.SaveSlowQuery())
+	// store messages in table `network`.
 	tasks = append(tasks, network.SaveNetwork())
 	tasks = append(tasks, items.SaveItems())
 	tasks = append(tasks, metric.SaveMetric())
+	// store messages in table `ntp`.
 	tasks = append(tasks, ntp.SaveNtpInfo())
+	// store messages in table `topology`.
 	tasks = append(tasks, topology.SaveTopologyInfo())
 
 	return tasks
