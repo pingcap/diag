@@ -55,7 +55,8 @@ type InsightInfo struct {
 			// eg. eth0
 			Name string `json:"name"`
 			// The speed of network card
-			Speed int `json:"speed"`
+			Speed  int     `json:"speed"`
+			Driver *string `json:"driver,omitempty"`
 		} `json:"network"`
 	} `json:"sysinfo"`
 
@@ -73,7 +74,10 @@ type InsightInfo struct {
 		Name   string `json:"name"`
 		Subdev []struct {
 			// eg. sda1
-			Name string `json:"name"`
+			Name  string `json:"name"`
+			Mount *struct {
+				FileSystem *string `json:"file_system"`
+			} `json:"mount"`
 		} `json:"subdev"`
 	} `json:"partitions"`
 

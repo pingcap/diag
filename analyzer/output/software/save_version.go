@@ -25,19 +25,67 @@ func (t *saveSoftwareVersionTask) Run(c *boot.Config, m *boot.Model, insights *i
 		versions = append(versions, loadSoftwareVersion(insight)...)
 	}
 
-	vm := make(map[string]map[string][]string)
+	// vm is a map for
+	// <component, <ip, array of version>>
+	// and version is an SoftwareVersion object.
+	vm := make(map[string]map[string][]SoftwareVersion)
 	for _, v := range versions {
 		if vm[v.component] == nil {
-			vm[v.component] = make(map[string][]string)
+			vm[v.component] = make(map[string][]SoftwareVersion)
 		}
-		vm[v.component][v.ip] = append(vm[v.component][v.ip], v.version)
+		vm[v.component][v.ip] = append(vm[v.component][v.ip], v)
 	}
 
+	loadVersionString := func(versions []SoftwareVersion) []string {
+		retList := make([]string, len(versions), len(versions))
+		for i, version := range versions {
+			retList[i] = version.version
+		}
+		return retList
+	}
+
+	loadOSString := func(versions []SoftwareVersion) []string {
+		retList := make([]string, 0)
+		for _, version := range versions {
+			if version.os != "" {
+				retList = append(retList, version.os)
+			}
+		}
+		return retList
+	}
+
+	loadFSString := func(versions []SoftwareVersion) []string {
+		retList := make([]string, 0)
+		for _, version := range versions {
+			if version.fs != "" {
+				retList = append(retList, version.fs)
+			}
+		}
+		return retList
+	}
+
+	loadNetworkString := func(versions []SoftwareVersion) []string {
+		retList := make([]string, 0)
+		for _, version := range versions {
+			if version.network != "" {
+				retList = append(retList, version.network)
+			}
+		}
+		return retList
+	}
+
+	// comp is a string represents the component. eg: tidb.
+	// hm is an map like <ip, array of versions>.
 	for comp, hm := range vm {
 		versions := make([]*model.SoftwareInfo, 0)
 		for ip, vs := range hm {
-			v := ts.New(strings.Join(vs, ","), nil)
-			if !identity(vs) {
+			vss := loadVersionString(vs)
+			oss := loadOSString(vs)
+			fss := loadFSString(vs)
+			networks := loadNetworkString(vs)
+
+			v := ts.New(strings.Join(vss, ","), nil)
+			if !identity(vss) {
 				msg := fmt.Sprintf(
 					"it seems you have multiple version of %s on %s, foresight can't decide which one is correct, please confirm it yourself.",
 					comp, ip,
@@ -51,6 +99,10 @@ func (t *saveSoftwareVersionTask) Run(c *boot.Config, m *boot.Model, insights *i
 				NodeIp:       ip,
 				Component:    comp,
 				Version:      v,
+				// TODO: fill the message below
+				OS:           strings.Join(oss, ","),
+				FileSystem:   strings.Join(fss, ","),
+				NetworkDrive: strings.Join(networks, ","),
 			})
 		}
 		sort.Slice(versions, func(i, j int) bool {
@@ -87,11 +139,34 @@ func (t *saveSoftwareVersionTask) Run(c *boot.Config, m *boot.Model, insights *i
 func loadSoftwareVersion(insight *insight.InsightInfo) []SoftwareVersion {
 	var versions []SoftwareVersion
 	ip := insight.NodeIp
+	// load all fs and network drives in the system
+	// TODO: finish the message below and make sure which fs or network drive is used by the process.
+	fsList := make([]string, 0)
+	networkDriveList := make([]string, 0)
+
+	for _, network := range insight.Sysinfo.Network {
+		if network.Driver != nil {
+			networkDriveList = append(networkDriveList, *network.Driver)
+		}
+	}
+
+	for _, partions := range insight.Partitions {
+		for _, dev := range partions.Subdev {
+			if dev.Mount != nil && dev.Mount.FileSystem != nil {
+				fsList = append(fsList, *dev.Mount.FileSystem)
+			}
+		}
+	}
+
 	for _, item := range insight.Meta.Tidb {
 		version := SoftwareVersion{
 			ip:        ip,
 			component: "tidb",
 			version:   item.Version,
+
+			os:      insight.Sysinfo.Os.Name,
+			fs:      strings.Join(fsList, ","),
+			network: strings.Join(networkDriveList, ","),
 		}
 		versions = append(versions, version)
 	}
