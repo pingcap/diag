@@ -10,15 +10,21 @@ type InsightInfo struct {
 	Meta struct {
 		// tidb versions
 		Tidb []struct {
-			Version string `json:"release_version"`
+			Version       string `json:"release_version"`
+			OpenFileLimit int64  `json:"open_file_limit"`
+			OpenFile      int64  `json:"open_file"`
 		} `json:"tidb"`
 		// tikv versions
 		Tikv []struct {
-			Version string `json:"release_version"`
+			Version       string `json:"release_version"`
+			OpenFileLimit int64  `json:"open_file_limit"`
+			OpenFile      int64  `json:"open_file"`
 		} `json:"tikv"`
 		// pd versions
 		Pd []struct {
-			Version string `json:"release_version"`
+			Version       string `json:"release_version"`
+			OpenFileLimit int64  `json:"open_file_limit"`
+			OpenFile      int64  `json:"open_file"`
 		} `json:"pd"`
 	} `json:"meta"`
 
@@ -75,8 +81,8 @@ type InsightInfo struct {
 		Subdev []struct {
 			// eg. sda1
 			Name  string `json:"name"`
-			Mount *struct {
-				FileSystem *string `json:"file_system"`
+			Mount struct {
+				FileSystem string `json:"filesystem"`
 			} `json:"mount"`
 		} `json:"subdev"`
 	} `json:"partitions"`

@@ -8,4 +8,7 @@ type SoftwareVersion struct {
 	os        string
 	fs        string
 	network   string
+
+	openFileMax int64
+	openFile    int64
 }

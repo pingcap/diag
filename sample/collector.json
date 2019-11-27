@@ -1,39 +1,45 @@
 {
   "meta": {
-    "timestamp": "2019-11-19T03:51:04.748662991-05:00",
-    "uptime": 8539564.92,
-    "idle_time": 53088630.76,
+    "timestamp": "2019-11-27T09:57:34.130404745-05:00",
+    "uptime": 9252754.3,
+    "idle_time": 54838611.57,
     "sysinfo_ver": "0.9.1",
     "git_branch": "Not Provided",
     "git_commit": "Not Provided",
     "utc_build_time": "Not Provided",
-    "go_version": "go1.13.1 linux/amd64",
+    "go_version": "go1.13.3 linux/amd64",
     "tidb": [
       {
-        "pid": 12678,
-        "release_version": "v4.0.0-alpha-350-g74eaf327e-dirty",
-        "git_commit": "74eaf327e95332d840c5a7a9008fbc6ab6d78788",
-        "utc_build_time": "2019-09-25 09:58:36",
-        "go_version": "go1.12 linux/amd64"
+        "pid": 31813,
+        "release_version": "v4.0.0-alpha-982-g8ed87c181",
+        "git_commit": "8ed87c181e4c3a0e534ad7dec5ec7c71d7d09823",
+        "utc_build_time": "2019-11-25 01:28:12",
+        "open_file": 0,
+        "open_file_limit": 2147483647,
+        "go_version": "go1.13 linux/amd64"
       }
     ],
     "tikv": [
       {
-        "pid": 11748,
+        "pid": 17812,
         "release_version": "4.0.0-alpha",
-        "git_commit": "31f3ee31fd82e291e3ce842ca231ba103e9a5e89",
+        "git_commit": "c4976f17897d90913915b14437f760dd4b27a2b2",
         "git_branch": "master",
-        "utc_build_time": "2019-09-25 03:55:38",
+        "utc_build_time": "2019-11-25 04:31:54",
+        "open_file": 0,
+        "open_file_limit": 2147483647,
         "rust_version": "rustc 1.39.0-nightly (c6e9c76c5 2019-09-04)"
       }
     ],
     "pd": [
       {
-        "pid": 11039,
-        "release_version": "v4.0.0-alpha-69-g30172689",
-        "git_commit": "30172689a91f07dad669fc65084bcc7672cbb4c3",
+        "pid": 25131,
+        "release_version": "v4.0.0-alpha-178-g55f3ddf2",
+        "git_commit": "55f3ddf26c433f31c64cce541efcdf4b0621c683",
         "git_branch": "master",
-        "utc_build_time": "2019-09-25 07:41:48"
+        "utc_build_time": "2019-11-25 09:39:10",
+        "open_file": 0,
+        "open_file_limit": 2147483647
       }
     ]
   },
@@ -146,8 +152,8 @@
     "version": "ntpd 4.2.6p5@1.2349-o Fri Apr 13 12:52:27 UTC 2018 (1)",
     "sync": "clock_sync",
     "stratum": 3,
-    "offset": 0.484,
-    "jitter": 4.397,
+    "offset": 2.832,
+    "jitter": 1.814,
     "status": "0615"
   },
   "partitions": [

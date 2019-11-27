@@ -31,15 +31,14 @@ func (t *saveSoftwareConfigTask) Run(m *boot.Model, c *boot.Config) {
 		}
 		return
 	}
+
 	for _, cfg := range configs {
 		if err := m.InsertInspectionConfigInfo(&model.ConfigInfo{
-			InspectionId:    c.InspectionId,
-			NodeIp:          cfg.ip,
-			Port:            strconv.Itoa(cfg.port),
-			Component:       cfg.component,
-			Config:          cfg.config,
-			OpenFileCurrent: 0,
-			OpenFileLimit:   0,
+			InspectionId: c.InspectionId,
+			NodeIp:       cfg.ip,
+			Port:         strconv.Itoa(cfg.port),
+			Component:    cfg.component,
+			Config:       cfg.config,
 		}); err != nil {
 			log.Error("insert component config:", err)
 			return

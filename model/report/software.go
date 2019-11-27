@@ -14,6 +14,10 @@ type SoftwareInfo struct {
 	OS           string `json:"os"`
 	FileSystem   string `json:"file_system"`
 	NetworkDrive string `json:"network_drive"`
+
+	OpenFileLimit   string `json:"open_file_limit"`
+	// TODO: add fields for `OpenFileCurrent`.
+	//OpenFileCurrent string `json:"open_file_current"`
 }
 
 func (m *report) GetInspectionSoftwareInfo(inspectionId string) ([]*SoftwareInfo, error) {

@@ -13,11 +13,7 @@ import (
 
 // TiDBMeta is the metadata struct of TiDB server
 type TiDBMeta struct {
-	Pid        int32  `json:"pid,omitempty"`
-	ReleaseVer string `json:"release_version,omitempty"`
-	GitCommit  string `json:"git_commit,omitempty"`
-	GitBranch  string `json:"git_branch,omitempty"`
-	BuildTime  string `json:"utc_build_time,omitempty"`
+	MetaBase
 	GoVersion  string `json:"go_version,omitempty"`
 }
 
@@ -59,6 +55,8 @@ func getTiDBVersion(proc *process.Process) TiDBMeta {
 			continue
 		}
 	}
+	tidbVer.ParseLimits(proc)
+
 	return tidbVer
 }
 

@@ -11,13 +11,9 @@ import (
 	"github.com/shirou/gopsutil/process"
 )
 
-// TiKVMeta is the metada struct of a TiKV server
+// TiKVMeta is the metadata struct of a TiKV server
 type TiKVMeta struct {
-	Pid         int32  `json:"pid,omitempty"`
-	ReleaseVer  string `json:"release_version,omitempty"`
-	GitCommit   string `json:"git_commit,omitempty"`
-	GitBranch   string `json:"git_branch,omitempty"`
-	BuildTime   string `json:"utc_build_time,omitempty"`
+	MetaBase
 	RustVersion string `json:"rust_version,omitempty"`
 }
 
@@ -58,6 +54,7 @@ func getTiKVVersion(proc *process.Process) TiKVMeta {
 			continue
 		}
 	}
+	tikvVer.ParseLimits(proc)
 
 	return tikvVer
 }

@@ -2,12 +2,14 @@ package software
 
 import (
 	"fmt"
+	"reflect"
 	"sort"
 	"strings"
 
 	"github.com/pingcap/tidb-foresight/analyzer/boot"
 	"github.com/pingcap/tidb-foresight/analyzer/input/insight"
 	"github.com/pingcap/tidb-foresight/model"
+	"github.com/pingcap/tidb-foresight/utils/debug_printer"
 	ts "github.com/pingcap/tidb-foresight/utils/tagd-value/string"
 	log "github.com/sirupsen/logrus"
 )
@@ -16,6 +18,30 @@ type saveSoftwareVersionTask struct{}
 
 func SaveSoftwareVersion() *saveSoftwareVersionTask {
 	return &saveSoftwareVersionTask{}
+}
+
+func loadVersionsTag(versions []SoftwareVersion, tag string) []string {
+	retList := make([]string, 0)
+	for _, version := range versions {
+		refVal := reflect.ValueOf(version)
+		sVal := refVal.FieldByName(tag).String()
+		if len(sVal) != 0 {
+			retList = append(retList, sVal)
+		}
+	}
+	return retList
+}
+
+func loadVersionsTagWithInts(versions []SoftwareVersion, tag string) []int64 {
+	retList := make([]int64, 0)
+	for _, version := range versions {
+		refVal := reflect.ValueOf(version)
+		sVal := refVal.FieldByName(tag).Int()
+		if sVal != 0 {
+			retList = append(retList, sVal)
+		}
+	}
+	return retList
 }
 
 // Save each component's version to database
@@ -36,53 +62,18 @@ func (t *saveSoftwareVersionTask) Run(c *boot.Config, m *boot.Model, insights *i
 		vm[v.component][v.ip] = append(vm[v.component][v.ip], v)
 	}
 
-	loadVersionString := func(versions []SoftwareVersion) []string {
-		retList := make([]string, len(versions), len(versions))
-		for i, version := range versions {
-			retList[i] = version.version
-		}
-		return retList
-	}
-
-	loadOSString := func(versions []SoftwareVersion) []string {
-		retList := make([]string, 0)
-		for _, version := range versions {
-			if version.os != "" {
-				retList = append(retList, version.os)
-			}
-		}
-		return retList
-	}
-
-	loadFSString := func(versions []SoftwareVersion) []string {
-		retList := make([]string, 0)
-		for _, version := range versions {
-			if version.fs != "" {
-				retList = append(retList, version.fs)
-			}
-		}
-		return retList
-	}
-
-	loadNetworkString := func(versions []SoftwareVersion) []string {
-		retList := make([]string, 0)
-		for _, version := range versions {
-			if version.network != "" {
-				retList = append(retList, version.network)
-			}
-		}
-		return retList
-	}
-
 	// comp is a string represents the component. eg: tidb.
 	// hm is an map like <ip, array of versions>.
 	for comp, hm := range vm {
 		versions := make([]*model.SoftwareInfo, 0)
+		// ip is the ip of the machine, vs is a list of `SoftwareVersion`
 		for ip, vs := range hm {
-			vss := loadVersionString(vs)
-			oss := loadOSString(vs)
-			fss := loadFSString(vs)
-			networks := loadNetworkString(vs)
+			vss := loadVersionsTag(vs, "version")
+			oss := loadVersionsTag(vs, "os")
+			fss := loadVersionsTag(vs, "fs")
+			networks := loadVersionsTag(vs, "network")
+			openFM := loadVersionsTagWithInts(vs, "openFileMax")
+			openF := loadVersionsTagWithInts(vs, "openFile")
 
 			v := ts.New(strings.Join(vss, ","), nil)
 			if !identity(vss) {
@@ -99,10 +90,13 @@ func (t *saveSoftwareVersionTask) Run(c *boot.Config, m *boot.Model, insights *i
 				NodeIp:       ip,
 				Component:    comp,
 				Version:      v,
-				// TODO: fill the message below
+
 				OS:           strings.Join(oss, ","),
 				FileSystem:   strings.Join(fss, ","),
 				NetworkDrive: strings.Join(networks, ","),
+
+				OpenFileLimit:   debug_printer.FormatJson(openFM),
+				//OpenFileCurrent: debug_printer.FormatJson(openF),
 			})
 		}
 		sort.Slice(versions, func(i, j int) bool {
@@ -152,13 +146,14 @@ func loadSoftwareVersion(insight *insight.InsightInfo) []SoftwareVersion {
 
 	for _, partions := range insight.Partitions {
 		for _, dev := range partions.Subdev {
-			if dev.Mount != nil && dev.Mount.FileSystem != nil {
-				fsList = append(fsList, *dev.Mount.FileSystem)
+			if len(dev.Mount.FileSystem) != 0 {
+				fsList = append(fsList, dev.Mount.FileSystem)
 			}
 		}
 	}
 
 	for _, item := range insight.Meta.Tidb {
+		log.Infof("loadSoftwareVersion(insight *insight.InsightInfo) got insight.Meta.Tidb item: %s", debug_printer.FormatJson(item))
 		version := SoftwareVersion{
 			ip:        ip,
 			component: "tidb",
@@ -167,22 +162,41 @@ func loadSoftwareVersion(insight *insight.InsightInfo) []SoftwareVersion {
 			os:      insight.Sysinfo.Os.Name,
 			fs:      strings.Join(fsList, ","),
 			network: strings.Join(networkDriveList, ","),
+
+			openFile:    item.OpenFile,
+			openFileMax: item.OpenFileLimit,
 		}
 		versions = append(versions, version)
 	}
 	for _, item := range insight.Meta.Tikv {
+		log.Infof("loadSoftwareVersion(insight *insight.InsightInfo) got insight.Meta.TiKV item: %s", debug_printer.FormatJson(item))
 		version := SoftwareVersion{
 			ip:        ip,
 			component: "tikv",
 			version:   item.Version,
+
+			os:      insight.Sysinfo.Os.Name,
+			fs:      strings.Join(fsList, ","),
+			network: strings.Join(networkDriveList, ","),
+
+			openFile:    item.OpenFile,
+			openFileMax: item.OpenFileLimit,
 		}
 		versions = append(versions, version)
 	}
 	for _, item := range insight.Meta.Pd {
+		log.Infof("loadSoftwareVersion(insight *insight.InsightInfo) got insight.Meta.PD item: %s", debug_printer.FormatJson(item))
 		version := SoftwareVersion{
 			ip:        ip,
 			component: "pd",
 			version:   item.Version,
+
+			os:      insight.Sysinfo.Os.Name,
+			fs:      strings.Join(fsList, ","),
+			network: strings.Join(networkDriveList, ","),
+
+			openFile:    item.OpenFile,
+			openFileMax: item.OpenFileLimit,
 		}
 		versions = append(versions, version)
 	}
