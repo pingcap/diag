@@ -19,6 +19,14 @@ function genItemApiUrl(emphasisId: string, itemType: string) {
   return `/emphasis/${emphasisId}${itemType}`;
 }
 
+// https://www.lodashjs.com/docs/latest#_templatestring-options
+// 使用自定义的模板分隔符
+// _.templateSettings.interpolate = /{{([\s\S]+?)}}/g;
+// var compiled = _.template('hello {{ user }}!');
+// compiled({ 'user': 'mustache' });
+// // => 'hello mustache!'
+_.templateSettings.interpolate = /{{([\s\S]+?)}}/g;
+
 function EmphasisReport({ emphasis }: EmphasisReportProps) {
   const start = moment(emphasis.investgating_start).unix();
   const end = moment(emphasis.investgating_end).unix();
@@ -30,6 +38,8 @@ function EmphasisReport({ emphasis }: EmphasisReportProps) {
     oriRequest('/prom-emphasis.json').then(data => setEmphasisConfig(data));
   }, []);
 
+  const exprConverter = (expr: string) => _.template(expr)({ inspectionId: emphasis.uuid });
+
   return (
     <div style={{ marginTop: 20 }}>
       <ReportSection
@@ -40,7 +50,7 @@ function EmphasisReport({ emphasis }: EmphasisReportProps) {
         <PromSection
           promConfigSection={emphasisPromConfig}
           promParams={promParams}
-          inspectionId={emphasis.uuid}
+          exprConverter={exprConverter}
         />
       )}
     </div>

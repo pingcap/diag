@@ -122,6 +122,18 @@ export const INSPECTION_DETAILS: ReportDetailConfig = [
             unitFormat: 'bytes',
             decimals: 2,
           },
+          max_duration: {
+            unitFormat: 's',
+            decimals: 2,
+          },
+          min_duration: {
+            unitFormat: 's',
+            decimals: 2,
+          },
+          avg_duration: {
+            unitFormat: 's',
+            decimals: 2,
+          },
         },
       },
       {

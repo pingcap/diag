@@ -75,6 +75,7 @@ function loopGenUniqName(
   return loopGenUniqName(oriName, existNames, tryCount + 1);
 }
 
+// rename the same labels
 // oriLabels 中可能包含相同的元素，不能用于图表绘制，所以需要进行处理
 // input:  ['timestamp', 'foo', 'bar', 'foo',   'bar',   'foo']
 // oputpu: ['timestamp', 'foo', 'bar', 'foo-1', 'bar-1', 'foo-2']

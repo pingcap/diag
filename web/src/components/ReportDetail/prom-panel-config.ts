@@ -1,39 +1,5 @@
 import { getValueFormat } from 'value-formats';
 
-// export interface IPromConfigSection {
-//   sectionKey: string,
-//   title: string,
-
-//   panels: [
-//     {
-//       panelKey: string,
-//       title: string,
-//       expand?: boolean,
-
-//       subPanels: [
-//         {
-//           subPanelKey: string,
-//           subPanelType?: 'line' | 'table',
-//           tableColumns?: [string, string],
-//           title: string,
-
-//           targets: [
-//             {
-//               expr: string,
-//               legendFormat: string,
-//               desc?: string,
-//             }
-//           ],
-//           yaxis: {
-//             format: string,
-//             logBase: number,
-//             decimals?: number,
-//           }
-//         }
-//       ]
-//     }
-//   ]
-// }
 export interface IPromConfigSection {
   sectionKey: string;
   title: string;
@@ -69,7 +35,6 @@ export interface IPromConfigTarget {
 // rename to unitFormat?
 export interface IPromConfigYaxis {
   format: string;
-  logBase: number;
   decimals?: number;
 }
 
