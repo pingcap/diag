@@ -103,6 +103,9 @@ func (t *saveSoftwareVersionTask) Run(c *boot.Config, m *boot.Model, insights *i
 				OS:           strings.Join(oss, ","),
 				FileSystem:   strings.Join(fss, ","),
 				NetworkDrive: strings.Join(networks, ","),
+
+				OpenFileLimit:   0,
+				OpenFileCurrent: 0,
 			})
 		}
 		sort.Slice(versions, func(i, j int) bool {
@@ -175,6 +178,10 @@ func loadSoftwareVersion(insight *insight.InsightInfo) []SoftwareVersion {
 			ip:        ip,
 			component: "tikv",
 			version:   item.Version,
+
+			os:      insight.Sysinfo.Os.Name,
+			fs:      strings.Join(fsList, ","),
+			network: strings.Join(networkDriveList, ","),
 		}
 		versions = append(versions, version)
 	}
@@ -183,6 +190,10 @@ func loadSoftwareVersion(insight *insight.InsightInfo) []SoftwareVersion {
 			ip:        ip,
 			component: "pd",
 			version:   item.Version,
+
+			os:      insight.Sysinfo.Os.Name,
+			fs:      strings.Join(fsList, ","),
+			network: strings.Join(networkDriveList, ","),
 		}
 		versions = append(versions, version)
 	}

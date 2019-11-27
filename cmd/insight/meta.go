@@ -22,6 +22,7 @@ func (mb *MetaBase) ParseLimits(p *process.Process) error  {
 	if err != nil {
 		return err
 	}
+
 	fsize := rlimits[process.RLIMIT_FSIZE]
 
 	mb.OpenFile = fsize.Used
