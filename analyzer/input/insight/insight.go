@@ -84,6 +84,7 @@ type InsightInfo struct {
 			Mount struct {
 				FileSystem string `json:"file_system"`
 			} `json:"mount"`
+			Type string `json:"type"`
 		} `json:"subdev"`
 	} `json:"partitions"`
 
