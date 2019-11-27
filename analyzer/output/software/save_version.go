@@ -32,6 +32,18 @@ func loadVersionsTag(versions []SoftwareVersion, tag string) []string {
 	return retList
 }
 
+func loadVersionsTagWithInts(versions []SoftwareVersion, tag string) []int64 {
+	retList := make([]int64, 0)
+	for _, version := range versions {
+		refVal := reflect.ValueOf(version)
+		sVal := refVal.FieldByName(tag).Int()
+		if sVal != 0 {
+			retList = append(retList, sVal)
+		}
+	}
+	return retList
+}
+
 // Save each component's version to database
 func (t *saveSoftwareVersionTask) Run(c *boot.Config, m *boot.Model, insights *insight.Insight) {
 	versions := []SoftwareVersion{}
@@ -54,11 +66,14 @@ func (t *saveSoftwareVersionTask) Run(c *boot.Config, m *boot.Model, insights *i
 	// hm is an map like <ip, array of versions>.
 	for comp, hm := range vm {
 		versions := make([]*model.SoftwareInfo, 0)
+		// ip is the ip of the machine, vs is a list of `SoftwareVersion`
 		for ip, vs := range hm {
 			vss := loadVersionsTag(vs, "version")
 			oss := loadVersionsTag(vs, "os")
 			fss := loadVersionsTag(vs, "fs")
 			networks := loadVersionsTag(vs, "network")
+			openFM := loadVersionsTagWithInts(vs, "openFileMax")
+			openF := loadVersionsTagWithInts(vs, "openFile")
 
 			v := ts.New(strings.Join(vss, ","), nil)
 			if !identity(vss) {
@@ -75,13 +90,13 @@ func (t *saveSoftwareVersionTask) Run(c *boot.Config, m *boot.Model, insights *i
 				NodeIp:       ip,
 				Component:    comp,
 				Version:      v,
-				// TODO: fill the message below
+
 				OS:           strings.Join(oss, ","),
 				FileSystem:   strings.Join(fss, ","),
 				NetworkDrive: strings.Join(networks, ","),
 
-				OpenFileLimit:   0,
-				OpenFileCurrent: 0,
+				OpenFileLimit:   debug_printer.FormatJson(openFM),
+				OpenFileCurrent: debug_printer.FormatJson(openF),
 			})
 		}
 		sort.Slice(versions, func(i, j int) bool {

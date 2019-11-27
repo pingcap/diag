@@ -1,6 +1,8 @@
 package main
 
 import (
+	"github.com/pingcap/tidb-foresight/utils/debug_printer"
+	"github.com/prometheus/common/log"
 	"github.com/shirou/gopsutil/process"
 )
 
@@ -27,6 +29,8 @@ func (mb *MetaBase) ParseLimits(p *process.Process) error  {
 
 	mb.OpenFile = fsize.Used
 	mb.OpenFileLimit = fsize.Soft
+
+	log.Infof("Collect field: %v", debug_printer.FormatJson(fsize))
 
 	return nil
 }
