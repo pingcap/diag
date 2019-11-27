@@ -10,7 +10,6 @@ import (
 	"strings"
 
 	"github.com/pingcap/tidb-foresight/analyzer/boot"
-	"github.com/pingcap/tidb-foresight/utils"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -130,8 +129,8 @@ func (t *saveProfileTask) flame(src, dst string) {
 					"this error is not about the tidb cluster you are running, it's about tidb-foresight itself",
 				)
 			}
-		} else if profile.Name() == "perf.data" {
-			if err := t.flameRust(path.Join(src, profile.Name()), path.Join(dst, profile.Name()+".svg")); err != nil {
+		} else if profile.Name() == "tikv.svg" {
+			if err := t.flameTiKV(path.Join(src, profile.Name()), path.Join(dst, profile.Name())); err != nil {
 				log.Error("make flame:", err)
 				t.m.InsertSymptom(
 					"exception",
@@ -163,52 +162,21 @@ func (t *saveProfileTask) flameGo(src, dst string) error {
 	return nil
 }
 
-func (t *saveProfileTask) flameRust(src, dst string) error {
-	df, err := os.Create(dst)
+func (t *saveProfileTask) flameTiKV(src, dst string) error {
+	in, err := os.Open(src)
 	if err != nil {
-		fmt.Println("create:", err)
 		return err
 	}
-	defer df.Close()
+	defer in.Close()
 
-	script := exec.Command("perf", "script", fmt.Sprintf("--input=%s", src))
-	fold := exec.Command(path.Join(t.bin, "fold-tikv-threads-perf.pl"), "--threads", ".*")
-	collapse := exec.Command(path.Join(t.bin, "stackcollapse-perf.pl"))
-	flamegraph := exec.Command(path.Join(t.bin, "flamegraph.pl"))
-
-	script.Stderr = os.Stderr
-	if fold.Stdin, err = script.StdoutPipe(); err != nil {
-		log.Error("pipe stdout:", err)
+	out, err := os.Create(dst)
+	if err != nil {
 		return err
 	}
-	defer fold.Stdin.(io.ReadCloser).Close()
+	defer out.Close()
 
-	fold.Stderr = os.Stderr
-	if collapse.Stdin, err = fold.StdoutPipe(); err != nil {
-		log.Error("pipe stdout:", err)
+	if _, err = io.Copy(out, in); err != nil {
 		return err
 	}
-	defer collapse.Stdin.(io.ReadCloser).Close()
-
-	collapse.Stderr = os.Stderr
-	if flamegraph.Stdin, err = collapse.StdoutPipe(); err != nil {
-		log.Error("pipe stdout:", err)
-		return nil
-	}
-	defer flamegraph.Stdin.(io.ReadCloser).Close()
-
-	flamegraph.Stderr = os.Stderr
-	flamegraph.Stdout = df
-
-	if err = utils.StartCommands(script, fold, collapse, flamegraph); err != nil {
-		log.Error("start perf:", err)
-		return err
-	}
-
-	if err = utils.WaitCommands(script, fold, collapse, flamegraph); err != nil {
-		log.Error("wait perf:", err)
-		return err
-	}
-
-	return nil
+	return out.Sync()
 }

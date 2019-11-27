@@ -235,16 +235,22 @@ def get_node_info(ip, deploy_dir, name, inv):
         else:
             return False, 'get_info', [_info[ok], name]
     elif name == 'tikv':
-        _command = 'cat ' + deploy_dir + '/scripts/run_tikv.sh | grep "\--addr"'
+        _command = 'cat ' + deploy_dir + '/scripts/run_tikv.sh | grep -E "\--addr|--status-addr"'
         _task = [dict(action=dict(module='shell', args=_command))]
         runAnsible = AnsibleApi(inv)
         _info = json.loads(runAnsible.runansible(_host, _task))
         del runAnsible
         ok = check(_info)
         if ok == 'success':
-            _port = re.search("([0-9]+)\"",
-                              _info['success'][ip]['stdout_lines'][0]).group(1)
-            return True, 'get_info', [_port, name]
+            _port = re.search(
+                "([0-9]+)\"",
+                _info['success'][ip]['stdout_lines'][0]).group(1)
+            _status_port = "20180"
+            if len(_info['success'][ip]['stdout_lines']) > 1:
+                _status_port = re.search(
+                    "([0-9]+)\"",
+                    _info['success'][ip]['stdout_lines'][1]).group(1)
+            return True, 'get_info', [[_port, _status_port], name]
         else:
             return False, 'get_info', [_info[ok], name]
     elif name == 'grafana':
@@ -326,7 +332,7 @@ def run_task(ip, deploy_dir, group, inv, server_group, current_host):
         elif _status and _type == 'get_info':
             _dict1['name'] = _info[1]
             _dict1['status'] = 'success'
-            if group == 'tidb_servers':
+            if group == 'tidb_servers' or group == 'tikv_servers':
                 _dict1['port'] = _info[0][0]
                 _dict1['status_port'] = _info[0][1]
             else:

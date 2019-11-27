@@ -5,13 +5,10 @@ import (
 	"io"
 	"net/http"
 	"os"
-	"os/exec"
-	"os/user"
 	"path"
 	"sync"
 
 	"github.com/pingcap/tidb-foresight/model"
-	"github.com/pingcap/tidb-foresight/utils"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -53,7 +50,7 @@ func (c *ProfileCollector) Collect() error {
 					case "tidb":
 						c.perfGolangProcess(comp.Name, host.Ip, comp.StatusPort)
 					case "tikv":
-						c.perfRustProcess(comp.Name, host.Ip, comp.Port)
+						c.perfTiKVProcess(comp.Name, host.Ip, comp.StatusPort)
 					}
 					wg.Done()
 				}()
@@ -101,17 +98,11 @@ func (c *ProfileCollector) perfGolangProcess(name, ip, port string) {
 	saveHttpResponse(fmt.Sprintf("http://%s:%s/debug/pprof/threadcreate", ip, port), path.Join(p, "threadcreate.pb.gz"))
 }
 
-func (c *ProfileCollector) perfRustProcess(name, ip, port string) {
+func (c *ProfileCollector) perfTiKVProcess(name, ip, port string) {
 	home := c.GetHome()
 	inspection := c.GetInspectionId()
 
 	c.GetModel().UpdateInspectionMessage(inspection, fmt.Sprintf("collecting profile info for %s(%s:%s)...", name, ip, port))
-
-	user, err := user.Current()
-	if err != nil {
-		log.Error("get user when perf rust process:", err)
-		return
-	}
 
 	p := path.Join(home, "inspection", inspection, "profile", name, ip+":"+port)
 	if err := os.MkdirAll(p, os.ModePerm); err != nil {
@@ -119,33 +110,7 @@ func (c *ProfileCollector) perfRustProcess(name, ip, port string) {
 		return
 	}
 
-	f, err := os.Create(path.Join(p, "perf.data"))
-	if err != nil {
-		log.Error("create perf.data:", err)
-		return
-	}
-	defer f.Close()
-
-	perf := exec.Command(
-		"ssh",
-		fmt.Sprintf("%s@%s", user.Username, ip),
-		fmt.Sprintf("perf record -F 99 -g -p $(/usr/sbin/lsof -tiTCP:%s -sTCP:LISTEN -P -n) -o /tmp/perf.data -- sleep 60", port),
-	)
-	perf.Stdout = os.Stdout
-	perf.Stderr = os.Stderr
-
-	scp := exec.Command(
-		"scp",
-		fmt.Sprintf("%s@%s:/tmp/perf.data", user.Username, ip),
-		path.Join(p, "perf.data"),
-	)
-	scp.Stdout = os.Stdout
-	scp.Stderr = os.Stderr
-
-	if err := utils.RunCommands(perf, scp); err != nil {
-		log.Error("run remote perf:", err)
-		return
-	}
+	saveHttpResponse(fmt.Sprintf("http://%s:%s/debug/pprof/profile?seconds=60", ip, port), path.Join(p, "tikv.svg"))
 }
 
 func saveHttpResponse(url, file string) {

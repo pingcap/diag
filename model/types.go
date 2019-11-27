@@ -34,7 +34,7 @@ type Topology struct {
 			DeployDir string `json:"deploy_dir"`
 			// the port this component listen on
 			Port string `json:"port"`
-			// status port (only tidb)
+			// status port (only tidb and tikv)
 			StatusPort string `json:"status_port"`
 			// if this component alive
 			Status string `json:"-"`
