@@ -148,6 +148,9 @@ func loadSoftwareVersion(insight *insight.InsightInfo) []SoftwareVersion {
 			os:      insight.Sysinfo.Os.Name,
 			fs:      strings.Join(fsList, ","),
 			network: strings.Join(networkDriveList, ","),
+
+			openFile:    item.OpenFile,
+			openFileMax: item.OpenFileLimit,
 		}
 		versions = append(versions, version)
 	}
@@ -160,6 +163,9 @@ func loadSoftwareVersion(insight *insight.InsightInfo) []SoftwareVersion {
 			os:      insight.Sysinfo.Os.Name,
 			fs:      strings.Join(fsList, ","),
 			network: strings.Join(networkDriveList, ","),
+
+			openFile:    item.OpenFile,
+			openFileMax: item.OpenFileLimit,
 		}
 		versions = append(versions, version)
 	}
@@ -172,6 +178,9 @@ func loadSoftwareVersion(insight *insight.InsightInfo) []SoftwareVersion {
 			os:      insight.Sysinfo.Os.Name,
 			fs:      strings.Join(fsList, ","),
 			network: strings.Join(networkDriveList, ","),
+
+			openFile:    item.OpenFile,
+			openFileMax: item.OpenFileLimit,
 		}
 		versions = append(versions, version)
 	}
