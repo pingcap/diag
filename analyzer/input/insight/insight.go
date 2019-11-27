@@ -82,9 +82,8 @@ type InsightInfo struct {
 			// eg. sda1
 			Name  string `json:"name"`
 			Mount struct {
-				FileSystem string `json:"file_system"`
+				FileSystem string `json:"filesystem"`
 			} `json:"mount"`
-			Type string `json:"type"`
 		} `json:"subdev"`
 	} `json:"partitions"`
 
