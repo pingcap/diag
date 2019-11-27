@@ -81,8 +81,8 @@ type InsightInfo struct {
 		Subdev []struct {
 			// eg. sda1
 			Name  string `json:"name"`
-			Mount *struct {
-				FileSystem *string `json:"file_system"`
+			Mount struct {
+				FileSystem string `json:"file_system"`
 			} `json:"mount"`
 		} `json:"subdev"`
 	} `json:"partitions"`

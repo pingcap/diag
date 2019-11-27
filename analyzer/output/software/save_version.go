@@ -133,8 +133,8 @@ func loadSoftwareVersion(insight *insight.InsightInfo) []SoftwareVersion {
 	for _, partions := range insight.Partitions {
 		for _, dev := range partions.Subdev {
 			log.Infof("loadSoftwareVersion(insight *insight.InsightInfo) got %s", debug_printer.FormatJson(dev))
-			if dev.Mount != nil && dev.Mount.FileSystem != nil {
-				fsList = append(fsList, *dev.Mount.FileSystem)
+			if len(dev.Mount.FileSystem) != 0 {
+				fsList = append(fsList, dev.Mount.FileSystem)
 			}
 		}
 	}
