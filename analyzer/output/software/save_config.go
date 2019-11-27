@@ -31,6 +31,7 @@ func (t *saveSoftwareConfigTask) Run(m *boot.Model, c *boot.Config) {
 		}
 		return
 	}
+
 	for _, cfg := range configs {
 		if err := m.InsertInspectionConfigInfo(&model.ConfigInfo{
 			InspectionId:    c.InspectionId,

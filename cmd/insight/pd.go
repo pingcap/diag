@@ -13,11 +13,7 @@ import (
 
 // PDMeta is the metadata struct of a PD server
 type PDMeta struct {
-	Pid        int32  `json:"pid,omitempty"`
-	ReleaseVer string `json:"release_version,omitempty"`
-	GitCommit  string `json:"git_commit,omitempty"`
-	GitBranch  string `json:"git_branch,omitempty"`
-	BuildTime  string `json:"utc_build_time,omitempty"`
+ 	MetaBase
 }
 
 func getPDVersion(proc *process.Process) PDMeta {
@@ -55,6 +51,7 @@ func getPDVersion(proc *process.Process) PDMeta {
 			continue
 		}
 	}
+	pdVer.ParseLimits(proc)
 
 	return pdVer
 }

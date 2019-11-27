@@ -67,8 +67,8 @@ func New(db db.DB) Model {
 		&TopologyInfo{},
 		&Symptom{},
 	)
-  
-	db.Debug().AutoMigrate(&SoftwareInfo{}, &ConfigInfo{})
+
+	db.Debug().AutoMigrate(&SoftwareInfo{}, &ConfigInfo{}, &NetworkInfo{})
 	return &report{db}
 }
 
