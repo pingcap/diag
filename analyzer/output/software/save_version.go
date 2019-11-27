@@ -2,12 +2,14 @@ package software
 
 import (
 	"fmt"
+	"reflect"
 	"sort"
 	"strings"
 
 	"github.com/pingcap/tidb-foresight/analyzer/boot"
 	"github.com/pingcap/tidb-foresight/analyzer/input/insight"
 	"github.com/pingcap/tidb-foresight/model"
+	"github.com/pingcap/tidb-foresight/utils/debug_printer"
 	ts "github.com/pingcap/tidb-foresight/utils/tagd-value/string"
 	log "github.com/sirupsen/logrus"
 )
@@ -16,6 +18,18 @@ type saveSoftwareVersionTask struct{}
 
 func SaveSoftwareVersion() *saveSoftwareVersionTask {
 	return &saveSoftwareVersionTask{}
+}
+
+func loadVersionsTag(versions []SoftwareVersion, tag string) []string {
+	retList := make([]string, 0)
+	for _, version := range versions {
+		refVal := reflect.ValueOf(version)
+		sVal := refVal.FieldByName(tag).String()
+		if len(sVal) != 0 {
+			retList = append(retList, sVal)
+		}
+	}
+	return retList
 }
 
 // Save each component's version to database
@@ -36,53 +50,15 @@ func (t *saveSoftwareVersionTask) Run(c *boot.Config, m *boot.Model, insights *i
 		vm[v.component][v.ip] = append(vm[v.component][v.ip], v)
 	}
 
-	loadVersionString := func(versions []SoftwareVersion) []string {
-		retList := make([]string, len(versions), len(versions))
-		for i, version := range versions {
-			retList[i] = version.version
-		}
-		return retList
-	}
-
-	loadOSString := func(versions []SoftwareVersion) []string {
-		retList := make([]string, 0)
-		for _, version := range versions {
-			if version.os != "" {
-				retList = append(retList, version.os)
-			}
-		}
-		return retList
-	}
-
-	loadFSString := func(versions []SoftwareVersion) []string {
-		retList := make([]string, 0)
-		for _, version := range versions {
-			if version.fs != "" {
-				retList = append(retList, version.fs)
-			}
-		}
-		return retList
-	}
-
-	loadNetworkString := func(versions []SoftwareVersion) []string {
-		retList := make([]string, 0)
-		for _, version := range versions {
-			if version.network != "" {
-				retList = append(retList, version.network)
-			}
-		}
-		return retList
-	}
-
 	// comp is a string represents the component. eg: tidb.
 	// hm is an map like <ip, array of versions>.
 	for comp, hm := range vm {
 		versions := make([]*model.SoftwareInfo, 0)
 		for ip, vs := range hm {
-			vss := loadVersionString(vs)
-			oss := loadOSString(vs)
-			fss := loadFSString(vs)
-			networks := loadNetworkString(vs)
+			vss := loadVersionsTag(vs, "version")
+			oss := loadVersionsTag(vs, "os")
+			fss := loadVersionsTag(vs, "fs")
+			networks := loadVersionsTag(vs, "network")
 
 			v := ts.New(strings.Join(vss, ","), nil)
 			if !identity(vss) {
@@ -153,8 +129,10 @@ func loadSoftwareVersion(insight *insight.InsightInfo) []SoftwareVersion {
 		}
 	}
 
+	// TODO: seems that here we not match the os config.
 	for _, partions := range insight.Partitions {
 		for _, dev := range partions.Subdev {
+			log.Infof("loadSoftwareVersion(insight *insight.InsightInfo) got %s", debug_printer.FormatJson(dev))
 			if dev.Mount != nil && dev.Mount.FileSystem != nil {
 				fsList = append(fsList, *dev.Mount.FileSystem)
 			}
