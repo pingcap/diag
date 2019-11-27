@@ -96,7 +96,7 @@ func (t *saveSoftwareVersionTask) Run(c *boot.Config, m *boot.Model, insights *i
 				NetworkDrive: strings.Join(networks, ","),
 
 				OpenFileLimit:   debug_printer.FormatJson(openFM),
-				OpenFileCurrent: debug_printer.FormatJson(openF),
+				//OpenFileCurrent: debug_printer.FormatJson(openF),
 			})
 		}
 		sort.Slice(versions, func(i, j int) bool {
