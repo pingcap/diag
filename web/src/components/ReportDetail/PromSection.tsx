@@ -9,21 +9,13 @@ import PromTable from './PromTable';
 interface PromSectionProps {
   promConfigSection: IPromConfigSection;
   promParams: IPromParams;
-  inspectionId: string;
+  exprConverter?: (expr: string) => string;
 }
 
-// https://www.lodashjs.com/docs/latest#_templatestring-options
-// 使用自定义的模板分隔符
-// _.templateSettings.interpolate = /{{([\s\S]+?)}}/g;
-// var compiled = _.template('hello {{ user }}!');
-// compiled({ 'user': 'mustache' });
-// // => 'hello mustache!'
-_.templateSettings.interpolate = /{{([\s\S]+?)}}/g;
-
-function PromSection({ promConfigSection, promParams, inspectionId }: PromSectionProps) {
+function PromSection({ promConfigSection, promParams, exprConverter }: PromSectionProps) {
   function renderPromChart(subPanel: IPromConfigSubPanel) {
     const promQueries: IPromQuery[] = subPanel.targets.map(target => ({
-      promQL: _.template(target.expr)({ inspectionId }),
+      promQL: exprConverter ? exprConverter(target.expr) : target.expr,
       labelTemplate: target.legendFormat,
     }));
 

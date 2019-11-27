@@ -30,6 +30,8 @@ function InspectionReport({ inspection }: InspectionReportProps) {
     oriRequest('/prom-inspection.json').then(data => setInspectionPromDetail(data));
   }, []);
 
+  const exprConverter = (expr: string) => _.template(expr)({ inspectionId: inspection.uuid });
+
   return (
     <div style={{ marginTop: 20 }}>
       <ReportSection
@@ -40,7 +42,7 @@ function InspectionReport({ inspection }: InspectionReportProps) {
         <PromSection
           promConfigSection={inspectionPromDetail}
           promParams={promParams}
-          inspectionId={inspection.uuid}
+          exprConverter={exprConverter}
         />
       )}
     </div>

@@ -84,6 +84,9 @@ export async function promRangeQuery(
       try {
         label = _.template(promQuery.labelTemplate)(item.metric);
       } catch (err) {
+        console.log(err);
+      }
+      if (label === '') {
         label = `instance-${idx + 1}`;
       }
       metricLabels.push(label);
