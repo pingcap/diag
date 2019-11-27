@@ -1,9 +1,7 @@
 package main
 
 import (
-	"github.com/pingcap/tidb-foresight/utils/debug_printer"
-	log "github.com/sirupsen/logrus"
-"github.com/shirou/gopsutil/process"
+	"github.com/shirou/gopsutil/process"
 )
 
 
@@ -15,7 +13,7 @@ type MetaBase struct {
 	GitBranch  string `json:"git_branch,omitempty"`
 	BuildTime  string `json:"utc_build_time,omitempty"`
 
-	OpenFile int32 `json:"open_file"`
+	OpenFile uint64 `json:"open_file"`
 	OpenFileLimit int32 `json:"open_file_limit"`
 }
 
@@ -24,6 +22,10 @@ func (mb *MetaBase) ParseLimits(p *process.Process) error  {
 	if err != nil {
 		return err
 	}
-	log.Infof("Received rlimits %s", debug_printer.FormatJson(rlimits))
+	fsize := rlimits[process.RLIMIT_FSIZE]
+
+	mb.OpenFile = fsize.Used
+	mb.OpenFileLimit = fsize.Soft
+
 	return nil
 }
