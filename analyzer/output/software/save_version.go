@@ -129,10 +129,8 @@ func loadSoftwareVersion(insight *insight.InsightInfo) []SoftwareVersion {
 		}
 	}
 
-	// TODO: seems that here we not match the os config.
 	for _, partions := range insight.Partitions {
 		for _, dev := range partions.Subdev {
-			log.Infof("loadSoftwareVersion(insight *insight.InsightInfo) got %s", debug_printer.FormatJson(dev))
 			if len(dev.Mount.FileSystem) != 0 {
 				fsList = append(fsList, dev.Mount.FileSystem)
 			}
@@ -140,6 +138,7 @@ func loadSoftwareVersion(insight *insight.InsightInfo) []SoftwareVersion {
 	}
 
 	for _, item := range insight.Meta.Tidb {
+		log.Infof("loadSoftwareVersion(insight *insight.InsightInfo) got insight.Meta.Tidb item: %s", debug_printer.FormatJson(item))
 		version := SoftwareVersion{
 			ip:        ip,
 			component: "tidb",
@@ -155,6 +154,7 @@ func loadSoftwareVersion(insight *insight.InsightInfo) []SoftwareVersion {
 		versions = append(versions, version)
 	}
 	for _, item := range insight.Meta.Tikv {
+		log.Infof("loadSoftwareVersion(insight *insight.InsightInfo) got insight.Meta.TiKV item: %s", debug_printer.FormatJson(item))
 		version := SoftwareVersion{
 			ip:        ip,
 			component: "tikv",
@@ -170,6 +170,7 @@ func loadSoftwareVersion(insight *insight.InsightInfo) []SoftwareVersion {
 		versions = append(versions, version)
 	}
 	for _, item := range insight.Meta.Pd {
+		log.Infof("loadSoftwareVersion(insight *insight.InsightInfo) got insight.Meta.PD item: %s", debug_printer.FormatJson(item))
 		version := SoftwareVersion{
 			ip:        ip,
 			component: "pd",
