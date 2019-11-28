@@ -57,6 +57,6 @@ func (h *getAlertInfoHandler) getInspectionAlertInfo(r *http.Request) (map[strin
 
 	return map[string]interface{}{
 		"conclusion": []interface{}{},
-		"data":       HandleAlertInfos(info),
+		"data":       info,
 	}, nil
 }

@@ -1,6 +1,7 @@
 package alert
 
 import (
+	"github.com/pingcap/tidb-foresight/utils/debug_printer"
 	"time"
 
 	"github.com/pingcap/tidb-foresight/analyzer/boot"
@@ -40,6 +41,7 @@ func (t *saveAlertTask) Run(c *boot.Config, alert *alert.Alert, m *boot.Model) {
 			Name:         alert.Metric.Name,
 			Value:        tv,
 			Time:         time.Unix(int64(ats), 0),
+			Description:  debug_printer.FormatJson(alert.Metric),
 		}
 		if err := m.InsertInspectionAlertInfo(info); err != nil {
 			log.Error("insert alert info:", err)

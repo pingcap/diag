@@ -11,6 +11,7 @@ type AlertInfo struct {
 	Name         string    `json:"name"`
 	Value        ts.String `json:"value"`
 	Time         time.Time `json:"time"`
+	Description  string    `json:"description"`
 }
 
 func (m *report) GetInspectionAlertInfo(inspectionId string) ([]*AlertInfo, error) {
