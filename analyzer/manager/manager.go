@@ -100,11 +100,11 @@ func (tm *TaskManager) ConcurrencyBatchRun(taskSz int) {
 	var wg sync.WaitGroup
 	wg.Add(len(tm.tasks) - tm.current)
 	for _, t := range tm.tasks[tm.current:len(tm.tasks)] {
-		go func() {
-			log.Infof("counting task %v\n", t.id)
-			tm.outputs(t)
+		go func(currentTask *task) {
+			log.Infof("counting task %v\n", currentTask.id)
+			tm.outputs(currentTask)
 			wg.Done()
-		}()
+		}(t)
 	}
 	wg.Wait()
 	tm.current = len(tm.tasks)
