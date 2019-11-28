@@ -109,9 +109,11 @@ web-dist/*
 # generated configuration
 conf/*
 # generated in install phase
-**/*.service
+# **/*.service
 
 .idea/
 
 # sqlite for testing
 **/sqlite.db*
+
+vendor/*

@@ -1,15 +1,15 @@
-package main
+package osconfig
 
 import (
-	"fmt"
 	sysctl "github.com/lorenzosaino/go-sysctl"
 	"github.com/pingcap/tidb-foresight/utils/debug_printer"
 )
 
-func main()  {
+// If the machine is not an Linux system, the CollectSysctl will panic rather than raise an error.
+func CollectSysctl() string {
 	msg, err := sysctl.GetAll()
 	if err != nil {
 		panic(err)
 	}
-	fmt.Println(debug_printer.FormatJson(msg))
+	return debug_printer.FormatJson(msg)
 }
