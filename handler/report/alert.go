@@ -1,6 +1,7 @@
 package report
 
 import (
+	"github.com/pingcap/tidb-foresight/model/report"
 	"net/http"
 
 	"github.com/gorilla/mux"
@@ -22,9 +23,31 @@ func (h *getAlertInfoHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 	fn.Wrap(h.getInspectionAlertInfo).ServeHTTP(w, r)
 }
 
+type AlertInfoWrapper struct {
+	report.AlertInfo
+	AlertCnt uint64 `json:"alert_cnt"`
+}
+
+func HandleAlertInfos(infos []*report.AlertInfo) []*AlertInfoWrapper {
+	wrapperMap := make(map[string]AlertInfoWrapper)
+	for _, info := range infos {
+		if v, exists := wrapperMap[info.Name]; exists {
+			v.AlertCnt++
+		} else {
+			wrapperMap[info.Name] = AlertInfoWrapper{*info, 0}
+		}
+	}
+	values := make([]*AlertInfoWrapper, 0)
+	for _, v := range wrapperMap {
+		values = append(values, &v)
+	}
+	return values
+}
+
 func (h *getAlertInfoHandler) getInspectionAlertInfo(r *http.Request) (map[string]interface{}, utils.StatusError) {
 	inspectionId := mux.Vars(r)["id"]
 	info, err := h.m.GetInspectionAlertInfo(inspectionId)
+
 	if err != nil {
 		log.Error("get inspection alert info:", err)
 		return nil, utils.DatabaseQueryError
