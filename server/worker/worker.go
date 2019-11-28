@@ -6,7 +6,7 @@ import (
 )
 
 type Worker interface {
-	Collect(inspectionId, inspectionType string, config *model.Config) error
+	Collect(inspectionId string, config *model.Config, env map[string]string) error
 	Analyze(inspectionId string) error
 }
 

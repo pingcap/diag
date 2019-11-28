@@ -14,7 +14,7 @@ import (
 // TiDBMeta is the metadata struct of TiDB server
 type TiDBMeta struct {
 	MetaBase
-	GoVersion  string `json:"go_version,omitempty"`
+	GoVersion string `json:"go_version,omitempty"`
 }
 
 func getTiDBVersion(proc *process.Process) TiDBMeta {

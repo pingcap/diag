@@ -53,7 +53,7 @@ func (s *scheduler) Reload() error {
 		}
 		if err := s.c.AddFunc(spec, func() {
 			inspectionId := uuid.New().String()
-			if err := s.w.Collect(inspectionId, "auto", config); err != nil {
+			if err := s.w.Collect(inspectionId, config, map[string]string{"INSPECTION_TYPE": "auto"}); err != nil {
 				log.Errorf("diagnose %s: %s", inspectionId, err)
 			} else if err := s.w.Analyze(inspectionId); err != nil {
 				log.Errorf("analyze %s: %s", inspectionId, err)

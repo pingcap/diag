@@ -39,8 +39,7 @@ func (emp *Emphasis) CorrespondInspection() *inspection.Inspection {
 		Status:       emp.Status,
 		Type:         "emphasis",
 		User:         emp.User,
-
-		Problem: emp.InvestgatingProblem,
+		Problem:      emp.InvestgatingProblem,
 	}
 }
 
