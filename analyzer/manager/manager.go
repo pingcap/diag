@@ -1,6 +1,9 @@
 package manager
 
 import (
+	"fmt"
+	"github.com/pingcap/tidb-foresight/utils/debug_printer"
+	"github.com/prometheus/common/log"
 	"reflect"
 	"sync"
 )
@@ -58,7 +61,10 @@ func (tm *TaskManager) ConcurrencyBatchRun(taskSz int)  {
 		go func() {
 			for {
 				select {
-				case task :=<-taskChan:
+				case task := <-taskChan:
+					if task == nil {
+						panic(task)
+					}
 					tm.outputs(task)
 					wg.Done()
 				default:
@@ -67,9 +73,10 @@ func (tm *TaskManager) ConcurrencyBatchRun(taskSz int)  {
 			}
 		}()
 	}
-
+	log.Infof("current is %v, sum of len is %v", tm.current, len(tm.tasks))
 	for _, t := range tm.tasks[tm.current:] {
 		wg.Add(1)
+		fmt.Println(debug_printer.FormatJson(t))
 		taskChan <- t
 	}
 	wg.Wait()

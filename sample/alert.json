@@ -5,16 +5,29 @@
     "result": [{
       "metric": {
         "__name__": "ALERTS",
-        "alertname": "NODE_disk_read_latency_more_than_32ms",
+        "alertname": "tikv_coprocessor_request_wait_seconds",
         "alertstate": "firing",
-        "device": "dm-2",
         "env": "test-cluster",
-        "expr": "xxxxxx",
-        "instance": "172.16.4.246:9100",
-        "job": "overwritten-nodes",
-        "level": "warning"
+        "expr": "delta( tikv_coprocessor_request_wait_seconds_count[10m] )  \u003e 0",
+        "instance": "172.16.5.175:20180",
+        "job": "tikv",
+        "level": "warning",
+        "req": "index"
       },
-      "value": [1565182961.178, "1"]
+      "value": [1574933431.901, "1"]
+    }, {
+      "metric": {
+        "__name__": "ALERTS",
+        "alertname": "tikv_coprocessor_request_wait_seconds",
+        "alertstate": "firing",
+        "env": "test-cluster",
+        "expr": "delta( tikv_coprocessor_request_wait_seconds_count[10m] )  \u003e 0",
+        "instance": "172.16.5.175:20180",
+        "job": "tikv",
+        "level": "warning",
+        "req": "select"
+      },
+      "value": [1574933431.901, "1"]
     }]
   }
 }

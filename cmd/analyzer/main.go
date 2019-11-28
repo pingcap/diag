@@ -20,7 +20,8 @@ func main() {
 	}
 
 	if *inspectionId == "" {
-		log.Panic("the inspection-id must be specified")
+		*inspectionId = "555a7ce3-76f0-403a-b8c5-f9f9c5d5db2b"
+		//log.Panic("the inspection-id must be specified")
 	}
 
 	log.Infof(`[Analyzer] Run analyzer with arguments -V %v --home %v --inspection-id %v`, printVersion, home, inspectionId)
