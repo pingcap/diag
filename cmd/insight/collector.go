@@ -17,13 +17,13 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"github.com/pingcap/tidb-foresight/cmd/insight/osconfig"
 	"log"
 	"runtime"
 	"strings"
 	"time"
 
 	"github.com/jaypipes/ghw"
+	"github.com/pingcap/tidb-foresight/cmd/insight/osconfig"
 	"github.com/pingcap/tidb-foresight/cmd/insight/sysinfo"
 )
 

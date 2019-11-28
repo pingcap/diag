@@ -11,7 +11,7 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-func (w *worker) Collect(inspectionId, inspectionType string, config *model.Config) error {
+func (w *worker) Collect(inspectionId string, config *model.Config, extraEnv map[string]string) error {
 	instanceId := config.InstanceId
 	instance, err := w.m.GetInstance(instanceId)
 	if err != nil {
@@ -57,8 +57,11 @@ func (w *worker) Collect(inspectionId, inspectionType string, config *model.Conf
 		os.Environ(),
 		"FORESIGHT_USER="+w.c.User.Name,
 		"CLUSTER_CREATE_TIME="+instance.CreateTime.Format(time.RFC3339),
-		"INSPECTION_TYPE="+inspectionType,
 	)
+	for k, v := range extraEnv {
+		cmd.Env = append(cmd.Env, fmt.Sprintf("%s=%s", k, v))
+	}
+
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	log.Info(cmd.Args)

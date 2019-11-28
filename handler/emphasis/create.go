@@ -15,7 +15,7 @@ import (
 )
 
 type Worker interface {
-	Collect(inspectionId, inspectionType string, config *model.Config) error
+	Collect(inspectionId string, config *model.Config, env map[string]string) error
 	Analyze(inspectionId string) error
 }
 
@@ -83,7 +83,10 @@ func (h *createEmphasisHandler) createEmphasis(req *createEmphasisRequest, r *ht
 	}
 
 	go func() {
-		if err := h.w.Collect(inspectionId, "emphasis", config); err != nil {
+		if err := h.w.Collect(inspectionId, config, map[string]string{
+			"INSPECTION_TYPE": "emphasis",
+			"PROBLEM":         req.Problem,
+		}); err != nil {
 			log.Error("collect ", inspectionId, ": ", err)
 			insp.Status = "exception"
 			insp.Message = "collect failed"
