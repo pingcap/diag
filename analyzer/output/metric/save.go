@@ -52,7 +52,7 @@ func (t *saveMetricTask) Run(c *boot.Config, m *boot.Model) *Metric {
 	}
 	defer cli.Close()
 
-	tl := utils.NewTokenLimiter(uint(runtime.NumCPU()))
+	tl := utils.NewTokenLimiter(uint(runtime.NumCPU()) * 8)
 	start := time.Now()
 	rand.Shuffle(len(files), func(i, j int) { files[i], files[j] = files[j], files[i] })
 	for idx, file := range files {
@@ -80,6 +80,7 @@ func (t *saveMetricTask) Run(c *boot.Config, m *boot.Model) *Metric {
 				log.Error("insert metric to influxdb:", err)
 			}
 		}(tl.Get())
+		// counting time.
 		elapsed := int(time.Now().Sub(start).Seconds())
 		left := int32(elapsed*10000/(idx+1)*(len(files)-idx-1))/10000 + 1 // Keep one second left
 		if err := m.UpdateInspectionEstimateLeftSec(c.InspectionId, left); err != nil {
