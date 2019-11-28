@@ -2,6 +2,8 @@ package software
 
 import (
 	"fmt"
+	"github.com/pingcap/tidb-foresight/analyzer/input/insight"
+	"github.com/pingcap/tidb-foresight/cmd/insight/osconfig"
 	"io/ioutil"
 	"os"
 	"path"
@@ -21,7 +23,7 @@ func SaveSoftwareConfig() *saveSoftwareConfigTask {
 }
 
 // Save each component's config to database
-func (t *saveSoftwareConfigTask) Run(m *boot.Model, c *boot.Config) {
+func (t *saveSoftwareConfigTask) Run(m *boot.Model, c *boot.Config, insights *insight.Insight) {
 	configDir := path.Join(c.Src, "config")
 
 	configs, err := loadSoftwareConfigFiles(configDir)
@@ -32,6 +34,15 @@ func (t *saveSoftwareConfigTask) Run(m *boot.Model, c *boot.Config) {
 		return
 	}
 
+	// vm is a map for
+	// <component, <ip, array of version>>
+	// and version is an SoftwareVersion object.
+	vm := make(map[string]osconfig.OsConfig)
+	for _, inst := range *insights {
+		ip := inst.NodeIp
+		vm[ip] = inst.OsConfig
+	}
+
 	for _, cfg := range configs {
 		if err := m.InsertInspectionConfigInfo(&model.ConfigInfo{
 			InspectionId: c.InspectionId,
@@ -39,6 +50,7 @@ func (t *saveSoftwareConfigTask) Run(m *boot.Model, c *boot.Config) {
 			Port:         strconv.Itoa(cfg.port),
 			Component:    cfg.component,
 			Config:       cfg.config,
+			OsConfig:     vm[cfg.ip],
 		}); err != nil {
 			log.Error("insert component config:", err)
 			return

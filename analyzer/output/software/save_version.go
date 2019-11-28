@@ -81,7 +81,6 @@ func (t *saveSoftwareVersionTask) Run(c *boot.Config, m *boot.Model, insights *i
 					"it seems you have multiple version of %s on %s, foresight can't decide which one is correct, please confirm it yourself.",
 					comp, ip,
 				)
-				// TODO: use warning
 				v.SetTag("status", "error")
 				v.SetTag("message", msg)
 			}
