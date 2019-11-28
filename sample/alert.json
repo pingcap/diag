@@ -1,0 +1,20 @@
+{
+  "status": "success",
+  "data": {
+    "resultType": "vector",
+    "result": [{
+      "metric": {
+        "__name__": "ALERTS",
+        "alertname": "NODE_disk_read_latency_more_than_32ms",
+        "alertstate": "firing",
+        "device": "dm-2",
+        "env": "test-cluster",
+        "expr": "xxxxxx",
+        "instance": "172.16.4.246:9100",
+        "job": "overwritten-nodes",
+        "level": "warning"
+      },
+      "value": [1565182961.178, "1"]
+    }]
+  }
+}

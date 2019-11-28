@@ -22,7 +22,7 @@ func (t *parseStatusTask) Run(c *boot.Config, m *boot.Model) *StatusMap {
 	content, err := ioutil.ReadFile(path.Join(c.Src, "status.json"))
 	if err != nil {
 		log.Error("read file:", err)
-		m.InsertSymptom("exception", "parse status.json", "contact developer")
+		m.InsertSymptom("exception", "read status.json", "contact developer")
 		return nil
 	}
 

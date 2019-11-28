@@ -22,16 +22,33 @@ import (
 func Tasks() []interface{} {
 	tasks := make([]interface{}, 0)
 
+	// parse input arguments, return `*Args`.
 	tasks = append(tasks, args.ParseArgs())
+	// read `DBInfo` from dbinfo directory.
 	tasks = append(tasks, dbinfo.ParseDBInfo())
+	// parse from topology.json.
 	tasks = append(tasks, topology.ParseTopology())
-	tasks = append(tasks, topology.ParseStatus())
+
+	// parse from status.json
 	tasks = append(tasks, status.ParseStatus())
+	// parse from
+	// ```
+	// c *boot.Config, topo *model.Topology, args *args.Args, m *metric.Metric
+	// ```
+	// *and modify `topo *model.Topology`.*
+	tasks = append(tasks, topology.ParseStatus())
+
+	// read from prometheus to parse the resource
 	tasks = append(tasks, resource.ParseResource())
+	// parse from meta.json
 	tasks = append(tasks, meta.ParseMeta())
+	// parse from CountComponent
 	tasks = append(tasks, meta.CountComponent())
+	// parse from insight files.
 	tasks = append(tasks, insight.ParseInsight())
+	// parse from alert.json
 	tasks = append(tasks, alert.ParseAlert())
+	// parse from env.json
 	tasks = append(tasks, envs.ParseEnvs())
 	tasks = append(tasks, dmesg.ParseDmesg())
 	tasks = append(tasks, config.ParseConfigInfo())

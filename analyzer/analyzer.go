@@ -20,7 +20,9 @@ func NewAnalyzer(home, inspectionId string) *Analyzer {
 		manager: manager.New(),
 	}
 
+	// Take nothing an return (*Config, *Model). Config is config for local storage.
 	analyzer.manager.Register(boot.Bootstrap(inspectionId, home))
+	// The method is idempotent, so we should clear all history the analyzer may create.
 	analyzer.manager.Register(clear.ClearHistory())
 	analyzer.manager.Register(input.Tasks()...)
 	analyzer.manager.Register(output.Tasks()...)

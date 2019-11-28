@@ -1,0 +1,67 @@
+{
+  "cluster_name": "test-cluster",
+  "status": "success",
+  "message": "",
+  "hosts": [
+    {
+      "status": "success",
+      "ip": "172.16.5.175",
+      "enable_sudo": true,
+      "user": "tidb",
+      "components": [
+        {
+          "status": "success",
+          "deploy_dir": "/home/tidb/deploy",
+          "name": "node_exporter",
+          "port": "9100"
+        },
+        {
+          "status": "success",
+          "deploy_dir": "/home/tidb/deploy",
+          "name": "blackbox_exporter",
+          "port": "9115"
+        },
+        {
+          "status": "success",
+          "deploy_dir": "/home/tidb/deploy",
+          "name": "prometheus",
+          "port": "9090"
+        },
+        {
+          "status": "success",
+          "deploy_dir": "/home/tidb/deploy",
+          "name": "pushgateway",
+          "port": "9091"
+        },
+        {
+          "status": "success",
+          "deploy_dir": "/home/tidb/deploy",
+          "name": "pd",
+          "port": "2379"
+        },
+        {
+          "status": "success",
+          "deploy_dir": "/home/tidb/deploy",
+          "status_port": "10080",
+          "name": "tidb",
+          "port": "4000"
+        },
+        {
+          "status": "success",
+          "deploy_dir": "/home/tidb/deploy",
+          "name": "grafana",
+          "port": "3000"
+        },
+        {
+          "status": "success",
+          "deploy_dir": "/home/tidb/deploy",
+          "status_port": "20180",
+          "name": "tikv",
+          "port": "20160"
+        }
+      ],
+      "message": ""
+    }
+  ],
+  "tidb_version": "latest"
+}
