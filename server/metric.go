@@ -1,11 +1,12 @@
 package server
 
 import (
-	log "github.com/sirupsen/logrus"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
 	"strings"
+
+	log "github.com/sirupsen/logrus"
 )
 
 func (s *Server) metric(w http.ResponseWriter, r *http.Request) {

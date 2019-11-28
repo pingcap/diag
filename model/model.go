@@ -8,6 +8,7 @@ import (
 	"github.com/pingcap/tidb-foresight/model/logs"
 	"github.com/pingcap/tidb-foresight/model/profile"
 	"github.com/pingcap/tidb-foresight/model/report"
+	"github.com/pingcap/tidb-foresight/model/statement"
 	"github.com/pingcap/tidb-foresight/wrapper/db"
 )
 
@@ -18,6 +19,7 @@ type InstanceModel = instance.Model
 type ProfileModel = profile.Model
 type LogModel = logs.Model
 type EmphasisModel = emphasis.Model
+type StatementModel = statement.Model
 
 type Model interface {
 	ReportModel
@@ -27,6 +29,7 @@ type Model interface {
 	ProfileModel
 	LogModel
 	EmphasisModel
+	StatementModel
 }
 
 type model struct {
@@ -37,6 +40,7 @@ type model struct {
 	ProfileModel
 	LogModel
 	EmphasisModel
+	StatementModel
 }
 
 func New(db db.DB) Model {
@@ -48,5 +52,6 @@ func New(db db.DB) Model {
 		profile.New(db),
 		logs.New(db),
 		emphasis.New(db),
+		statement.New(db),
 	}
 }

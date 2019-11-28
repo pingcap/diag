@@ -3,11 +3,13 @@ package db
 import (
 	"github.com/jinzhu/gorm"
 
+	_ "github.com/jinzhu/gorm/dialects/mysql"
 	_ "github.com/jinzhu/gorm/dialects/sqlite"
 )
 
 const (
 	SQLITE = "sqlite3"
+	MYSQL  = "mysql"
 )
 
 // For decoupling with sql.DB to be friendly with unit test
@@ -34,11 +36,12 @@ type DB interface {
 	Close() error
 	Debug() DB
 	AutoMigrate(values ...interface{}) DB
+	Raw(sql string, values ...interface{}) DB
 }
 
-// Open sqlite.db and return DB interface instead of a struct
-func Open(fp string) (DB, error) {
-	if ins, err := gorm.Open(SQLITE, fp); err == nil {
+// Open db and return DB interface instead of a struct
+func Open(dbtype, fp string) (DB, error) {
+	if ins, err := gorm.Open(dbtype, fp); err == nil {
 		// ins.LogMode(true)
 		return wrap(ins), nil
 	} else {
@@ -46,8 +49,8 @@ func Open(fp string) (DB, error) {
 	}
 }
 
-func OpenDebug(fp string) (DB, error) {
-	db, err := Open(fp)
+func OpenDebug(dbtype, fp string) (DB, error) {
+	db, err := Open(dbtype, fp)
 	if err == nil {
 		return db.Debug(), nil
 	} else {
@@ -137,6 +140,10 @@ func (db *wrapedDB) Error() error {
 
 func (db *wrapedDB) AutoMigrate(values ...interface{}) DB {
 	return wrap(db.DB.AutoMigrate(values...))
+}
+
+func (db *wrapedDB) Raw(sql string, values ...interface{}) DB {
+	return wrap(db.DB.Raw(sql, values...))
 }
 
 // If the error is a not found error.

@@ -70,7 +70,7 @@ func (ck *connectionChecker) Run(
 		}
 		if float64(max-min)/float64(max) > 0.1 {
 			status := "error"
-			msg := "the number of connections is balanced between multiple tidb-server instances"
+			msg := "the number of connections is not balanced between multiple tidb-server instances"
 			desc := "please check if your load balancer is working properly"
 			m.InsertSymptom(status, msg, desc)
 			m.AddProblem(c.InspectionId, &model.EmphasisProblem{

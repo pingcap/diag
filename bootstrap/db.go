@@ -7,8 +7,8 @@ import (
 )
 
 func initDB(dbpath string) db.DB {
-	db, err := db.Open(dbpath)
-	//db, err := db.OpenDebug(dbpath)
+	db, err := db.Open(db.SQLITE, dbpath)
+	//db, err := db.OpenDebug(db.SQLITE, dbpath)
 
 	if err != nil {
 		log.Panic(err)

@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"time"
 	"path"
 
 	"github.com/pingcap/fn"
@@ -79,6 +80,27 @@ func (s *Server) Run(address string) error {
 		cmd.Stderr = os.Stderr
 		if err := cmd.Run(); err != nil {
 			log.Error("syncer:", err)
+		}
+	}()
+
+	// sync statements from cluster
+	go func() {
+		log.Info("start sync statements from cluster")
+		for {
+			time.Sleep(time.Minute * 30)
+			insts, err := s.model.ListInstance()
+			if err != nil {
+				log.Error("list instance:", err)
+				continue
+			}
+			for _, inst := range insts {
+				if err := s.model.StatementGc(inst.Uuid); err != nil {
+					log.Warn("statement gc failed:", err)
+				}
+				if err := s.model.StatementSync(inst.Uuid); err != nil {
+					log.Warn("statement sync failed:", err)
+				}
+			}
 		}
 	}()
 

@@ -39,7 +39,7 @@ func (t *raftstoreChecker) Run(c *boot.Config, m *boot.Model, tc *config.TiKVCon
 		duration := t.duration(mtr, c.InspectionId, inst, args.ScrapeBegin, args.ScrapeEnd)
 		if duration > 20 {
 			status := "error"
-			msg := fmt.Sprintf(".99 propose wait duration exceed 50ms on node %s", inst)
+			msg := fmt.Sprintf(".99 propose wait duration exceed 20ms on node %s", inst)
 			desc := "It may because append raft log is slow or the CPU of raftstore is high."
 			m.InsertSymptom(status, msg, desc)
 			m.AddProblem(c.InspectionId, &model.EmphasisProblem{

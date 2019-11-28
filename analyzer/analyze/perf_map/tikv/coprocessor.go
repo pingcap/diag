@@ -38,7 +38,7 @@ func (t *coprocessorChecker) Run(c *boot.Config, m *boot.Model, tc *config.TiKVC
 			cpuAbnormal = true
 		}
 		duration := t.duration(mtr, c.InspectionId, inst, args.ScrapeBegin, args.ScrapeEnd)
-		if duration > 20 {
+		if duration > 50 {
 			status := "error"
 			msg := fmt.Sprintf(".99 coprocessor wait duration exceed 50ms on node %s", inst)
 			desc := "It may because coprocessor thread pool is busy."
