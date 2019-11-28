@@ -11,12 +11,17 @@ type TaskManager struct {
 	// if upstream broken
 	mode  ResolveMode
 	tasks []*task
+
+	// The cursor of the current executing task.
+	// Will be initialized as 0
+	current int
 }
 
 func New() *TaskManager {
 	return &TaskManager{
 		mode:  Strict,
 		tasks: make([]*task, 0),
+		current: 0,
 	}
 }
 
@@ -34,9 +39,15 @@ func (tm *TaskManager) Register(tasks ...interface{}) *TaskManager {
 }
 
 func (tm *TaskManager) Run() {
-	for _, t := range tm.tasks {
+	tm.current = 0
+	tm.RunCurrentBatch()
+}
+
+func (tm *TaskManager) RunCurrentBatch() {
+	for _, t := range tm.tasks[tm.current:] {
 		tm.outputs(t)
 	}
+	tm.current = len(tm.tasks)
 }
 
 func (tm *TaskManager) value(output string) reflect.Value {
