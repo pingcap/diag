@@ -32,7 +32,7 @@ func (t *transactionChecker) Run(c *boot.Config, m *boot.Model, mtr *metric.Metr
 	} else {
 		m.AddProblem(c.InspectionId, &model.EmphasisProblem{RelatedGraph: "Transaction Duration"})
 	}
-	if retry := t.retryNum(mtr, c.InspectionId, args.ScrapeEnd, args.ScrapeBegin); retry > 3 {
+	if retry := t.retryNum(mtr, c.InspectionId, args.ScrapeBegin, args.ScrapeEnd); retry > 3 {
 		status := "error"
 		msg := "transaction retry number exceed 3"
 		desc := "there are many write-write conflicts"
