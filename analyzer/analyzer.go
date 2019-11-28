@@ -22,12 +22,16 @@ func NewAnalyzer(home, inspectionId string) *Analyzer {
 
 	// Take nothing an return (*Config, *Model). Config is config for local storage.
 	analyzer.manager.Register(boot.Bootstrap(inspectionId, home))
+	analyzer.manager.RunCurrentBatch()
 	// The method is idempotent, so we should clear all history the analyzer may create.
 	analyzer.manager.Register(clear.ClearHistory())
+	analyzer.manager.RunCurrentBatch()
 	analyzer.manager.Register(input.Tasks()...)
+	analyzer.manager.ConcurrencyBatchRun(5)
 	analyzer.manager.Register(output.Tasks()...)
+	analyzer.manager.ConcurrencyBatchRun(5)
 	analyzer.manager.Register(analyze.Tasks()...)
-
+	analyzer.manager.ConcurrencyBatchRun(5)
 	return analyzer
 }
 

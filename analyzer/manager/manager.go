@@ -2,6 +2,7 @@ package manager
 
 import (
 	"reflect"
+	"sync"
 )
 
 // The TaskManager's responsibility is to maintain a list of
@@ -47,6 +48,33 @@ func (tm *TaskManager) RunCurrentBatch() {
 	for _, t := range tm.tasks[tm.current:] {
 		tm.outputs(t)
 	}
+	tm.current = len(tm.tasks)
+}
+
+func (tm *TaskManager) ConcurrencyBatchRun(taskSz int)  {
+	taskChan := make(chan *task)
+	var wg sync.WaitGroup
+	for i := 1; i <= taskSz; i++ {
+		go func() {
+			for {
+				select {
+				case task :=<-taskChan:
+					tm.outputs(task)
+					wg.Done()
+				default:
+					break
+				}
+			}
+		}()
+	}
+
+	for _, t := range tm.tasks[tm.current:] {
+		wg.Add(1)
+		taskChan <- t
+	}
+	wg.Wait()
+	close(taskChan)
+
 	tm.current = len(tm.tasks)
 }
 
