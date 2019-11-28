@@ -1,12 +1,12 @@
 package report
 
 import (
-	"github.com/pingcap/tidb-foresight/model/report"
 	"net/http"
 
 	"github.com/gorilla/mux"
 	"github.com/pingcap/fn"
 	"github.com/pingcap/tidb-foresight/model"
+	"github.com/pingcap/tidb-foresight/model/report"
 	"github.com/pingcap/tidb-foresight/utils"
 	log "github.com/sirupsen/logrus"
 )
