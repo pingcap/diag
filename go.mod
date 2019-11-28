@@ -15,6 +15,7 @@ require (
 	github.com/jaypipes/ghw v0.0.0-20190821154021-743802778342
 	github.com/jessevdk/go-flags v1.4.0
 	github.com/jinzhu/gorm v1.9.10
+	github.com/lorenzosaino/go-sysctl v0.1.0
 	github.com/mattn/go-sqlite3 v1.11.0
 	github.com/mitchellh/mapstructure v1.1.2
 	github.com/pingcap/check v0.0.0-20190102082844-67f458068fc8
