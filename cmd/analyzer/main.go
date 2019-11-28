@@ -26,6 +26,7 @@ func main() {
 		return
 	}
 
+	// TODO: this part is using to debug, please change it after program is finished.
 	if *inspectionId == "" {
 		*inspectionId = "555a7ce3-76f0-403a-b8c5-f9f9c5d5db2b"
 		//log.Panic("the inspection-id must be specified")
