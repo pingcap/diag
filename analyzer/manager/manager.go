@@ -1,9 +1,10 @@
 package manager
 
 import (
-	"github.com/prometheus/common/log"
 	"reflect"
 	"sync"
+
+	log "github.com/sirupsen/logrus"
 )
 
 // The TaskManager's responsibility is to maintain a list of

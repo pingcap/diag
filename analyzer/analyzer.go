@@ -1,6 +1,8 @@
 package analyzer
 
 import (
+	"runtime"
+
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/pingcap/tidb-foresight/analyzer/analyze"
 	"github.com/pingcap/tidb-foresight/analyzer/boot"
@@ -8,7 +10,6 @@ import (
 	"github.com/pingcap/tidb-foresight/analyzer/input"
 	"github.com/pingcap/tidb-foresight/analyzer/manager"
 	"github.com/pingcap/tidb-foresight/analyzer/output"
-	"runtime"
 )
 
 type Analyzer struct {
