@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { Table } from 'antd';
-import { IPromParams, IPromQuery } from '@/services/prom-query';
+import { IPromParams, IPromQuery } from './prom-query';
 import { usePromQueries } from './use-prom-queries';
 import { IPromConfigYaxis, genValueConverter } from './prom-panel-config';
 import PromChartHeader from './PromChartHeader';

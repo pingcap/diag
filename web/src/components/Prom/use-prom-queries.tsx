@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { IPromQuery, IPromParams, promRangeQueries } from '@/services/prom-query';
+import { IPromQuery, IPromParams, promRangeQueries } from './prom-query';
 
 function loopGenUniqName(
   oriName: string,

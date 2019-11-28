@@ -1,11 +1,11 @@
 import React from 'react';
-import { IPromParams, IPromQuery } from '@/services/prom-query';
+import { IPromParams, IPromQuery } from './prom-query';
 import { usePromQueries } from './use-prom-queries';
-import PromChartHeader from './PromChartHeader';
 import { IPromConfigYaxis } from './prom-panel-config';
+import PromChartHeader from './PromChartHeader';
 import SerialLineChart from '../Chart/SerialLineChart';
 
-const styles = require('./report-detail-style.less');
+const styles = require('./prom-style.less');
 
 interface PromChartProps {
   title: string;
