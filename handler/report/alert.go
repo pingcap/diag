@@ -29,17 +29,17 @@ type AlertInfoWrapper struct {
 }
 
 func HandleAlertInfos(infos []*report.AlertInfo) []*AlertInfoWrapper {
-	wrapperMap := make(map[string]AlertInfoWrapper)
+	wrapperMap := make(map[string]*AlertInfoWrapper)
 	for _, info := range infos {
 		if v, exists := wrapperMap[info.Name]; exists {
 			v.AlertCnt++
 		} else {
-			wrapperMap[info.Name] = AlertInfoWrapper{*info, 0}
+			wrapperMap[info.Name] = &AlertInfoWrapper{*info, 1}
 		}
 	}
-	values := make([]*AlertInfoWrapper, 0)
+	values := make([]*AlertInfoWrapper, 1)
 	for _, v := range wrapperMap {
-		values = append(values, &v)
+		values = append(values, v)
 	}
 	return values
 }
