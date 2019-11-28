@@ -73,7 +73,7 @@ func (t *saveSoftwareVersionTask) Run(c *boot.Config, m *boot.Model, insights *i
 			fss := loadVersionsTag(vs, "fs")
 			networks := loadVersionsTag(vs, "network")
 			openFM := loadVersionsTagWithInts(vs, "openFileMax")
-			openF := loadVersionsTagWithInts(vs, "openFile")
+			//openF := loadVersionsTagWithInts(vs, "openFile")
 
 			v := ts.New(strings.Join(vss, ","), nil)
 			if !identity(vss) {
@@ -95,7 +95,7 @@ func (t *saveSoftwareVersionTask) Run(c *boot.Config, m *boot.Model, insights *i
 				FileSystem:   strings.Join(fss, ","),
 				NetworkDrive: strings.Join(networks, ","),
 
-				OpenFileLimit:   debug_printer.FormatJson(openFM),
+				OpenFileLimit: debug_printer.FormatJson(openFM),
 				//OpenFileCurrent: debug_printer.FormatJson(openF),
 			})
 		}
@@ -168,6 +168,7 @@ func loadSoftwareVersion(insight *insight.InsightInfo) []SoftwareVersion {
 		}
 		versions = append(versions, version)
 	}
+
 	for _, item := range insight.Meta.Tikv {
 		log.Infof("loadSoftwareVersion(insight *insight.InsightInfo) got insight.Meta.TiKV item: %s", debug_printer.FormatJson(item))
 		version := SoftwareVersion{
