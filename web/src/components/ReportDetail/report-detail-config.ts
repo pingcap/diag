@@ -76,6 +76,7 @@ export const INSPECTION_DETAILS: ReportDetailConfig = [
         title: '4、告警信息',
         apiUrl: '/alert',
         dataType: 'arr',
+        lessMoreColumns: ['description'],
       },
       {
         title: '5、慢查询信息',

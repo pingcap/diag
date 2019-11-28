@@ -12,6 +12,11 @@ import { formatDatetime } from '@/utils/datetime-util';
 
 const styles = require('../style.less');
 
+// TODO: polish
+const EMPHASIS_PROBLEMS = {
+  db: '数据库瓶颈分析',
+};
+
 interface EmphasisDetailProps extends ConnectProps {
   dispatch: Dispatch;
 
@@ -87,7 +92,9 @@ function EmphasisDetail({ dispatch, match, curUser }: EmphasisDetailProps) {
             `${formatDatetime(emphasisDetail.investgating_start)} ~
           ${formatDatetime(emphasisDetail.investgating_end)}`}
         </h2>
-        <h2>排查问题：</h2>
+        <h2>
+          排查问题：{emphasisDetail && EMPHASIS_PROBLEMS[emphasisDetail.investgating_problem]}
+        </h2>
       </div>
 
       <div>

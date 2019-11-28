@@ -1,7 +1,6 @@
 package emphasis
 
 import (
-	"github.com/pingcap/tidb-foresight/wrapper/db"
 	"net/http"
 
 	"github.com/pingcap/fn"
@@ -9,6 +8,9 @@ import (
 	"github.com/pingcap/tidb-foresight/model"
 	"github.com/pingcap/tidb-foresight/model/emphasis"
 	"github.com/pingcap/tidb-foresight/utils"
+	"github.com/pingcap/tidb-foresight/utils/debug_printer"
+	"github.com/pingcap/tidb-foresight/wrapper/db"
+	log "github.com/sirupsen/logrus"
 )
 
 type loadProblemsHandler struct {
@@ -32,6 +34,7 @@ func (h *loadProblemsHandler) listAllProblems(r *http.Request) (map[string]inter
 		}
 		return nil, utils.DatabaseQueryError
 	}
+	log.Infof("listAllProblems(r *http.Request) load Emphasis %v", debug_printer.FormatJson(emp))
 	problems, err := h.m.LoadAllProblems(emp)
 	if err != nil {
 		return nil, utils.DatabaseQueryError
