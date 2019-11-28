@@ -17,6 +17,7 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"github.com/pingcap/tidb-foresight/cmd/insight/osconfig"
 	"log"
 	"runtime"
 	"strings"
@@ -48,6 +49,7 @@ type Metrics struct {
 	ProcStats  []ProcessStat   `json:"proc_stats,omitempty"`
 
 	BlockInfo  ghw.BlockInfo `json:"block_info"`
+	OsConfig osconfig.OsConfig `json:"os_config"`
 }
 
 type options struct {
@@ -91,6 +93,7 @@ func (metric *Metrics) getMetrics(opts options) {
 		metric.SysInfo.GetSysInfo()
 		metric.NTP.getNTPInfo()
 		metric.Partitions = GetPartitionStats()
+		metric.OsConfig = osconfig.Collect()
 		info, err := ghw.Block()
 		if err == nil {
 			metric.BlockInfo = *info
