@@ -12,6 +12,11 @@ export interface IPromParams {
   step: number;
 }
 
+export function genPromParams(start: number, end: number, sampleCount: number = 30): IPromParams {
+  const step = Math.floor((end - start) / sampleCount);
+  return { start, end, step };
+}
+
 // https://www.lodashjs.com/docs/latest#_templatestring-options
 // 使用自定义的模板分隔符
 // _.templateSettings.interpolate = /{{([\s\S]+?)}}/g;

@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { Button } from 'antd';
-import { IPromQuery } from '@/services/prom-query';
+import { IPromQuery } from './prom-query';
 
-const styles = require('./report-detail-style.less');
+const styles = require('./prom-style.less');
 
 interface PromChartHeaderProps {
   title: string;
