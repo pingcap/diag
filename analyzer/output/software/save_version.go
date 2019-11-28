@@ -168,6 +168,7 @@ func loadSoftwareVersion(insight *insight.InsightInfo) []SoftwareVersion {
 		}
 		versions = append(versions, version)
 	}
+
 	for _, item := range insight.Meta.Tikv {
 		log.Infof("loadSoftwareVersion(insight *insight.InsightInfo) got insight.Meta.TiKV item: %s", debug_printer.FormatJson(item))
 		version := SoftwareVersion{
