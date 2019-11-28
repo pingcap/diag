@@ -37,7 +37,7 @@ func HandleAlertInfos(infos []*report.AlertInfo) []*AlertInfoWrapper {
 			wrapperMap[info.Name] = &AlertInfoWrapper{*info, 1}
 		}
 	}
-	values := make([]*AlertInfoWrapper, 1)
+	values := make([]*AlertInfoWrapper, 0)
 	for _, v := range wrapperMap {
 		if v != nil {
 			values = append(values, v)
