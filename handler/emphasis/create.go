@@ -1,7 +1,6 @@
 package emphasis
 
 import (
-	"github.com/pingcap/tidb-foresight/utils/debug_printer"
 	"net/http"
 	"time"
 
@@ -11,10 +10,10 @@ import (
 	helper "github.com/pingcap/tidb-foresight/handler/utils"
 	"github.com/pingcap/tidb-foresight/model"
 	"github.com/pingcap/tidb-foresight/utils"
+	"github.com/pingcap/tidb-foresight/utils/debug_printer"
 	log "github.com/sirupsen/logrus"
 )
 
-// TODO: replace this worker to the only real worker.
 type Worker interface {
 	Collect(inspectionId, inspectionType string, config *model.Config) error
 	Analyze(inspectionId string) error
