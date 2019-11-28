@@ -1,8 +1,8 @@
 {
   "meta": {
-    "timestamp": "2019-11-27T09:57:34.130404745-05:00",
-    "uptime": 9252754.3,
-    "idle_time": 54838611.57,
+    "timestamp": "2019-11-28T11:44:40.24221875-05:00",
+    "uptime": 9345580.41,
+    "idle_time": 55414705.99,
     "sysinfo_ver": "0.9.1",
     "git_branch": "Not Provided",
     "git_commit": "Not Provided",
@@ -152,8 +152,8 @@
     "version": "ntpd 4.2.6p5@1.2349-o Fri Apr 13 12:52:27 UTC 2018 (1)",
     "sync": "clock_sync",
     "stratum": 3,
-    "offset": 2.832,
-    "jitter": 1.814,
+    "offset": -0.832,
+    "jitter": 3.882,
     "status": "0615"
   },
   "partitions": [
