@@ -1,7 +1,6 @@
 package emphasis
 
 import (
-	"github.com/pingcap/tidb-foresight/wrapper/db"
 	"net/http"
 
 	"github.com/pingcap/fn"
@@ -9,6 +8,8 @@ import (
 	"github.com/pingcap/tidb-foresight/model"
 	"github.com/pingcap/tidb-foresight/model/emphasis"
 	"github.com/pingcap/tidb-foresight/utils"
+	"github.com/pingcap/tidb-foresight/utils/debug_printer"
+	"github.com/pingcap/tidb-foresight/wrapper/db"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -35,6 +36,7 @@ func (h *getEmphasisHandler) getEmphasis(r *http.Request) (*emphasis.Emphasis, u
 		}
 		return nil, utils.DatabaseQueryError
 	} else {
+		log.Infof("getEmphasis(r *http.Request) load Emphasis %v", debug_printer.FormatJson(inspection))
 		problems, err := h.m.LoadAllProblems(inspection)
 		if err != nil {
 			return nil, utils.DatabaseQueryError

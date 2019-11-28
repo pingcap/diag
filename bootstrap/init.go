@@ -3,6 +3,7 @@ package bootstrap
 import (
 	"os"
 	"path"
+	"strconv"
 
 	"github.com/pingcap/tidb-foresight/wrapper/db"
 	log "github.com/sirupsen/logrus"
@@ -51,6 +52,13 @@ func MustInit(homepath string) (*ForesightConfig, db.DB) {
 	config := initConfig(homepath)
 
 	db := initDB(path.Join(homepath, "sqlite.db"))
+
+	// Support debug mode
+	if debug, exists := os.LookupEnv("debug"); exists {
+		if i, err := strconv.ParseInt(debug, 10, 64); err == nil && i == 1 {
+			return config, db.Debug()
+		}
+	}
 
 	return config, db
 }

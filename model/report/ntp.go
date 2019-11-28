@@ -5,7 +5,7 @@ import (
 )
 
 type NtpInfo struct {
-	InspectionId string
+	InspectionId string     `json:"-"`
 	NodeIp       string     `json:"node_ip"`
 	Offset       tf.Float64 `json:"offset"`
 }

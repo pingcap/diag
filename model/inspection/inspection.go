@@ -28,6 +28,9 @@ type Inspection struct {
 	Pd               string         `json:"pd"`
 	Grafana          string         `json:"grafana"`
 	Prometheus       string         `json:"prometheus"`
+
+	// To represent the problem in inspection, use this field to store problem
+	Problem string `json:"-"`
 }
 
 const DIAG_FILTER = "type in ('auto', 'manual')"

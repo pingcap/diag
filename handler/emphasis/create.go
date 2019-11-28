@@ -10,10 +10,10 @@ import (
 	helper "github.com/pingcap/tidb-foresight/handler/utils"
 	"github.com/pingcap/tidb-foresight/model"
 	"github.com/pingcap/tidb-foresight/utils"
+	"github.com/pingcap/tidb-foresight/utils/debug_printer"
 	log "github.com/sirupsen/logrus"
 )
 
-// TODO: replace this worker to the only real worker.
 type Worker interface {
 	Collect(inspectionId, inspectionType string, config *model.Config) error
 	Analyze(inspectionId string) error
@@ -45,6 +45,8 @@ type createEmphasisRequest struct {
 }
 
 func (h *createEmphasisHandler) createEmphasis(req *createEmphasisRequest, r *http.Request) (*model.Emphasis, utils.StatusError) {
+	log.Infof("(h *createEmphasisHandler) createEmphasis received request %v", debug_printer.FormatJson(req))
+
 	instanceId := helper.LoadRouterVar(r, "instance_id")
 	newUuid := uuid.New().String()
 
@@ -68,7 +70,7 @@ func (h *createEmphasisHandler) createEmphasis(req *createEmphasisRequest, r *ht
 
 	insp := emp.CorrespondInspection()
 	inspectionId := insp.Uuid
-
+	log.Infof("(h *createEmphasisHandler) createEmphasis create insp %v", debug_printer.FormatJson(insp))
 	if err := h.m.SetInspection(insp); err != nil {
 		log.Error("set inspection: ", err)
 		return nil, helper.GormErrorMapper(err, utils.DatabaseInsertError)
