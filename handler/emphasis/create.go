@@ -1,6 +1,7 @@
 package emphasis
 
 import (
+	"github.com/pingcap/tidb-foresight/utils/debug_printer"
 	"net/http"
 	"time"
 
@@ -45,6 +46,8 @@ type createEmphasisRequest struct {
 }
 
 func (h *createEmphasisHandler) createEmphasis(req *createEmphasisRequest, r *http.Request) (*model.Emphasis, utils.StatusError) {
+	log.Infof("(h *createEmphasisHandler) createEmphasis received request %v", debug_printer.FormatJson(req))
+
 	instanceId := helper.LoadRouterVar(r, "instance_id")
 	newUuid := uuid.New().String()
 
