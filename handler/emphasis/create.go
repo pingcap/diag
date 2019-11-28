@@ -71,7 +71,7 @@ func (h *createEmphasisHandler) createEmphasis(req *createEmphasisRequest, r *ht
 
 	insp := emp.CorrespondInspection()
 	inspectionId := insp.Uuid
-
+	log.Infof("(h *createEmphasisHandler) createEmphasis create insp %v", debug_printer.FormatJson(insp))
 	if err := h.m.SetInspection(insp); err != nil {
 		log.Error("set inspection: ", err)
 		return nil, helper.GormErrorMapper(err, utils.DatabaseInsertError)
