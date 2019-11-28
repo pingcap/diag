@@ -39,7 +39,8 @@ func (emp *Emphasis) CorrespondInspection() *inspection.Inspection {
 		Status:       emp.Status,
 		Type:         "emphasis",
 		User:         emp.User,
-		Message:      emp.InvestgatingProblem,
+
+		Problem:      emp.InvestgatingProblem,
 	}
 }
 
@@ -51,7 +52,7 @@ func InspectionToEmphasis(insp *inspection.Inspection) *Emphasis {
 		InvestgatingStart:   insp.ScrapeBegin.Time,
 		InvestgatingEnd:     insp.ScrapeEnd.Time,
 		Status:              insp.Status,
-		InvestgatingProblem: insp.Message,
+		InvestgatingProblem: insp.Problem,
 		InstanceName:        insp.InstanceName,
 		User:                insp.User,
 	}
