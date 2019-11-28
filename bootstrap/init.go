@@ -55,7 +55,7 @@ func MustInit(homepath string) (*ForesightConfig, db.DB) {
 
 	// Support debug mode
 	if debug, exists := os.LookupEnv("debug"); exists {
-		if i, err := strconv.ParseInt(debug, 10, 64); err != nil && i == 1 {
+		if i, err := strconv.ParseInt(debug, 10, 64); err == nil && i == 1 {
 			return config, db.Debug()
 		}
 	}
