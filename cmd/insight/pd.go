@@ -13,7 +13,7 @@ import (
 
 // PDMeta is the metadata struct of a PD server
 type PDMeta struct {
- 	MetaBase
+	MetaBase
 }
 
 func getPDVersion(proc *process.Process) PDMeta {

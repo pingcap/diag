@@ -13,7 +13,7 @@ import (
 )
 
 type DiagnoseWorker interface {
-	Collect(inspectionId, inspectionType string, config *model.Config) error
+	Collect(inspectionId string, config *model.Config, env map[string]string) error
 	Analyze(inspectionId string) error
 }
 
@@ -60,7 +60,9 @@ func (h *createInspectionHandler) createInspection(r *http.Request, c *model.Con
 	}
 
 	go func() {
-		if err := h.w.Collect(inspectionId, "manual", c); err != nil {
+		if err := h.w.Collect(inspectionId, c, map[string]string{
+			"INSPECTION_TYPE": "manual",
+		}); err != nil {
 			log.Error("collect ", inspectionId, ": ", err)
 			inspection.Status = "exception"
 			inspection.Message = "collect failed"
