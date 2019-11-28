@@ -87,7 +87,7 @@ function EmphasisDetail({ dispatch, match, curUser }: EmphasisDetailProps) {
             `${formatDatetime(emphasisDetail.investgating_start)} ~
           ${formatDatetime(emphasisDetail.investgating_end)}`}
         </h2>
-        <h2>排查问题：</h2>
+        <h2>排查问题：{emphasisDetail && emphasisDetail.investgating_problem}</h2>
       </div>
 
       <div>
