@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"time"
 
 	"github.com/pingcap/tidb-foresight/analyzer"
 	"github.com/pingcap/tidb-foresight/version"
@@ -9,6 +10,12 @@ import (
 )
 
 func main() {
+	beginTime := time.Now()
+	defer func() {
+		endTime := time.Now()
+		log.Infof("Analyzer Begin at %v, end at %v, cost %v times", beginTime, endTime, endTime.Sub(beginTime))
+	}()
+
 	printVersion := flag.Bool("V", false, "print version info")
 	home := flag.String("home", "/tmp/tidb-foresight", "the tidb-foresight data directory")
 	inspectionId := flag.String("inspection-id", "", "the inspection to be analyze")
