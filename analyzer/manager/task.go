@@ -11,7 +11,7 @@ import (
 // TODO: Later we may use a mutex here to make tasks run concurrency.
 type task struct {
 	// The id identity the path and name of the task: {pkg_path}#{type_name}
-	id string
+	id string `json:"id"`
 
 	// The method stored the reflect value of Run method in target type
 	method reflect.Value
@@ -22,12 +22,12 @@ type task struct {
 	// The inputs stored the types of input list of the Run method.
 	// The format of each inputs element is {pkg_path}#{type_name}
 	// eg. github.com/pingcap/tidb-foresight/analyzer/boot#DB
-	inputs []string
+	inputs []string `json:"inputs"`
 
 	// The outputs stored the types of output list of the Run method.
 	// The format of each inputs element is {pkg_path}#{type_name}
 	// eg. github.com/pingcap/tidb-foresight/analyzer/boot#DB
-	outputs []string
+	outputs []string `json:"outputs"`
 
 	// The cache field cached the values returned by last execution of
 	// this task, it's used to guarantee every task run atmost once
@@ -103,10 +103,7 @@ func newTask(i interface{}, m ResolveMode) *task {
 
 // Call method with args and return result of Call
 func (t *task) run(args []reflect.Value) []reflect.Value {
-	//if len(t.cache) != 0 {
-	//	return t.cache
-	//}
-
+	log.Infof("%v.run is called", t.id)
 	t.once.Do(func() {
 		for idx, arg := range args {
 			if arg == reflect.ValueOf(nil) {

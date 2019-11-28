@@ -36,5 +36,5 @@ func NewAnalyzer(home, inspectionId string) *Analyzer {
 }
 
 func (a *Analyzer) Run() {
-	a.manager.Run()
+	a.manager.RunCurrentBatch()
 }

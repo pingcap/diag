@@ -1,11 +1,10 @@
 package manager
 
 import (
-	"fmt"
-	"github.com/pingcap/tidb-foresight/utils/debug_printer"
-	"github.com/prometheus/common/log"
 	"reflect"
 	"sync"
+
+	log "github.com/sirupsen/logrus"
 )
 
 // The TaskManager's responsibility is to maintain a list of
@@ -23,8 +22,8 @@ type TaskManager struct {
 
 func New() *TaskManager {
 	return &TaskManager{
-		mode:  Strict,
-		tasks: make([]*task, 0),
+		mode:    Strict,
+		tasks:   make([]*task, 0),
 		current: 0,
 	}
 }
@@ -54,34 +53,60 @@ func (tm *TaskManager) RunCurrentBatch() {
 	tm.current = len(tm.tasks)
 }
 
-func (tm *TaskManager) ConcurrencyBatchRun(taskSz int)  {
-	taskChan := make(chan *task)
+//func (tm *TaskManager) ConcurrencyBatchRun(taskSz int) {
+//	taskChan := make(chan *task, taskSz)
+//
+//	var wg sync.WaitGroup
+//	for i := 1; i <= taskSz; i++ {
+//		go func() {
+//			for {
+//				var currentTask *task
+//				select {
+//				case currentTask = <-taskChan:
+//					log.Infof("counting task %v\n", currentTask.id)
+//					tm.outputs(currentTask)
+//					wg.Done()
+//				default:
+//					log.Infoln("return is called")
+//					return
+//				}
+//			}
+//		}()
+//	}
+//	log.Infof("current is %v, sum of len is %v\n", tm.current, len(tm.tasks))
+//	wg.Add(len(tm.tasks) - tm.current)
+//	//go func() {
+//	//	for i, t := range tm.tasks[tm.current:len(tm.tasks)] {
+//	//		fmt.Printf("Send task %v(%d)\n", t.id, i)
+//	//		taskChan <- t
+//	//	}
+//	//}()
+//
+//	for i, t := range tm.tasks[tm.current:len(tm.tasks)] {
+//		log.Infof("Send task %v(%d)\n", t.id, i + tm.current)
+//		taskChan <- t
+//	}
+//	log.Infoln("Waiting now")
+//	wg.Wait()
+//	log.Infoln("close taskChan")
+//	close(taskChan)
+//
+//	log.Infoln("RunCurrentBatch() finish batch [%v, %v)", tm.current, len(tm.tasks))
+//
+//	tm.current = len(tm.tasks)
+//}
+
+func (tm *TaskManager) ConcurrencyBatchRun(taskSz int) {
 	var wg sync.WaitGroup
-	for i := 1; i <= taskSz; i++ {
+	wg.Add(len(tm.tasks) - tm.current)
+	for _, t := range tm.tasks[tm.current:len(tm.tasks)] {
 		go func() {
-			for {
-				select {
-				case task := <-taskChan:
-					if task == nil {
-						panic(task)
-					}
-					tm.outputs(task)
-					wg.Done()
-				default:
-					break
-				}
-			}
+			log.Infof("counting task %v\n", t.id)
+			tm.outputs(t)
+			wg.Done()
 		}()
 	}
-	log.Infof("current is %v, sum of len is %v", tm.current, len(tm.tasks))
-	for _, t := range tm.tasks[tm.current:] {
-		wg.Add(1)
-		fmt.Println(debug_printer.FormatJson(t))
-		taskChan <- t
-	}
 	wg.Wait()
-	close(taskChan)
-
 	tm.current = len(tm.tasks)
 }
 
