@@ -16,7 +16,7 @@ func ParseAlert() *parseAlertTask {
 }
 
 // Parse alert.json and return Alert, the alert.json looks like:
-//  {
+// {
 //	    "status": "success",
 //		"data": {
 //			"resultType": "vector",

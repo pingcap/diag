@@ -53,7 +53,7 @@ func (t *saveMetricTask) Run(c *boot.Config, m *boot.Model) *Metric {
 	}
 	defer cli.Close()
 
-	tl := utils.NewTokenLimiter(uint(runtime.NumCPU()))
+	tl := utils.NewTokenLimiter(uint(runtime.NumCPU()) * 8)
 	rand.Shuffle(len(files), func(i, j int) { files[i], files[j] = files[j], files[i] })
 	for _, file := range files {
 		file := file
@@ -80,6 +80,7 @@ func (t *saveMetricTask) Run(c *boot.Config, m *boot.Model) *Metric {
 				log.Error("insert metric to influxdb:", err)
 			}
 		}(tl.Get())
+
 		m.UpdateInspectionMessage(c.InspectionId, fmt.Sprintf("writing metric %s", file.Name()))
 	}
 	tl.Wait()
