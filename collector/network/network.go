@@ -13,12 +13,13 @@ import (
 
 type Options interface {
 	GetHome() string
+	GetModel() model.Model
 	GetInspectionId() string
 	GetTopology() (*model.Topology, error)
 }
 
 type NetworkCollector struct {
-	opts Options
+	Options
 }
 
 func New(opts Options) *NetworkCollector {
@@ -31,13 +32,13 @@ func (c *NetworkCollector) Collect() error {
 		return err
 	}
 
-	topo, err := c.opts.GetTopology()
+	topo, err := c.GetTopology()
 	if err != nil {
 		return err
 	}
 
 	for _, host := range topo.Hosts {
-		if e := c.dmesg(user.Username, host.Ip); e != nil {
+		if e := c.net(user.Username, host.Ip); e != nil {
 			if err == nil {
 				err = e
 			}
@@ -47,8 +48,9 @@ func (c *NetworkCollector) Collect() error {
 	return err
 }
 
-func (c *NetworkCollector) dmesg(user, ip string) error {
-	p := path.Join(c.opts.GetHome(), "inspection", c.opts.GetInspectionId(), "net", ip)
+func (c *NetworkCollector) net(user, ip string) error {
+	c.GetModel().UpdateInspectionMessage(c.GetInspectionId(), fmt.Sprintf("collecting network info for %s...", ip))
+	p := path.Join(c.GetHome(), "inspection", c.GetInspectionId(), "net", ip)
 	if err := os.MkdirAll(p, os.ModePerm); err != nil {
 		return err
 	}

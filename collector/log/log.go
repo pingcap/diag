@@ -8,10 +8,12 @@ import (
 	"time"
 
 	log "github.com/sirupsen/logrus"
+	"github.com/pingcap/tidb-foresight/model"
 )
 
 type Options interface {
 	GetHome() string
+	GetModel() model.Model
 	GetInstanceId() string
 	GetInspectionId() string
 	GetScrapeBegin() (time.Time, error)
@@ -19,7 +21,7 @@ type Options interface {
 }
 
 type LogCollector struct {
-	opts Options
+	Options
 }
 
 func New(opts Options) *LogCollector {
@@ -27,18 +29,21 @@ func New(opts Options) *LogCollector {
 }
 
 func (c *LogCollector) Collect() error {
-	begin, err := c.opts.GetScrapeBegin()
+	begin, err := c.GetScrapeBegin()
 	if err != nil {
 		return err
 	}
-	end, err := c.opts.GetScrapeEnd()
+	end, err := c.GetScrapeEnd()
 	if err != nil {
 		return err
 	}
 
-	home := c.opts.GetHome()
-	instance := c.opts.GetInstanceId()
-	inspection := c.opts.GetInspectionId()
+	home := c.GetHome()
+	instance := c.GetInstanceId()
+	inspection := c.GetInspectionId()
+
+	c.GetModel().UpdateInspectionMessage(inspection, "collecting log...")
+
 	cmd := exec.Command(
 		path.Join(home, "bin", "spliter"),
 		fmt.Sprintf("--src=%s", path.Join(home, "remote-log", instance)),

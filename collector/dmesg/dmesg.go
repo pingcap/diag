@@ -13,12 +13,13 @@ import (
 
 type Options interface {
 	GetHome() string
+	GetModel() model.Model
 	GetInspectionId() string
 	GetTopology() (*model.Topology, error)
 }
 
 type DmesgCollector struct {
-	opts Options
+	Options
 }
 
 func New(opts Options) *DmesgCollector {
@@ -31,7 +32,7 @@ func (c *DmesgCollector) Collect() error {
 		return err
 	}
 
-	topo, err := c.opts.GetTopology()
+	topo, err := c.GetTopology()
 	if err != nil {
 		return err
 	}
@@ -48,7 +49,9 @@ func (c *DmesgCollector) Collect() error {
 }
 
 func (c *DmesgCollector) dmesg(user, ip string) error {
-	p := path.Join(c.opts.GetHome(), "inspection", c.opts.GetInspectionId(), "dmesg", ip)
+	c.GetModel().UpdateInspectionMessage(c.GetInspectionId(), fmt.Sprintf("collecting dmesg info for %s...", ip))
+
+	p := path.Join(c.GetHome(), "inspection", c.GetInspectionId(), "dmesg", ip)
 	if err := os.MkdirAll(p, os.ModePerm); err != nil {
 		return err
 	}

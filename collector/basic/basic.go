@@ -17,12 +17,13 @@ import (
 
 type Options interface {
 	GetHome() string
+	GetModel() model.Model
 	GetInspectionId() string
 	GetTopology() (*model.Topology, error)
 }
 
 type BasicCollector struct {
-	opts Options
+	Options
 }
 
 func New(opts Options) *BasicCollector {
@@ -35,7 +36,7 @@ func (b *BasicCollector) Collect() error {
 		return err
 	}
 
-	topo, err := b.opts.GetTopology()
+	topo, err := b.GetTopology()
 	if err != nil {
 		return err
 	}
@@ -68,7 +69,9 @@ func (b *BasicCollector) Collect() error {
 }
 
 func (b *BasicCollector) insight(user, ip string, ports []string) error {
-	p := path.Join(b.opts.GetHome(), "inspection", b.opts.GetInspectionId(), "insight", ip)
+	b.GetModel().UpdateInspectionMessage(b.GetInspectionId(), fmt.Sprintf("collecting insight info for host %s...", ip))
+
+	p := path.Join(b.GetHome(), "inspection", b.GetInspectionId(), "insight", ip)
 	if err := os.MkdirAll(p, os.ModePerm); err != nil {
 		return err
 	}
@@ -89,7 +92,7 @@ func (b *BasicCollector) insight(user, ip string, ports []string) error {
 
 	install := exec.Command(
 		"scp",
-		path.Join(b.opts.GetHome(), "bin", "insight"),
+		path.Join(b.GetHome(), "bin", "insight"),
 		fmt.Sprintf("%s@%s:/tmp/", user, ip),
 	)
 	install.Stdout = os.Stdout

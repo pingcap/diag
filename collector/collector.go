@@ -22,6 +22,7 @@ import (
 	"github.com/pingcap/tidb-foresight/collector/network"
 	"github.com/pingcap/tidb-foresight/collector/profile"
 	"github.com/pingcap/tidb-foresight/model"
+	"github.com/pingcap/tidb-foresight/wrapper/db"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -39,68 +40,8 @@ type Options interface {
 	GetComponents() []string
 }
 
-type WrappedOptions struct {
-	Options
-}
-
-func (w *WrappedOptions) GetTopology() (*model.Topology, error) {
-	home := w.GetHome()
-	instanceId := w.GetInstanceId()
-
-	topo := model.Topology{}
-
-	content, err := ioutil.ReadFile(path.Join(home, "topology", instanceId+".json"))
-	if err != nil {
-		log.Error("read file:", err)
-		return nil, err
-	}
-
-	if err = json.Unmarshal(content, &topo); err != nil {
-		log.Error("unmarshal:", err)
-		return nil, err
-	}
-
-	return &topo, nil
-}
-
-func (w *WrappedOptions) GetPrometheusEndpoint() (string, error) {
-	topo, err := w.GetTopology()
-	if err != nil {
-		return "", err
-	}
-
-	for _, host := range topo.Hosts {
-		for _, comp := range host.Components {
-			if comp.Name == "prometheus" {
-				return host.Ip + ":" + comp.Port, nil
-			}
-		}
-	}
-
-	return "", errors.New("component prometheus not found")
-}
-
-func (w *WrappedOptions) GetTidbStatusEndpoints() ([]string, error) {
-	endpoints := []string{}
-
-	topo, err := w.GetTopology()
-	if err != nil {
-		return endpoints, err
-	}
-
-	for _, host := range topo.Hosts {
-		for _, comp := range host.Components {
-			if comp.Name == "tidb" {
-				endpoints = append(endpoints, host.Ip+":"+comp.StatusPort)
-			}
-		}
-	}
-
-	return endpoints, nil
-}
-
 type Manager struct {
-	opts Options
+	Options
 }
 
 func New(opts Options) Collector {
@@ -108,8 +49,8 @@ func New(opts Options) Collector {
 }
 
 func (m *Manager) Collect() error {
-	home := m.opts.GetHome()
-	inspection := m.opts.GetInspectionId()
+	home := m.GetHome()
+	inspection := m.GetInspectionId()
 	start := time.Now()
 
 	// mkdir for collection results.
@@ -131,7 +72,7 @@ func (m *Manager) Collect() error {
 	}
 
 	end := time.Now()
-	if cfg, err := json.Marshal(m.opts); err != nil {
+	if cfg, err := json.Marshal(m.Options); err != nil {
 		// if cannot, than panic.
 		log.Error(err)
 	} else {
@@ -148,9 +89,11 @@ func (m *Manager) Collect() error {
 // collectTopology runs in local machine.
 // It move the topology file from topology/{instance_id}.json to inspection/{topology}.json
 func (m *Manager) collectTopology() error {
-	home := m.opts.GetHome()
-	instance := m.opts.GetInstanceId()
-	inspection := m.opts.GetInspectionId()
+	home := m.GetHome()
+	instance := m.GetInstanceId()
+	inspection := m.GetInspectionId()
+
+	m.GetModel().UpdateInspectionMessage(inspection, "collecting topology...")
 
 	src, err := os.Open(path.Join(home, "topology", instance+".json"))
 	if err != nil {
@@ -171,10 +114,12 @@ func (m *Manager) collectTopology() error {
 // collectArgs runs in local machine.
 // It generate an args.json by it's opts.
 func (m *Manager) collectArgs() error {
-	home := m.opts.GetHome()
-	inspection := m.opts.GetInspectionId()
+	home := m.GetHome()
+	inspection := m.GetInspectionId()
 
-	data, err := json.Marshal(m.opts)
+	m.GetModel().UpdateInspectionMessage(inspection, "collecting args...")
+
+	data, err := json.Marshal(m.Options)
 	if err != nil {
 		return err
 	}
@@ -184,8 +129,10 @@ func (m *Manager) collectArgs() error {
 // collectArgs runs in local machine.
 // It generate an args.json by it's environment variables.
 func (m *Manager) collectEnv() error {
-	home := m.opts.GetHome()
-	inspection := m.opts.GetInspectionId()
+	home := m.GetHome()
+	inspection := m.GetInspectionId()
+
+	m.GetModel().UpdateInspectionMessage(inspection, "collecting env...")
 
 	env := make(map[string]string)
 	for _, e := range os.Environ() {
@@ -201,8 +148,10 @@ func (m *Manager) collectEnv() error {
 }
 
 func (m *Manager) collectMeta(start, end time.Time) error {
-	home := m.opts.GetHome()
-	inspection := m.opts.GetInspectionId()
+	home := m.GetHome()
+	inspection := m.GetInspectionId()
+
+	m.GetModel().UpdateInspectionMessage(inspection, "collecting meta...")
 
 	dict := map[string]time.Time{
 		"create_time":  start,
@@ -225,30 +174,30 @@ func (m *Manager) collectRemote() error {
 	// build arrays for collector.
 	toCollectMap := make(map[string]Collector, 0)
 
-	for _, item := range m.opts.GetItems() {
+	for _, item := range m.GetItems() {
 		switch item {
 		case "alert":
-			toCollectMap[item] = alert.New(&WrappedOptions{m.opts})
+			toCollectMap[item] = alert.New(m)
 		case "dmesg":
-			toCollectMap[item] = dmesg.New(&WrappedOptions{m.opts})
+			toCollectMap[item] = dmesg.New(m)
 		case "basic":
-			toCollectMap[item] = basic.New(&WrappedOptions{m.opts})
+			toCollectMap[item] = basic.New(m)
 		case "config":
-			toCollectMap[item] = config.New(&WrappedOptions{m.opts})
+			toCollectMap[item] = config.New(m)
 		case "dbinfo":
-			toCollectMap[item] = dbinfo.New(&WrappedOptions{m.opts})
+			toCollectMap[item] = dbinfo.New(m)
 		case "log":
-			toCollectMap[item] = logc.New(&WrappedOptions{m.opts})
+			toCollectMap[item] = logc.New(m)
 		case "metric":
-			toCollectMap[item] = metric.New(&WrappedOptions{m.opts})
+			toCollectMap[item] = metric.New(m)
 		case "profile":
-			toCollectMap[item] = profile.New(&WrappedOptions{m.opts})
+			toCollectMap[item] = profile.New(m)
 		case "network":
-			toCollectMap[item] = network.New(&WrappedOptions{m.opts})
+			toCollectMap[item] = network.New(m)
 		}
 	}
 
-	inspId := m.opts.GetInspectionId()
+	inspId := m.GetInspectionId()
 	for item, collector := range toCollectMap {
 		wg.Add(1)
 		go func(innerCollector Collector, key string) {
@@ -266,8 +215,11 @@ func (m *Manager) collectRemote() error {
 }
 
 func (m *Manager) collectStatus(status map[string]error) error {
-	home := m.opts.GetHome()
-	inspection := m.opts.GetInspectionId()
+	home := m.GetHome()
+	inspection := m.GetInspectionId()
+
+	m.GetModel().UpdateInspectionMessage(inspection, "collecting status...")
+
 	dict := make(map[string]map[string]string)
 	for item, err := range status {
 		if err == nil {
@@ -287,4 +239,69 @@ func (m *Manager) collectStatus(status map[string]error) error {
 		return err
 	}
 	return ioutil.WriteFile(path.Join(home, "inspection", inspection, "status.json"), data, os.ModePerm)
+}
+
+func (m *Manager) GetTopology() (*model.Topology, error) {
+	home := m.GetHome()
+	instanceId := m.GetInstanceId()
+
+	topo := model.Topology{}
+
+	content, err := ioutil.ReadFile(path.Join(home, "topology", instanceId+".json"))
+	if err != nil {
+		log.Error("read file:", err)
+		return nil, err
+	}
+
+	if err = json.Unmarshal(content, &topo); err != nil {
+		log.Error("unmarshal:", err)
+		return nil, err
+	}
+
+	return &topo, nil
+}
+
+func (m *Manager) GetPrometheusEndpoint() (string, error) {
+	topo, err := m.GetTopology()
+	if err != nil {
+		return "", err
+	}
+
+	for _, host := range topo.Hosts {
+		for _, comp := range host.Components {
+			if comp.Name == "prometheus" {
+				return host.Ip + ":" + comp.Port, nil
+			}
+		}
+	}
+
+	return "", errors.New("component prometheus not found")
+}
+
+func (m *Manager) GetTidbStatusEndpoints() ([]string, error) {
+	endpoints := []string{}
+
+	topo, err := m.GetTopology()
+	if err != nil {
+		return endpoints, err
+	}
+
+	for _, host := range topo.Hosts {
+		for _, comp := range host.Components {
+			if comp.Name == "tidb" {
+				endpoints = append(endpoints, host.Ip+":"+comp.StatusPort)
+			}
+		}
+	}
+
+	return endpoints, nil
+}
+
+func (m *Manager) GetModel() model.Model {
+	db, err := db.Open(path.Join(m.GetHome(), "sqlite.db"))
+	if err != nil {
+		log.Panic(err)
+	}
+
+	return model.New(db)
 }
