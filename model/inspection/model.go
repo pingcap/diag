@@ -12,7 +12,7 @@ type Model interface {
 	GetInspection(inspId string) (*Inspection, error)
 	DeleteInspection(inspId string) error
 	UpdateInspectionStatus(inspId, status string) error
-	UpdateInspectionEstimateLeftSec(inspId string, leftSec int32) error
+	UpdateInspectionMessage(inspId, message string) error
 }
 
 func New(db db.DB) Model {

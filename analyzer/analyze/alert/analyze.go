@@ -13,6 +13,7 @@ func Analyze() *analyzeTask {
 
 // Check if there is any alert from prometheus
 func (t *analyzeTask) Run(m *boot.Model, c *boot.Config) {
+	m.UpdateInspectionMessage(c.InspectionId, "analyzing alert info...")
 	if alerts, err := m.GetInspectionAlertInfo(c.InspectionId); err != nil {
 		log.Error("count alert info:", err)
 		return

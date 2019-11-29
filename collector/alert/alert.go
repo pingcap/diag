@@ -7,16 +7,19 @@ import (
 	"net/url"
 	"os"
 	"path"
+
+	"github.com/pingcap/tidb-foresight/model"
 )
 
 type Options interface {
 	GetHome() string
+	GetModel() model.Model
 	GetInspectionId() string
 	GetPrometheusEndpoint() (string, error)
 }
 
 type AlertCollector struct {
-	opts Options
+	Options
 }
 
 func New(opts Options) *AlertCollector {
@@ -24,10 +27,12 @@ func New(opts Options) *AlertCollector {
 }
 
 func (b *AlertCollector) Collect() error {
-	home := b.opts.GetHome()
-	inspection := b.opts.GetInspectionId()
+	home := b.GetHome()
+	inspection := b.GetInspectionId()
 
-	promAddr, err := b.opts.GetPrometheusEndpoint()
+	b.GetModel().UpdateInspectionMessage(inspection, "collecting alert info...")
+
+	promAddr, err := b.GetPrometheusEndpoint()
 	if err != nil {
 		return err
 	}

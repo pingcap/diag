@@ -13,12 +13,13 @@ import (
 
 type Options interface {
 	GetHome() string
+	GetModel() model.Model
 	GetInspectionId() string
 	GetTopology() (*model.Topology, error)
 }
 
 type ConfigCollector struct {
-	opts Options
+	Options
 }
 
 func New(opts Options) *ConfigCollector {
@@ -31,7 +32,7 @@ func (c *ConfigCollector) Collect() error {
 		return err
 	}
 
-	topo, err := c.opts.GetTopology()
+	topo, err := c.GetTopology()
 	if err != nil {
 		return err
 	}
@@ -51,10 +52,12 @@ func (c *ConfigCollector) Collect() error {
 }
 
 func (c *ConfigCollector) config(user, ip, port, comp, depdir string) error {
+	c.GetModel().UpdateInspectionMessage(c.GetInspectionId(), fmt.Sprintf("collecting config for %s(%s:%s)...", comp, ip, port))
+
 	if comp != "tidb" && comp != "pd" && comp != "tikv" {
 		return nil
 	}
-	p := path.Join(c.opts.GetHome(), "inspection", c.opts.GetInspectionId(), "config", comp, ip+":"+port)
+	p := path.Join(c.GetHome(), "inspection", c.GetInspectionId(), "config", comp, ip+":"+port)
 	if err := os.MkdirAll(p, os.ModePerm); err != nil {
 		return err
 	}

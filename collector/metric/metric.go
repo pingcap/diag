@@ -14,15 +14,17 @@ import (
 
 	"github.com/pingcap/tidb-foresight/utils"
 	log "github.com/sirupsen/logrus"
+	"github.com/pingcap/tidb-foresight/model"
 )
 
 // The prometheus can give at most 11000 points for every series.
 // So, for precision you can set MAX_POINTS with a higher value
 // but no more than 11000.
-const MAX_POINTS = 11000
+const MAX_POINTS = 5000
 
 type Options interface {
 	GetHome() string
+	GetModel() model.Model
 	GetInspectionId() string
 	GetScrapeBegin() (time.Time, error)
 	GetScrapeEnd() (time.Time, error)
@@ -30,7 +32,7 @@ type Options interface {
 }
 
 type MetricCollector struct {
-	opts Options
+	Options
 }
 
 func New(opts Options) *MetricCollector {
@@ -38,18 +40,18 @@ func New(opts Options) *MetricCollector {
 }
 
 func (m *MetricCollector) Collect() error {
-	home := m.opts.GetHome()
-	inspection := m.opts.GetInspectionId()
+	home := m.GetHome()
+	inspection := m.GetInspectionId()
 
-	end, err := m.opts.GetScrapeEnd()
+	end, err := m.GetScrapeEnd()
 	if err != nil {
 		end = time.Now()
 	}
-	begin, err := m.opts.GetScrapeBegin()
+	begin, err := m.GetScrapeBegin()
 	if err != nil {
 		begin = end.Add(time.Duration(-1) * time.Hour)
 	}
-	promAddr, err := m.opts.GetPrometheusEndpoint()
+	promAddr, err := m.GetPrometheusEndpoint()
 	if err != nil {
 		return err
 	}
@@ -91,8 +93,10 @@ func (m *MetricCollector) getMetricList(prom string) ([]string, error) {
 }
 
 func (m *MetricCollector) collectMetric(prom string, begin, end time.Time, mtc string) {
-	home := m.opts.GetHome()
-	inspection := m.opts.GetInspectionId()
+	home := m.GetHome()
+	inspection := m.GetInspectionId()
+
+	m.GetModel().UpdateInspectionMessage(inspection, fmt.Sprintf("collecting metric info for %s...", mtc))
 
 	duration := end.Sub(begin)
 	step := int(duration.Seconds()/MAX_POINTS + 1)

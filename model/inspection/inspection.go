@@ -1,7 +1,6 @@
 package inspection
 
 import (
-	"errors"
 	"time"
 
 	"github.com/pingcap/tidb-foresight/utils"
@@ -93,9 +92,6 @@ func (m *inspection) UpdateInspectionStatus(inspId, status string) error {
 	return m.db.Model(&Inspection{}).Where(&Inspection{Uuid: inspId}).Update("status", status).Error()
 }
 
-func (m *inspection) UpdateInspectionEstimateLeftSec(inspId string, leftSec int32) error {
-	if leftSec < 0 {
-		return errors.New("leftSec should no less than 0")
-	}
-	return m.db.Model(&Inspection{}).Where(&Inspection{Uuid: inspId}).Update("estimated_left_sec", leftSec).Error()
+func (m *inspection) UpdateInspectionMessage(inspId, message string) error {
+	return m.db.Model(&Inspection{}).Where(&Inspection{Uuid: inspId}).Update("message", message).Error()
 }

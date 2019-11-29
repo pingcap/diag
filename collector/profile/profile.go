@@ -17,13 +17,14 @@ import (
 
 type Options interface {
 	GetHome() string
+	GetModel() model.Model
 	GetInspectionId() string
 	GetTopology() (*model.Topology, error)
 	GetComponents() []string
 }
 
 type ProfileCollector struct {
-	opts Options
+	Options
 }
 
 func New(opts Options) *ProfileCollector {
@@ -33,7 +34,7 @@ func New(opts Options) *ProfileCollector {
 func (c *ProfileCollector) Collect() error {
 	var wg sync.WaitGroup
 
-	topo, err := c.opts.GetTopology()
+	topo, err := c.GetTopology()
 	if err != nil {
 		return err
 	}
@@ -65,7 +66,7 @@ func (c *ProfileCollector) Collect() error {
 }
 
 func (c *ProfileCollector) shouldProfile(name, ip, port string) bool {
-	comps := c.opts.GetComponents()
+	comps := c.GetComponents()
 
 	if len(comps) == 0 {
 		return true
@@ -81,8 +82,11 @@ func (c *ProfileCollector) shouldProfile(name, ip, port string) bool {
 }
 
 func (c *ProfileCollector) perfGolangProcess(name, ip, port string) {
-	home := c.opts.GetHome()
-	inspection := c.opts.GetInspectionId()
+	home := c.GetHome()
+	inspection := c.GetInspectionId()
+
+	c.GetModel().UpdateInspectionMessage(inspection, fmt.Sprintf("collecting profile info for %s(%s:%s)...", name, ip, port))
+
 	p := path.Join(home, "inspection", inspection, "profile", name, ip+":"+port)
 	if err := os.MkdirAll(p, os.ModePerm); err != nil {
 		log.Error("create profile directory:", err)
@@ -98,9 +102,11 @@ func (c *ProfileCollector) perfGolangProcess(name, ip, port string) {
 }
 
 func (c *ProfileCollector) perfRustProcess(name, ip, port string) {
-	home := c.opts.GetHome()
-	inspection := c.opts.GetInspectionId()
+	home := c.GetHome()
+	inspection := c.GetInspectionId()
 
+	c.GetModel().UpdateInspectionMessage(inspection, fmt.Sprintf("collecting profile info for %s(%s:%s)...", name, ip, port))
+	
 	user, err := user.Current()
 	if err != nil {
 		log.Error("get user when perf rust process:", err)
