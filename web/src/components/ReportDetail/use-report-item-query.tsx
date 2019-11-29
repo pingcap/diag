@@ -39,8 +39,8 @@ export function useReportItemQuery(
   const [dataSource, setDataSource] = useState<any[]>([]);
   const [hasAbnormal, setHasAbnormal] = useState(false);
 
-  function toggleExpand(record: any, expand: boolean) {
-    const configCellEl = document.getElementById(`config_table_cell_${record.key}`);
+  function toggleExpand(cellKey: string, expand: boolean) {
+    const configCellEl = document.getElementById(`config_table_cell_${cellKey}`);
     if (configCellEl) {
       if (expand) {
         configCellEl.classList.add('show_detail');
@@ -104,14 +104,14 @@ export function useReportItemQuery(
         }
         if (lessMoreColumns.includes(key)) {
           return (
-            <div className="config_table_cell" id={`config_table_cell_${record.key}`}>
+            <div className="config_table_cell" id={`config_table_cell_${record.key}_${key}`}>
               <div className="config_table_cell_summary">
-                <a onClick={(e: any) => toggleExpand(record, true)}>more</a>
+                <a onClick={(e: any) => toggleExpand(`${record.key}_${key}`, true)}>more</a>
                 <br />
                 <span>{text.slice(0, 50)}...</span>
               </div>
               <div className="config_table_cell_detail">
-                <a onClick={(e: any) => toggleExpand(record, false)}>less</a>
+                <a onClick={(e: any) => toggleExpand(`${record.key}_${key}`, false)}>less</a>
                 <br />
                 <span style={{ whiteSpace: 'pre-wrap' }}>{text}</span>
               </div>

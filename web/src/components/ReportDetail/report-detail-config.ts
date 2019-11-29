@@ -97,7 +97,7 @@ export const INSPECTION_DETAILS: ReportDetailConfig = [
         title: '8、软件配置信息',
         apiUrl: '/config',
         dataType: 'arr',
-        lessMoreColumns: ['config'],
+        lessMoreColumns: ['config', 'fstab', 'sec_limit', 'sysctl'],
       },
       {
         title: '9、机器 NTP 时间同步信息',
