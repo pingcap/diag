@@ -62,7 +62,7 @@ func (tm *TaskManager) ConcurrencyBatchRun(taskSz int) {
 	wg.Add(len(tm.tasks) - tm.current)
 
 	go func() {
-		for i, t := range tm.tasks[tm.current:len(tm.tasks)] {
+		for _, t := range tm.tasks[tm.current:len(tm.tasks)] {
 			taskChan <- t
 		}
 	}()
