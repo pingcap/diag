@@ -58,7 +58,7 @@ export interface IInspection {
   create_time: string;
   finish_time: string;
 
-  estimated_left_sec?: number;
+  // estimated_left_sec?: number;
 }
 
 export interface IInspectionDetail extends IInspection {
