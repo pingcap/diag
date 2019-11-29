@@ -102,4 +102,11 @@ type InsightInfo struct {
 			} `json:"partitions"`
 		} `json:"disks"`
 	} `json:"block_info"`
+
+	OsConfig struct {
+		Fstab    string `json:"fstab"`
+		SecLimit string `json:"sec_limit"`
+		Swap     string `json:"swap"`
+		Sysctl   string `json:"sysctl"`
+	} `json:"os_config"`
 }

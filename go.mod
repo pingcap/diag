@@ -6,6 +6,8 @@ require (
 	github.com/BurntSushi/toml v0.3.1
 	github.com/StackExchange/wmi v0.0.0-20190523213315-cbe66965904d // indirect
 	github.com/aws/aws-sdk-go v1.22.4
+	github.com/d-tux/go-fstab v0.0.0-20141204152952-eb4090f26517
+	github.com/fatih/structs v1.1.0
 	github.com/fsnotify/fsnotify v1.4.7
 	github.com/go-ole/go-ole v1.2.4 // indirect
 	github.com/google/uuid v1.1.1
@@ -15,6 +17,7 @@ require (
 	github.com/jaypipes/ghw v0.0.0-20190821154021-743802778342
 	github.com/jessevdk/go-flags v1.4.0
 	github.com/jinzhu/gorm v1.9.10
+	github.com/lorenzosaino/go-sysctl v0.1.0
 	github.com/mattn/go-sqlite3 v1.11.0
 	github.com/mitchellh/mapstructure v1.1.2
 	github.com/pingcap/check v0.0.0-20190102082844-67f458068fc8
