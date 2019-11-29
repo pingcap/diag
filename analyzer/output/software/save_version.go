@@ -94,7 +94,7 @@ func (t *saveSoftwareVersionTask) Run(c *boot.Config, m *boot.Model, insights *i
 				FileSystem:   strings.Join(fss, ","),
 				NetworkDrive: strings.Join(networks, ","),
 
-				OpenFileLimit: debug_printer.FormatJson(openFM),
+				//OpenFileLimit: debug_printer.FormatJson(openFM),
 				//OpenFileCurrent: debug_printer.FormatJson(openF),
 			})
 		}
