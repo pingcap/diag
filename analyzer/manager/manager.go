@@ -2,6 +2,9 @@ package manager
 
 import (
 	"reflect"
+	"sync"
+
+	log "github.com/sirupsen/logrus"
 )
 
 // The TaskManager's responsibility is to maintain a list of
@@ -11,12 +14,17 @@ type TaskManager struct {
 	// if upstream broken
 	mode  ResolveMode
 	tasks []*task
+
+	// The cursor of the current executing task.
+	// Will be initialized as 0
+	current int
 }
 
 func New() *TaskManager {
 	return &TaskManager{
-		mode:  Strict,
-		tasks: make([]*task, 0),
+		mode:    Strict,
+		tasks:   make([]*task, 0),
+		current: 0,
 	}
 }
 
@@ -34,9 +42,48 @@ func (tm *TaskManager) Register(tasks ...interface{}) *TaskManager {
 }
 
 func (tm *TaskManager) Run() {
-	for _, t := range tm.tasks {
+	tm.current = 0
+	tm.RunCurrentBatch()
+}
+
+func (tm *TaskManager) RunCurrentBatch() {
+	for _, t := range tm.tasks[tm.current:] {
 		tm.outputs(t)
 	}
+	tm.current = len(tm.tasks)
+}
+
+func (tm *TaskManager) ConcurrencyBatchRun(taskSz int) {
+	taskChan := make(chan *task, taskSz)
+
+	var wg sync.WaitGroup
+
+	log.Infof("ConcurrencyBatchRun current is %v, sum of len is %v\n", tm.current, len(tm.tasks))
+	wg.Add(len(tm.tasks) - tm.current)
+
+	go func() {
+		for i, t := range tm.tasks[tm.current:len(tm.tasks)] {
+			taskChan <- t
+		}
+	}()
+	for i := 1; i <= taskSz; i++ {
+		go func() {
+			for {
+				select {
+				case currentTask, closed := <-taskChan:
+					if !closed {
+						return
+					}
+					tm.outputs(currentTask)
+					wg.Done()
+				}
+			}
+		}()
+	}
+	wg.Wait()
+	close(taskChan)
+
+	tm.current = len(tm.tasks)
 }
 
 func (tm *TaskManager) value(output string) reflect.Value {
