@@ -58,12 +58,11 @@ func (tm *TaskManager) ConcurrencyBatchRun(taskSz int) {
 
 	var wg sync.WaitGroup
 
-	log.Infof("current is %v, sum of len is %v\n", tm.current, len(tm.tasks))
+	log.Infof("ConcurrencyBatchRun current is %v, sum of len is %v\n", tm.current, len(tm.tasks))
 	wg.Add(len(tm.tasks) - tm.current)
 
 	go func() {
 		for i, t := range tm.tasks[tm.current:len(tm.tasks)] {
-			log.Infof("Send task %v(%d)\n", t.id, i + tm.current)
 			taskChan <- t
 		}
 	}()
@@ -73,22 +72,16 @@ func (tm *TaskManager) ConcurrencyBatchRun(taskSz int) {
 				select {
 				case currentTask, closed := <-taskChan:
 					if !closed {
-						log.Infoln("closed, return")
 						return
 					}
-					log.Infof("counting task %v\n", currentTask.id)
 					tm.outputs(currentTask)
 					wg.Done()
 				}
 			}
 		}()
 	}
-	log.Infoln("Waiting now")
 	wg.Wait()
-	log.Infoln("close taskChan")
 	close(taskChan)
-
-	log.Infoln("RunCurrentBatch() finish batch [%v, %v)", tm.current, len(tm.tasks))
 
 	tm.current = len(tm.tasks)
 }

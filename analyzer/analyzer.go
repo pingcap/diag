@@ -16,14 +16,12 @@ type Analyzer struct {
 	manager *manager.TaskManager
 }
 
-
-
 func NewAnalyzer(home, inspectionId string) *Analyzer {
 	analyzer := &Analyzer{
 		manager: manager.New(),
 	}
 
-	Concurrency  := runtime.NumCPU() * 8
+	Concurrency := runtime.NumCPU() * 8
 
 	// Take nothing an return (*Config, *Model). Config is config for local storage.
 	analyzer.manager.Register(boot.Bootstrap(inspectionId, home))

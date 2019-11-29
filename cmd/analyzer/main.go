@@ -25,7 +25,6 @@ func main() {
 		version.PrintReleaseInfo()
 		return
 	}
-	
 	if *inspectionId == "" {
 		log.Panic("the inspection-id must be specified")
 	}
