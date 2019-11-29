@@ -56,37 +56,3 @@ func (s *testGDBSuite) TearDownTest(c *C) {
 		c.Fatal(err)
 	}
 }
-
-func (s *testGDBSuite) TestingUpdateInspectionEstimateLeftSec(c *C) {
-	idString := "114514"
-	inspectionSample := Inspection{
-		Uuid: idString,
-	}
-	s.db.Create(&inspectionSample)
-	var inspectionQuery Inspection
-	s.db.FirstOrCreate(&inspectionQuery)
-	// default must be true
-	c.Assert(inspectionQuery.EstimatedLeftSec == -1, IsTrue)
-
-	var i int32
-	for i = 0; i < 20; i++ {
-		err := s.model.UpdateInspectionEstimateLeftSec(idString, i)
-		if err != nil {
-			// should not be nil
-			c.Fatal(err)
-		}
-		users := make([]Inspection, 0)
-		err = s.db.Find(&users).Error()
-		if err != nil {
-			c.Fatal("s.db.Find(&inspectionSample) error")
-		}
-		c.Assert(len(users) == 1, IsTrue)
-		// default must be true
-		c.Assert(users[0].EstimatedLeftSec == i, IsTrue)
-	}
-
-	i = -1000
-	err := s.model.UpdateInspectionEstimateLeftSec(idString, i)
-	// should be nil: UpdateInspectionEstimateLeftSec shouldn't accept arguments less than 0
-	c.Assert(err, NotNil)
-}

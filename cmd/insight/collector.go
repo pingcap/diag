@@ -48,8 +48,8 @@ type Metrics struct {
 	Partitions []BlockDev      `json:"partitions,omitempty"`
 	ProcStats  []ProcessStat   `json:"proc_stats,omitempty"`
 
-	BlockInfo  ghw.BlockInfo `json:"block_info"`
-	OsConfig osconfig.OsConfig `json:"os_config"`
+	BlockInfo ghw.BlockInfo     `json:"block_info"`
+	OsConfig  osconfig.OsConfig `json:"os_config"`
 }
 
 type options struct {

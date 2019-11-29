@@ -13,4 +13,3 @@ func CollectFstab() string {
 
 	return debug_printer.FormatJson(mount)
 }
-
