@@ -36,6 +36,5 @@ func (t *parseTopologyTask) Run(c *boot.Config) *model.Topology {
 			topo.Hosts[i].Components[j].Status = "unknown"
 		}
 	}
-
 	return &topo
 }

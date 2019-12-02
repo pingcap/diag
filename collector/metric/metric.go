@@ -12,9 +12,9 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/pingcap/tidb-foresight/model"
 	"github.com/pingcap/tidb-foresight/utils"
 	log "github.com/sirupsen/logrus"
-	"github.com/pingcap/tidb-foresight/model"
 )
 
 // The prometheus can give at most 11000 points for every series.

@@ -17,7 +17,11 @@ func ParseStatus() *parseStatusTask {
 	return &parseStatusTask{}
 }
 
-func (t *parseStatusTask) Run(c *boot.Config, topo *model.Topology, args *args.Args, m *metric.Metric) {
+// ParseStatusDone is a fake struct for Parse status.
+type ParseStatusDone struct{}
+
+func (t *parseStatusTask) Run(c *boot.Config, topo *model.Topology, args *args.Args, m *metric.Metric) *ParseStatusDone {
+	parseDone := ParseStatusDone{}
 	for i, host := range topo.Hosts {
 		for j, comp := range host.Components {
 			if t.online(m, c.InspectionId, comp.Name, host.Ip, comp.Port, args.ScrapeEnd) {
@@ -27,6 +31,7 @@ func (t *parseStatusTask) Run(c *boot.Config, topo *model.Topology, args *args.A
 			}
 		}
 	}
+	return &parseDone
 }
 
 func (t *parseStatusTask) online(m *metric.Metric, inspectionId, component, ip, port string, st time.Time) bool {

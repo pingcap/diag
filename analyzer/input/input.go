@@ -28,7 +28,6 @@ func Tasks() []interface{} {
 	tasks = append(tasks, dbinfo.ParseDBInfo())
 	// parse from topology.json.
 	tasks = append(tasks, topology.ParseTopology())
-
 	// parse from status.json
 	tasks = append(tasks, status.ParseStatus())
 	// parse from
@@ -37,7 +36,6 @@ func Tasks() []interface{} {
 	// ```
 	// *and modify `topo *model.Topology`.*
 	tasks = append(tasks, topology.ParseStatus())
-
 	// read from prometheus to parse the resource
 	tasks = append(tasks, resource.ParseResource())
 	// parse from meta.json

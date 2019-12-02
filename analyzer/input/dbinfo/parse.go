@@ -45,7 +45,6 @@ func (t *parseDBInfoTask) Run(c *boot.Config) *DBInfo {
 			Tables: tbs,
 		})
 	}
-
 	return &dbinfo
 }
 

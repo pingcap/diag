@@ -50,6 +50,7 @@ func (tm *TaskManager) RunCurrentBatch() {
 	for _, t := range tm.tasks[tm.current:] {
 		tm.outputs(t)
 	}
+	log.Infof("RunCurrentBatch runs from %v to %v", tm.current, len(tm.tasks))
 	tm.current = len(tm.tasks)
 }
 
@@ -66,6 +67,7 @@ func (tm *TaskManager) ConcurrencyBatchRun(taskSz int) {
 			taskChan <- t
 		}
 	}()
+
 	for i := 1; i <= taskSz; i++ {
 		go func() {
 			for {
@@ -82,7 +84,7 @@ func (tm *TaskManager) ConcurrencyBatchRun(taskSz int) {
 	}
 	wg.Wait()
 	close(taskChan)
-
+	log.Infof("ConcurrencyRunBatch runs from %v to %v", tm.current, len(tm.tasks))
 	tm.current = len(tm.tasks)
 }
 
@@ -109,6 +111,8 @@ func (tm *TaskManager) outputs(t *task) []reflect.Value {
 	if t.mode() == Strict {
 		for _, arg := range args {
 			if !arg.IsValid() || arg.IsNil() {
+				// In strict mode, if argument is invalid, fill a argument here.
+				log.Warnf("argument %v in task %v is invalid, default arguments was setting here.", arg, t)
 				return make([]reflect.Value, len(t.outputs))
 			}
 		}
