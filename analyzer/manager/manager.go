@@ -84,7 +84,7 @@ func (tm *TaskManager) ConcurrencyBatchRun(taskSz int) {
 	}
 	wg.Wait()
 	close(taskChan)
-	log.Info("ConcurrencyRunBatch runs from %v to %v", tm.current, len(tm.tasks))
+	log.Infof("ConcurrencyRunBatch runs from %v to %v", tm.current, len(tm.tasks))
 	tm.current = len(tm.tasks)
 }
 

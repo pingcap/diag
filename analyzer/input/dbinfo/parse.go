@@ -2,6 +2,7 @@ package dbinfo
 
 import (
 	"encoding/json"
+	"github.com/pingcap/tidb-foresight/utils/debug_printer"
 	"io/ioutil"
 	"os"
 	"path"
@@ -45,7 +46,7 @@ func (t *parseDBInfoTask) Run(c *boot.Config) *DBInfo {
 			Tables: tbs,
 		})
 	}
-
+	log.Infof("load dbinfo %v", debug_printer.FormatJson(dbinfo))
 	return &dbinfo
 }
 

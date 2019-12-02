@@ -105,7 +105,7 @@ func newTask(i interface{}, m ResolveMode) *task {
 func (t *task) run(args []reflect.Value) []reflect.Value {
 	t.once.Do(func() {
 		log.Infof("Run task %v with arguments (%v)\n", t.id, strings.Join(t.inputs, ", "))
-		defer log.Infof("Run task %v with arguments\n", t.id)
+		defer log.Infof("Finish task %v\n", t.id)
 		for idx, arg := range args {
 			if arg == reflect.ValueOf(nil) {
 				// If required input not found, use nil pointer

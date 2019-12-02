@@ -4,6 +4,7 @@ import (
 	"github.com/pingcap/tidb-foresight/analyzer/boot"
 	"github.com/pingcap/tidb-foresight/analyzer/input/dbinfo"
 	"github.com/pingcap/tidb-foresight/model"
+	"github.com/pingcap/tidb-foresight/utils/debug_printer"
 	ti "github.com/pingcap/tidb-foresight/utils/tagd-value/int64"
 	log "github.com/sirupsen/logrus"
 )
@@ -16,6 +17,7 @@ func SaveDBInfo() *saveDBInfoTask {
 
 // Save table indexes information to db, a record for a table
 func (t *saveDBInfoTask) Run(m *boot.Model, schemas *dbinfo.DBInfo, c *boot.Config) {
+	log.Infof("saveDBInfoTask get %v", debug_printer.FormatJson(schemas))
 	for _, schema := range *schemas {
 		if schema.Name == "mysql" || schema.Name == "INFORMATION_SCHEMA" || schema.Name == "PERFORMANCE_SCHEMA" {
 			continue
