@@ -66,6 +66,7 @@ func (tm *TaskManager) ConcurrencyBatchRun(taskSz int) {
 			taskChan <- t
 		}
 	}()
+
 	for i := 1; i <= taskSz; i++ {
 		go func() {
 			for {

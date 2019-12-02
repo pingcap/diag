@@ -21,8 +21,6 @@ func NewAnalyzer(home, inspectionId string) *Analyzer {
 		manager: manager.New(),
 	}
 
-	Concurrency := runtime.NumCPU() * 8
-
 	// Take nothing an return (*Config, *Model). Config is config for local storage.
 	analyzer.manager.Register(boot.Bootstrap(inspectionId, home))
 	// The method is idempotent, so we should clear all history the analyzer may create.
