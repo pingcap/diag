@@ -7,8 +7,8 @@ import (
 	"path"
 	"time"
 
-	log "github.com/sirupsen/logrus"
 	"github.com/pingcap/tidb-foresight/model"
+	log "github.com/sirupsen/logrus"
 )
 
 type Options interface {

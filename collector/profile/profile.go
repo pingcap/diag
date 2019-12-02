@@ -106,7 +106,7 @@ func (c *ProfileCollector) perfRustProcess(name, ip, port string) {
 	inspection := c.GetInspectionId()
 
 	c.GetModel().UpdateInspectionMessage(inspection, fmt.Sprintf("collecting profile info for %s(%s:%s)...", name, ip, port))
-	
+
 	user, err := user.Current()
 	if err != nil {
 		log.Error("get user when perf rust process:", err)
