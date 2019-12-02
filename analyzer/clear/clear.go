@@ -78,4 +78,9 @@ func (t *clearHistoryTask) Run(c *boot.Config, m *boot.Model) {
 		log.Error("clear inspection ntp info:", err)
 		return
 	}
+
+	if err := m.ClearInspectionTopologyInfo(c.InspectionId); err != nil {
+		log.Error("clear inspection topology info:", err)
+		return
+	}
 }
