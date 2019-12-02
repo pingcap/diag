@@ -28,12 +28,14 @@ func (t *saveDBInfoTask) Run(m *boot.Model, schemas *dbinfo.DBInfo, c *boot.Conf
 				idxnum.SetTag("status", "error")
 				idxnum.SetTag("message", "please add index for this table")
 			}
-			if err := m.InsertInspectionDBInfo(&model.DBInfo{
+			toInsert := &model.DBInfo{
 				InspectionId: c.InspectionId,
 				DB:           schema.Name,
 				Table:        tb.Name.L,
 				Index:        idxnum,
-			}); err != nil {
+			}
+			log.Infof("saveDBInfoTask Insert %v", debug_printer.FormatJson(toInsert))
+			if err := m.InsertInspectionDBInfo(toInsert); err != nil {
 				log.Error("insert db info:", err)
 				return
 			}

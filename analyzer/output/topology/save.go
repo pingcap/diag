@@ -2,6 +2,7 @@ package topology
 
 import (
 	"github.com/pingcap/tidb-foresight/analyzer/boot"
+	"github.com/pingcap/tidb-foresight/analyzer/input/topology"
 	"github.com/pingcap/tidb-foresight/model"
 	"github.com/pingcap/tidb-foresight/utils/debug_printer"
 	ts "github.com/pingcap/tidb-foresight/utils/tagd-value/string"
@@ -15,7 +16,7 @@ func SaveTopologyInfo() *saveTopologyTask {
 	return &saveTopologyTask{}
 }
 
-func (t *saveTopologyTask) Run(c *boot.Config, topo *model.Topology, m *boot.Model) {
+func (t *saveTopologyTask) Run(c *boot.Config, topo *model.Topology, m *boot.Model, d *topology.ParseStatusDone) {
 	log.Infof("Load topology %v", debug_printer.FormatJson(topo))
 	for _, host := range topo.Hosts {
 		for _, comp := range host.Components {
@@ -24,6 +25,7 @@ func (t *saveTopologyTask) Run(c *boot.Config, topo *model.Topology, m *boot.Mod
 			case "offline":
 				status.SetTag("status", "error")
 			case "unknown":
+				// if node status is unknown, it must not be set
 				log.Warn("Node status we got is 'unknown'.")
 				// TODO: use warning
 				status.SetTag("status", "error")
