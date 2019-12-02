@@ -2,7 +2,6 @@ package topology
 
 import (
 	"encoding/json"
-	"github.com/pingcap/tidb-foresight/utils/debug_printer"
 	"io/ioutil"
 	"path"
 
@@ -37,7 +36,5 @@ func (t *parseTopologyTask) Run(c *boot.Config) *model.Topology {
 			topo.Hosts[i].Components[j].Status = "unknown"
 		}
 	}
-	// DEBUG
-	log.Infof("Load topology %v", debug_printer.FormatJson(topo))
 	return &topo
 }

@@ -4,7 +4,6 @@ import (
 	"github.com/pingcap/tidb-foresight/analyzer/boot"
 	"github.com/pingcap/tidb-foresight/analyzer/input/topology"
 	"github.com/pingcap/tidb-foresight/model"
-	"github.com/pingcap/tidb-foresight/utils/debug_printer"
 	ts "github.com/pingcap/tidb-foresight/utils/tagd-value/string"
 	log "github.com/sirupsen/logrus"
 )
@@ -17,7 +16,6 @@ func SaveTopologyInfo() *saveTopologyTask {
 }
 
 func (t *saveTopologyTask) Run(c *boot.Config, topo *model.Topology, m *boot.Model, d *topology.ParseStatusDone) {
-	log.Infof("Load topology %v", debug_printer.FormatJson(topo))
 	for _, host := range topo.Hosts {
 		for _, comp := range host.Components {
 			status := ts.New(comp.Status, nil)
