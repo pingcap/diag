@@ -141,7 +141,7 @@ def check_exists_phase(required_commands, ip, inv_path):
     ansible_runner = AnsibleApi(inv_path)
     for command, hint in required_commands.items():
         info = json.loads(
-            ansible_runner.run_ansible(
+            ansible_runner.runansible(
                 [ip], [dict(action=dict(module='shell', args=command))]))
         if check(info) != 'success':
             hints.append(hint)
