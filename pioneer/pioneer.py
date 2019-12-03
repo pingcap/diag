@@ -199,7 +199,7 @@ def check_exists_phase(required_commands, ip, inv_path):
             ansible_runner.run_ansible([ip], TaskFactory.run_command(command)))
         if check(info) != 'success':
             hints.append(hint)
-    return hint
+    return hints
 
 
 def hostinfo(inv_path):
