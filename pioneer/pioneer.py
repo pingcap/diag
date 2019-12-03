@@ -381,7 +381,7 @@ def hostinfo(inv_path):
         for _host in _host_list:
             hostvars = _vars.get_vars(host=inv_manager.get_host(
                 hostname=str(_host)))  # get all variables for one node
-
+            print("Hostvars: ", hostvars)
             _deploy_dir = hostvars['deploy_dir']
             _cluster_name = hostvars['cluster_name']
             _tidb_version = hostvars['tidb_version']
@@ -396,6 +396,7 @@ def hostinfo(inv_path):
                  hostvars['inventory_hostname'])
             # check with ansible ping sdk and ansible `whoami`
             _ip_exist, _enable_sudo, _enable_connect = check_node(_ip)
+
             if not _ip_exist:
                 _host_dict = {}
                 _host_dict['ip'] = _ip
