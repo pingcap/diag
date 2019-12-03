@@ -16,6 +16,16 @@ from ansible.inventory.manager import InventoryManager
 from ansible.vars.manager import VariableManager
 
 
+class TaskFactory:
+    @staticmethod
+    def whoami():
+        raise NotImplemented()
+
+    @staticmethod
+    def ping():
+        return [dict(action=dict(module='shell', args='whoami'), become=True)]
+
+
 class ResultCallback(CallbackBase):
     """
     A callback plugin used for performing an action as results come in
@@ -53,7 +63,6 @@ class ResultCallback(CallbackBase):
         self.host_failed[ResultCallback._load_host_name(result)] = result
 
 
-
 class AnsibleApi:
     """
     ansible hook and developing api: https://docs.ansible.com/ansible/latest/dev_guide/developing_api.html
@@ -73,23 +82,23 @@ class AnsibleApi:
         ])
 
         self.ops = Options(connection='ssh',
-                                remote_user=None,
-                                ack_pass=None,
-                                sudo_user=None,
-                                forks=5,
-                                sudo=None,
-                                ask_sudo_pass=False,
-                                verbosity=5,
-                                module_path=None,
-                                become=None,
-                                become_method='sudo',
-                                become_user='root',
-                                check=False,
-                                diff=False,
-                                listhosts=None,
-                                listtasks=None,
-                                listtags=None,
-                                syntax=None)
+                           remote_user=None,
+                           ack_pass=None,
+                           sudo_user=None,
+                           forks=5,
+                           sudo=None,
+                           ask_sudo_pass=False,
+                           verbosity=5,
+                           module_path=None,
+                           become=None,
+                           become_method='sudo',
+                           become_user='root',
+                           check=False,
+                           diff=False,
+                           listhosts=None,
+                           listtasks=None,
+                           listtags=None,
+                           syntax=None)
 
         # load data from ansible
         self.loader = DataLoader()
@@ -106,7 +115,7 @@ class AnsibleApi:
         """
         :param host_list: The list of ansible hosts
         :param task_list: The list of ansible tasks
-        :return:
+        :return: hosts for success/failed/unreachable
         """
         play_source = {
             'name': "Ansible Play",
@@ -156,8 +165,8 @@ class AnsibleApi:
         return json.dumps(results_raw, indent=4)
 
 
-ClusterInfo = namedtuple('ClusterInfo', ['cluster_name', 'status', 'message', 'hosts'])
-AnsibleHost = namedtuple('AnsibleHost', ['status', 'ip', 'user', 'components', 'message'])
+# ClusterInfo = namedtuple('ClusterInfo', ['cluster_name', 'status', 'message', 'hosts'])
+# AnsibleHost = namedtuple('AnsibleHost', ['status', 'ip', 'user', 'components', 'message'])
 
 
 def hostinfo(inv_path):
@@ -176,50 +185,48 @@ def hostinfo(inv_path):
             * components: Ansible components
             * message: system message
     """
-    def check_node(ip):
+    def check_node(ip, exist_hosts):
         """
         :param ip: the ip of the node to check
         :return: (bool, bool, List)
             Which represents the node (exists, if we can using sudo to access it)
         """
-        _exist = False
         _dict = {}
         _connect = []
 
-        if hosts:
-            # debug logs for hosts
-            print('hosts', str(hosts))
-            # _exist = any(_ip in _info for (_info in hosts))
-            for _info in hosts:
-                if _ip in _info.itervalues():
-                    _exist = True
-                    break
+        # This just check exists
 
-        _sudo = False
-        _task1 = [dict(action=dict(module='ping'))]
+        # debug logs for hosts
+        print('hosts', str(hosts))
+        # exist = any(_ip in _info for (_info in hosts))
+        exist = ip in [info.itervalues() for info in exist_hosts]
+
+        # call the ping task, and using AnsibleApi to schedule it, the result will be pack into
+        # `host_ok` and so on.
+        # this task will set _connect.
+        task_ping = TaskFactory.ping()
         # run ansible with inv file.
         run_ansible = AnsibleApi(inv_path)
-        _result1 = json.loads(run_ansible.run_ansible([ip], _task1))
+        result_ping = json.loads(run_ansible.run_ansible([ip], task_ping))
         del run_ansible
-        if _result1['unreachable']:
-            _connect = [
+        if 'unreachable' in result_ping:
+            connect = [
                 False, 'unreachable', 'Failed to connect to the host via ssh'
             ]
-        elif _result1['failed']:
-            _connect = [False, 'failed', _result1['failed'][ip]]
+        elif 'failed' in result_ping:
+            connect = [False, 'failed', result_ping['failed'][ip]]
         else:
-            _connect = [True, 'success']
+            connect = [True, 'success']
 
-        _task2 = [
-            dict(action=dict(module='shell', args='whoami'), become=True)
-        ]
-        runAnsible = AnsibleApi(inv_path)
-        _result2 = json.loads(runAnsible.run_ansible([ip], _task2))
-        del runAnsible
-        if _result2['success']:
-            _sudo = True
+        # call the whoami task, and using AnsibleApi to schedule it, the result will be pack into
+        # `host_ok` and so on.
+        # this task will set `sudo`.
+        task_whoami = TaskFactory.whoami()
 
-        return _exist, _sudo, _connect
+        result_whoami = json.loads(run_ansible.run_ansible([ip], task_whoami))
+
+        sudo = result_whoami['success'] is not None
+        return exist, sudo, connect
 
     def check(result):
         if result['failed']:
@@ -359,12 +366,12 @@ def hostinfo(inv_path):
         'grafana_servers': 'grafana'
     }
 
-    cluster_info = ClusterInfo(
-        hosts=[],
-        status=None,
-        message=None,
-        cluster_name=None
-    )
+    # cluster_info = ClusterInfo(
+    #     hosts=[],
+    #     status=None,
+    #     message=None,
+    #     cluster_name=None
+    # )
     cluster_info = {}
     hosts = []
 
@@ -395,7 +402,7 @@ def hostinfo(inv_path):
                 (hostvars['ansible_ssh_host'] if 'ansible_ssh_host' in hostvars else
                  hostvars['inventory_hostname'])
             # check with ansible ping sdk and ansible `whoami`
-            _ip_exist, _enable_sudo, _enable_connect = check_node(_ip)
+            _ip_exist, _enable_sudo, _enable_connect = check_node(_ip, hosts)
 
             if not _ip_exist:
                 _host_dict = {}
