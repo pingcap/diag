@@ -17,7 +17,9 @@ from ansible.vars.manager import VariableManager
 
 HINT_CHECK_DICT = {
     "lsof -v": "please install lsof",
-    "echo pong": "please install echo"
+    "echo pong": "please install echo",
+    # Below is a command for testing
+    "adshk- du di da": "please do nothing...",
 }
 
 
