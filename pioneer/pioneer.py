@@ -17,72 +17,106 @@ from ansible.vars.manager import VariableManager
 
 
 class ResultCallback(CallbackBase):
+    """
+    A callback plugin used for performing an action as results come in
 
+    If you want to collect all results into a single object for processing at
+    the end of the execution, look into utilizing the ``json`` callback plugin
+    or writing your own custom callback plugin
+    """
     def __init__(self, *args, **kwargs):
         super(ResultCallback, self).__init__(*args, **kwargs)
         self.host_ok = {}
         self.host_unreachable = {}
         self.host_failed = {}
 
+    @staticmethod
+    def _load_host_name(result):
+        """
+        :param result: the result from hook.
+        :return: the name of the result
+        """
+        return result._host.get_name()
+
     def v2_runner_on_unreachable(self, result):
-        self.host_unreachable[result._host.get_name()] = result
+        self.host_unreachable[ResultCallback._load_host_name(result)] = result
 
     def v2_runner_on_ok(self, result, *args, **kwargs):
-        self.host_ok[result._host.get_name()] = result
+        """
+        Print a json representation of the result
+
+        This method could store the result in an instance attribute for retrieval later
+        """
+        self.host_ok[ResultCallback._load_host_name(result)] = result
 
     def v2_runner_on_failed(self, result, *args, **kwargs):
-        self.host_failed[result._host.get_name()] = result
+        self.host_failed[ResultCallback._load_host_name(result)] = result
 
 
-class AnsibleApi(object):
 
+class AnsibleApi:
+    """
+    ansible hook and developing api: https://docs.ansible.com/ansible/latest/dev_guide/developing_api.html
+
+    """
     def __init__(self, inv):
+        """
+        :param inv: input inv file
+        """
         self.inv = inv
-        self.Options = namedtuple('Options', [
+
+        Options = namedtuple('Options', [
             'connection', 'remote_user', 'ask_sudo_pass', 'verbosity',
             'ack_pass', 'module_path', 'forks', 'become', 'become_method',
             'become_user', 'check', 'listhosts', 'listtasks', 'listtags',
             'syntax', 'sudo_user', 'sudo', 'diff'
         ])
 
-        self.ops = self.Options(
-            connection='ssh',
-            remote_user=None,
-            ack_pass=None,
-            sudo_user=None,
-            forks=5,
-            sudo=None,
-            ask_sudo_pass=False,
-            verbosity=5,
-            module_path=None,
-            become=None,
-            become_method='sudo',
-            become_user='root',
-            check=False,
-            diff=False,
-            listhosts=None,
-            listtasks=None,
-            listtags=None,
-            syntax=None)
+        self.ops = Options(connection='ssh',
+                                remote_user=None,
+                                ack_pass=None,
+                                sudo_user=None,
+                                forks=5,
+                                sudo=None,
+                                ask_sudo_pass=False,
+                                verbosity=5,
+                                module_path=None,
+                                become=None,
+                                become_method='sudo',
+                                become_user='root',
+                                check=False,
+                                diff=False,
+                                listhosts=None,
+                                listtasks=None,
+                                listtags=None,
+                                syntax=None)
 
+        # load data from ansible
         self.loader = DataLoader()
+        # the server should be connect with no password
         self.passwords = dict()
         self.results_callback = ResultCallback()
         self.inventory = InventoryManager(loader=self.loader, sources=self.inv)
-        self.variable_manager = VariableManager(
-            loader=self.loader, inventory=self.inventory)
+        # variable manager takes care of merging all the different sources
+        #  to give you a unified view of variables available in each context
+        self.variable_manager = VariableManager(loader=self.loader,
+                                                inventory=self.inventory)
 
-    def runansible(self, host_list, task_list):
-
-        play_source = dict(
-            name="Ansible Play",
-            hosts=host_list,
-            gather_facts='no',
-            tasks=task_list)
-        play = Play().load(
-            play_source,
-            variable_manager=self.variable_manager,
-            loader=self.loader)
+    def run_ansible(self, host_list, task_list):
+        """
+        :param host_list: The list of ansible hosts
+        :param task_list: The list of ansible tasks
+        :return:
+        """
+        play_source = {
+            'name': "Ansible Play",
+            'hosts': host_list,
+            'gather_facts': 'no',
+            'tasks': task_list
+        }
+        play = Play().load(play_source,
+                           variable_manager=self.variable_manager,
+                           loader=self.loader)
 
         tqm = None
         try:
@@ -96,16 +130,19 @@ class AnsibleApi(object):
                 run_additional_callbacks=C.DEFAULT_LOAD_CALLBACK_PLUGINS,
                 run_tree=False,
             )
-            result = tqm.run(play)
+            tqm.run(play)
         finally:
             if tqm is not None:
                 tqm.cleanup()
             shutil.rmtree(C.DEFAULT_LOCAL_TMP, True)
 
-        results_raw = {}
+        results_raw = dict()
         results_raw['success'] = {}
         results_raw['failed'] = {}
         results_raw['unreachable'] = {}
+
+        # debug
+        print(self.results_callback)
 
         for host, result in self.results_callback.host_ok.items():
             results_raw['success'][host] = result._result
@@ -119,14 +156,40 @@ class AnsibleApi(object):
         return json.dumps(results_raw, indent=4)
 
 
-def hostinfo(inv):
+ClusterInfo = namedtuple('ClusterInfo', ['cluster_name', 'status', 'message', 'hosts'])
+AnsibleHost = namedtuple('AnsibleHost', ['status', 'ip', 'user', 'components', 'message'])
 
+
+def hostinfo(inv_path):
+    """
+    :param inv_path: an str to represent the inv file path
+    :return:
+        A dict represents the cluster info. for the whole class
+            * cluster_name: str for whole cluster name
+            * status: "exception" or "success"
+            * message: the message from the
+            * hosts: the message of the hosts
+        And a host is Like:
+            * status: "exception" or "success"
+            * ip: ip of the host
+            * user: the user of the system
+            * components: Ansible components
+            * message: system message
+    """
     def check_node(ip):
+        """
+        :param ip: the ip of the node to check
+        :return: (bool, bool, List)
+            Which represents the node (exists, if we can using sudo to access it)
+        """
         _exist = False
         _dict = {}
         _connect = []
 
         if hosts:
+            # debug logs for hosts
+            print('hosts', str(hosts))
+            # _exist = any(_ip in _info for (_info in hosts))
             for _info in hosts:
                 if _ip in _info.itervalues():
                     _exist = True
@@ -134,9 +197,10 @@ def hostinfo(inv):
 
         _sudo = False
         _task1 = [dict(action=dict(module='ping'))]
-        runAnsible = AnsibleApi(inv)
-        _result1 = json.loads(runAnsible.runansible([ip], _task1))
-        del runAnsible
+        # run ansible with inv file.
+        run_ansible = AnsibleApi(inv_path)
+        _result1 = json.loads(run_ansible.run_ansible([ip], _task1))
+        del run_ansible
         if _result1['unreachable']:
             _connect = [
                 False, 'unreachable', 'Failed to connect to the host via ssh'
@@ -146,9 +210,11 @@ def hostinfo(inv):
         else:
             _connect = [True, 'success']
 
-        _task2 = [dict(action=dict(module='shell', args='whoami'), become=True)]
-        runAnsible = AnsibleApi(inv)
-        _result2 = json.loads(runAnsible.runansible([ip], _task2))
+        _task2 = [
+            dict(action=dict(module='shell', args='whoami'), become=True)
+        ]
+        runAnsible = AnsibleApi(inv_path)
+        _result2 = json.loads(runAnsible.run_ansible([ip], _task2))
         del runAnsible
         if _result2['success']:
             _sudo = True
@@ -168,8 +234,8 @@ def hostinfo(inv):
         if name == 'pd':
             _command = 'cat ' + deploy_dir + '/scripts/run_pd.sh | grep "\--client-urls"'
             _task = [dict(action=dict(module='shell', args=_command))]
-            runAnsible = AnsibleApi(inv)
-            _info = json.loads(runAnsible.runansible(_host, _task))
+            runAnsible = AnsibleApi(inv_path)
+            _info = json.loads(runAnsible.run_ansible(_host, _task))
             del runAnsible
             ok = check(_info)
             if ok == 'success':
@@ -182,8 +248,8 @@ def hostinfo(inv):
         elif name == 'tidb':
             _command = 'cat ' + deploy_dir + '/scripts/run_tidb.sh | grep -E "\-P|--status"'
             _task = [dict(action=dict(module='shell', args=_command))]
-            runAnsible = AnsibleApi(inv)
-            _info = json.loads(runAnsible.runansible(_host, _task))
+            runAnsible = AnsibleApi(inv_path)
+            _info = json.loads(runAnsible.run_ansible(_host, _task))
             del runAnsible
             ok = check(_info)
             if ok == 'success':
@@ -199,8 +265,8 @@ def hostinfo(inv):
         elif name == 'tikv':
             _command = 'cat ' + deploy_dir + '/scripts/run_tikv.sh | grep "\--addr"'
             _task = [dict(action=dict(module='shell', args=_command))]
-            runAnsible = AnsibleApi(inv)
-            _info = json.loads(runAnsible.runansible(_host, _task))
+            runAnsible = AnsibleApi(inv_path)
+            _info = json.loads(runAnsible.run_ansible(_host, _task))
             del runAnsible
             ok = check(_info)
             if ok == 'success':
@@ -213,8 +279,8 @@ def hostinfo(inv):
         elif name == 'grafana':
             _command = 'cat ' + deploy_dir + '/opt/grafana/conf/grafana.ini | grep "^http_port"'
             _task = [dict(action=dict(module='shell', args=_command))]
-            runAnsible = AnsibleApi(inv)
-            _info = json.loads(runAnsible.runansible(_host, _task))
+            runAnsible = AnsibleApi(inv_path)
+            _info = json.loads(runAnsible.run_ansible(_host, _task))
             del runAnsible
             ok = check(_info)
             if ok == 'success':
@@ -230,8 +296,8 @@ def hostinfo(inv):
             for _server in ['prometheus', 'pushgateway']:
                 _command = 'cat ' + deploy_dir + '/scripts/run_' + _server + '\.sh | grep "\--web\.listen-address"'
                 _task = [dict(action=dict(module='shell', args=_command))]
-                runAnsible = AnsibleApi(inv)
-                _info = json.loads(runAnsible.runansible(_host, _task))
+                runAnsible = AnsibleApi(inv_path)
+                _info = json.loads(runAnsible.run_ansible(_host, _task))
                 del runAnsible
                 ok = check(_info)
                 if ok == 'success':
@@ -252,8 +318,8 @@ def hostinfo(inv):
             for _server in ['node_exporter', 'blackbox_exporter']:
                 _command = 'cat ' + deploy_dir + '/scripts/run_' + _server + '\.sh | grep "\--web\.listen-address"'
                 _task = [dict(action=dict(module='shell', args=_command))]
-                runAnsible = AnsibleApi(inv)
-                _info = json.loads(runAnsible.runansible(_host, _task))
+                runAnsible = AnsibleApi(inv_path)
+                _info = json.loads(runAnsible.run_ansible(_host, _task))
                 del runAnsible
                 ok = check(_info)
                 if ok == 'success':
@@ -272,8 +338,10 @@ def hostinfo(inv):
             return False, 'other', name
 
     loader = DataLoader()
-    _inv = InventoryManager(loader=loader, sources=[inv])
-    _vars = VariableManager(loader=loader, inventory=_inv)
+    # set inventory manager and variable manager
+    inv_manager = InventoryManager(loader=loader, sources=[inv_path])
+    _vars = VariableManager(loader=loader, inventory=inv_manager)
+    # TODO: make clear if this is Map[Servers, Script]
     server_group = {
         'pd_servers': 'pd',
         'tidb_servers': 'tidb',
@@ -291,16 +359,27 @@ def hostinfo(inv):
         'grafana_servers': 'grafana'
     }
 
+    cluster_info = ClusterInfo(
+        hosts=[],
+        status=None,
+        message=None,
+        cluster_name=None
+    )
     cluster_info = {}
     hosts = []
 
-    _all_group = _inv.get_groups_dict()
-    _all_group.pop('all')
-    for _group, _host_list in _all_group.iteritems():
+    # We merge a 'magic' var 'groups' with group name keys and hostname
+    # list values into every host variable set.
+    all_group = inv_manager.get_groups_dict()
+    all_group.pop('all')
+
+    for _group, _host_list in all_group.iteritems():
+        print("Print all_group member")
+        print(_group, _host_list)
         if not _host_list:
             continue
         for _host in _host_list:
-            _hostvars = _vars.get_vars(host=_inv.get_host(
+            _hostvars = _vars.get_vars(host=inv_manager.get_host(
                 hostname=str(_host)))  # get all variables for one node
             _deploy_dir = _hostvars['deploy_dir']
             _cluster_name = _hostvars['cluster_name']
@@ -389,6 +468,8 @@ def hostinfo(inv):
 
 
 if __name__ == '__main__':
+    if len(sys.argv) <= 1:
+        raise RuntimeError("Too few arguments")
     inventory = sys.argv[1]
     result = hostinfo(inventory)
     print json.dumps(result, indent=4)
