@@ -224,8 +224,6 @@ def hostinfo(inv_path):
         :return: (bool, bool, List)
             Which represents the node (exists, if we can using sudo to access it)
         """
-        _dict = {}
-        _connect = []
 
         # This just check exists
 
@@ -234,11 +232,9 @@ def hostinfo(inv_path):
 
         # call the ping task, and using AnsibleApi to schedule it, the result will be pack into
         # `host_ok` and so on.
-        # this task will set _connect.
-        task_ping = TaskFactory.ping()
-        # run ansible with inv file.
+        # this task will set connect.
         ansible_runner = AnsibleApi(inv_path)
-        result_ping = json.loads(ansible_runner.run_ansible([ip], task_ping))
+        result_ping = json.loads(ansible_runner.run_ansible([ip], TaskFactory.ping()))
 
         if 'unreachable' in result_ping:
             connect = [
