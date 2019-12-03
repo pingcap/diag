@@ -15,6 +15,20 @@ from ansible.parsing.dataloader import DataLoader
 from ansible.inventory.manager import InventoryManager
 from ansible.vars.manager import VariableManager
 
+HINT_CHECK_DICT = {
+    "lsof -v": "please install lsof",
+    "echo pong": "please install echo"
+}
+
+
+def check(result):
+    if result['failed']:
+        return 'failed'
+    elif result['unreachable']:
+        return 'unreachable'
+    else:
+        return 'success'
+
 
 class TaskFactory:
     @staticmethod
@@ -153,9 +167,6 @@ class AnsibleApi:
         results_raw['failed'] = {}
         results_raw['unreachable'] = {}
 
-        # debug
-        # print(self.results_callback)
-
         for host, result in self.results_callback.host_ok.items():
             results_raw['success'][host] = result._result
 
@@ -170,6 +181,23 @@ class AnsibleApi:
 
 # ClusterInfo = namedtuple('ClusterInfo', ['cluster_name', 'status', 'message', 'hosts'])
 # AnsibleHost = namedtuple('AnsibleHost', ['status', 'ip', 'user', 'components', 'message'])
+
+
+def check_exists_phase(required_commands, ip, inv_path):
+    """
+    :param required_commands: Dict[Command, Hint], Command and Hint are all `str`
+    :param ip: the ip to testing
+    :param inv_path:
+    :return: a list of hinting.
+    """
+    hints = list()
+    ansible_runner = AnsibleApi(inv_path)
+    for command, hint in required_commands.iter():
+        info = json.loads(
+            ansible_runner.run_ansible([ip], TaskFactory.run_command(command)))
+        if check(info) != 'success':
+            hints.append(hint)
+    return hint
 
 
 def hostinfo(inv_path):
@@ -199,8 +227,6 @@ def hostinfo(inv_path):
 
         # This just check exists
 
-        # debug logs for hosts
-        # print('hosts', str(hosts))
         # exist = any(_ip in _info for (_info in hosts))
         exist = ip in [info.itervalues() for info in exist_hosts]
 
@@ -230,14 +256,6 @@ def hostinfo(inv_path):
 
         sudo = result_whoami['success'] is not None
         return exist, sudo, connect
-
-    def check(result):
-        if result['failed']:
-            return 'failed'
-        elif result['unreachable']:
-            return 'unreachable'
-        else:
-            return 'success'
 
     def get_node_info(ip, deploy_dir, name):
         """
@@ -390,8 +408,6 @@ def hostinfo(inv_path):
     all_group.pop('all')
 
     for group, _host_list in all_group.iteritems():
-        # print("Print all_group member")
-        # print(group, _host_list)
         if not _host_list:
             continue
         for _host in _host_list:
@@ -413,6 +429,7 @@ def hostinfo(inv_path):
             _ip_exist, _enable_sudo, _enable_connect = check_node(_ip, hosts)
 
             if not _ip_exist:
+                # adding ip to hist list
                 _host_dict = {}
                 _host_dict['ip'] = _ip
                 _host_dict['user'] = _ansible_user
@@ -423,6 +440,8 @@ def hostinfo(inv_path):
                     _host_dict['status'] = 'success'
                     _host_dict['message'] = ''
                     _host_dict['enable_sudo'] = _enable_sudo
+                    _host_dict['hints'] = check_exists_phase(
+                        HINT_CHECK_DICT, _ip, inv_path)
                 else:
                     # exception
                     _host_dict['status'] = 'exception'
