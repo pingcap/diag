@@ -15,9 +15,15 @@ from ansible.parsing.dataloader import DataLoader
 from ansible.inventory.manager import InventoryManager
 from ansible.vars.manager import VariableManager
 
+HINT_CHECK_DICT = {
+    "lsof -v": "please install lsof",
+    "echo pong": "please install echo",
+    # Below is a command for testing
+    "adshk- du di da": "please do nothing...",
+}
+
 
 class ResultCallback(CallbackBase):
-
     def __init__(self, *args, **kwargs):
         super(ResultCallback, self).__init__(*args, **kwargs)
         self.host_ok = {}
@@ -35,7 +41,6 @@ class ResultCallback(CallbackBase):
 
 
 class AnsibleApi(object):
-
     def __init__(self, inv):
         self.inv = inv
         self.Options = namedtuple('Options', [
@@ -45,44 +50,41 @@ class AnsibleApi(object):
             'syntax', 'sudo_user', 'sudo', 'diff'
         ])
 
-        self.ops = self.Options(
-            connection='ssh',
-            remote_user=None,
-            ack_pass=None,
-            sudo_user=None,
-            forks=5,
-            sudo=None,
-            ask_sudo_pass=False,
-            verbosity=5,
-            module_path=None,
-            become=None,
-            become_method='sudo',
-            become_user='root',
-            check=False,
-            diff=False,
-            listhosts=None,
-            listtasks=None,
-            listtags=None,
-            syntax=None)
+        self.ops = self.Options(connection='ssh',
+                                remote_user=None,
+                                ack_pass=None,
+                                sudo_user=None,
+                                forks=5,
+                                sudo=None,
+                                ask_sudo_pass=False,
+                                verbosity=5,
+                                module_path=None,
+                                become=None,
+                                become_method='sudo',
+                                become_user='root',
+                                check=False,
+                                diff=False,
+                                listhosts=None,
+                                listtasks=None,
+                                listtags=None,
+                                syntax=None)
 
         self.loader = DataLoader()
         self.passwords = dict()
         self.results_callback = ResultCallback()
         self.inventory = InventoryManager(loader=self.loader, sources=self.inv)
-        self.variable_manager = VariableManager(
-            loader=self.loader, inventory=self.inventory)
+        self.variable_manager = VariableManager(loader=self.loader,
+                                                inventory=self.inventory)
 
     def runansible(self, host_list, task_list):
 
-        play_source = dict(
-            name="Ansible Play",
-            hosts=host_list,
-            gather_facts='no',
-            tasks=task_list)
-        play = Play().load(
-            play_source,
-            variable_manager=self.variable_manager,
-            loader=self.loader)
+        play_source = dict(name="Ansible Play",
+                           hosts=host_list,
+                           gather_facts='no',
+                           tasks=task_list)
+        play = Play().load(play_source,
+                           variable_manager=self.variable_manager,
+                           loader=self.loader)
 
         tqm = None
         try:
@@ -119,8 +121,34 @@ class AnsibleApi(object):
         return json.dumps(results_raw, indent=4)
 
 
-def hostinfo(inv):
+def check(result):
+    if result['failed']:
+        return 'failed'
+    elif result['unreachable']:
+        return 'unreachable'
+    else:
+        return 'success'
 
+
+def check_exists_phase(required_commands, ip, inv_path):
+    """
+    :param required_commands: Dict[Command, Hint], Command and Hint are all `str`
+    :param ip: the ip to testing
+    :param inv_path:
+    :return: a list of hinting.
+    """
+    hints = list()
+    ansible_runner = AnsibleApi(inv_path)
+    for command, hint in required_commands.iter():
+        info = json.loads(
+            ansible_runner.run_ansible(
+                [ip], [dict(action=dict(module='shell', args=command))]))
+        if check(info) != 'success':
+            hints.append(hint)
+    return hints
+
+
+def hostinfo(inv):
     def check_node(ip):
         _exist = False
         _dict = {}
@@ -146,7 +174,9 @@ def hostinfo(inv):
         else:
             _connect = [True, 'success']
 
-        _task2 = [dict(action=dict(module='shell', args='whoami'), become=True)]
+        _task2 = [
+            dict(action=dict(module='shell', args='whoami'), become=True)
+        ]
         runAnsible = AnsibleApi(inv)
         _result2 = json.loads(runAnsible.runansible([ip], _task2))
         del runAnsible
@@ -154,14 +184,6 @@ def hostinfo(inv):
             _sudo = True
 
         return _exist, _sudo, _connect
-
-    def check(result):
-        if result['failed']:
-            return 'failed'
-        elif result['unreachable']:
-            return 'unreachable'
-        else:
-            return 'success'
 
     def get_node_info(ip, deploy_dir, name):
         _host = [ip]
@@ -323,6 +345,8 @@ def hostinfo(inv):
                     _host_dict['status'] = 'success'
                     _host_dict['message'] = ''
                     _host_dict['enable_sudo'] = _enable_sudo
+                    _host_dict['hints'] = check_exists_phase(
+                        HINT_CHECK_DICT, _ip, inv)
                 else:
                     _host_dict['status'] = 'exception'
                     _host_dict['message'] = _enable_connect[2]
