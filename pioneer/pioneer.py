@@ -25,6 +25,10 @@ class TaskFactory:
     def ping():
         return [dict(action=dict(module='ping'))]
 
+    @staticmethod
+    def run_command(command):
+        return [dict(action=dict(module='shell', args=command))]
+
 
 class ResultCallback(CallbackBase):
     """
@@ -66,7 +70,6 @@ class ResultCallback(CallbackBase):
 class AnsibleApi:
     """
     ansible hook and developing api: https://docs.ansible.com/ansible/latest/dev_guide/developing_api.html
-
     """
     def __init__(self, inv):
         """
@@ -246,7 +249,7 @@ def hostinfo(inv_path):
         _host = [ip]
         if name == 'pd':
             _command = 'cat ' + deploy_dir + '/scripts/run_pd.sh | grep "\--client-urls"'
-            _task = [dict(action=dict(module='shell', args=_command))]
+            _task = TaskFactory.run_command(_command)
             runAnsible = AnsibleApi(inv_path)
             _info = json.loads(runAnsible.run_ansible(_host, _task))
             del runAnsible
@@ -260,7 +263,7 @@ def hostinfo(inv_path):
                 return False, 'get_info', [_info[ok], name]
         elif name == 'tidb':
             _command = 'cat ' + deploy_dir + '/scripts/run_tidb.sh | grep -E "\-P|--status"'
-            _task = [dict(action=dict(module='shell', args=_command))]
+            _task = TaskFactory.run_command(_command)
             runAnsible = AnsibleApi(inv_path)
             _info = json.loads(runAnsible.run_ansible(_host, _task))
             del runAnsible
@@ -277,7 +280,7 @@ def hostinfo(inv_path):
                 return False, 'get_info', [_info[ok], name]
         elif name == 'tikv':
             _command = 'cat ' + deploy_dir + '/scripts/run_tikv.sh | grep "\--addr"'
-            _task = [dict(action=dict(module='shell', args=_command))]
+            _task = TaskFactory.run_command(_command)
             runAnsible = AnsibleApi(inv_path)
             _info = json.loads(runAnsible.run_ansible(_host, _task))
             del runAnsible
@@ -291,7 +294,7 @@ def hostinfo(inv_path):
                 return False, 'get_info', [_info[ok], name]
         elif name == 'grafana':
             _command = 'cat ' + deploy_dir + '/opt/grafana/conf/grafana.ini | grep "^http_port"'
-            _task = [dict(action=dict(module='shell', args=_command))]
+            _task = TaskFactory.run_command(_command)
             runAnsible = AnsibleApi(inv_path)
             _info = json.loads(runAnsible.run_ansible(_host, _task))
             del runAnsible
@@ -308,7 +311,7 @@ def hostinfo(inv_path):
             _result = []
             for _server in ['prometheus', 'pushgateway']:
                 _command = 'cat ' + deploy_dir + '/scripts/run_' + _server + '\.sh | grep "\--web\.listen-address"'
-                _task = [dict(action=dict(module='shell', args=_command))]
+                _task = TaskFactory.run_command(_command)
                 runAnsible = AnsibleApi(inv_path)
                 _info = json.loads(runAnsible.run_ansible(_host, _task))
                 del runAnsible
@@ -330,7 +333,7 @@ def hostinfo(inv_path):
             _result = []
             for _server in ['node_exporter', 'blackbox_exporter']:
                 _command = 'cat ' + deploy_dir + '/scripts/run_' + _server + '\.sh | grep "\--web\.listen-address"'
-                _task = [dict(action=dict(module='shell', args=_command))]
+                _task = TaskFactory.run_command(_command)
                 runAnsible = AnsibleApi(inv_path)
                 _info = json.loads(runAnsible.run_ansible(_host, _task))
                 del runAnsible
@@ -394,7 +397,6 @@ def hostinfo(inv_path):
         for _host in _host_list:
             hostvars = _vars.get_vars(host=inv_manager.get_host(
                 hostname=str(_host)))  # get all variables for one node
-            # print("Hostvars: ", hostvars)
             _deploy_dir = hostvars['deploy_dir']
             _cluster_name = hostvars['cluster_name']
             _tidb_version = hostvars['tidb_version']
