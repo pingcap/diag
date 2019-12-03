@@ -373,47 +373,53 @@ def hostinfo(inv_path):
     all_group = inv_manager.get_groups_dict()
     all_group.pop('all')
 
-    for _group, _host_list in all_group.iteritems():
+    for group, _host_list in all_group.iteritems():
         print("Print all_group member")
-        print(_group, _host_list)
+        print(group, _host_list)
         if not _host_list:
             continue
         for _host in _host_list:
-            _hostvars = _vars.get_vars(host=inv_manager.get_host(
+            hostvars = _vars.get_vars(host=inv_manager.get_host(
                 hostname=str(_host)))  # get all variables for one node
-            _deploy_dir = _hostvars['deploy_dir']
-            _cluster_name = _hostvars['cluster_name']
-            _tidb_version = _hostvars['tidb_version']
-            _ansible_user = _hostvars['ansible_user']
+
+            _deploy_dir = hostvars['deploy_dir']
+            _cluster_name = hostvars['cluster_name']
+            _tidb_version = hostvars['tidb_version']
+            _ansible_user = hostvars['ansible_user']
+            # initialize cluster_name and tidb_version
             if 'cluster_name' not in cluster_info:
                 cluster_info['cluster_name'] = _cluster_name
             if 'tidb_version' not in cluster_info:
                 cluster_info['tidb_version'] = _tidb_version
-            _ip = _hostvars['ansible_host'] if 'ansible_host' in _hostvars else \
-                (_hostvars['ansible_ssh_host'] if 'ansible_ssh_host' in _hostvars else
-                 _hostvars['inventory_hostname'])
+            _ip = hostvars['ansible_host'] if 'ansible_host' in hostvars else \
+                (hostvars['ansible_ssh_host'] if 'ansible_ssh_host' in hostvars else
+                 hostvars['inventory_hostname'])
+            # check with ansible ping sdk and ansible `whoami`
             _ip_exist, _enable_sudo, _enable_connect = check_node(_ip)
             if not _ip_exist:
                 _host_dict = {}
                 _host_dict['ip'] = _ip
                 _host_dict['user'] = _ansible_user
                 _host_dict['components'] = []
+
                 if _enable_connect[0]:
+                    # can connect to the server
                     _host_dict['status'] = 'success'
                     _host_dict['message'] = ''
                     _host_dict['enable_sudo'] = _enable_sudo
                 else:
+                    # exception
                     _host_dict['status'] = 'exception'
                     _host_dict['message'] = _enable_connect[2]
                 hosts.append(_host_dict)
 
             _status, _type, _info = get_node_info(_ip, _deploy_dir,
-                                                  server_group[_group])
+                                                  server_group[group])
             for _index_id in range(len(hosts)):
                 if hosts[_index_id]['ip'] == _ip:
                     if hosts[_index_id]['status'] == 'exception':
                         break
-                    if _group != 'monitoring_servers' and _group != 'monitored_servers':
+                    if group != 'monitoring_servers' and group != 'monitored_servers':
                         _dict1 = {}
                         if not _status and _type == 'get_info':
                             _dict1['name'] = _info[1]
@@ -423,7 +429,7 @@ def hostinfo(inv_path):
                         elif _status and _type == 'get_info':
                             _dict1['name'] = _info[1]
                             _dict1['status'] = 'success'
-                            if _group == 'tidb_servers':
+                            if group == 'tidb_servers':
                                 _dict1['port'] = _info[0][0]
                                 _dict1['status_port'] = _info[0][1]
                             else:
@@ -446,21 +452,21 @@ def hostinfo(inv_path):
                                 _dict2['deploy_dir'] = _deploy_dir
                             hosts[_index_id]['components'].append(_dict2)
     cluster_info['hosts'] = hosts
-    _errmessage = []
-    for _hostinfo in hosts:
-        if _hostinfo['ip'] in _errmessage:
+    errmessage = []
+    for hostinfo in hosts:
+        if hostinfo['ip'] in errmessage:
             continue
-        if _hostinfo['status'] == 'exception':
-            _errmessage.append(_hostinfo['ip'])
+        if hostinfo['status'] == 'exception':
+            errmessage.append(hostinfo['ip'])
             continue
         else:
-            for _serverinfo in _hostinfo['components']:
+            for _serverinfo in hostinfo['components']:
                 if _serverinfo['status'] == 'exception':
-                    _errmessage.append(_hostinfo['ip'])
+                    errmessage.append(hostinfo['ip'])
                     break
-    if _errmessage:
+    if errmessage:
         cluster_info['status'] = 'exception'
-        cluster_info['message'] = 'Fail list: ' + str(_errmessage)
+        cluster_info['message'] = 'Fail list: ' + str(errmessage)
     else:
         cluster_info['status'] = 'success'
         cluster_info['message'] = ''
