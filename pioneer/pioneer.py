@@ -237,9 +237,9 @@ def hostinfo(inv_path):
         # this task will set _connect.
         task_ping = TaskFactory.ping()
         # run ansible with inv file.
-        run_ansible = AnsibleApi(inv_path)
-        result_ping = json.loads(run_ansible.run_ansible([ip], task_ping))
-        del run_ansible
+        ansible_runner = AnsibleApi(inv_path)
+        result_ping = json.loads(ansible_runner.run_ansible([ip], task_ping))
+
         if 'unreachable' in result_ping:
             connect = [
                 False, 'unreachable', 'Failed to connect to the host via ssh'
@@ -254,7 +254,7 @@ def hostinfo(inv_path):
         # this task will set `sudo`.
         task_whoami = TaskFactory.whoami()
 
-        result_whoami = json.loads(run_ansible.run_ansible([ip], task_whoami))
+        result_whoami = json.loads(ansible_runner.run_ansible([ip], task_whoami))
 
         sudo = result_whoami['success'] is not None
         return exist, sudo, connect
