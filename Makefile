@@ -60,7 +60,7 @@ endif
 
 default: all	
 
-all: server collector insight analyzer spliter syncer
+all: server collector insight analyzer spliter syncer pioneer
 
 prepare: 
 	chmod 755 ./scripts/*
