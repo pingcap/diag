@@ -19,11 +19,11 @@ from ansible.vars.manager import VariableManager
 class TaskFactory:
     @staticmethod
     def whoami():
-        raise NotImplemented()
+        return [dict(action=dict(module='shell', args='whoami'), become=True)]
 
     @staticmethod
     def ping():
-        return [dict(action=dict(module='shell', args='whoami'), become=True)]
+        return [dict(action=dict(module='ping'))]
 
 
 class ResultCallback(CallbackBase):
@@ -151,7 +151,7 @@ class AnsibleApi:
         results_raw['unreachable'] = {}
 
         # debug
-        print(self.results_callback)
+        # print(self.results_callback)
 
         for host, result in self.results_callback.host_ok.items():
             results_raw['success'][host] = result._result
@@ -197,7 +197,7 @@ def hostinfo(inv_path):
         # This just check exists
 
         # debug logs for hosts
-        print('hosts', str(hosts))
+        # print('hosts', str(hosts))
         # exist = any(_ip in _info for (_info in hosts))
         exist = ip in [info.itervalues() for info in exist_hosts]
 
@@ -237,6 +237,12 @@ def hostinfo(inv_path):
             return 'success'
 
     def get_node_info(ip, deploy_dir, name):
+        """
+        :param ip: ip of node, an `str`
+        :param deploy_dir: `str`
+        :param name: Service name, an `str`
+        :return: bool for ServiceStatus, enum for node info, [port, name]
+        """
         _host = [ip]
         if name == 'pd':
             _command = 'cat ' + deploy_dir + '/scripts/run_pd.sh | grep "\--client-urls"'
@@ -381,14 +387,14 @@ def hostinfo(inv_path):
     all_group.pop('all')
 
     for group, _host_list in all_group.iteritems():
-        print("Print all_group member")
-        print(group, _host_list)
+        # print("Print all_group member")
+        # print(group, _host_list)
         if not _host_list:
             continue
         for _host in _host_list:
             hostvars = _vars.get_vars(host=inv_manager.get_host(
                 hostname=str(_host)))  # get all variables for one node
-            print("Hostvars: ", hostvars)
+            # print("Hostvars: ", hostvars)
             _deploy_dir = hostvars['deploy_dir']
             _cluster_name = hostvars['cluster_name']
             _tidb_version = hostvars['tidb_version']
