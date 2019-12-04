@@ -16,9 +16,9 @@ from ansible.inventory.manager import InventoryManager
 from ansible.vars.manager import VariableManager
 
 HINT_CHECK_DICT = {
-    "lsof -v": "缺少 lsof 依赖，请安装",
+    "/sbin/lsof -v": "缺少 lsof 依赖，请安装",
     "netstat --version": "缺少 netstat 依赖，请安装",
-    "ntpq --version": "缺少 netq 依赖，请安装"
+    "/sbin/ntpq --version": "缺少 netq 依赖，请安装"
 }
 
 
