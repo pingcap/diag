@@ -348,8 +348,10 @@ def hostinfo(inv):
                     _host_dict['hints'] = check_exists_phase(
                         HINT_CHECK_DICT, _ip, inv)
                     if len(_host_dict['hints']) != 0:
+                        _host_dict['message'] = ','.join(_host_dict['hints'])
                         _host_dict['message'] = _host_dict['hints']
                         _host_dict['status'] = 'exception'
+                    del _host_dict['hints']
                 else:
                     _host_dict['status'] = 'exception'
                     _host_dict['message'] = _enable_connect[2]
