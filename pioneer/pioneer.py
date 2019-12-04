@@ -140,7 +140,8 @@ def check_exists_phase(required_commands, ip, inv_path):
     hints = list()
     ansible_runner = AnsibleApi(inv_path)
     for command, hint in required_commands.items():
-        command = "source ~/.bash_profile && PATH=\"$PATH:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin\"" + command
+        command = 'PATH="$PATH:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin" && '\
+                  + command
         info = json.loads(
             ansible_runner.runansible(
                 [ip], [dict(action=dict(module='shell', args=command))]))
