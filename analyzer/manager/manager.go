@@ -90,7 +90,7 @@ func (tm *TaskManager) ConcurrencyBatchRun(taskSz int) {
 
 func (tm *TaskManager) value(output string) reflect.Value {
 	for _, t := range tm.tasks {
-		// traverse all already output data.
+		// traverse all already output data or drives posterior tasks to run.
 		for idx, o := range t.outputs {
 			if o == output {
 				return tm.outputs(t)[idx]
@@ -112,7 +112,7 @@ func (tm *TaskManager) outputs(t *task) []reflect.Value {
 		for i, arg := range args {
 			if !arg.IsValid() || arg.IsNil() {
 
-				if !arg.IsValid() && arg.IsNil() && isEmptyStruct(arg.Type()) {
+				if arg.IsValid() && arg.IsNil() && isEmptyStruct(arg.Type()) {
 					log.Warnf("argument %v(%d) in task %v is invalid, but as a empty, "+
 						"it was allowed cause we has run `value`.", arg, i, t)
 					continue

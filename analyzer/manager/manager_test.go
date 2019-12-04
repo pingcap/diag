@@ -39,6 +39,10 @@ func TestIsEmptyStruct(t *testing.T) {
 	if isEmptyStruct(reflect.TypeOf(emptyPtr)) {
 		t.Error("isEmptyStruct() panic on pointer")
 	}
+
+	if isEmptyStruct(reflect.TypeOf(nil)) {
+		t.Error("panic when getting nil")
+	}
 }
 
 type emptyDone struct{}
