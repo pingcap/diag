@@ -76,7 +76,7 @@ class AnsibleApi(object):
         self.variable_manager = VariableManager(loader=self.loader,
                                                 inventory=self.inventory)
 
-    def runansible(self, host_list, task_list):
+    def unansible(self, host_list, task_list):
 
         play_source = dict(name="Ansible Play",
                            hosts=host_list,
@@ -138,9 +138,9 @@ def check_exists_phase(required_commands, ip, inv_path):
     :return: a list of hinting.
     """
     hints = list()
-    ansible_runner = AnsibleApi(inv_path)
     for command, hint in required_commands.items():
-        command = 'PATH="$PATH:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin" && '\
+        ansible_runner = AnsibleApi(inv_path)
+        command = 'export PATH=$PATH:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin && '\
                   + command
         info = json.loads(
             ansible_runner.runansible(
