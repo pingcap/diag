@@ -15,18 +15,23 @@ func TolerateRegister(v reflect.Type) {
 }
 
 func TolerateRegisterStruct(o interface{}) {
+	var valStruct reflect.Type
+
 	if o == nil {
 		panic("Arguments in TolerateRegisterStruct should not be nil")
 	}
 	t := reflect.TypeOf(o)
-	if t.Kind() != reflect.Ptr {
-		panic("Arguments in TolerateRegisterStruct should not be str")
+
+	if t.Kind() == reflect.Ptr {
+		valStruct = t.Elem()
+	} else {
+		valStruct = t
 	}
-	valOfStr := t.Elem()
-	if valOfStr.Kind() != reflect.Struct {
+
+	if valStruct.Kind() != reflect.Struct {
 		panic("Arguments in TolerateRegisterStruct should not be struct")
 	}
-	TolerateRegister(t)
+	TolerateRegister(valStruct)
 }
 
 func IsTolerate(tpName string) bool {
