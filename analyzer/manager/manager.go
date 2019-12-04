@@ -99,6 +99,7 @@ func (tm *TaskManager) value(output string) reflect.Value {
 	}
 
 	// required value not found
+	log.Infof("DEBUG: `value` arm not match output %v, return `reflect.ValueOf(nil)`.", output)
 	return reflect.ValueOf(nil)
 }
 
