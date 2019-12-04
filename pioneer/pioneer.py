@@ -18,8 +18,7 @@ from ansible.vars.manager import VariableManager
 HINT_CHECK_DICT = {
     "lsof -v": "缺少 lsof 依赖，请安装",
     "netstat --version": "缺少 netstat 依赖，请安装",
-    "ntpq --version": "缺少 netq 依赖，请安装",
-    "pyenv --version": "缺少 pyenv 依赖，请安装"
+    "ntpq --version": "缺少 netq 依赖，请安装"
 }
 
 
@@ -76,7 +75,7 @@ class AnsibleApi(object):
         self.variable_manager = VariableManager(loader=self.loader,
                                                 inventory=self.inventory)
 
-    def unansible(self, host_list, task_list):
+    def runansible(self, host_list, task_list):
 
         play_source = dict(name="Ansible Play",
                            hosts=host_list,
@@ -347,9 +346,9 @@ def hostinfo(inv):
                     _host_dict['enable_sudo'] = _enable_sudo
                     _host_dict['hints'] = check_exists_phase(
                         HINT_CHECK_DICT, _ip, inv)
-                    if len(_host_dict['hints']) == 0:
+                    if len(_host_dict['hints']) != 0:
                         _host_dict['message'] = _host_dict['hints']
-                        _host_dict['status'] = 'error'
+                        _host_dict['status'] = 'exception'
                 else:
                     _host_dict['status'] = 'exception'
                     _host_dict['message'] = _enable_connect[2]
