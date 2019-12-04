@@ -13,7 +13,6 @@ var _ = Suite(&testResolveSuite{})
 
 type testResolveSuite struct{}
 
-
 func TestIsEmptyStruct(t *testing.T) {
 	type EmptySample struct{}
 
