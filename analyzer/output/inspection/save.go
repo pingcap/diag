@@ -20,7 +20,8 @@ func SaveInspection() *saveInspectionTask {
 }
 
 // Save inspection main record to database (then the frontend can see it)
-func (t *saveInspectionTask) Run(m *boot.Model, c *boot.Config, args *args.Args, topo *model.Topology, meta *meta.Meta, done *meta.CountComponentsDone, e *envs.Env) {
+func (t *saveInspectionTask) Run(m *boot.Model, c *boot.Config, args *args.Args,
+	topo *model.Topology, meta *meta.Meta, done *meta.CountComponentsDone, e *envs.Env) {
 	components := map[string][]string{}
 
 	for _, h := range topo.Hosts {

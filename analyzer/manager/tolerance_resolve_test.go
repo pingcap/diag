@@ -4,6 +4,7 @@ import (
 	//"testing"
 
 	. "github.com/pingcap/check"
+	"testing"
 )
 
 func (s *testResolveSuite) TestToleranceResolve(c *C) {
@@ -69,4 +70,20 @@ type tTaskE struct {
 
 func (t *tTaskE) Run(i *tOutputOfA2) {
 	t.c.Error("this task should not run")
+}
+
+func TestIsEmptyStruct(t *testing.T) {
+	type EmptySample struct{}
+
+	if !isEmptyStruct(EmptySample{}) {
+		t.Error("isEmptyStruct(EmptySample{}) return true")
+	}
+
+	type NotEmpty struct {
+		val float32
+	}
+
+	if isEmptyStruct(NotEmpty{}) {
+		t.Error("isEmptyStruct(NotEmpty{}) return false")
+	}
 }
