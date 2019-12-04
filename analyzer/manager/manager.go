@@ -111,9 +111,10 @@ func (tm *TaskManager) outputs(t *task) []reflect.Value {
 	if t.mode() == Strict {
 		for i, arg := range args {
 			if !arg.IsValid() || arg.IsNil() {
-				if isEmptyStruct(arg) {
-					log.Warnf("argument %v(%d) in task %v is invalid, but as a empty, " +
-						"it was allowed cause we has run `value`.")
+
+				if isEmptyStruct(arg.Type()) {
+					log.Warnf("argument %v(%d) in task %v is invalid, but as a empty, "+
+						"it was allowed cause we has run `value`.", arg, i, t)
 					continue
 				}
 				// In strict mode, if argument is invalid, fill a argument here.
@@ -127,7 +128,6 @@ func (tm *TaskManager) outputs(t *task) []reflect.Value {
 }
 
 // isEmptyStruct judge if a structure is emtpy.
-func isEmptyStruct(structure interface{}) bool {
-	t := reflect.TypeOf(structure)
-	return t.NumField() == 0
+func isEmptyStruct(structure reflect.Type) bool {
+	return structure.NumField() == 0
 }

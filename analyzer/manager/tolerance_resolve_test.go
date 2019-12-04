@@ -4,6 +4,7 @@ import (
 	//"testing"
 
 	. "github.com/pingcap/check"
+	"reflect"
 	"testing"
 )
 
@@ -75,7 +76,7 @@ func (t *tTaskE) Run(i *tOutputOfA2) {
 func TestIsEmptyStruct(t *testing.T) {
 	type EmptySample struct{}
 
-	if !isEmptyStruct(EmptySample{}) {
+	if !isEmptyStruct(reflect.TypeOf(EmptySample{})) {
 		t.Error("isEmptyStruct(EmptySample{}) return true")
 	}
 
@@ -83,7 +84,7 @@ func TestIsEmptyStruct(t *testing.T) {
 		val float32
 	}
 
-	if isEmptyStruct(NotEmpty{}) {
+	if isEmptyStruct(reflect.TypeOf(NotEmpty{})) {
 		t.Error("isEmptyStruct(NotEmpty{}) return false")
 	}
 }
