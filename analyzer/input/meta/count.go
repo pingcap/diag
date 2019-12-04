@@ -2,6 +2,7 @@ package meta
 
 import (
 	"fmt"
+	"github.com/pingcap/tidb-foresight/analyzer/manager/nilmap"
 	"time"
 
 	"github.com/pingcap/tidb-foresight/analyzer/boot"
@@ -17,6 +18,10 @@ func CountComponent() *countComponentTask {
 }
 
 type CountComponentsDone struct{}
+
+func init() {
+	nilmap.TolerateRegisterStruct(CountComponentsDone{})
+}
 
 // Query component count from prometheus, which is filled with metric collector collected.
 func (t *countComponentTask) Run(c *boot.Config, meta *Meta, args *args.Args, mtr *metric.Metric) *CountComponentsDone {

@@ -1,6 +1,7 @@
 package manager
 
 import (
+	"github.com/pingcap/tidb-foresight/analyzer/manager/nilmap"
 	"reflect"
 	"sync"
 
@@ -113,11 +114,12 @@ func (tm *TaskManager) outputs(t *task) []reflect.Value {
 		for i, arg := range args {
 			if !arg.IsValid() || arg.IsNil() {
 
-				if arg.IsValid() && arg.IsNil() && isEmptyStruct(arg.Type()) {
-					log.Warnf("argument %v(%d) in task %v is invalid, but as a empty, "+
-						"it was allowed cause we has run `value`.", arg, i, t)
+				if nilmap.IsTolerate(t.inputs[i]) {
+					log.Warn("argument %v(%d) in task %v is invalid, but is is registered tolerate," +
+						" default arguments was setting here.")
 					continue
 				}
+
 				// In strict mode, if argument is invalid, fill a argument here.
 				log.Warnf("argument %v(%d) in task %v is invalid, default arguments was setting here.",
 					arg, i, t)

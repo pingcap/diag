@@ -54,9 +54,7 @@ func (t *Task1) Run() *emptyDone {
 	return &emptyDone{}
 }
 
-func (t *TaskRequireDone) Run(e *emptyDone) {
-
-}
+func (t *TaskRequireDone) Run(e *emptyDone) {}
 
 func TestValidTest(t *testing.T) {
 	manager := New()

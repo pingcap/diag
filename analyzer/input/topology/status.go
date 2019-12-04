@@ -2,6 +2,7 @@ package topology
 
 import (
 	"fmt"
+	"github.com/pingcap/tidb-foresight/analyzer/manager/nilmap"
 	"time"
 
 	"github.com/pingcap/tidb-foresight/analyzer/boot"
@@ -19,6 +20,10 @@ func ParseStatus() *parseStatusTask {
 
 // ParseStatusDone is a fake struct for Parse status.
 type ParseStatusDone struct{}
+
+func init() {
+	nilmap.TolerateRegisterStruct(ParseStatusDone{})
+}
 
 func (t *parseStatusTask) Run(c *boot.Config, topo *model.Topology, args *args.Args, m *metric.Metric) *ParseStatusDone {
 	parseDone := ParseStatusDone{}
