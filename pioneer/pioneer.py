@@ -16,9 +16,9 @@ from ansible.inventory.manager import InventoryManager
 from ansible.vars.manager import VariableManager
 
 HINT_CHECK_DICT = {
-    "/sbin/lsof -v": "缺少 lsof 依赖，请安装",
-    "netstat --version": "缺少 netstat 依赖，请安装",
-    "/sbin/ntpq --version": "缺少 netq 依赖，请安装"
+    "lsof -v": "`lsof` not exists on your machine, please install it",
+    "netstat --version": "`netstat` not exists on your machine, please install it",
+    "ntpq --version": "`netq` not exists on your machine, please install it"
 }
 
 
@@ -138,6 +138,7 @@ def check_exists_phase(required_commands, ip, inv_path):
     """
     hints = list()
     for command, hint in required_commands.items():
+        command = "source /etc/profile && source ~/.bash_profile && source ~/.bashrc && " + command
         ansible_runner = AnsibleApi(inv_path)
         info = json.loads(
             ansible_runner.runansible(
