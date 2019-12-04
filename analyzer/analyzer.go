@@ -1,6 +1,8 @@
 package analyzer
 
 import (
+	"runtime"
+
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/pingcap/tidb-foresight/analyzer/analyze"
 	"github.com/pingcap/tidb-foresight/analyzer/boot"
@@ -25,11 +27,13 @@ func NewAnalyzer(home, inspectionId string) *Analyzer {
 	analyzer.manager.Register(clear.ClearHistory())
 	analyzer.manager.Register(input.Tasks()...)
 	analyzer.manager.Register(output.Tasks()...)
+
+	analyzer.manager.ConcurrencyBatchRun(runtime.NumCPU())
+
 	analyzer.manager.Register(analyze.Tasks()...)
 	return analyzer
 }
 
 func (a *Analyzer) Run() {
-	//a.manager.ConcurrencyBatchRun(runtime.NumCPU())
-	a.manager.Run()
+	a.manager.RunCurrentBatch()
 }
