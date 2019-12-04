@@ -193,7 +193,7 @@ func parseTopologyByRequest(result *requestInstance) *model.Instance {
 	for _, h := range result.Hosts {
 		if h.Status == "exception" {
 			instance.Status = "exception"
-			instance.Message = h.Message
+			instance.Message = fmt.Sprintf("%s:%s", h.Ip, h.Message)
 		}
 		for _, c := range h.Components {
 			switch c.Name {
