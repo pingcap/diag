@@ -129,5 +129,9 @@ func (tm *TaskManager) outputs(t *task) []reflect.Value {
 
 // isEmptyStruct judge if a structure is emtpy.
 func isEmptyStruct(structure reflect.Type) bool {
+	// if this is a struct
+	if structure.Kind() != reflect.Struct {
+		return false
+	}
 	return structure.NumField() == 0
 }

@@ -76,7 +76,7 @@ func (t *tTaskE) Run(i *tOutputOfA2) {
 func TestIsEmptyStruct(t *testing.T) {
 	type EmptySample struct{}
 
-	if !isEmptyStruct(reflect.TypeOf(EmptySample{})) {
+	if !isEmptyStruct(reflect.TypeOf(EmptySample{})) && !isEmptyStruct(reflect.TypeOf(&EmptySample{})) {
 		t.Error("isEmptyStruct(EmptySample{}) return true")
 	}
 
@@ -84,7 +84,33 @@ func TestIsEmptyStruct(t *testing.T) {
 		val float32
 	}
 
-	if isEmptyStruct(reflect.TypeOf(NotEmpty{})) {
+	if isEmptyStruct(reflect.TypeOf(NotEmpty{})) && isEmptyStruct(reflect.TypeOf(&NotEmpty{})) {
 		t.Error("isEmptyStruct(NotEmpty{}) return false")
 	}
+
+	iptr := 5
+	if isEmptyStruct(reflect.TypeOf(iptr)) {
+		t.Error("isEmptyStruct(&5) return true")
+	}
+}
+
+type emptyDone struct{}
+type Task1 struct{}
+type Task2 struct{}
+type TaskRequireDone struct{}
+
+func (t *Task1) Run() *emptyDone {
+	return &emptyDone{}
+}
+
+func (t *TaskRequireDone) Run(e *emptyDone) {
+
+}
+
+func TestValidTest(t *testing.T) {
+	manager := New()
+	manager.tasks = append(manager.tasks, newTask(&Task1{}, Strict))
+	manager.tasks = append(manager.tasks, newTask(&TaskRequireDone{}, Strict))
+
+	manager.Run()
 }
