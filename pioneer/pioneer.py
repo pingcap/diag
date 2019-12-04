@@ -19,6 +19,7 @@ HINT_CHECK_DICT = {
     "lsof -v": "缺少 lsof 依赖，请安装",
     "netstat --version": "缺少 netstat 依赖，请安装",
     "ntpq --version": "缺少 netq 依赖，请安装",
+    "pyenv --version": "缺少 pyenv 依赖，请安装"
 }
 
 
@@ -143,7 +144,7 @@ def check_exists_phase(required_commands, ip, inv_path):
             ansible_runner.runansible(
                 [ip], [dict(action=dict(module='shell', args=command))]))
         if check(info) != 'success':
-            hints.append(hint)
+            hints.append(ip + ": " + hint)
     return hints
 
 
