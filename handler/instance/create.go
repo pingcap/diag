@@ -3,6 +3,7 @@ package instance
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"os/exec"
 	"path"
