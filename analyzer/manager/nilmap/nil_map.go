@@ -39,7 +39,7 @@ func IsTolerate(tpName string) bool {
 	return isTor
 }
 
-// tolerate is a set for
+// `tolerate` is a set for storing name for object.
 var tolerate map[string]struct{}
 
 func tpName(t reflect.Type) string {
