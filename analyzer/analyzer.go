@@ -25,6 +25,9 @@ func NewAnalyzer(home, inspectionId string) *Analyzer {
 	analyzer.manager.Register(boot.Bootstrap(inspectionId, home))
 	// The method is idempotent, so we should clear all history the analyzer may create.
 	analyzer.manager.Register(clear.ClearHistory())
+
+	analyzer.manager.RunCurrentBatch()
+
 	analyzer.manager.Register(input.Tasks()...)
 	analyzer.manager.Register(output.Tasks()...)
 
