@@ -100,7 +100,7 @@ func (tm *TaskManager) value(output string) reflect.Value {
 	}
 
 	// required value not found
-	log.Infof("DEBUG: `value` arm not match output %v, return `reflect.ValueOf(nil)`.", output)
+	log.Warnf("DEBUG: `value` arm not match output %v, return `reflect.ValueOf(nil)`.", output)
 	return reflect.ValueOf(nil)
 }
 
@@ -128,13 +128,4 @@ func (tm *TaskManager) outputs(t *task) []reflect.Value {
 		}
 	}
 	return t.run(args)
-}
-
-// isEmptyStruct judge if a structure is emtpy.
-func isEmptyStruct(structure reflect.Type) bool {
-	// if this is a struct
-	if structure.Kind() != reflect.Struct {
-		return false
-	}
-	return structure.NumField() == 0
 }

@@ -9,7 +9,6 @@ import (
 	"github.com/pingcap/tidb-foresight/analyzer/input/meta"
 	"github.com/pingcap/tidb-foresight/model"
 	"github.com/pingcap/tidb-foresight/utils"
-	"github.com/pingcap/tidb-foresight/utils/debug_printer"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -29,9 +28,6 @@ func (t *saveInspectionTask) Run(m *boot.Model, c *boot.Config, args *args.Args,
 			components[c.Name] = append(components[c.Name], h.Ip+":"+c.Port)
 		}
 	}
-
-	// DEBUG
-	log.Infof("topo is %v, meta is %v", debug_printer.FormatJson(topo), debug_printer.FormatJson(meta))
 
 	if err := m.SetInspection(&model.Inspection{
 		Uuid:           c.InspectionId,
