@@ -1,6 +1,19 @@
 PROJECT=tidb-foresight
-GOPATH ?= $(shell go env GOPATH)
 
+# Note: This part was port before checking GOPATH, because it will install golang and other
+#  requirements in the machine.
+# If prefix is now provided, please abort
+# it will execute after all the target is already build
+# Usage: make install prefix=/opt/tidb
+install:
+ifndef prefix
+	$(error prefix is not set)
+endif
+	chmod 755 ./scripts/*
+	eval './scripts/install.py $(prefix) $(user) $(foresight_port) $(influxd_port) $(prometheus_port)'
+
+
+GOPATH ?= $(shell go env GOPATH)
 # Ensure GOPATH is set before running build process.
 ifeq "$(GOPATH)" ""
   $(error Please set the environment variable GOPATH before running `make`)
@@ -67,16 +80,6 @@ prepare:
 	eval './scripts/prepare.py $(DOWNLOAD_PREFIX) $(NEEDS_INSTALL)'
 	@$(MAKE) web
 	@$(MAKE) pioneer
-
-# If prefix is now provided, please abort
-# it will execute after all the target is already build
-# Usage: make install prefix=/opt/tidb
-install:
-ifndef prefix
-	$(error prefix is not set)
-endif
-	chmod 755 ./scripts/*
-	eval './scripts/install.py $(prefix) $(user) $(foresight_port) $(influxd_port) $(prometheus_port)'
 
 build:
 	$(GOBUILD)
