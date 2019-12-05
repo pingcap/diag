@@ -1,10 +1,10 @@
 package manager
 
 import (
-	"github.com/pingcap/tidb-foresight/analyzer/manager/nilmap"
 	"reflect"
 	"sync"
 
+	"github.com/pingcap/tidb-foresight/analyzer/manager/nilmap"
 	log "github.com/sirupsen/logrus"
 )
 

@@ -2,11 +2,11 @@ package meta
 
 import (
 	"fmt"
-	"github.com/pingcap/tidb-foresight/analyzer/manager/nilmap"
 	"time"
 
 	"github.com/pingcap/tidb-foresight/analyzer/boot"
 	"github.com/pingcap/tidb-foresight/analyzer/input/args"
+	"github.com/pingcap/tidb-foresight/analyzer/manager/nilmap"
 	"github.com/pingcap/tidb-foresight/analyzer/output/metric"
 	log "github.com/sirupsen/logrus"
 )
