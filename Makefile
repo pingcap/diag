@@ -1,12 +1,17 @@
 PROJECT=tidb-foresight
 
+
+.PHONY: all server collector insight analyzer spliter syncer install stop start web fmt pioneer check_prefix build default
+
+default: all
+
 # Note: This part was port before checking GOPATH, because it will install golang and other
 #  requirements in the machine.
 # If prefix is now provided, this phase will abort.
 # it will execute after all the target is already build
 # Usage: make install prefix=/opt/tidb
-install:
-    test -n $(prefix)
+install: check_prefix
+	test -n $(prefix)
 	chmod 755 ./scripts/*
 	eval './scripts/install.py $(prefix) $(user) $(foresight_port) $(influxd_port) $(prometheus_port)'
 
@@ -67,10 +72,6 @@ endif
 ifeq ($(user), )
 user=tidb
 endif
-
-.PHONY: all server collector insight analyzer spliter syncer install stop start web fmt pioneer check_prefix build default
-
-default: all	
 
 all: server collector insight analyzer spliter syncer
 
@@ -134,10 +135,10 @@ syncer:
 	$(GOBUILD) $(RACE_FLAG) -ldflags '$(LDFLAGS) $(CHECK_FLAG)' -o bin/syncer cmd/syncer/*.go
 
 
-# check_prefix:
-# ifndef prefix
-# 	$(error prefix is not set)
-# endif
+check_prefix:
+ifndef prefix
+	$(error prefix is not set)
+endif
 
 check-%:
     @ if [ "${${*}}" = "" ]; then \
