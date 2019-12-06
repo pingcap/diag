@@ -8,7 +8,12 @@ default: all
 GOPATH ?= $(shell go env GOPATH)
 # Ensure GOPATH is set before running build process.
 ifeq "$(GOPATH)" ""
+ifneq ($(MAKECMDGOALS),install)
 	$(error Please set the environment variable GOPATH before running `make`)
+else
+	GOPATH := toinstall
+endif
+
 endif
 
 CURDIR := $(shell pwd)
