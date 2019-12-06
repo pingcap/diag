@@ -10,7 +10,7 @@ default: all
 # If prefix is now provided, this phase will abort.
 # it will execute after all the target is already build
 # Usage: make install prefix=/opt/tidb
-install: check_prefix
+install: check-prefix
 	test -n $(prefix)
 	chmod 755 ./scripts/*
 	eval './scripts/install.py $(prefix) $(user) $(foresight_port) $(influxd_port) $(prometheus_port)'
@@ -134,14 +134,8 @@ spliter:
 syncer:
 	$(GOBUILD) $(RACE_FLAG) -ldflags '$(LDFLAGS) $(CHECK_FLAG)' -o bin/syncer cmd/syncer/*.go
 
-
-check_prefix:
-ifndef prefix
-	$(error prefix is not set)
-endif
-
 check-%:
-    @ if [ "${${*}}" = "" ]; then \
-        echo "variable $* not set"; \
-        exit 1; \
-    fi
+	@ if [ "${${*}}" = "" ]; then \
+		echo "variable $* not set"; \
+		exit 1; \
+	fi
