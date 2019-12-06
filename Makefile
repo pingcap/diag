@@ -15,6 +15,11 @@ install: check-prefix
 	chmod 755 ./scripts/*
 	eval './scripts/install.py $(prefix) $(user) $(foresight_port) $(influxd_port) $(prometheus_port)'
 
+check-%:
+	@ if [ "${${*}}" = "" ]; then \
+		echo "variable $* not set"; \
+		exit 1; \
+	fi
 
 GOPATH ?= $(shell go env GOPATH)
 # Ensure GOPATH is set before running build process.
@@ -133,9 +138,3 @@ spliter:
 
 syncer:
 	$(GOBUILD) $(RACE_FLAG) -ldflags '$(LDFLAGS) $(CHECK_FLAG)' -o bin/syncer cmd/syncer/*.go
-
-check-%:
-	@ if [ "${${*}}" = "" ]; then \
-		echo "variable $* not set"; \
-		exit 1; \
-	fi
