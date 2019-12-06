@@ -5,26 +5,9 @@ PROJECT=tidb-foresight
 
 default: all
 
-# Note: This part was port before checking GOPATH, because it will install golang and other
-#  requirements in the machine.
-# If prefix is now provided, this phase will abort.
-# it will execute after all the target is already build
-# Usage: make install prefix=/opt/tidb
-install: check-prefix
-	test -n $(prefix)
-	chmod 755 ./scripts/*
-	eval './scripts/install.py $(prefix) $(user) $(foresight_port) $(influxd_port) $(prometheus_port)'
-
-check-%:
-	@ if [ "${${*}}" = "" ]; then \
-		echo "variable $* not set"; \
-		exit 1; \
-	fi
-
 GOPATH ?= $(shell go env GOPATH)
 # Ensure GOPATH is set before running build process.
 ifeq "$(GOPATH)" ""
-	@$(MAKE) install
 	$(error Please set the environment variable GOPATH before running `make`)
 endif
 
@@ -139,3 +122,19 @@ spliter:
 
 syncer:
 	$(GOBUILD) $(RACE_FLAG) -ldflags '$(LDFLAGS) $(CHECK_FLAG)' -o bin/syncer cmd/syncer/*.go
+
+# Note: This part was port before checking GOPATH, because it will install golang and other
+#  requirements in the machine.
+# If prefix is now provided, this phase will abort.
+# it will execute after all the target is already build
+# Usage: make install prefix=/opt/tidb
+install: check-prefix
+	test -n $(prefix)
+	chmod 755 ./scripts/*
+	eval './scripts/install.py $(prefix) $(user) $(foresight_port) $(influxd_port) $(prometheus_port)'
+
+check-%:
+	@ if [ "${${*}}" = "" ]; then \
+		echo "variable $* not set"; \
+		exit 1; \
+	fi
