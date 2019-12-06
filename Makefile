@@ -2,13 +2,10 @@ PROJECT=tidb-foresight
 
 # Note: This part was port before checking GOPATH, because it will install golang and other
 #  requirements in the machine.
-# If prefix is now provided, please abort
+# If prefix is now provided, this phase will abort.
 # it will execute after all the target is already build
 # Usage: make install prefix=/opt/tidb
-install:
-ifndef prefix
-	$(error prefix is not set)
-endif
+install: check_prefix
 	chmod 755 ./scripts/*
 	eval './scripts/install.py $(prefix) $(user) $(foresight_port) $(influxd_port) $(prometheus_port)'
 
@@ -65,6 +62,7 @@ ifeq ($(prometheus_port),)
 prometheus_port=9529
 endif
 
+# set the default user tidb
 ifeq ($(user), )
 user=tidb
 endif
@@ -133,3 +131,9 @@ spliter:
 
 syncer:
 	$(GOBUILD) $(RACE_FLAG) -ldflags '$(LDFLAGS) $(CHECK_FLAG)' -o bin/syncer cmd/syncer/*.go
+
+
+check_prefix:
+ifndef prefix
+	$(error prefix is not set)
+endif
