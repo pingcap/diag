@@ -105,7 +105,7 @@ export const INSPECTION_DETAILS: ReportDetailConfig = [
         dataType: 'arr',
         columnsUnit: {
           offset: {
-            unitFormat: 's',
+            unitFormat: 'ms',
             decimals: 3,
           },
         },
