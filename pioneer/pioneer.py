@@ -344,6 +344,52 @@ def run_task(ip, deploy_dir, group, inv, server_group, hosts, target_index):
             hosts[target_index]['components'].append(_dict2)
 
 
+# a list object for tasks
+task_thread_list = []
+
+
+def check_node_task(check_node_func, node_ip, ansible_user, inv, deploy_dir,
+                    group, server_group, hosts):
+    """
+    Notes: Only `hosts` is both mutable and appendable.
+    """
+    global task_thread_list
+
+    _ip_exist, _enable_sudo, _enable_connect = check_node_func(node_ip)
+    if not _ip_exist:
+        host_dict = dict()
+        host_dict['ip'] = node_ip
+        host_dict['user'] = ansible_user
+        host_dict['components'] = []
+        if _enable_connect[0]:
+            host_dict['status'] = 'success'
+            host_dict['message'] = ''
+            host_dict['enable_sudo'] = _enable_sudo
+            host_dict['hints'] = check_exists_phase(HINT_CHECK_DICT, node_ip,
+                                                    inv)
+            if len(host_dict['hints']) != 0:
+                host_dict['message'] = ','.join(host_dict['hints'])
+                host_dict['status'] = 'exception'
+            del host_dict['hints']
+        else:
+            host_dict['status'] = 'exception'
+            host_dict['message'] = _enable_connect[2]
+        hosts.append(host_dict)
+
+    current_node_index = None
+    for _index_id in range(len(hosts)):
+        if hosts[_index_id]['ip'] == node_ip:
+            current_node_index = _index_id
+    if current_node_index is None:
+        raise RuntimeError()
+
+    t = threading.Thread(target=run_task,
+                         args=(node_ip, deploy_dir, group, inv, server_group,
+                               hosts, current_node_index))
+    t.start()
+    task_thread_list.append(t)
+
+
 def hostinfo(inv):
     def check_node_impl(ip):
         """
@@ -388,8 +434,8 @@ def hostinfo(inv):
     check_node = check_node_wrapper(check_node_impl)
 
     loader = DataLoader()
-    _inv = InventoryManager(loader=loader, sources=[inv])
-    _vars = VariableManager(loader=loader, inventory=_inv)
+    inv_manager = InventoryManager(loader=loader, sources=[inv])
+    vars_manager = VariableManager(loader=loader, inventory=inv_manager)
     server_group = {
         'pd_servers': 'pd',
         'tidb_servers': 'tidb',
@@ -410,16 +456,14 @@ def hostinfo(inv):
     cluster_info = {}
     hosts = []
 
-    _all_group = _inv.get_groups_dict()
+    _all_group = inv_manager.get_groups_dict()
     _all_group.pop('all')
-    # This is a list for storing task threads.
-    # It will concurrently got the information.
-    task_thread_list = []
+
     for _group, _host_list in _all_group.iteritems():
         if not _host_list:
             continue
         for _host in _host_list:
-            _hostvars = _vars.get_vars(host=_inv.get_host(
+            _hostvars = vars_manager.get_vars(host=inv_manager.get_host(
                 hostname=str(_host)))  # get all variables for one node
             _deploy_dir = _hostvars['deploy_dir']
             _cluster_name = _hostvars['cluster_name']
@@ -432,38 +476,16 @@ def hostinfo(inv):
             _ip = _hostvars['ansible_host'] if 'ansible_host' in _hostvars else \
                 (_hostvars['ansible_ssh_host'] if 'ansible_ssh_host' in _hostvars else
                  _hostvars['inventory_hostname'])
-            _ip_exist, _enable_sudo, _enable_connect = check_node(_ip)
-            if not _ip_exist:
-                _host_dict = dict()
-                _host_dict['ip'] = _ip
-                _host_dict['user'] = _ansible_user
-                _host_dict['components'] = []
-                if _enable_connect[0]:
-                    _host_dict['status'] = 'success'
-                    _host_dict['message'] = ''
-                    _host_dict['enable_sudo'] = _enable_sudo
-                    _host_dict['hints'] = check_exists_phase(
-                        HINT_CHECK_DICT, _ip, inv)
-                    if len(_host_dict['hints']) != 0:
-                        _host_dict['message'] = ','.join(_host_dict['hints'])
-                        _host_dict['status'] = 'exception'
-                    del _host_dict['hints']
-                else:
-                    _host_dict['status'] = 'exception'
-                    _host_dict['message'] = _enable_connect[2]
-                hosts.append(_host_dict)
 
-            current_node_index = None
-            for _index_id in range(len(hosts)):
-                if hosts[_index_id]['ip'] == _ip:
-                    current_node_index = _index_id
-            if current_node_index is None:
-                raise RuntimeError()
-
-            t = threading.Thread(target=run_task,
-                                 args=(_ip, _deploy_dir, _group, inv,
-                                       server_group, hosts,
-                                       current_node_index))
+            cur_task = lambda: check_node_task(check_node_func=check_node,
+                                               node_ip=_ip,
+                                               ansible_user=_ansible_user,
+                                               inv=inv,
+                                               deploy_dir=_deploy_dir,
+                                               group=_group,
+                                               server_group=server_group,
+                                               hosts=hosts)
+            t = threading.Thread(target=cur_task)
             t.start()
             task_thread_list.append(t)
 
