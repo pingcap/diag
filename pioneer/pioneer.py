@@ -7,6 +7,7 @@ import json
 import shutil
 import threading
 from collections import namedtuple
+from contextlib import contextmanager
 
 import ansible.constants as C
 from ansible.playbook.play import Play
@@ -288,13 +289,21 @@ def get_node_info(ip, deploy_dir, name, inv):
         return False, 'other', name
 
 
+def lock_manager(lock):
+    lock.acquire()
+    try:
+        yield None
+    finally:
+        lock.release()
+
+
 def check_node_wrapper(func):
-    cache_lock = threading.Lock
+    cache_lock = threading.Lock()
     check_node_cache = dict()
 
     # TODO: implement a better cache strategy.
     def inner_wrapper(ip):
-        with cache_lock:
+        with lock_manager(cache_lock):
             if ip in check_node_cache.keys():
                 ans = check_node_cache[ip]
                 # the answer must exists
