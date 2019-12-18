@@ -5,6 +5,7 @@ import re
 import sys
 import json
 import shutil
+import threading
 from collections import namedtuple
 
 import ansible.constants as C
@@ -17,7 +18,8 @@ from ansible.vars.manager import VariableManager
 
 HINT_CHECK_DICT = {
     "lsof -v": "`lsof` not exists on your machine, please install it",
-    "netstat --version": "`netstat` not exists on your machine, please install it",
+    "netstat --version":
+    "`netstat` not exists on your machine, please install it",
     "ntpq --version": "`netq` not exists on your machine, please install it"
 }
 
@@ -40,7 +42,13 @@ class ResultCallback(CallbackBase):
 
 
 class AnsibleApi(object):
+    """
+    * Warning: This should be run only one time.
+    """
     def __init__(self, inv):
+        # used is a flag for if this method is used.
+        # If it's used, the AnsibleApi will raise an exception.
+        self.used = False
         self.inv = inv
         self.Options = namedtuple('Options', [
             'connection', 'remote_user', 'ask_sudo_pass', 'verbosity',
@@ -76,6 +84,11 @@ class AnsibleApi(object):
                                                 inventory=self.inventory)
 
     def runansible(self, host_list, task_list):
+        if self.used:
+            raise RuntimeError(
+                "method `runansible is used, please not call it again`")
+        else:
+            self.used = True
 
         play_source = dict(name="Ansible Play",
                            hosts=host_list,
@@ -121,6 +134,11 @@ class AnsibleApi(object):
 
 
 def check(result):
+    """
+    check the result object return in `runansible`.
+    :param result:
+    :return: 'failed'/'unreachable'/'success'
+    """
     if result['failed']:
         return 'failed'
     elif result['unreachable']:
@@ -148,8 +166,192 @@ def check_exists_phase(required_commands, ip, inv_path):
     return hints
 
 
+class TaskFactory:
+    def __init__(self):
+        # The class should not have an instance.
+        raise RuntimeError("Please not create instance for TaskFactory.")
+
+    @staticmethod
+    def whoami():
+        return [dict(action=dict(module='shell', args='whoami'), become=True)]
+
+    @staticmethod
+    def ping():
+        return [dict(action=dict(module='ping'))]
+
+    @staticmethod
+    def run_command(command):
+        return [dict(action=dict(module='shell', args=command))]
+
+
+def get_node_info(ip, deploy_dir, name, inv):
+    _host = [ip]
+    if name == 'pd':
+        _command = 'cat ' + deploy_dir + '/scripts/run_pd.sh | grep "\--client-urls"'
+        _task = [dict(action=dict(module='shell', args=_command))]
+        runAnsible = AnsibleApi(inv)
+        _info = json.loads(runAnsible.runansible(_host, _task))
+        del runAnsible
+        ok = check(_info)
+        if ok == 'success':
+            _port = re.search("([0-9]+)\"",
+                              _info['success'][ip]['stdout_lines'][0]).group(1)
+            return True, 'get_info', [_port, name]
+        else:
+            return False, 'get_info', [_info[ok], name]
+    elif name == 'tidb':
+        _command = 'cat ' + deploy_dir + '/scripts/run_tidb.sh | grep -E "\-P|--status"'
+        _task = [dict(action=dict(module='shell', args=_command))]
+        runAnsible = AnsibleApi(inv)
+        _info = json.loads(runAnsible.runansible(_host, _task))
+        del runAnsible
+        ok = check(_info)
+        if ok == 'success':
+            _port = re.search("([0-9]+)",
+                              _info['success'][ip]['stdout_lines'][0]).group(1)
+            _status_port = re.search(
+                "([0-9]+)\"", _info['success'][ip]['stdout_lines'][1]).group(1)
+            return True, 'get_info', [[_port, _status_port], name]
+        else:
+            return False, 'get_info', [_info[ok], name]
+    elif name == 'tikv':
+        _command = 'cat ' + deploy_dir + '/scripts/run_tikv.sh | grep "\--addr"'
+        _task = [dict(action=dict(module='shell', args=_command))]
+        runAnsible = AnsibleApi(inv)
+        _info = json.loads(runAnsible.runansible(_host, _task))
+        del runAnsible
+        ok = check(_info)
+        if ok == 'success':
+            _port = re.search("([0-9]+)\"",
+                              _info['success'][ip]['stdout_lines'][0]).group(1)
+            return True, 'get_info', [_port, name]
+        else:
+            return False, 'get_info', [_info[ok], name]
+    elif name == 'grafana':
+        _command = 'cat ' + deploy_dir + '/opt/grafana/conf/grafana.ini | grep "^http_port"'
+        _task = [dict(action=dict(module='shell', args=_command))]
+        runAnsible = AnsibleApi(inv)
+        _info = json.loads(runAnsible.runansible(_host, _task))
+        del runAnsible
+        ok = check(_info)
+        if ok == 'success':
+            _port = re.search("([0-9]+)",
+                              _info['success'][ip]['stdout_lines'][0]).group(1)
+            return True, 'get_info', [_port, name]
+        else:
+            return False, 'get_info', [_info[ok], name]
+    elif name == 'monitoring':
+        _check = []
+        _result = []
+        for _server in ['prometheus', 'pushgateway']:
+            _command = 'cat ' + deploy_dir + '/scripts/run_' + _server + '\.sh | grep "\--web\.listen-address"'
+            _task = [dict(action=dict(module='shell', args=_command))]
+            runAnsible = AnsibleApi(inv)
+            _info = json.loads(runAnsible.runansible(_host, _task))
+            del runAnsible
+            ok = check(_info)
+            if ok == 'success':
+                _check.append(True)
+                _result.append([
+                    re.search(
+                        "([0-9]+)\"",
+                        _info['success'][ip]['stdout_lines'][0]).group(1),
+                    _server
+                ])
+            else:
+                _check.append(False)
+                _result.append([_info[ok], _server])
+        return _check, 'get_info', _result
+    elif name == 'monitored':
+        _check = []
+        _result = []
+        for _server in ['node_exporter', 'blackbox_exporter']:
+            _command = 'cat ' + deploy_dir + '/scripts/run_' + _server + '\.sh | grep "\--web\.listen-address"'
+            _task = [dict(action=dict(module='shell', args=_command))]
+            runAnsible = AnsibleApi(inv)
+            _info = json.loads(runAnsible.runansible(_host, _task))
+            del runAnsible
+            ok = check(_info)
+            if ok == 'success':
+                _check.append(True)
+                _result.append([
+                    re.search(
+                        "([0-9]+)\"",
+                        _info['success'][ip]['stdout_lines'][0]).group(1),
+                    _server
+                ])
+            else:
+                _check.append(False)
+                _result.append([_info[ok], _server])
+        return _check, 'get_info', _result
+    else:
+        return False, 'other', name
+
+
+def check_node_wrapper(func):
+    def inner_wrapper(ip):
+        check_node_cache = dict()
+
+        if ip in check_node_cache.keys():
+            ans = check_node_cache[ip]
+            # the answer must exists
+            ans[0] = True
+            return ans
+        ans = func(ip)
+        check_node_cache[ip] = ans
+        return ans
+
+    return inner_wrapper
+
+
+def run_task(ip, deploy_dir, group, inv, server_group, hosts, target_index):
+    _status, _type, _info = get_node_info(ip, deploy_dir, server_group[group],
+                                          inv)
+
+    if hosts[target_index]['status'] == 'exception':
+        return
+    if group != 'monitoring_servers' and group != 'monitored_servers':
+        _dict1 = {}
+        if not _status and _type == 'get_info':
+            _dict1['name'] = _info[1]
+            _dict1['status'] = 'exception'
+            _dict1['message'] = _info[0][_host]
+            _dict1['deploy_dir'] = _deploy_dir
+        elif _status and _type == 'get_info':
+            _dict1['name'] = _info[1]
+            _dict1['status'] = 'success'
+            if group == 'tidb_servers':
+                _dict1['port'] = _info[0][0]
+                _dict1['status_port'] = _info[0][1]
+            else:
+                _dict1['port'] = _info[0]
+            _dict1['deploy_dir'] = deploy_dir
+        if _dict1:
+            hosts[target_index]['components'].append(_dict1)
+    else:
+        for _indexid in range(2):
+            _dict2 = {}
+            if not _status[_indexid]:
+                _dict2['name'] = _info[_indexid][1]
+                _dict2['status'] = 'exception'
+                _dict2['message'] = _info[_indexid][0][_host]
+                _dict2['deploy_dir'] = deploy_dir
+            else:
+                _dict2['name'] = _info[_indexid][1]
+                _dict2['status'] = 'success'
+                _dict2['port'] = _info[_indexid][0]
+                _dict2['deploy_dir'] = deploy_dir
+            hosts[target_index]['components'].append(_dict2)
+
+
 def hostinfo(inv):
-    def check_node(ip):
+    def check_node_impl(ip):
+        """
+        check_node check the ip, and return the node information
+        let me see the detail info for other.
+        :param ip:
+        :return:
+        """
         _exist = False
         _dict = {}
         _connect = []
@@ -161,7 +363,7 @@ def hostinfo(inv):
                     break
 
         _sudo = False
-        _task1 = [dict(action=dict(module='ping'))]
+        _task1 = TaskFactory.ping()
         runAnsible = AnsibleApi(inv)
         _result1 = json.loads(runAnsible.runansible([ip], _task1))
         del runAnsible
@@ -174,9 +376,7 @@ def hostinfo(inv):
         else:
             _connect = [True, 'success']
 
-        _task2 = [
-            dict(action=dict(module='shell', args='whoami'), become=True)
-        ]
+        _task2 = TaskFactory.whoami()
         runAnsible = AnsibleApi(inv)
         _result2 = json.loads(runAnsible.runansible([ip], _task2))
         del runAnsible
@@ -185,113 +385,7 @@ def hostinfo(inv):
 
         return _exist, _sudo, _connect
 
-    def get_node_info(ip, deploy_dir, name):
-        _host = [ip]
-        if name == 'pd':
-            _command = 'cat ' + deploy_dir + '/scripts/run_pd.sh | grep "\--client-urls"'
-            _task = [dict(action=dict(module='shell', args=_command))]
-            runAnsible = AnsibleApi(inv)
-            _info = json.loads(runAnsible.runansible(_host, _task))
-            del runAnsible
-            ok = check(_info)
-            if ok == 'success':
-                _port = re.search(
-                    "([0-9]+)\"",
-                    _info['success'][ip]['stdout_lines'][0]).group(1)
-                return True, 'get_info', [_port, name]
-            else:
-                return False, 'get_info', [_info[ok], name]
-        elif name == 'tidb':
-            _command = 'cat ' + deploy_dir + '/scripts/run_tidb.sh | grep -E "\-P|--status"'
-            _task = [dict(action=dict(module='shell', args=_command))]
-            runAnsible = AnsibleApi(inv)
-            _info = json.loads(runAnsible.runansible(_host, _task))
-            del runAnsible
-            ok = check(_info)
-            if ok == 'success':
-                _port = re.search(
-                    "([0-9]+)",
-                    _info['success'][ip]['stdout_lines'][0]).group(1)
-                _status_port = re.search(
-                    "([0-9]+)\"",
-                    _info['success'][ip]['stdout_lines'][1]).group(1)
-                return True, 'get_info', [[_port, _status_port], name]
-            else:
-                return False, 'get_info', [_info[ok], name]
-        elif name == 'tikv':
-            _command = 'cat ' + deploy_dir + '/scripts/run_tikv.sh | grep "\--addr"'
-            _task = [dict(action=dict(module='shell', args=_command))]
-            runAnsible = AnsibleApi(inv)
-            _info = json.loads(runAnsible.runansible(_host, _task))
-            del runAnsible
-            ok = check(_info)
-            if ok == 'success':
-                _port = re.search(
-                    "([0-9]+)\"",
-                    _info['success'][ip]['stdout_lines'][0]).group(1)
-                return True, 'get_info', [_port, name]
-            else:
-                return False, 'get_info', [_info[ok], name]
-        elif name == 'grafana':
-            _command = 'cat ' + deploy_dir + '/opt/grafana/conf/grafana.ini | grep "^http_port"'
-            _task = [dict(action=dict(module='shell', args=_command))]
-            runAnsible = AnsibleApi(inv)
-            _info = json.loads(runAnsible.runansible(_host, _task))
-            del runAnsible
-            ok = check(_info)
-            if ok == 'success':
-                _port = re.search(
-                    "([0-9]+)",
-                    _info['success'][ip]['stdout_lines'][0]).group(1)
-                return True, 'get_info', [_port, name]
-            else:
-                return False, 'get_info', [_info[ok], name]
-        elif name == 'monitoring':
-            _check = []
-            _result = []
-            for _server in ['prometheus', 'pushgateway']:
-                _command = 'cat ' + deploy_dir + '/scripts/run_' + _server + '\.sh | grep "\--web\.listen-address"'
-                _task = [dict(action=dict(module='shell', args=_command))]
-                runAnsible = AnsibleApi(inv)
-                _info = json.loads(runAnsible.runansible(_host, _task))
-                del runAnsible
-                ok = check(_info)
-                if ok == 'success':
-                    _check.append(True)
-                    _result.append([
-                        re.search(
-                            "([0-9]+)\"",
-                            _info['success'][ip]['stdout_lines'][0]).group(1),
-                        _server
-                    ])
-                else:
-                    _check.append(False)
-                    _result.append([_info[ok], _server])
-            return _check, 'get_info', _result
-        elif name == 'monitored':
-            _check = []
-            _result = []
-            for _server in ['node_exporter', 'blackbox_exporter']:
-                _command = 'cat ' + deploy_dir + '/scripts/run_' + _server + '\.sh | grep "\--web\.listen-address"'
-                _task = [dict(action=dict(module='shell', args=_command))]
-                runAnsible = AnsibleApi(inv)
-                _info = json.loads(runAnsible.runansible(_host, _task))
-                del runAnsible
-                ok = check(_info)
-                if ok == 'success':
-                    _check.append(True)
-                    _result.append([
-                        re.search(
-                            "([0-9]+)\"",
-                            _info['success'][ip]['stdout_lines'][0]).group(1),
-                        _server
-                    ])
-                else:
-                    _check.append(False)
-                    _result.append([_info[ok], _server])
-            return _check, 'get_info', _result
-        else:
-            return False, 'other', name
+    check_node = check_node_wrapper(check_node_impl)
 
     loader = DataLoader()
     _inv = InventoryManager(loader=loader, sources=[inv])
@@ -318,6 +412,9 @@ def hostinfo(inv):
 
     _all_group = _inv.get_groups_dict()
     _all_group.pop('all')
+    # This is a list for storing task threads.
+    # It will concurrently got the information.
+    task_thread_list = []
     for _group, _host_list in _all_group.iteritems():
         if not _host_list:
             continue
@@ -337,7 +434,7 @@ def hostinfo(inv):
                  _hostvars['inventory_hostname'])
             _ip_exist, _enable_sudo, _enable_connect = check_node(_ip)
             if not _ip_exist:
-                _host_dict = {}
+                _host_dict = dict()
                 _host_dict['ip'] = _ip
                 _host_dict['user'] = _ansible_user
                 _host_dict['components'] = []
@@ -356,44 +453,24 @@ def hostinfo(inv):
                     _host_dict['message'] = _enable_connect[2]
                 hosts.append(_host_dict)
 
-            _status, _type, _info = get_node_info(_ip, _deploy_dir,
-                                                  server_group[_group])
+            current_node_index = None
             for _index_id in range(len(hosts)):
                 if hosts[_index_id]['ip'] == _ip:
-                    if hosts[_index_id]['status'] == 'exception':
-                        break
-                    if _group != 'monitoring_servers' and _group != 'monitored_servers':
-                        _dict1 = {}
-                        if not _status and _type == 'get_info':
-                            _dict1['name'] = _info[1]
-                            _dict1['status'] = 'exception'
-                            _dict1['message'] = _info[0][_host]
-                            _dict1['deploy_dir'] = _deploy_dir
-                        elif _status and _type == 'get_info':
-                            _dict1['name'] = _info[1]
-                            _dict1['status'] = 'success'
-                            if _group == 'tidb_servers':
-                                _dict1['port'] = _info[0][0]
-                                _dict1['status_port'] = _info[0][1]
-                            else:
-                                _dict1['port'] = _info[0]
-                            _dict1['deploy_dir'] = _deploy_dir
-                        if _dict1:
-                            hosts[_index_id]['components'].append(_dict1)
-                    else:
-                        for _indexid in range(2):
-                            _dict2 = {}
-                            if not _status[_indexid]:
-                                _dict2['name'] = _info[_indexid][1]
-                                _dict2['status'] = 'exception'
-                                _dict2['message'] = _info[_indexid][0][_host]
-                                _dict2['deploy_dir'] = _deploy_dir
-                            else:
-                                _dict2['name'] = _info[_indexid][1]
-                                _dict2['status'] = 'success'
-                                _dict2['port'] = _info[_indexid][0]
-                                _dict2['deploy_dir'] = _deploy_dir
-                            hosts[_index_id]['components'].append(_dict2)
+                    current_node_index = _index_id
+            if current_node_index is None:
+                raise RuntimeError()
+
+            t = threading.Thread(target=run_task,
+                                 args=(_ip, _deploy_dir, _group, inv,
+                                       server_group, hosts,
+                                       current_node_index))
+            t.start()
+            task_thread_list.append(t)
+
+    # waiting for all task done.
+    for task in task_thread_list:
+        task.join()
+
     cluster_info['hosts'] = hosts
     _errmessage = []
     for _hostinfo in hosts:
