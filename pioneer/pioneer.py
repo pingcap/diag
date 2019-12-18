@@ -461,7 +461,7 @@ def hostinfo(inv):
                 raise RuntimeError()
 
             t = threading.Thread(target=run_task,
-                                 args=(_ip, _deploy_dir, _group, _inv,
+                                 args=(_ip, _deploy_dir, _group, inv,
                                        server_group, hosts,
                                        current_node_index))
             t.start()
