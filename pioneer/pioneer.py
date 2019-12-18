@@ -17,7 +17,8 @@ from ansible.vars.manager import VariableManager
 
 HINT_CHECK_DICT = {
     "lsof -v": "`lsof` not exists on your machine, please install it",
-    "netstat --version": "`netstat` not exists on your machine, please install it",
+    "netstat --version":
+    "`netstat` not exists on your machine, please install it",
     "ntpq --version": "`netq` not exists on your machine, please install it"
 }
 
@@ -40,7 +41,13 @@ class ResultCallback(CallbackBase):
 
 
 class AnsibleApi(object):
+    """
+    * Warning: This should be run only one time.
+    """
     def __init__(self, inv):
+        # used is a flag for if this method is used.
+        # If it's used, the AnsibleApi will raise an exception.
+        self.used = False
         self.inv = inv
         self.Options = namedtuple('Options', [
             'connection', 'remote_user', 'ask_sudo_pass', 'verbosity',
@@ -76,6 +83,11 @@ class AnsibleApi(object):
                                                 inventory=self.inventory)
 
     def runansible(self, host_list, task_list):
+        if self.used:
+            raise RuntimeError(
+                "method `runansible is used, please not call it again`")
+        else:
+            self.used = True
 
         play_source = dict(name="Ansible Play",
                            hosts=host_list,
@@ -121,6 +133,11 @@ class AnsibleApi(object):
 
 
 def check(result):
+    """
+    check the result object return in `runansible`.
+    :param result:
+    :return: 'failed'/'unreachable'/'success'
+    """
     if result['failed']:
         return 'failed'
     elif result['unreachable']:
@@ -148,8 +165,132 @@ def check_exists_phase(required_commands, ip, inv_path):
     return hints
 
 
+class TaskFactory:
+    @staticmethod
+    def whoami():
+        return [dict(action=dict(module='shell', args='whoami'), become=True)]
+
+    @staticmethod
+    def ping():
+        return [dict(action=dict(module='ping'))]
+
+    @staticmethod
+    def run_command(command):
+        return [dict(action=dict(module='shell', args=command))]
+
+
+def get_node_info(ip, deploy_dir, name, inv):
+    _host = [ip]
+    if name == 'pd':
+        _command = 'cat ' + deploy_dir + '/scripts/run_pd.sh | grep "\--client-urls"'
+        _task = [dict(action=dict(module='shell', args=_command))]
+        runAnsible = AnsibleApi(inv)
+        _info = json.loads(runAnsible.runansible(_host, _task))
+        del runAnsible
+        ok = check(_info)
+        if ok == 'success':
+            _port = re.search("([0-9]+)\"",
+                              _info['success'][ip]['stdout_lines'][0]).group(1)
+            return True, 'get_info', [_port, name]
+        else:
+            return False, 'get_info', [_info[ok], name]
+    elif name == 'tidb':
+        _command = 'cat ' + deploy_dir + '/scripts/run_tidb.sh | grep -E "\-P|--status"'
+        _task = [dict(action=dict(module='shell', args=_command))]
+        runAnsible = AnsibleApi(inv)
+        _info = json.loads(runAnsible.runansible(_host, _task))
+        del runAnsible
+        ok = check(_info)
+        if ok == 'success':
+            _port = re.search("([0-9]+)",
+                              _info['success'][ip]['stdout_lines'][0]).group(1)
+            _status_port = re.search(
+                "([0-9]+)\"", _info['success'][ip]['stdout_lines'][1]).group(1)
+            return True, 'get_info', [[_port, _status_port], name]
+        else:
+            return False, 'get_info', [_info[ok], name]
+    elif name == 'tikv':
+        _command = 'cat ' + deploy_dir + '/scripts/run_tikv.sh | grep "\--addr"'
+        _task = [dict(action=dict(module='shell', args=_command))]
+        runAnsible = AnsibleApi(inv)
+        _info = json.loads(runAnsible.runansible(_host, _task))
+        del runAnsible
+        ok = check(_info)
+        if ok == 'success':
+            _port = re.search("([0-9]+)\"",
+                              _info['success'][ip]['stdout_lines'][0]).group(1)
+            return True, 'get_info', [_port, name]
+        else:
+            return False, 'get_info', [_info[ok], name]
+    elif name == 'grafana':
+        _command = 'cat ' + deploy_dir + '/opt/grafana/conf/grafana.ini | grep "^http_port"'
+        _task = [dict(action=dict(module='shell', args=_command))]
+        runAnsible = AnsibleApi(inv)
+        _info = json.loads(runAnsible.runansible(_host, _task))
+        del runAnsible
+        ok = check(_info)
+        if ok == 'success':
+            _port = re.search("([0-9]+)",
+                              _info['success'][ip]['stdout_lines'][0]).group(1)
+            return True, 'get_info', [_port, name]
+        else:
+            return False, 'get_info', [_info[ok], name]
+    elif name == 'monitoring':
+        _check = []
+        _result = []
+        for _server in ['prometheus', 'pushgateway']:
+            _command = 'cat ' + deploy_dir + '/scripts/run_' + _server + '\.sh | grep "\--web\.listen-address"'
+            _task = [dict(action=dict(module='shell', args=_command))]
+            runAnsible = AnsibleApi(inv)
+            _info = json.loads(runAnsible.runansible(_host, _task))
+            del runAnsible
+            ok = check(_info)
+            if ok == 'success':
+                _check.append(True)
+                _result.append([
+                    re.search(
+                        "([0-9]+)\"",
+                        _info['success'][ip]['stdout_lines'][0]).group(1),
+                    _server
+                ])
+            else:
+                _check.append(False)
+                _result.append([_info[ok], _server])
+        return _check, 'get_info', _result
+    elif name == 'monitored':
+        _check = []
+        _result = []
+        for _server in ['node_exporter', 'blackbox_exporter']:
+            _command = 'cat ' + deploy_dir + '/scripts/run_' + _server + '\.sh | grep "\--web\.listen-address"'
+            _task = [dict(action=dict(module='shell', args=_command))]
+            runAnsible = AnsibleApi(inv)
+            _info = json.loads(runAnsible.runansible(_host, _task))
+            del runAnsible
+            ok = check(_info)
+            if ok == 'success':
+                _check.append(True)
+                _result.append([
+                    re.search(
+                        "([0-9]+)\"",
+                        _info['success'][ip]['stdout_lines'][0]).group(1),
+                    _server
+                ])
+            else:
+                _check.append(False)
+                _result.append([_info[ok], _server])
+        return _check, 'get_info', _result
+    else:
+        return False, 'other', name
+
+
 def hostinfo(inv):
     def check_node(ip):
+        """
+        check_node check the ip, and return the node information
+        let me see the detail info for other.
+        :param ip:
+        :return:
+        """
         _exist = False
         _dict = {}
         _connect = []
@@ -161,7 +302,7 @@ def hostinfo(inv):
                     break
 
         _sudo = False
-        _task1 = [dict(action=dict(module='ping'))]
+        _task1 = TaskFactory.ping()
         runAnsible = AnsibleApi(inv)
         _result1 = json.loads(runAnsible.runansible([ip], _task1))
         del runAnsible
@@ -174,9 +315,7 @@ def hostinfo(inv):
         else:
             _connect = [True, 'success']
 
-        _task2 = [
-            dict(action=dict(module='shell', args='whoami'), become=True)
-        ]
+        _task2 = TaskFactory.whoami()
         runAnsible = AnsibleApi(inv)
         _result2 = json.loads(runAnsible.runansible([ip], _task2))
         del runAnsible
@@ -184,114 +323,6 @@ def hostinfo(inv):
             _sudo = True
 
         return _exist, _sudo, _connect
-
-    def get_node_info(ip, deploy_dir, name):
-        _host = [ip]
-        if name == 'pd':
-            _command = 'cat ' + deploy_dir + '/scripts/run_pd.sh | grep "\--client-urls"'
-            _task = [dict(action=dict(module='shell', args=_command))]
-            runAnsible = AnsibleApi(inv)
-            _info = json.loads(runAnsible.runansible(_host, _task))
-            del runAnsible
-            ok = check(_info)
-            if ok == 'success':
-                _port = re.search(
-                    "([0-9]+)\"",
-                    _info['success'][ip]['stdout_lines'][0]).group(1)
-                return True, 'get_info', [_port, name]
-            else:
-                return False, 'get_info', [_info[ok], name]
-        elif name == 'tidb':
-            _command = 'cat ' + deploy_dir + '/scripts/run_tidb.sh | grep -E "\-P|--status"'
-            _task = [dict(action=dict(module='shell', args=_command))]
-            runAnsible = AnsibleApi(inv)
-            _info = json.loads(runAnsible.runansible(_host, _task))
-            del runAnsible
-            ok = check(_info)
-            if ok == 'success':
-                _port = re.search(
-                    "([0-9]+)",
-                    _info['success'][ip]['stdout_lines'][0]).group(1)
-                _status_port = re.search(
-                    "([0-9]+)\"",
-                    _info['success'][ip]['stdout_lines'][1]).group(1)
-                return True, 'get_info', [[_port, _status_port], name]
-            else:
-                return False, 'get_info', [_info[ok], name]
-        elif name == 'tikv':
-            _command = 'cat ' + deploy_dir + '/scripts/run_tikv.sh | grep "\--addr"'
-            _task = [dict(action=dict(module='shell', args=_command))]
-            runAnsible = AnsibleApi(inv)
-            _info = json.loads(runAnsible.runansible(_host, _task))
-            del runAnsible
-            ok = check(_info)
-            if ok == 'success':
-                _port = re.search(
-                    "([0-9]+)\"",
-                    _info['success'][ip]['stdout_lines'][0]).group(1)
-                return True, 'get_info', [_port, name]
-            else:
-                return False, 'get_info', [_info[ok], name]
-        elif name == 'grafana':
-            _command = 'cat ' + deploy_dir + '/opt/grafana/conf/grafana.ini | grep "^http_port"'
-            _task = [dict(action=dict(module='shell', args=_command))]
-            runAnsible = AnsibleApi(inv)
-            _info = json.loads(runAnsible.runansible(_host, _task))
-            del runAnsible
-            ok = check(_info)
-            if ok == 'success':
-                _port = re.search(
-                    "([0-9]+)",
-                    _info['success'][ip]['stdout_lines'][0]).group(1)
-                return True, 'get_info', [_port, name]
-            else:
-                return False, 'get_info', [_info[ok], name]
-        elif name == 'monitoring':
-            _check = []
-            _result = []
-            for _server in ['prometheus', 'pushgateway']:
-                _command = 'cat ' + deploy_dir + '/scripts/run_' + _server + '\.sh | grep "\--web\.listen-address"'
-                _task = [dict(action=dict(module='shell', args=_command))]
-                runAnsible = AnsibleApi(inv)
-                _info = json.loads(runAnsible.runansible(_host, _task))
-                del runAnsible
-                ok = check(_info)
-                if ok == 'success':
-                    _check.append(True)
-                    _result.append([
-                        re.search(
-                            "([0-9]+)\"",
-                            _info['success'][ip]['stdout_lines'][0]).group(1),
-                        _server
-                    ])
-                else:
-                    _check.append(False)
-                    _result.append([_info[ok], _server])
-            return _check, 'get_info', _result
-        elif name == 'monitored':
-            _check = []
-            _result = []
-            for _server in ['node_exporter', 'blackbox_exporter']:
-                _command = 'cat ' + deploy_dir + '/scripts/run_' + _server + '\.sh | grep "\--web\.listen-address"'
-                _task = [dict(action=dict(module='shell', args=_command))]
-                runAnsible = AnsibleApi(inv)
-                _info = json.loads(runAnsible.runansible(_host, _task))
-                del runAnsible
-                ok = check(_info)
-                if ok == 'success':
-                    _check.append(True)
-                    _result.append([
-                        re.search(
-                            "([0-9]+)\"",
-                            _info['success'][ip]['stdout_lines'][0]).group(1),
-                        _server
-                    ])
-                else:
-                    _check.append(False)
-                    _result.append([_info[ok], _server])
-            return _check, 'get_info', _result
-        else:
-            return False, 'other', name
 
     loader = DataLoader()
     _inv = InventoryManager(loader=loader, sources=[inv])
@@ -357,7 +388,7 @@ def hostinfo(inv):
                 hosts.append(_host_dict)
 
             _status, _type, _info = get_node_info(_ip, _deploy_dir,
-                                                  server_group[_group])
+                                                  server_group[_group], inv)
             for _index_id in range(len(hosts)):
                 if hosts[_index_id]['ip'] == _ip:
                     if hosts[_index_id]['status'] == 'exception':
