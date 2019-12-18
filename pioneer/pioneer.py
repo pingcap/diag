@@ -5,6 +5,8 @@ import re
 import sys
 import json
 import shutil
+import threading
+import thread
 from collections import namedtuple
 
 import ansible.constants as C
@@ -299,7 +301,48 @@ def check_node_wrapper(func):
         ans = func(ip)
         check_node_cache[ip] = ans
         return ans
+
     return inner_wrapper
+
+
+def run_task(ip, deploy_dir, group, inv, server_group, hosts, target_index):
+    _status, _type, _info = get_node_info(ip, deploy_dir, server_group[group],
+                                          inv)
+
+    if hosts[target_index]['status'] == 'exception':
+        return
+    if group != 'monitoring_servers' and group != 'monitored_servers':
+        _dict1 = {}
+        if not _status and _type == 'get_info':
+            _dict1['name'] = _info[1]
+            _dict1['status'] = 'exception'
+            _dict1['message'] = _info[0][_host]
+            _dict1['deploy_dir'] = _deploy_dir
+        elif _status and _type == 'get_info':
+            _dict1['name'] = _info[1]
+            _dict1['status'] = 'success'
+            if group == 'tidb_servers':
+                _dict1['port'] = _info[0][0]
+                _dict1['status_port'] = _info[0][1]
+            else:
+                _dict1['port'] = _info[0]
+            _dict1['deploy_dir'] = deploy_dir
+        if _dict1:
+            hosts[target_index]['components'].append(_dict1)
+    else:
+        for _indexid in range(2):
+            _dict2 = {}
+            if not _status[_indexid]:
+                _dict2['name'] = _info[_indexid][1]
+                _dict2['status'] = 'exception'
+                _dict2['message'] = _info[_indexid][0][_host]
+                _dict2['deploy_dir'] = deploy_dir
+            else:
+                _dict2['name'] = _info[_indexid][1]
+                _dict2['status'] = 'success'
+                _dict2['port'] = _info[_indexid][0]
+                _dict2['deploy_dir'] = deploy_dir
+            hosts[target_index]['components'].append(_dict2)
 
 
 def hostinfo(inv):
@@ -327,8 +370,7 @@ def hostinfo(inv):
         del runAnsible
         if _result1['unreachable']:
             _connect = [
-                False, 'unreachable',
-                'Failed to connect to the host via ssh'
+                False, 'unreachable', 'Failed to connect to the host via ssh'
             ]
         elif _result1['failed']:
             _connect = [False, 'failed', _result1['failed'][ip]]
@@ -371,6 +413,9 @@ def hostinfo(inv):
 
     _all_group = _inv.get_groups_dict()
     _all_group.pop('all')
+    # This is a list for storing task threads.
+    # It will concurrently got the information.
+    task_thread_list = []
     for _group, _host_list in _all_group.iteritems():
         if not _host_list:
             continue
@@ -389,8 +434,9 @@ def hostinfo(inv):
                 (_hostvars['ansible_ssh_host'] if 'ansible_ssh_host' in _hostvars else
                  _hostvars['inventory_hostname'])
             _ip_exist, _enable_sudo, _enable_connect = check_node(_ip)
+            old_len_hosts = len(hosts)
             if not _ip_exist:
-                _host_dict = {}
+                _host_dict = dict()
                 _host_dict['ip'] = _ip
                 _host_dict['user'] = _ansible_user
                 _host_dict['components'] = []
@@ -409,44 +455,22 @@ def hostinfo(inv):
                     _host_dict['message'] = _enable_connect[2]
                 hosts.append(_host_dict)
 
-            _status, _type, _info = get_node_info(_ip, _deploy_dir,
-                                                  server_group[_group], inv)
-            for _index_id in range(len(hosts)):
+            current_node_index = None
+            for _index_id in range(old_len_hosts, len(hosts)):
                 if hosts[_index_id]['ip'] == _ip:
-                    if hosts[_index_id]['status'] == 'exception':
-                        break
-                    if _group != 'monitoring_servers' and _group != 'monitored_servers':
-                        _dict1 = {}
-                        if not _status and _type == 'get_info':
-                            _dict1['name'] = _info[1]
-                            _dict1['status'] = 'exception'
-                            _dict1['message'] = _info[0][_host]
-                            _dict1['deploy_dir'] = _deploy_dir
-                        elif _status and _type == 'get_info':
-                            _dict1['name'] = _info[1]
-                            _dict1['status'] = 'success'
-                            if _group == 'tidb_servers':
-                                _dict1['port'] = _info[0][0]
-                                _dict1['status_port'] = _info[0][1]
-                            else:
-                                _dict1['port'] = _info[0]
-                            _dict1['deploy_dir'] = _deploy_dir
-                        if _dict1:
-                            hosts[_index_id]['components'].append(_dict1)
-                    else:
-                        for _indexid in range(2):
-                            _dict2 = {}
-                            if not _status[_indexid]:
-                                _dict2['name'] = _info[_indexid][1]
-                                _dict2['status'] = 'exception'
-                                _dict2['message'] = _info[_indexid][0][_host]
-                                _dict2['deploy_dir'] = _deploy_dir
-                            else:
-                                _dict2['name'] = _info[_indexid][1]
-                                _dict2['status'] = 'success'
-                                _dict2['port'] = _info[_indexid][0]
-                                _dict2['deploy_dir'] = _deploy_dir
-                            hosts[_index_id]['components'].append(_dict2)
+                    current_node_index = _index_id
+            if current_node_index is None:
+                raise RuntimeError()
+            task_thread_list.append(
+                threading.Thread(target=run_task,
+                                 args=(_ip, _deploy_dir, _group, _inv,
+                                       server_group, hosts,
+                                       current_node_index)))
+
+    # waiting for all task done.
+    for task in task_thread_list:
+        task.join()
+
     cluster_info['hosts'] = hosts
     _errmessage = []
     for _hostinfo in hosts:
