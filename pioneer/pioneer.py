@@ -289,17 +289,20 @@ def get_node_info(ip, deploy_dir, name, inv):
 
 
 def check_node_wrapper(func):
-    def inner_wrapper(ip):
-        check_node_cache = dict()
+    cache_lock = threading.Lock
+    check_node_cache = dict()
 
-        if ip in check_node_cache.keys():
-            ans = check_node_cache[ip]
-            # the answer must exists
-            ans[0] = True
+    # TODO: implement a better cache strategy.
+    def inner_wrapper(ip):
+        with cache_lock:
+            if ip in check_node_cache.keys():
+                ans = check_node_cache[ip]
+                # the answer must exists
+                ans[0] = True
+                return ans
+            ans = func(ip)
+            check_node_cache[ip] = ans
             return ans
-        ans = func(ip)
-        check_node_cache[ip] = ans
-        return ans
 
     return inner_wrapper
 
