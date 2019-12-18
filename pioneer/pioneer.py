@@ -477,14 +477,16 @@ def hostinfo(inv):
                 (_hostvars['ansible_ssh_host'] if 'ansible_ssh_host' in _hostvars else
                  _hostvars['inventory_hostname'])
 
-            cur_task = lambda: check_node_task(check_node_func=check_node,
-                                               node_ip=_ip,
-                                               ansible_user=_ansible_user,
-                                               inv=inv,
-                                               deploy_dir=_deploy_dir,
-                                               group=_group,
-                                               server_group=server_group,
-                                               hosts=hosts)
+            def cur_task():
+                check_node_task(check_node_func=check_node,
+                                node_ip=_ip,
+                                ansible_user=_ansible_user,
+                                inv=inv,
+                                deploy_dir=_deploy_dir,
+                                group=_group,
+                                server_group=server_group,
+                                hosts=hosts)
+
             t = threading.Thread(target=cur_task)
             t.start()
             task_thread_list.append(t)
