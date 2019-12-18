@@ -166,6 +166,10 @@ def check_exists_phase(required_commands, ip, inv_path):
 
 
 class TaskFactory:
+    def __init__(self):
+        # The class should not have an instance.
+        raise RuntimeError("Please not create instance for TaskFactory.")
+
     @staticmethod
     def whoami():
         return [dict(action=dict(module='shell', args='whoami'), become=True)]
@@ -283,8 +287,20 @@ def get_node_info(ip, deploy_dir, name, inv):
         return False, 'other', name
 
 
+def check_node_wrapper(func):
+    def inner_wrapper(ip):
+        check_node_cache = dict()
+
+        if ip in check_node_cache.keys():
+            return check_node_cache[ip]
+        ans = func(ip)
+        check_node_cache[ip] = ans
+        return ans
+    return inner_wrapper
+
+
 def hostinfo(inv):
-    def check_node(ip):
+    def check_node_impl(ip):
         """
         check_node check the ip, and return the node information
         let me see the detail info for other.
@@ -308,7 +324,8 @@ def hostinfo(inv):
         del runAnsible
         if _result1['unreachable']:
             _connect = [
-                False, 'unreachable', 'Failed to connect to the host via ssh'
+                False, 'unreachable',
+                'Failed to connect to the host via ssh'
             ]
         elif _result1['failed']:
             _connect = [False, 'failed', _result1['failed'][ip]]
@@ -323,6 +340,8 @@ def hostinfo(inv):
             _sudo = True
 
         return _exist, _sudo, _connect
+
+    check_node = check_node_wrapper(check_node_impl)
 
     loader = DataLoader()
     _inv = InventoryManager(loader=loader, sources=[inv])
