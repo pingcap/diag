@@ -6,7 +6,6 @@ import sys
 import json
 import shutil
 import threading
-import thread
 from collections import namedtuple
 
 import ansible.constants as C
@@ -434,7 +433,6 @@ def hostinfo(inv):
                 (_hostvars['ansible_ssh_host'] if 'ansible_ssh_host' in _hostvars else
                  _hostvars['inventory_hostname'])
             _ip_exist, _enable_sudo, _enable_connect = check_node(_ip)
-            old_len_hosts = len(hosts)
             if not _ip_exist:
                 _host_dict = dict()
                 _host_dict['ip'] = _ip
@@ -456,16 +454,18 @@ def hostinfo(inv):
                 hosts.append(_host_dict)
 
             current_node_index = None
-            for _index_id in range(old_len_hosts, len(hosts)):
+            for _index_id in range(len(hosts)):
                 if hosts[_index_id]['ip'] == _ip:
                     current_node_index = _index_id
             if current_node_index is None:
                 raise RuntimeError()
-            task_thread_list.append(
-                threading.Thread(target=run_task,
+
+            t = threading.Thread(target=run_task,
                                  args=(_ip, _deploy_dir, _group, _inv,
                                        server_group, hosts,
-                                       current_node_index)))
+                                       current_node_index))
+            t.start()
+            task_thread_list.append(t)
 
     # waiting for all task done.
     for task in task_thread_list:
