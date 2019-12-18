@@ -292,7 +292,10 @@ def check_node_wrapper(func):
         check_node_cache = dict()
 
         if ip in check_node_cache.keys():
-            return check_node_cache[ip]
+            ans = check_node_cache[ip]
+            # the answer must exists
+            ans[0] = True
+            return ans
         ans = func(ip)
         check_node_cache[ip] = ans
         return ans
