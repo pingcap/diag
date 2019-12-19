@@ -396,11 +396,11 @@ def hostinfo(inv):
 
         return _exist, _sudo, _connect
 
-    check_node = check_node_wrapper(check_node_impl)
+    check_node = check_node_impl
 
     loader = DataLoader()
-    _inv = InventoryManager(loader=loader, sources=[inv])
-    _vars = VariableManager(loader=loader, inventory=_inv)
+    inv_manager = InventoryManager(loader=loader, sources=[inv])
+    vars_manager = VariableManager(loader=loader, inventory=inv_manager)
     server_group = {
         'pd_servers': 'pd',
         'tidb_servers': 'tidb',
@@ -421,7 +421,7 @@ def hostinfo(inv):
     cluster_info = {}
     hosts = []
 
-    _all_group = _inv.get_groups_dict()
+    _all_group = inv_manager.get_groups_dict()
     _all_group.pop('all')
     # This is a list for storing task threads.
     # It will concurrently got the information.
@@ -433,7 +433,7 @@ def hostinfo(inv):
         if not _host_list:
             continue
         for _host in _host_list:
-            _hostvars = _vars.get_vars(host=_inv.get_host(
+            _hostvars = vars_manager.get_vars(host=inv_manager.get_host(
                 hostname=str(_host)))  # get all variables for one node
             _deploy_dir = _hostvars['deploy_dir']
             _cluster_name = _hostvars['cluster_name']
@@ -460,7 +460,7 @@ def hostinfo(inv):
                     'user': datalist[0][0],
                     'message': '',
                     'enable_sudo': enable_sudo,
-                    'hints': check_exists_phase(HINT_CHECK_DICT, node_map,
+                    'hints': check_exists_phase(HINT_CHECK_DICT, ip,
                                                 inv),
                 }
             else:
