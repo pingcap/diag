@@ -297,22 +297,6 @@ def get_node_info(ip, deploy_dir, name, inv):
         return False, 'other', name
 
 
-# def check_node_wrapper(func):
-#     def inner_wrapper(ip):
-#         check_node_cache = dict()
-#
-#         if ip in check_node_cache.keys():
-#             ans = check_node_cache[ip]
-#             # the answer must exists
-#             ans[0] = True
-#             return ans
-#         ans = func(ip)
-#         check_node_cache[ip] = ans
-#         return ans
-#
-#     return inner_wrapper
-
-
 def run_task(ip, deploy_dir, group, inv, server_group, hosts, target_index):
     _status, _type, _info = get_node_info(ip, deploy_dir, server_group[group],
                                           inv)
@@ -459,7 +443,7 @@ def hostinfo(inv):
                     'enable_sudo':
                     enable_sudo,
                     'hints':
-                    check_exists_phase(HINT_CHECK_DICT, ip, inv),
+                    check_exists_phase(HINT_CHECK_DICT, node_ip, inv),
                     'status':
                     'success',
                 })
