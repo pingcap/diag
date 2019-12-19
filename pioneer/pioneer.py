@@ -142,10 +142,14 @@ class AnsibleApi(object):
         else:
             self.used = True
 
+        max_try, tried = 5, 0
         while True:
             try:
+                tried += 1
                 return self._runansible_impl(host_list, task_list)
             except (KeyError, TypeError):
+                if tried >= max_try:
+                    raise
                 continue
 
 
