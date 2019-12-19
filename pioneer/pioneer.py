@@ -460,8 +460,8 @@ def hostinfo(inv):
                     'user': datalist[0][0],
                     'message': '',
                     'enable_sudo': enable_sudo,
-                    'hints': check_exists_phase(HINT_CHECK_DICT, ip,
-                                                inv),
+                    'hints': check_exists_phase(HINT_CHECK_DICT, ip, inv),
+                    'status': 'success',
                 }
             else:
                 host_dict = {
@@ -486,8 +486,7 @@ def hostinfo(inv):
                 tasks_list2.append(it)
             _ = [thr.join() for thr in tasks_list2]
 
-        t = threading.Thread(target=inner_func,
-                             args=(ip, data))
+        t = threading.Thread(target=inner_func, args=(ip, data))
         t.start()
         task_thread_list.append(t)
 
