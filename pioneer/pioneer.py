@@ -92,13 +92,7 @@ class AnsibleApi(object):
         self.variable_manager = VariableManager(loader=self.loader,
                                                 inventory=self.inventory)
 
-    def runansible(self, host_list, task_list):
-        if self.used:
-            raise RuntimeError(
-                "method `runansible is used, please not call it again`")
-        else:
-            self.used = True
-
+    def _runansible_impl(self, host_list, task_list):
         play_source = dict(name="Ansible Play",
                            hosts=host_list,
                            gather_facts='no',
@@ -140,6 +134,19 @@ class AnsibleApi(object):
             results_raw['unreachable'][host] = result._result['msg']
 
         return json.dumps(results_raw, indent=4)
+
+    def runansible(self, host_list, task_list):
+        if self.used:
+            raise RuntimeError(
+                "method `runansible is used, please not call it again`")
+        else:
+            self.used = True
+
+        while True:
+            try:
+                return self._runansible_impl(host_list, task_list)
+            except (KeyError, TypeError):
+                continue
 
 
 def check(result):
