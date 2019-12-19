@@ -454,20 +454,23 @@ def hostinfo(inv):
         def inner_func(node_ip, datalist):
             ip_exist, enable_sudo, enable_connect = check_node(node_ip)
             assert ip_exist is False
+            host_dict = {
+                'ip': node_ip,
+                'user': datalist[0][0],
+                'components': [],
+            }
             if enable_connect[0]:
-                host_dict = {
-                    'ip': node_ip,
-                    'user': datalist[0][0],
+                host_dict.update({
                     'message': '',
                     'enable_sudo': enable_sudo,
                     'hints': check_exists_phase(HINT_CHECK_DICT, ip, inv),
                     'status': 'success',
-                }
+                })
             else:
-                host_dict = {
+                host_dict.update({
                     'status': 'exception',
                     'message': enable_connect[2]
-                }
+                })
             hosts.append(host_dict)
 
             current_node_index = None
