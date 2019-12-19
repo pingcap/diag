@@ -355,47 +355,40 @@ def run_task(ip, deploy_dir, group, inv, server_group, hosts, target_index):
             hosts[target_index]['components'].append(_dict2)
 
 
+def check_node_impl(ip, inv):
+    """
+    check_node check the ip, and return the node information
+    let me see the detail info for other.
+    :param ip:
+    :return:
+    """
+    _exist = False
+    _dict = {}
+    _connect = []
+
+    _sudo = False
+    _task1 = TaskFactory.ping()
+    run = AnsibleApi(inv)
+    _result1 = json.loads(run.runansible([ip], _task1))
+    if _result1['unreachable']:
+        _connect = [
+            False, 'unreachable', 'Failed to connect to the host via ssh'
+        ]
+    elif _result1['failed']:
+        _connect = [False, 'failed', _result1['failed'][ip]]
+    else:
+        _connect = [True, 'success']
+
+    _task2 = TaskFactory.whoami()
+    run = AnsibleApi(inv)
+    _result2 = json.loads(run.runansible([ip], _task2))
+    if _result2['success']:
+        _sudo = True
+
+    return _exist, _sudo, _connect
+
+
 def hostinfo(inv):
-    def check_node_impl(ip):
-        """
-        check_node check the ip, and return the node information
-        let me see the detail info for other.
-        :param ip:
-        :return:
-        """
-        _exist = False
-        _dict = {}
-        _connect = []
-
-        if hosts:
-            for _info in hosts:
-                if _ip in _info.itervalues():
-                    _exist = True
-                    break
-
-        _sudo = False
-        _task1 = TaskFactory.ping()
-        runAnsible = AnsibleApi(inv)
-        _result1 = json.loads(runAnsible.runansible([ip], _task1))
-        del runAnsible
-        if _result1['unreachable']:
-            _connect = [
-                False, 'unreachable', 'Failed to connect to the host via ssh'
-            ]
-        elif _result1['failed']:
-            _connect = [False, 'failed', _result1['failed'][ip]]
-        else:
-            _connect = [True, 'success']
-
-        _task2 = TaskFactory.whoami()
-        runAnsible = AnsibleApi(inv)
-        _result2 = json.loads(runAnsible.runansible([ip], _task2))
-        del runAnsible
-        if _result2['success']:
-            _sudo = True
-
-        return _exist, _sudo, _connect
-
     check_node = check_node_impl
 
     loader = DataLoader()
@@ -452,7 +445,7 @@ def hostinfo(inv):
     for ip, data in node_map.iteritems():
 
         def inner_func(node_ip, datalist):
-            ip_exist, enable_sudo, enable_connect = check_node(node_ip)
+            ip_exist, enable_sudo, enable_connect = check_node(node_ip, inv)
             assert ip_exist is False
             host_dict = {
                 'ip': node_ip,
@@ -461,10 +454,14 @@ def hostinfo(inv):
             }
             if enable_connect[0]:
                 host_dict.update({
-                    'message': '',
-                    'enable_sudo': enable_sudo,
-                    'hints': check_exists_phase(HINT_CHECK_DICT, ip, inv),
-                    'status': 'success',
+                    'message':
+                    '',
+                    'enable_sudo':
+                    enable_sudo,
+                    'hints':
+                    check_exists_phase(HINT_CHECK_DICT, ip, inv),
+                    'status':
+                    'success',
                 })
             else:
                 host_dict.update({
