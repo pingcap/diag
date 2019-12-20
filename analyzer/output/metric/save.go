@@ -104,7 +104,7 @@ func (t *saveMetricTask) initInfluxdbClient() (influxdb.Client, error) {
 		return nil, err
 	}
 
-	resp, err := cli.Query(influxdb.NewQuery("CREATE database "+INFLUX_DB, "", ""))
+	resp, err := cli.Query(influxdb.NewQuery(fmt.Sprintf("CREATE DATABASE %s WITH DURATION 30d", INFLUX_DB), "", ""))
 	if err != nil {
 		cli.Close()
 		return nil, err
