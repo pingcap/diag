@@ -444,7 +444,7 @@ def inner_func_wrapper(tup):
 
 
 # global process pool
-# GLOBAL_POOL = Pool(4)
+GLOBAL_POOL = Pool(4)
 
 
 def hostinfo(inv):
@@ -485,8 +485,12 @@ def hostinfo(inv):
     # to_inserts = GLOBAL_POOL.map(inner_func_wrapper,
     #                              [(ip, datalist, inv)
     #                               for ip, datalist in node_map.iteritems()])
+
+    res_list = []
     for ip, datalist in node_map.iteritems():
-        hosts.append(inner_func(ip, datalist, inv))
+        res_list.append(GLOBAL_POOL.apply_async(inner_func, args=(ip, datalist, inv)))
+    for res in res_list:
+        hosts.append(res.get())
 
     # waiting for all task done.
     # for task in task_thread_list:
