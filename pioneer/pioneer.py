@@ -5,8 +5,9 @@ import re
 import sys
 import json
 import shutil
-import threading
+from multiprocessing import Process, Pool
 from collections import namedtuple
+from collections import defaultdict
 
 import ansible.constants as C
 from ansible.playbook.play import Play
@@ -22,6 +23,14 @@ HINT_CHECK_DICT = {
     "`netstat` not exists on your machine, please install it",
     "ntpq --version": "`netq` not exists on your machine, please install it"
 }
+
+
+def lock_manager(lock):
+    lock.acquire()
+    try:
+        yield None
+    finally:
+        lock.release()
 
 
 class ResultCallback(CallbackBase):
@@ -83,13 +92,7 @@ class AnsibleApi(object):
         self.variable_manager = VariableManager(loader=self.loader,
                                                 inventory=self.inventory)
 
-    def runansible(self, host_list, task_list):
-        if self.used:
-            raise RuntimeError(
-                "method `runansible is used, please not call it again`")
-        else:
-            self.used = True
-
+    def _runansible_impl(self, host_list, task_list):
         play_source = dict(name="Ansible Play",
                            hosts=host_list,
                            gather_facts='no',
@@ -110,7 +113,7 @@ class AnsibleApi(object):
                 run_additional_callbacks=C.DEFAULT_LOAD_CALLBACK_PLUGINS,
                 run_tree=False,
             )
-            result = tqm.run(play)
+            tqm.run(play)
         finally:
             if tqm is not None:
                 tqm.cleanup()
@@ -131,6 +134,23 @@ class AnsibleApi(object):
             results_raw['unreachable'][host] = result._result['msg']
 
         return json.dumps(results_raw, indent=4)
+
+    def runansible(self, host_list, task_list):
+        if self.used:
+            raise RuntimeError(
+                "method `runansible is used, please not call it again`")
+        else:
+            self.used = True
+
+        max_try, tried = 5, 0
+        while True:
+            try:
+                tried += 1
+                return self._runansible_impl(host_list, task_list)
+            except (KeyError, TypeError):
+                if tried >= max_try:
+                    raise
+                continue
 
 
 def check(result):
@@ -288,35 +308,21 @@ def get_node_info(ip, deploy_dir, name, inv):
         return False, 'other', name
 
 
-def check_node_wrapper(func):
-    def inner_wrapper(ip):
-        check_node_cache = dict()
-
-        if ip in check_node_cache.keys():
-            ans = check_node_cache[ip]
-            # the answer must exists
-            ans[0] = True
-            return ans
-        ans = func(ip)
-        check_node_cache[ip] = ans
-        return ans
-
-    return inner_wrapper
-
-
-def run_task(ip, deploy_dir, group, inv, server_group, hosts, target_index):
+def run_task(ip, deploy_dir, group, inv, server_group, current_host):
     _status, _type, _info = get_node_info(ip, deploy_dir, server_group[group],
                                           inv)
 
-    if hosts[target_index]['status'] == 'exception':
+    if current_host['status'] == 'exception':
         return
     if group != 'monitoring_servers' and group != 'monitored_servers':
         _dict1 = {}
         if not _status and _type == 'get_info':
             _dict1['name'] = _info[1]
             _dict1['status'] = 'exception'
-            _dict1['message'] = _info[0][_host]
-            _dict1['deploy_dir'] = _deploy_dir
+            # TODO: This part is removed, please change it to right.
+            # _dict1['message'] = _info[0][_host]
+            # _dict1['message'] = _info[0][host]
+            _dict1['deploy_dir'] = deploy_dir
         elif _status and _type == 'get_info':
             _dict1['name'] = _info[1]
             _dict1['status'] = 'success'
@@ -327,7 +333,7 @@ def run_task(ip, deploy_dir, group, inv, server_group, hosts, target_index):
                 _dict1['port'] = _info[0]
             _dict1['deploy_dir'] = deploy_dir
         if _dict1:
-            hosts[target_index]['components'].append(_dict1)
+            current_host['components'].append(_dict1)
     else:
         for _indexid in range(2):
             _dict2 = {}
@@ -341,90 +347,132 @@ def run_task(ip, deploy_dir, group, inv, server_group, hosts, target_index):
                 _dict2['status'] = 'success'
                 _dict2['port'] = _info[_indexid][0]
                 _dict2['deploy_dir'] = deploy_dir
-            hosts[target_index]['components'].append(_dict2)
+            current_host['components'].append(_dict2)
+
+
+def check_node_impl(ip, inv):
+    """
+    check_node check the ip, and return the node information
+    let me see the detail info for other.
+    :param ip:
+    :return:
+    """
+    _exist = False
+    _dict = {}
+    _connect = []
+
+    _sudo = False
+    _task1 = TaskFactory.ping()
+    run = AnsibleApi(inv)
+    _result1 = json.loads(run.runansible([ip], _task1))
+    if _result1['unreachable']:
+        _connect = [
+            False, 'unreachable', 'Failed to connect to the host via ssh'
+        ]
+    elif _result1['failed']:
+        _connect = [False, 'failed', _result1['failed'][ip]]
+    else:
+        _connect = [True, 'success']
+
+    _task2 = TaskFactory.whoami()
+    run = AnsibleApi(inv)
+    _result2 = json.loads(run.runansible([ip], _task2))
+    if _result2['success']:
+        _sudo = True
+
+    return _exist, _sudo, _connect
+
+
+server_group = {
+    'pd_servers': 'pd',
+    'tidb_servers': 'tidb',
+    'tikv_servers': 'tikv',
+    'monitoring_servers': 'monitoring',
+    'monitored_servers': 'monitored',
+    'alertmanager_servers': 'alertmanager',
+    'drainer_servers': 'drainer',
+    'pump_servers': 'pump',
+    'spark_master': 'spark_master',
+    'spark_slaves': 'spark_slave',
+    'lightning_server': 'lightning',
+    'importer_server': 'importer',
+    'kafka_exporter_servers': 'kafka_exporter',
+    'grafana_servers': 'grafana'
+}
+
+
+def inner_func(node_ip, datalist, inv):
+    """
+    inner_func will capture hosts outside.
+    """
+    check_node = check_node_impl
+
+    ip_exist, enable_sudo, enable_connect = check_node(node_ip, inv)
+    assert ip_exist is False
+    host_dict = {
+        'ip': node_ip,
+        'user': datalist[0][0],
+        'components': [],
+    }
+    if enable_connect[0]:
+        host_dict.update({
+            'message':
+            '',
+            'enable_sudo':
+            enable_sudo,
+            'hints':
+            check_exists_phase(HINT_CHECK_DICT, node_ip, inv),
+            'status':
+            'success',
+        })
+    else:
+        host_dict.update({'status': 'exception', 'message': enable_connect[2]})
+    # TODO Using this after making clear the logic.
+    # GLOBAL_POOL.map(
+    #     run_task,
+    #     ((node_ip, configs[1], configs[2], inv, server_group, host_dict)
+    #      for configs in datalist))
+    for configs in datalist:
+        run_task(node_ip, configs[1], configs[2], inv, server_group, host_dict)
+
+    # now return the host_dict
+    return host_dict
+
+
+def inner_func_wrapper(tup):
+    return inner_func(tup[0], tup[1], tup[2])
+
+
+# global process pool
+# GLOBAL_POOL = Pool(4)
 
 
 def hostinfo(inv):
-    def check_node_impl(ip):
-        """
-        check_node check the ip, and return the node information
-        let me see the detail info for other.
-        :param ip:
-        :return:
-        """
-        _exist = False
-        _dict = {}
-        _connect = []
-
-        if hosts:
-            for _info in hosts:
-                if _ip in _info.itervalues():
-                    _exist = True
-                    break
-
-        _sudo = False
-        _task1 = TaskFactory.ping()
-        runAnsible = AnsibleApi(inv)
-        _result1 = json.loads(runAnsible.runansible([ip], _task1))
-        del runAnsible
-        if _result1['unreachable']:
-            _connect = [
-                False, 'unreachable', 'Failed to connect to the host via ssh'
-            ]
-        elif _result1['failed']:
-            _connect = [False, 'failed', _result1['failed'][ip]]
-        else:
-            _connect = [True, 'success']
-
-        _task2 = TaskFactory.whoami()
-        runAnsible = AnsibleApi(inv)
-        _result2 = json.loads(runAnsible.runansible([ip], _task2))
-        del runAnsible
-        if _result2['success']:
-            _sudo = True
-
-        return _exist, _sudo, _connect
-
-    check_node = check_node_wrapper(check_node_impl)
 
     loader = DataLoader()
-    _inv = InventoryManager(loader=loader, sources=[inv])
-    _vars = VariableManager(loader=loader, inventory=_inv)
-    server_group = {
-        'pd_servers': 'pd',
-        'tidb_servers': 'tidb',
-        'tikv_servers': 'tikv',
-        'monitoring_servers': 'monitoring',
-        'monitored_servers': 'monitored',
-        'alertmanager_servers': 'alertmanager',
-        'drainer_servers': 'drainer',
-        'pump_servers': 'pump',
-        'spark_master': 'spark_master',
-        'spark_slaves': 'spark_slave',
-        'lightning_server': 'lightning',
-        'importer_server': 'importer',
-        'kafka_exporter_servers': 'kafka_exporter',
-        'grafana_servers': 'grafana'
-    }
+    inv_manager = InventoryManager(loader=loader, sources=[inv])
+    vars_manager = VariableManager(loader=loader, inventory=inv_manager)
 
     cluster_info = {}
     hosts = []
 
-    _all_group = _inv.get_groups_dict()
+    _all_group = inv_manager.get_groups_dict()
     _all_group.pop('all')
-    # This is a list for storing task threads.
-    # It will concurrently got the information.
-    task_thread_list = []
+
+    # inv, server_group is global
+    # it stores a set for ip -> [(ansible_user, deploy_dir, group)]
+    node_map = defaultdict(list, dict())
     for _group, _host_list in _all_group.iteritems():
         if not _host_list:
             continue
         for _host in _host_list:
-            _hostvars = _vars.get_vars(host=_inv.get_host(
+            _hostvars = vars_manager.get_vars(host=inv_manager.get_host(
                 hostname=str(_host)))  # get all variables for one node
             _deploy_dir = _hostvars['deploy_dir']
             _cluster_name = _hostvars['cluster_name']
             _tidb_version = _hostvars['tidb_version']
             _ansible_user = _hostvars['ansible_user']
+            # init cluster info
             if 'cluster_name' not in cluster_info:
                 cluster_info['cluster_name'] = _cluster_name
             if 'tidb_version' not in cluster_info:
@@ -432,44 +480,10 @@ def hostinfo(inv):
             _ip = _hostvars['ansible_host'] if 'ansible_host' in _hostvars else \
                 (_hostvars['ansible_ssh_host'] if 'ansible_ssh_host' in _hostvars else
                  _hostvars['inventory_hostname'])
-            _ip_exist, _enable_sudo, _enable_connect = check_node(_ip)
-            if not _ip_exist:
-                _host_dict = dict()
-                _host_dict['ip'] = _ip
-                _host_dict['user'] = _ansible_user
-                _host_dict['components'] = []
-                if _enable_connect[0]:
-                    _host_dict['status'] = 'success'
-                    _host_dict['message'] = ''
-                    _host_dict['enable_sudo'] = _enable_sudo
-                    _host_dict['hints'] = check_exists_phase(
-                        HINT_CHECK_DICT, _ip, inv)
-                    if len(_host_dict['hints']) != 0:
-                        _host_dict['message'] = ','.join(_host_dict['hints'])
-                        _host_dict['status'] = 'exception'
-                    del _host_dict['hints']
-                else:
-                    _host_dict['status'] = 'exception'
-                    _host_dict['message'] = _enable_connect[2]
-                hosts.append(_host_dict)
+            node_map[_ip].append((_ansible_user, _deploy_dir, _group))
 
-            current_node_index = None
-            for _index_id in range(len(hosts)):
-                if hosts[_index_id]['ip'] == _ip:
-                    current_node_index = _index_id
-            if current_node_index is None:
-                raise RuntimeError()
-
-            t = threading.Thread(target=run_task,
-                                 args=(_ip, _deploy_dir, _group, inv,
-                                       server_group, hosts,
-                                       current_node_index))
-            t.start()
-            task_thread_list.append(t)
-
-    # waiting for all task done.
-    for task in task_thread_list:
-        task.join()
+    for ip, datalist in node_map.iteritems():
+        hosts.append(inner_func(ip, datalist, inv))
 
     cluster_info['hosts'] = hosts
     _errmessage = []
