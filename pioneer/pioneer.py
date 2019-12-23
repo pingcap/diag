@@ -402,9 +402,6 @@ server_group = {
     'grafana_servers': 'grafana'
 }
 
-# global process pool
-GLOBAL_POOL = Pool(4)
-
 
 def inner_func(node_ip, datalist, inv):
     """
@@ -442,6 +439,10 @@ def inner_func(node_ip, datalist, inv):
 
     # now return the host_dict
     return host_dict
+
+
+# global process pool
+GLOBAL_POOL = Pool(4)
 
 
 def hostinfo(inv):
@@ -482,7 +483,8 @@ def hostinfo(inv):
             node_map[_ip].append((_ansible_user, _deploy_dir, _group))
 
     to_inserts = GLOBAL_POOL.map(inner_func,
-                                 ((ip, datalist, inv) for ip, datalist in node_map.iteritems()))
+                                 [(ip, datalist, inv)
+                                  for ip, datalist in node_map.iteritems()])
 
     for to_insert in to_inserts:
         hosts.append(to_insert)
