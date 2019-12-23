@@ -460,9 +460,7 @@ def hostinfo(inv):
 
     _all_group = inv_manager.get_groups_dict()
     _all_group.pop('all')
-    # This is a list for storing task threads.
-    # It will concurrently got the information.
-    task_thread_list = []
+
     # inv, server_group is global
     # it stores a set for ip -> [(ansible_user, deploy_dir, group)]
     node_map = defaultdict(list, dict())
@@ -486,12 +484,11 @@ def hostinfo(inv):
                  _hostvars['inventory_hostname'])
             node_map[_ip].append((_ansible_user, _deploy_dir, _group))
 
-    to_inserts = GLOBAL_POOL.map(inner_func,
-                                 [(ip, datalist, inv)
-                                  for ip, datalist in node_map.iteritems()])
-
-    for to_insert in to_inserts:
-        hosts.append(to_insert)
+    # to_inserts = GLOBAL_POOL.map(inner_func_wrapper,
+    #                              [(ip, datalist, inv)
+    #                               for ip, datalist in node_map.iteritems()])
+    for ip, datalist in node_map.iteritems():
+        hosts.append(inner_func(ip, datalist, inv))
 
     # waiting for all task done.
     # for task in task_thread_list:
@@ -519,14 +516,7 @@ def hostinfo(inv):
     return cluster_info
 
 
-def handler(signum, frame):
-    GLOBAL_POOL.terminate()
-    exit(1)
-
-
 if __name__ == '__main__':
-    signal.signal(signal.SIGKILL, handler)
-    signal.signal(signal.SIGINT, handler)
     inventory = sys.argv[1]
     result = hostinfo(inventory)
     print json.dumps(result, indent=4)
