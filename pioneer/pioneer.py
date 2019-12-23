@@ -6,6 +6,7 @@ import sys
 import json
 import shutil
 import threading
+import signal
 from multiprocessing import Process, Pool
 from collections import namedtuple
 from collections import defaultdict
@@ -481,7 +482,7 @@ def hostinfo(inv):
             node_map[_ip].append((_ansible_user, _deploy_dir, _group))
 
     to_inserts = GLOBAL_POOL.map(inner_func,
-                                 ((ip, datalist) for ip, datalist in node_map))
+                                 ((ip, datalist, inv) for ip, datalist in node_map.iteritems()))
 
     for to_insert in to_inserts:
         hosts.append(to_insert)
@@ -512,7 +513,14 @@ def hostinfo(inv):
     return cluster_info
 
 
+def handler(signum, frame):
+    GLOBAL_POOL.terminate()
+    exit(1)
+
+
 if __name__ == '__main__':
+    signal.signal(signal.SIGKILL, handler)
+    signal.signal(signal.SIGINT, handler)
     inventory = sys.argv[1]
     result = hostinfo(inventory)
     print json.dumps(result, indent=4)
