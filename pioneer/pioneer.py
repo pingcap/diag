@@ -5,8 +5,6 @@ import re
 import sys
 import json
 import shutil
-import threading
-import signal
 from multiprocessing import Process, Pool
 from collections import namedtuple
 from collections import defaultdict
@@ -446,7 +444,7 @@ def inner_func_wrapper(tup):
 
 
 # global process pool
-GLOBAL_POOL = Pool(4)
+# GLOBAL_POOL = Pool(4)
 
 
 def hostinfo(inv):
