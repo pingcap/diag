@@ -113,7 +113,7 @@ class AnsibleApi(object):
                 run_additional_callbacks=C.DEFAULT_LOAD_CALLBACK_PLUGINS,
                 run_tree=False,
             )
-            result = tqm.run(play)
+            tqm.run(play)
         finally:
             if tqm is not None:
                 tqm.cleanup()
@@ -471,23 +471,26 @@ def hostinfo(inv):
                     current_node_index = index_id
             if current_node_index is None:
                 raise RuntimeError()
-            tasks_list2 = []
+            # tasks_list2 = []
             for configs in datalist:
-                it = threading.Thread(target=run_task,
-                                      args=(node_ip, configs[1], configs[2],
-                                            inv, server_group, hosts,
-                                            current_node_index))
-                it.start()
-                tasks_list2.append(it)
-            _ = [thr.join() for thr in tasks_list2]
+                run_task(node_ip, configs[1], configs[2], inv, server_group,
+                         hosts, current_node_index)
+                # it = threading.Thread(target=run_task,
+                #                       args=(node_ip, configs[1], configs[2],
+                #                             inv, server_group, hosts,
+                #                             current_node_index))
+                # it.start()
+                # tasks_list2.append(it)
+            # _ = [thr.join() for thr in tasks_list2]
 
-        t = threading.Thread(target=inner_func, args=(ip, data))
-        t.start()
-        task_thread_list.append(t)
+        inner_func(ip, data)
+        # t = threading.Thread(target=inner_func, args=(ip, data))
+        # t.start()
+        # task_thread_list.append(t)
 
     # waiting for all task done.
-    for task in task_thread_list:
-        task.join()
+    # for task in task_thread_list:
+    #     task.join()
 
     cluster_info['hosts'] = hosts
     _errmessage = []
