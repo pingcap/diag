@@ -441,6 +441,10 @@ def inner_func(node_ip, datalist, inv):
     return host_dict
 
 
+def inner_func_wrapper(tup):
+    return inner_func(tup[0], tup[1], tup[2])
+
+
 # global process pool
 GLOBAL_POOL = Pool(4)
 
