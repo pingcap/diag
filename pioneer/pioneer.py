@@ -6,6 +6,7 @@ import sys
 import json
 import shutil
 import threading
+from multiprocessing import Process, Pool
 from collections import namedtuple
 from collections import defaultdict
 
@@ -308,11 +309,11 @@ def get_node_info(ip, deploy_dir, name, inv):
         return False, 'other', name
 
 
-def run_task(ip, deploy_dir, group, inv, server_group, hosts, target_index):
+def run_task(ip, deploy_dir, group, inv, server_group, current_host):
     _status, _type, _info = get_node_info(ip, deploy_dir, server_group[group],
                                           inv)
 
-    if hosts[target_index]['status'] == 'exception':
+    if current_host['status'] == 'exception':
         return
     if group != 'monitoring_servers' and group != 'monitored_servers':
         _dict1 = {}
@@ -333,7 +334,7 @@ def run_task(ip, deploy_dir, group, inv, server_group, hosts, target_index):
                 _dict1['port'] = _info[0]
             _dict1['deploy_dir'] = deploy_dir
         if _dict1:
-            hosts[target_index]['components'].append(_dict1)
+            current_host['components'].append(_dict1)
     else:
         for _indexid in range(2):
             _dict2 = {}
@@ -347,7 +348,7 @@ def run_task(ip, deploy_dir, group, inv, server_group, hosts, target_index):
                 _dict2['status'] = 'success'
                 _dict2['port'] = _info[_indexid][0]
                 _dict2['deploy_dir'] = deploy_dir
-            hosts[target_index]['components'].append(_dict2)
+            current_host['components'].append(_dict2)
 
 
 def check_node_impl(ip, inv):
@@ -383,28 +384,70 @@ def check_node_impl(ip, inv):
     return _exist, _sudo, _connect
 
 
-def hostinfo(inv):
+server_group = {
+    'pd_servers': 'pd',
+    'tidb_servers': 'tidb',
+    'tikv_servers': 'tikv',
+    'monitoring_servers': 'monitoring',
+    'monitored_servers': 'monitored',
+    'alertmanager_servers': 'alertmanager',
+    'drainer_servers': 'drainer',
+    'pump_servers': 'pump',
+    'spark_master': 'spark_master',
+    'spark_slaves': 'spark_slave',
+    'lightning_server': 'lightning',
+    'importer_server': 'importer',
+    'kafka_exporter_servers': 'kafka_exporter',
+    'grafana_servers': 'grafana'
+}
+
+# global process pool
+GLOBAL_POOL = Pool(4)
+
+
+def inner_func(node_ip, datalist, inv):
+    """
+    inner_func will capture hosts outside.
+    """
     check_node = check_node_impl
+
+    ip_exist, enable_sudo, enable_connect = check_node(node_ip, inv)
+    assert ip_exist is False
+    host_dict = {
+        'ip': node_ip,
+        'user': datalist[0][0],
+        'components': [],
+    }
+    if enable_connect[0]:
+        host_dict.update({
+            'message':
+            '',
+            'enable_sudo':
+            enable_sudo,
+            'hints':
+            check_exists_phase(HINT_CHECK_DICT, node_ip, inv),
+            'status':
+            'success',
+        })
+    else:
+        host_dict.update({'status': 'exception', 'message': enable_connect[2]})
+    # TODO Using this after making clear the logic.
+    # GLOBAL_POOL.map(
+    #     run_task,
+    #     ((node_ip, configs[1], configs[2], inv, server_group, host_dict)
+    #      for configs in datalist))
+    for configs in datalist:
+        run_task(node_ip, configs[1], configs[2], inv, server_group, host_dict)
+
+    # now return the host_dict
+    return host_dict
+
+
+def hostinfo(inv):
 
     loader = DataLoader()
     inv_manager = InventoryManager(loader=loader, sources=[inv])
     vars_manager = VariableManager(loader=loader, inventory=inv_manager)
-    server_group = {
-        'pd_servers': 'pd',
-        'tidb_servers': 'tidb',
-        'tikv_servers': 'tikv',
-        'monitoring_servers': 'monitoring',
-        'monitored_servers': 'monitored',
-        'alertmanager_servers': 'alertmanager',
-        'drainer_servers': 'drainer',
-        'pump_servers': 'pump',
-        'spark_master': 'spark_master',
-        'spark_slaves': 'spark_slave',
-        'lightning_server': 'lightning',
-        'importer_server': 'importer',
-        'kafka_exporter_servers': 'kafka_exporter',
-        'grafana_servers': 'grafana'
-    }
 
     cluster_info = {}
     hosts = []
@@ -437,56 +480,11 @@ def hostinfo(inv):
                  _hostvars['inventory_hostname'])
             node_map[_ip].append((_ansible_user, _deploy_dir, _group))
 
-    for ip, data in node_map.iteritems():
+    to_inserts = GLOBAL_POOL.map(inner_func,
+                                 ((ip, datalist) for ip, datalist in node_map))
 
-        def inner_func(node_ip, datalist):
-            ip_exist, enable_sudo, enable_connect = check_node(node_ip, inv)
-            assert ip_exist is False
-            host_dict = {
-                'ip': node_ip,
-                'user': datalist[0][0],
-                'components': [],
-            }
-            if enable_connect[0]:
-                host_dict.update({
-                    'message':
-                    '',
-                    'enable_sudo':
-                    enable_sudo,
-                    'hints':
-                    check_exists_phase(HINT_CHECK_DICT, node_ip, inv),
-                    'status':
-                    'success',
-                })
-            else:
-                host_dict.update({
-                    'status': 'exception',
-                    'message': enable_connect[2]
-                })
-            hosts.append(host_dict)
-
-            current_node_index = None
-            for index_id in range(len(hosts)):
-                if hosts[index_id]['ip'] == node_ip:
-                    current_node_index = index_id
-            if current_node_index is None:
-                raise RuntimeError()
-            # tasks_list2 = []
-            for configs in datalist:
-                run_task(node_ip, configs[1], configs[2], inv, server_group,
-                         hosts, current_node_index)
-                # it = threading.Thread(target=run_task,
-                #                       args=(node_ip, configs[1], configs[2],
-                #                             inv, server_group, hosts,
-                #                             current_node_index))
-                # it.start()
-                # tasks_list2.append(it)
-            # _ = [thr.join() for thr in tasks_list2]
-
-        inner_func(ip, data)
-        # t = threading.Thread(target=inner_func, args=(ip, data))
-        # t.start()
-        # task_thread_list.append(t)
+    for to_insert in to_inserts:
+        hosts.append(to_insert)
 
     # waiting for all task done.
     # for task in task_thread_list:
