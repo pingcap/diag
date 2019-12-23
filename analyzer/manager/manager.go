@@ -4,6 +4,7 @@ import (
 	"reflect"
 	"sync"
 
+	"github.com/pingcap/tidb-foresight/analyzer/manager/nilmap"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -90,7 +91,7 @@ func (tm *TaskManager) ConcurrencyBatchRun(taskSz int) {
 
 func (tm *TaskManager) value(output string) reflect.Value {
 	for _, t := range tm.tasks {
-		// traverse all already output data.
+		// traverse all already output data or drives posterior tasks to run.
 		for idx, o := range t.outputs {
 			if o == output {
 				return tm.outputs(t)[idx]
@@ -99,6 +100,7 @@ func (tm *TaskManager) value(output string) reflect.Value {
 	}
 
 	// required value not found
+	log.Warnf("DEBUG: `value` arm not match output %v, return `reflect.ValueOf(nil)`.", output)
 	return reflect.ValueOf(nil)
 }
 
@@ -109,10 +111,18 @@ func (tm *TaskManager) outputs(t *task) []reflect.Value {
 	}
 	// checking arguments if using strict mode.
 	if t.mode() == Strict {
-		for _, arg := range args {
+		for i, arg := range args {
 			if !arg.IsValid() || arg.IsNil() {
+
+				if nilmap.IsTolerate(t.inputs[i]) {
+					log.Warn("argument %v(%d) in task %v is invalid, but is is registered tolerate," +
+						" default arguments was setting here.")
+					continue
+				}
+
 				// In strict mode, if argument is invalid, fill a argument here.
-				log.Warnf("argument %v in task %v is invalid, default arguments was setting here.", arg, t)
+				log.Warnf("argument %v(%d) in task %v is invalid, default arguments was setting here.",
+					arg, i, t)
 				return make([]reflect.Value, len(t.outputs))
 			}
 		}

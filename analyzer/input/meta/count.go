@@ -6,6 +6,7 @@ import (
 
 	"github.com/pingcap/tidb-foresight/analyzer/boot"
 	"github.com/pingcap/tidb-foresight/analyzer/input/args"
+	"github.com/pingcap/tidb-foresight/analyzer/manager/nilmap"
 	"github.com/pingcap/tidb-foresight/analyzer/output/metric"
 	log "github.com/sirupsen/logrus"
 )
@@ -17,6 +18,10 @@ func CountComponent() *countComponentTask {
 }
 
 type CountComponentsDone struct{}
+
+func init() {
+	nilmap.TolerateRegisterStruct(CountComponentsDone{})
+}
 
 // Query component count from prometheus, which is filled with metric collector collected.
 func (t *countComponentTask) Run(c *boot.Config, meta *Meta, args *args.Args, mtr *metric.Metric) *CountComponentsDone {

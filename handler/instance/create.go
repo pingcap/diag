@@ -3,11 +3,11 @@ package instance
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"os/exec"
 	"path"
 	"strings"
-	"fmt"
 	"time"
 
 	"github.com/google/uuid"

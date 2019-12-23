@@ -6,6 +6,7 @@ import (
 
 	"github.com/pingcap/tidb-foresight/analyzer/boot"
 	"github.com/pingcap/tidb-foresight/analyzer/input/args"
+	"github.com/pingcap/tidb-foresight/analyzer/manager/nilmap"
 	"github.com/pingcap/tidb-foresight/analyzer/output/metric"
 	"github.com/pingcap/tidb-foresight/model"
 	log "github.com/sirupsen/logrus"
@@ -19,6 +20,10 @@ func ParseStatus() *parseStatusTask {
 
 // ParseStatusDone is a fake struct for Parse status.
 type ParseStatusDone struct{}
+
+func init() {
+	nilmap.TolerateRegisterStruct(ParseStatusDone{})
+}
 
 func (t *parseStatusTask) Run(c *boot.Config, topo *model.Topology, args *args.Args, m *metric.Metric) *ParseStatusDone {
 	parseDone := ParseStatusDone{}
