@@ -49,6 +49,7 @@ func (tm *TaskManager) Run() {
 
 func (tm *TaskManager) RunCurrentBatch() {
 	for _, t := range tm.tasks[tm.current:] {
+		log.Infof("RunCurrentBatch calling %s", t.id)
 		tm.outputs(t)
 	}
 	log.Infof("RunCurrentBatch runs from %v to %v", tm.current, len(tm.tasks))
@@ -107,8 +108,12 @@ func (tm *TaskManager) value(output string) reflect.Value {
 func (tm *TaskManager) outputs(t *task) []reflect.Value {
 	args := make([]reflect.Value, len(t.inputs))
 	for i := 0; i < len(args); i++ {
+		log.Infof("%s Collecting arguments: ", t.id)
+
 		// waiting for all arguments
 		args[i] = tm.value(t.inputs[i])
+
+		log.Infof("%s Collecting arguments done", t.id)
 	}
 	// checking arguments if using strict mode.
 	if t.mode() == Strict {
