@@ -147,7 +147,7 @@ if __name__ == '__main__':
         os.makedirs(prefix)
 
     to_copy_directories = ['bin', 'conf']
-    # 最终的 $prefix/tidb-foresight 文件
+    # final $prefix/tidb-foresight file
     dest_dir = os.path.join(prefix, 'tidb-foresight')
     # override
     mkdir_if_nonexists(dest_dir)
