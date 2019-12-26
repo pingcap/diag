@@ -107,6 +107,7 @@ func (tm *TaskManager) value(output string) reflect.Value {
 func (tm *TaskManager) outputs(t *task) []reflect.Value {
 	args := make([]reflect.Value, len(t.inputs))
 	for i := 0; i < len(args); i++ {
+		// waiting for all arguments
 		args[i] = tm.value(t.inputs[i])
 	}
 	// checking arguments if using strict mode.

@@ -17,10 +17,13 @@ func main() {
 	prometheusAddress := flag.String("prometheus", "127.0.0.1:9529", "prometheus listen address")
 	influxdbAddress := flag.String("influxdb", "127.0.0.1:9528", "influxdb listen address")
 
+	debug := flag.Bool("debug", false, "if using debug logging")
+
 	flag.Parse()
 
 	log.SetFormatter(&log.TextFormatter{
 		FullTimestamp: true,
+
 	})
 
 	if *printVersion {

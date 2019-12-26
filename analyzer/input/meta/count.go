@@ -25,6 +25,7 @@ func init() {
 
 // Query component count from prometheus, which is filled with metric collector collected.
 func (t *countComponentTask) Run(c *boot.Config, meta *Meta, args *args.Args, mtr *metric.Metric) *CountComponentsDone {
+	log.Infof("CountComponentsDone start to execute.")
 	meta.TidbCount = t.count(mtr, c.InspectionId, "tidb", args.ScrapeEnd)
 	meta.TikvCount = t.count(mtr, c.InspectionId, "tikv", args.ScrapeEnd)
 	meta.PdCount = t.count(mtr, c.InspectionId, "pd", args.ScrapeEnd)

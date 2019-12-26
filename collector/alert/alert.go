@@ -37,6 +37,7 @@ func (b *AlertCollector) Collect() error {
 		return err
 	}
 
+	// promAddr
 	resp, err := http.PostForm(fmt.Sprintf("http://%s/api/v1/query", promAddr), url.Values{"query": {"ALERTS"}})
 	if err != nil {
 		return err
