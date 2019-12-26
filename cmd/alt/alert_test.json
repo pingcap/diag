@@ -1,0 +1,14 @@
+{
+  "metric": {
+    "__name__": "ALERTS",
+    "alertname": "tikv_coprocessor_request_wait_seconds",
+    "alertstate": "firing",
+    "env": "test-cluster",
+    "expr": "delta( tikv_coprocessor_request_wait_seconds_count[10m] )  \u003e 0",
+    "instance": "172.16.5.175:20180",
+    "job": "tikv",
+    "level": "warning",
+    "req": "index"
+  },
+  "value": [1574933431.901, "1"]
+}
