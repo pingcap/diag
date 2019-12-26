@@ -23,6 +23,8 @@ func (t *saveAlertTask) Run(c *boot.Config, alert *alert.Alert, m *boot.Model) {
 		if len(alert.Value) != 2 {
 			continue
 		}
+		// seems that alert has
+		// (ts, error)
 		ats, ok := alert.Value[0].(float64)
 		if !ok {
 			log.Error("parse ts from alert failed")
@@ -33,6 +35,7 @@ func (t *saveAlertTask) Run(c *boot.Config, alert *alert.Alert, m *boot.Model) {
 			log.Error("parse value from alert failed")
 			continue
 		}
+		// tagged value
 		tv := ts.New(v, map[string]string{
 			"status": "error",
 		})

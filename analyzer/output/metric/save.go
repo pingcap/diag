@@ -18,7 +18,8 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-const INFLUX_DB = "inspection"
+// TODO: find better methods
+const INFLUX_DB = "inspectionv2"
 
 // queryResult is the result returned from the prometheus api
 type queryResult struct {
