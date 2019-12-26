@@ -19,7 +19,7 @@ import (
 )
 
 // TODO: find better methods
-const INFLUX_DB = "inspection-v2"
+const INFLUX_DB = "inspectionv2"
 
 // queryResult is the result returned from the prometheus api
 type queryResult struct {

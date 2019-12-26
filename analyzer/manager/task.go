@@ -1,7 +1,6 @@
 package manager
 
 import (
-	log "github.com/sirupsen/logrus"
 	"reflect"
 	"sync"
 )
@@ -102,7 +101,6 @@ func newTask(i interface{}, m ResolveMode) *task {
 
 // Call method with args and return result of Call
 func (t *task) run(args []reflect.Value) []reflect.Value {
-	log.Infof("Run task %s", t.id)
 	t.once.Do(func() {
 		for idx, arg := range args {
 			if arg == reflect.ValueOf(nil) {
