@@ -10,6 +10,8 @@ type Alert []struct {
 		Level      string `json:"level"`
 		Req        string `json:"req"`
 		Instance   string `json:"instance"`
+
+		ExtraInfo map[string]interface{} `json:"-"`
 	} `json:"metric"`
 	Value []interface{}
 }
