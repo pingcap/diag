@@ -31,7 +31,7 @@ func (t *saveHardwareInfoTask) Run(m *boot.Model, c *boot.Config, insight *insig
 				}
 			}
 			if !marked {
-				disks = append(disks, fmt.Sprintf("%s(%s)", disk.Name, disk.Driver))
+				disks = append(disks, fmt.Sprintf("%s(%s)(%v GB)", disk.Name, disk.Driver, disk.Size))
 			}
 		}
 		networks := []string{}
@@ -43,7 +43,7 @@ func (t *saveHardwareInfoTask) Run(m *boot.Model, c *boot.Config, insight *insig
 			InspectionId: c.InspectionId,
 			NodeIp:       insight.NodeIp,
 			Cpu:          insight.Sysinfo.Cpu.Model,
-			Memory:       insight.Sysinfo.Memory.Type,
+			Memory:       fmt.Sprintf("%s(%v MB)", insight.Sysinfo.Memory.Type, insight.Sysinfo.Memory.Size),
 			Disk:         strings.Join(disks, ","),
 			Network:      strings.Join(networks, ","),
 		}); err != nil {
