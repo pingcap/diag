@@ -41,6 +41,7 @@ type InsightInfo struct {
 		Cpu struct {
 			// Model of cpu, eg. Intel(R) Xeon(R) CPU E5-2630 v4 @ 2.20GHz
 			Model string `json:"model"`
+
 		} `json:"cpu"`
 		Memory struct {
 			// Type of memory, eg. DDR4
@@ -56,6 +57,8 @@ type InsightInfo struct {
 			Name string `json:"name"`
 			// eg. sd
 			Driver string `json:"driver"`
+			// eg. 536, it means 536G.
+			Size int
 		} `json:"storage"`
 		Network []struct {
 			// eg. eth0
