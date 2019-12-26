@@ -30,6 +30,9 @@ scrape_configs:
 remote_read:
   - url: "http://localhost:$influxd_port/api/v1/prom/read?db=inspection"
     read_recent: true
+  - url: "http://localhost:$influxd_port/api/v1/prom/read?db=inspectionv2"
+    read_recent: true
 
 remote_write:
   - url: "http://localhost:$influxd_port/api/v1/prom/write?db=inspection"
+  - url: "http://localhost:$influxd_port/api/v1/prom/write?db=inspectionv2"
