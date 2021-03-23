@@ -54,7 +54,7 @@ func (c *NetworkCollector) net(user, ip string) error {
 	if err := os.MkdirAll(p, os.ModePerm); err != nil {
 		return err
 	}
-	f, err := os.Create(path.Join(p, "netstat"))
+	f, err := os.Create(path.Join(p, "ss"))
 	if err != nil {
 		return err
 	}
@@ -63,7 +63,9 @@ func (c *NetworkCollector) net(user, ip string) error {
 	cmd := exec.Command(
 		"ssh",
 		fmt.Sprintf("%s@%s", user, ip),
-		"netstat -s",
+		"ss -s",
+		"&&",
+		"ss -lanp",
 	)
 	cmd.Stdout = f
 	cmd.Stderr = os.Stderr

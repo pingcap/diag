@@ -9,6 +9,7 @@ import (
 
 	. "github.com/pingcap/check"
 	"github.com/pingcap/tidb-foresight/model/inspection"
+	"github.com/pingcap/tidb-foresight/utils"
 	"github.com/pingcap/tidb-foresight/wrapper/db"
 )
 
@@ -73,7 +74,7 @@ func (s *testGDBSuite) TestingCreate(c *C) {
 	c.Assert(emp2.Uuid == emp.Uuid, IsTrue)
 
 	newProb := &Problem{
-		Problem:      sql.NullString{},
+		Problem:      utils.NullString{sql.NullString{}},
 		Uuid:         "2103712",
 		RelatedGraph: "tidb",
 		Advise:       "suicide",

@@ -66,10 +66,10 @@ func (m *MetricCollector) Collect() error {
 
 	tl := utils.NewTokenLimiter(uint(runtime.NumCPU()))
 	for _, mtc := range metrics {
-		go func(tok *utils.Token) {
+		go func(tok *utils.Token, mtc string) {
 			m.collectMetric(promAddr, begin, end, mtc)
 			tl.Put(tok)
-		}(tl.Get())
+		}(tl.Get(), mtc)
 	}
 	tl.Wait()
 

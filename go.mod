@@ -1,32 +1,28 @@
 module github.com/pingcap/tidb-foresight
 
-go 1.12
+go 1.16
 
 require (
 	github.com/BurntSushi/toml v0.3.1
-	github.com/StackExchange/wmi v0.0.0-20190523213315-cbe66965904d // indirect
-	github.com/aws/aws-sdk-go v1.22.4
+	github.com/aws/aws-sdk-go v1.38.2
 	github.com/d-tux/go-fstab v0.0.0-20141204152952-eb4090f26517
 	github.com/fatih/structs v1.1.0
-	github.com/fsnotify/fsnotify v1.4.7
-	github.com/go-ole/go-ole v1.2.4 // indirect
-	github.com/google/uuid v1.1.1
-	github.com/gorilla/mux v1.7.3
-	github.com/hashicorp/go-multierror v1.0.0
-	github.com/influxdata/influxdb1-client v0.0.0-20190809212627-fc22c7df067e
-	github.com/jaypipes/ghw v0.0.0-20190821154021-743802778342
-	github.com/jessevdk/go-flags v1.4.0
-	github.com/jinzhu/gorm v1.9.10
-	github.com/lorenzosaino/go-sysctl v0.1.0
-	github.com/mattn/go-sqlite3 v1.11.0
-	github.com/mitchellh/mapstructure v1.1.2
-	github.com/pingcap/check v0.0.0-20190102082844-67f458068fc8
-	github.com/pingcap/fn v0.0.0-20190719082715-aecf7e1753e7
-	github.com/prometheus/client_golang v1.1.0
-	github.com/prometheus/common v0.6.0
+	github.com/fsnotify/fsnotify v1.4.9
+	github.com/google/uuid v1.2.0
+	github.com/gorilla/mux v1.8.0
+	github.com/hashicorp/go-multierror v1.1.1
+	github.com/influxdata/influxdb1-client v0.0.0-20200827194710-b269163b24ab
+	github.com/jaypipes/ghw v0.7.0
+	github.com/jessevdk/go-flags v1.5.0
+	github.com/jinzhu/gorm v1.9.16
+	github.com/mattn/go-sqlite3 v1.14.6
+	github.com/mitchellh/mapstructure v1.4.1
+	github.com/pingcap/check v0.0.0-20200212061837-5e12011dc712
+	github.com/pingcap/fn v0.0.0-20200306044125-d5540d389059
+	github.com/prometheus/client_golang v1.10.0
+	github.com/prometheus/common v0.20.0
 	github.com/robfig/cron v1.2.0
-	github.com/shirou/gopsutil v2.19.9+incompatible
-	github.com/shirou/w32 v0.0.0-20160930032740-bb4de0191aa4 // indirect
-	github.com/sirupsen/logrus v1.4.2
-	golang.org/x/net v0.0.0-20190620200207-3b0461eec859 // indirect
+	github.com/shirou/gopsutil v3.21.2+incompatible
+	github.com/sirupsen/logrus v1.8.1
+	github.com/tklauser/go-sysconf v0.3.5 // indirect
 )
