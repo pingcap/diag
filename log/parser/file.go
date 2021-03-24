@@ -2,7 +2,6 @@ package parser
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path"
 	"strings"
@@ -45,7 +44,7 @@ func NewFileWrapper(root, host, folder, filename string) *FileWrapper {
 // a list of file wrapper.
 func ResolveDir(src string) ([]*FileWrapper, error) {
 	var wrappers []*FileWrapper
-	dir, err := ioutil.ReadDir(src) // {cluster_uuid}
+	dir, err := os.ReadDir(src) // {cluster_uuid}
 	if err != nil {
 		return nil, err
 	}
@@ -55,7 +54,7 @@ func ResolveDir(src string) ([]*FileWrapper, error) {
 			continue
 		}
 		dirPath := path.Join(src, host)
-		dir, err := ioutil.ReadDir(dirPath)
+		dir, err := os.ReadDir(dirPath)
 		if err != nil {
 			return nil, err
 		}
@@ -65,7 +64,7 @@ func ResolveDir(src string) ([]*FileWrapper, error) {
 				continue
 			}
 			dirPath := path.Join(dirPath, folder)
-			dir, err := ioutil.ReadDir(dirPath)
+			dir, err := os.ReadDir(dirPath)
 			if err != nil {
 				return nil, err
 			}

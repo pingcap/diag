@@ -3,7 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"os"
 	"os/exec"
 	"path"
@@ -95,7 +95,7 @@ func NewCluster(fileName string) (*Cluster, error) {
 	if err != nil {
 		return nil, err
 	}
-	b, _ := ioutil.ReadAll(f)
+	b, _ := io.ReadAll(f)
 	err = json.Unmarshal(b, c)
 	if err != nil {
 		return nil, err

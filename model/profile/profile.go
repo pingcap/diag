@@ -1,7 +1,7 @@
 package profile
 
 import (
-	"io/ioutil"
+	"os"
 	"path"
 	"strings"
 
@@ -53,7 +53,7 @@ func (p *Profile) loadItems(dir string) {
 		return
 	}
 
-	flist, err := ioutil.ReadDir(path.Join(dir, p.Uuid))
+	flist, err := os.ReadDir(path.Join(dir, p.Uuid))
 	if err != nil {
 		log.Error("read profile directory:", err)
 		return
@@ -99,7 +99,7 @@ func (p *Profile) loadItems(dir string) {
 }
 
 func (p *Profile) listFileNames(dir string) ([]string, error) {
-	if files, err := ioutil.ReadDir(dir); err != nil {
+	if files, err := os.ReadDir(dir); err != nil {
 		return nil, err
 	} else {
 		names := []string{}

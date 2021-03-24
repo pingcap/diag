@@ -1,7 +1,7 @@
 package main
 
 import (
-	"io/ioutil"
+	"os"
 	"path/filepath"
 	"strings"
 
@@ -57,7 +57,7 @@ func (w *Watcher) Watch(taskManager TaskManager) {
 // LoadTask return all SyncTasks in current topology folder
 func (w *Watcher) LoadTasks() ([]SyncTask, error) {
 	var allTasks []SyncTask
-	dir, err := ioutil.ReadDir(w.topoDir)
+	dir, err := os.ReadDir(w.topoDir)
 	if err != nil {
 		return nil, err
 	}

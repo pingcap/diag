@@ -1,7 +1,6 @@
 package inspection
 
 import (
-	"io/ioutil"
 	"os"
 
 	"testing"
@@ -21,7 +20,7 @@ type testGDBSuite struct {
 }
 
 func (s *testGDBSuite) SetUpTest(c *C) {
-	testingDbFile, err := ioutil.TempFile("", "sqlite-test.db")
+	testingDbFile, err := os.CreateTemp("", "sqlite-test.db")
 
 	if err != nil {
 		c.Fatal(err)

@@ -1,7 +1,7 @@
 PROJECT=tidb-foresight
 
 
-.PHONY: all server collector insight analyzer spliter syncer install stop start web fmt pioneer check_prefix build default
+.PHONY: all collector spliter syncer fmt check_prefix build default
 
 default: all
 
@@ -67,33 +67,10 @@ ifeq ($(user), )
 user=tidb
 endif
 
-all: server collector insight analyzer spliter syncer
-
-prepare: 
-	chmod 755 ./scripts/*
-	eval './scripts/prepare.py $(DOWNLOAD_PREFIX) $(NEEDS_INSTALL)'
-	@$(MAKE) web
-	@$(MAKE) pioneer
+all: collector spliter syncer
 
 build:
 	$(GOBUILD)
-
-stop:
-	eval './scripts/stop.py $(foresight_port) $(influxd_port) $(prometheus_port)'
-	
-start:
-	systemctl daemon-reload
-	chmod 755 ./scripts/*
-	eval './scripts/start.py $(foresight_port) $(influxd_port) $(prometheus_port)'
-
-web: 
-	cd web && yarn && yarn build
-	rm -rf web-dist
-	mv web/dist web-dist
-
-pioneer:
-	mkdir -p bin
-	cp pioneer/pioneer.py bin/pioneer
 
 fmt:
 	@echo "gofmt (simplify)"
@@ -110,33 +87,14 @@ ifeq ("$(WITH_CHECK)", "1")
 	CHECK_FLAG = $(TEST_LDFLAGS)
 endif
 
-server:
-	$(GOBUILD) $(RACE_FLAG) -ldflags '$(LDFLAGS) $(CHECK_FLAG)' -o bin/tidb-foresight cmd/server/*.go
-
 collector:
 	$(GOBUILD) $(RACE_FLAG) -ldflags '$(LDFLAGS) $(CHECK_FLAG)' -o bin/collector cmd/collector/*.go
-
-insight:
-	$(GOBUILD) $(RACE_FLAG) -ldflags '$(LDFLAGS) $(CHECK_FLAG)' -o bin/insight cmd/insight/*.go
-
-analyzer:
-	$(GOBUILD) $(RACE_FLAG) -ldflags '$(LDFLAGS) $(CHECK_FLAG)' -o bin/analyzer cmd/analyzer/*.go
 
 spliter:
 	$(GOBUILD) $(RACE_FLAG) -ldflags '$(LDFLAGS) $(CHECK_FLAG)' -o bin/spliter cmd/spliter/*.go
 
 syncer:
 	$(GOBUILD) $(RACE_FLAG) -ldflags '$(LDFLAGS) $(CHECK_FLAG)' -o bin/syncer cmd/syncer/*.go
-
-# Note: This part was port before checking GOPATH, because it will install golang and other
-#  requirements in the machine.
-# If prefix is now provided, this phase will abort.
-# it will execute after all the target is already build
-# Usage: make install prefix=/opt/tidb
-install: check-prefix
-	test -n $(prefix)
-	chmod 755 ./scripts/*
-	eval './scripts/install.py $(prefix) $(user) $(foresight_port) $(influxd_port) $(prometheus_port)'
 
 check-%:
 	@ if [ "${${*}}" = "" ]; then \

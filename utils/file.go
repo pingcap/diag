@@ -1,14 +1,14 @@
 package utils
 
 import (
-	log "github.com/sirupsen/logrus"
 	"io"
-	"io/ioutil"
 	"os"
+
+	log "github.com/sirupsen/logrus"
 )
 
 func SaveFile(r io.Reader, targetPath string) error {
-	content, err := ioutil.ReadAll(r)
+	content, err := io.ReadAll(r)
 	if err != nil {
 		log.Error("read source: ", err)
 		return err

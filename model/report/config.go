@@ -1,15 +1,11 @@
 package report
 
-import "github.com/pingcap/tidb-foresight/cmd/insight/osconfig"
-
 type ConfigInfo struct {
 	InspectionId string `json:"-"`
 	NodeIp       string `json:"node_ip"`
 	Port         string `json:"port"`
 	Component    string `json:"component"`
 	Config       string `json:"config"`
-
-	osconfig.OsConfig
 }
 
 func (m *report) GetInspectionConfigInfo(inspectionId string) ([]*ConfigInfo, error) {

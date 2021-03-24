@@ -2,7 +2,6 @@ package emphasis
 
 import (
 	"database/sql"
-	"io/ioutil"
 	"os"
 	"testing"
 	"time"
@@ -24,7 +23,7 @@ type testGDBSuite struct {
 }
 
 func (s *testGDBSuite) SetUpTest(c *C) {
-	testingDbFile, err := ioutil.TempFile("", "sqlite.db")
+	testingDbFile, err := os.CreateTemp("", "sqlite.db")
 
 	if err != nil {
 		c.Fatal(err)

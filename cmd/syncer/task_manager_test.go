@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path"
 	"time"
@@ -71,7 +70,7 @@ func createLogFiles(deployDir string, c *C) {
 }
 
 func createTestTempDir(name string, c *C) (string, string) {
-	tempDir, err := ioutil.TempDir("", name)
+	tempDir, err := os.MkdirTemp("", name)
 	if err != nil {
 		c.Fatal(err)
 	}

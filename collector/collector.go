@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"path"
 	"strings"
@@ -123,7 +122,7 @@ func (m *Manager) collectArgs() error {
 	if err != nil {
 		return err
 	}
-	return ioutil.WriteFile(path.Join(home, "inspection", inspection, "args.json"), data, os.ModePerm)
+	return os.WriteFile(path.Join(home, "inspection", inspection, "args.json"), data, os.ModePerm)
 }
 
 // collectArgs runs in local machine.
@@ -144,7 +143,7 @@ func (m *Manager) collectEnv() error {
 	if err != nil {
 		return err
 	}
-	return ioutil.WriteFile(path.Join(home, "inspection", inspection, "env.json"), data, os.ModePerm)
+	return os.WriteFile(path.Join(home, "inspection", inspection, "env.json"), data, os.ModePerm)
 }
 
 func (m *Manager) collectMeta(start, end time.Time) error {
@@ -162,7 +161,7 @@ func (m *Manager) collectMeta(start, end time.Time) error {
 	if err != nil {
 		return err
 	}
-	return ioutil.WriteFile(path.Join(home, "inspection", inspection, "meta.json"), data, os.ModePerm)
+	return os.WriteFile(path.Join(home, "inspection", inspection, "meta.json"), data, os.ModePerm)
 }
 
 func (m *Manager) collectRemote() error {
@@ -238,7 +237,7 @@ func (m *Manager) collectStatus(status map[string]error) error {
 	if err != nil {
 		return err
 	}
-	return ioutil.WriteFile(path.Join(home, "inspection", inspection, "status.json"), data, os.ModePerm)
+	return os.WriteFile(path.Join(home, "inspection", inspection, "status.json"), data, os.ModePerm)
 }
 
 func (m *Manager) GetTopology() (*model.Topology, error) {
@@ -247,7 +246,7 @@ func (m *Manager) GetTopology() (*model.Topology, error) {
 
 	topo := model.Topology{}
 
-	content, err := ioutil.ReadFile(path.Join(home, "topology", instanceId+".json"))
+	content, err := os.ReadFile(path.Join(home, "topology", instanceId+".json"))
 	if err != nil {
 		log.Error("read file:", err)
 		return nil, err
