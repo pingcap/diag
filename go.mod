@@ -3,19 +3,19 @@ module github.com/pingcap/tidb-foresight
 go 1.16
 
 require (
+	github.com/fatih/color v1.10.0
 	github.com/fatih/structs v1.1.0
 	github.com/fsnotify/fsnotify v1.4.9
 	github.com/google/uuid v1.2.0
-	github.com/hashicorp/go-multierror v1.1.1
-	github.com/jessevdk/go-flags v1.5.0
-	github.com/jinzhu/gorm v1.9.16
-	github.com/mattn/go-sqlite3 v1.14.6 // indirect
+	github.com/joomcode/errorx v1.0.3
 	github.com/pingcap/check v0.0.0-20200212061837-5e12011dc712
+	github.com/pingcap/errors v0.11.5-0.20201126102027-b0a155152ca3
+	github.com/pingcap/tiup v1.4.0
 	github.com/prometheus/client_golang v1.10.0
 	github.com/prometheus/common v0.20.0
 	github.com/sirupsen/logrus v1.8.1
-	golang.org/x/lint v0.0.0-20200302205851-738671d3881b // indirect
+	github.com/spf13/cobra v1.1.3
+	go.uber.org/zap v1.16.0
 	golang.org/x/net v0.0.0-20201110031124-69a78807bb2b // indirect
-	golang.org/x/tools v0.0.0-20200529172331-a64b76657301 // indirect
-	honnef.co/go/tools v0.0.1-2020.1.4 // indirect
+	golang.org/x/sys v0.0.0-20210320140829-1e4c9ba3b0c4 // indirect
 )

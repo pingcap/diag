@@ -14,11 +14,37 @@
 package main
 
 import (
-	"github.com/pingcap/tidb-foresight/cmd/collector/command"
-	"github.com/pingcap/tiup/pkg/cliutil"
+	"os"
+	"strings"
+	"testing"
 )
 
-func main() {
-	cliutil.RegisterArg0("tiup collector")
-	command.Execute()
+// To build:
+// see build_integration_test in Makefile
+// To run:
+// tiup-cluster.test  -test.coverprofile={file} __DEVEL--i-heard-you-like-tests
+
+func TestMain(t *testing.T) {
+	var (
+		args []string
+		run  bool
+	)
+
+	for _, arg := range os.Args {
+		switch {
+		case arg == "__DEVEL--i-heard-you-like-tests":
+			run = true
+		case strings.HasPrefix(arg, "-test"):
+		case strings.HasPrefix(arg, "__DEVEL"):
+		default:
+			args = append(args, arg)
+		}
+	}
+	os.Args = args
+
+	// fmt.Println(os.Args)
+
+	if run {
+		main()
+	}
 }

@@ -7,15 +7,13 @@ import (
 	"path"
 	"time"
 
-	"github.com/pingcap/tidb-foresight/model"
 	log "github.com/sirupsen/logrus"
 )
 
 type Options interface {
 	GetHome() string
-	GetModel() model.Model
-	GetInstanceId() string
-	GetInspectionId() string
+	ClusterName() string
+	InspectionID() string
 	GetScrapeBegin() (time.Time, error)
 	GetScrapeEnd() (time.Time, error)
 }
@@ -39,10 +37,8 @@ func (c *LogCollector) Collect() error {
 	}
 
 	home := c.GetHome()
-	instance := c.GetInstanceId()
-	inspection := c.GetInspectionId()
-
-	c.GetModel().UpdateInspectionMessage(inspection, "collecting log...")
+	instance := c.ClusterName()
+	inspection := c.InspectionID()
 
 	cmd := exec.Command(
 		path.Join(home, "bin", "spliter"),

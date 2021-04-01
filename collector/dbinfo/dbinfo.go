@@ -7,14 +7,11 @@ import (
 	"net/http"
 	"os"
 	"path"
-
-	"github.com/pingcap/tidb-foresight/model"
 )
 
 type Options interface {
 	GetHome() string
-	GetModel() model.Model
-	GetInspectionId() string
+	InspectionID() string
 	GetTidbStatusEndpoints() ([]string, error)
 }
 
@@ -75,9 +72,7 @@ func (c *DBInfoCollector) schemaList(endpoint string) ([]string, error) {
 
 func (c *DBInfoCollector) loadSchema(endpoint, schema string) error {
 	home := c.GetHome()
-	inspection := c.GetInspectionId()
-
-	c.GetModel().UpdateInspectionMessage(inspection, fmt.Sprintf("collecting schema info for %s...", schema))
+	inspection := c.InspectionID()
 
 	resp, err := http.Get(fmt.Sprintf("http://%s/schema/%s", endpoint, schema))
 	if err != nil {

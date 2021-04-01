@@ -21,8 +21,8 @@ path_to_add := $(addsuffix /bin,$(subst :,/bin:,$(GOPATH))):$(PWD)/tools/bin
 export PATH := $(path_to_add):$(PATH)
 
 GO        := GO111MODULE=on go
-GOBUILD   := CGO_ENABLED=1 $(GO) build $(BUILD_FLAG) -tags codes
-GOTEST    := CGO_ENABLED=1 $(GO) test -p 4
+GOBUILD   := CGO_ENABLED=0 $(GO) build $(BUILD_FLAG) -tags codes
+GOTEST    := CGO_ENABLED=0 $(GO) test -p 4
 OVERALLS  := CGO_ENABLED=1 GO111MODULE=on overalls
 
 ARCH      := "`uname -s`"
@@ -38,34 +38,12 @@ FAILPOINT_DISABLE := $$(find $$PWD/ -type d | grep -vE "(\.git|tools)" | xargs t
 
 FAIL_ON_STDOUT := awk '{ print } END { if (NR > 0) { exit 1 } }'
 
+LDFLAGS += -s -w
 LDFLAGS += -X "github.com/pingcap/tidb-foresight/version.ReleaseVersion=$(shell git describe --tags --dirty --always)"
-LDFLAGS += -X "github.com/pingcap/tidb-foresight/version.BuildTS=$(shell date -u '+%Y-%m-%d %I:%M:%S')"
 LDFLAGS += -X "github.com/pingcap/tidb-foresight/version.GitHash=$(shell git rev-parse HEAD)"
 LDFLAGS += -X "github.com/pingcap/tidb-foresight/version.GitBranch=$(shell git rev-parse --abbrev-ref HEAD)"
 
 CHECK_LDFLAGS += $(LDFLAGS)
-
-INFLUXDB = influxd
-PROMETHEUS = prometheus
-PERL_SCRIPTS := flamegraph.pl fold-tikv-threads-perf.pl stackcollapse-perf.pl
-NEEDS_INSTALL = $(INFLUXDB) $(PROMETHEUS) $(PERL_SCRIPTS)
-
-DOWNLOAD_PREFIX = http://fileserver.pingcap.net/download/foresight/
-
-ifeq ($(foresight_port),)
-foresight_port=9527
-endif
-ifeq ($(influxd_port),)
-influxd_port=9528
-endif
-ifeq ($(prometheus_port),)
-prometheus_port=9529
-endif
-
-# set the default user tidb
-ifeq ($(user), )
-user=tidb
-endif
 
 all: collector spliter syncer
 

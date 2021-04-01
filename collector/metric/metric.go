@@ -12,7 +12,6 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/pingcap/tidb-foresight/model"
 	"github.com/pingcap/tidb-foresight/utils"
 	log "github.com/sirupsen/logrus"
 )
@@ -24,7 +23,6 @@ const MAX_POINTS = 5000
 
 type Options interface {
 	GetHome() string
-	GetModel() model.Model
 	GetInspectionId() string
 	GetScrapeBegin() (time.Time, error)
 	GetScrapeEnd() (time.Time, error)
@@ -95,8 +93,6 @@ func (m *MetricCollector) getMetricList(prom string) ([]string, error) {
 func (m *MetricCollector) collectMetric(prom string, begin, end time.Time, mtc string) {
 	home := m.GetHome()
 	inspection := m.GetInspectionId()
-
-	m.GetModel().UpdateInspectionMessage(inspection, fmt.Sprintf("collecting metric info for %s...", mtc))
 
 	duration := end.Sub(begin)
 	step := int(duration.Seconds()/MAX_POINTS + 1)

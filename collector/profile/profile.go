@@ -8,19 +8,14 @@ import (
 	"os/exec"
 	"os/user"
 	"path"
-	"sync"
 
-	"github.com/pingcap/tidb-foresight/model"
 	"github.com/pingcap/tidb-foresight/utils"
 	log "github.com/sirupsen/logrus"
 )
 
 type Options interface {
 	GetHome() string
-	GetModel() model.Model
-	GetInspectionId() string
-	GetTopology() (*model.Topology, error)
-	GetComponents() []string
+	InspectionID() string
 }
 
 type ProfileCollector struct {
@@ -32,60 +27,12 @@ func New(opts Options) *ProfileCollector {
 }
 
 func (c *ProfileCollector) Collect() error {
-	var wg sync.WaitGroup
-
-	topo, err := c.GetTopology()
-	if err != nil {
-		return err
-	}
-
-	for _, host := range topo.Hosts {
-		for _, comp := range host.Components {
-			if c.shouldProfile(comp.Name, host.Ip, comp.Port) {
-				// avoid wrong closure binding
-				host := host
-				comp := comp
-				wg.Add(1)
-				go func() {
-					switch comp.Name {
-					case "pd":
-						c.perfGolangProcess(comp.Name, host.Ip, comp.Port)
-					case "tidb":
-						c.perfGolangProcess(comp.Name, host.Ip, comp.StatusPort)
-					case "tikv":
-						c.perfRustProcess(comp.Name, host.Ip, comp.Port)
-					}
-					wg.Done()
-				}()
-			}
-		}
-	}
-	wg.Wait()
-
 	return nil
-}
-
-func (c *ProfileCollector) shouldProfile(name, ip, port string) bool {
-	comps := c.GetComponents()
-
-	if len(comps) == 0 {
-		return true
-	}
-
-	for _, comp := range comps {
-		if fmt.Sprintf("%s:%s:%s", name, ip, port) == comp {
-			return true
-		}
-	}
-
-	return false
 }
 
 func (c *ProfileCollector) perfGolangProcess(name, ip, port string) {
 	home := c.GetHome()
-	inspection := c.GetInspectionId()
-
-	c.GetModel().UpdateInspectionMessage(inspection, fmt.Sprintf("collecting profile info for %s(%s:%s)...", name, ip, port))
+	inspection := c.InspectionID()
 
 	p := path.Join(home, "inspection", inspection, "profile", name, ip+":"+port)
 	if err := os.MkdirAll(p, os.ModePerm); err != nil {
@@ -103,9 +50,7 @@ func (c *ProfileCollector) perfGolangProcess(name, ip, port string) {
 
 func (c *ProfileCollector) perfRustProcess(name, ip, port string) {
 	home := c.GetHome()
-	inspection := c.GetInspectionId()
-
-	c.GetModel().UpdateInspectionMessage(inspection, fmt.Sprintf("collecting profile info for %s(%s:%s)...", name, ip, port))
+	inspection := c.InspectionID()
 
 	user, err := user.Current()
 	if err != nil {
