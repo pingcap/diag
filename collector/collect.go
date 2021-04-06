@@ -1,4 +1,4 @@
-// Copyright 2020 PingCAP, Inc.
+// Copyright 2021 PingCAP, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -91,6 +91,17 @@ func (m *Manager) CollectClusterInfo(clusterName string, opt CollectOptions, gOp
 	if err := collectSystemInfo(sshConnProps, &topo, &gOpt, &opt, resultDir); err != nil {
 		return err
 	}
+
+	fmt.Println("Collecting alert lists from Prometheus node...")
+	if err := collectAlerts(&topo, resultDir); err != nil {
+		return err
+	}
+
+	fmt.Println("Collecting metrics from Prometheus node...")
+	if err := collectMetrics(&topo, &opt, resultDir); err != nil {
+		return err
+	}
+
 	fmt.Printf("Collected data are stored in %s\n", resultDir)
 	return nil
 }
