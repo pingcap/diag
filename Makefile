@@ -20,14 +20,14 @@ CURDIR := $(shell pwd)
 path_to_add := $(addsuffix /bin,$(subst :,/bin:,$(GOPATH))):$(PWD)/tools/bin
 export PATH := $(path_to_add):$(PATH)
 
-GO        := GO111MODULE=on go
-GOBUILD   := CGO_ENABLED=0 $(GO) build $(BUILD_FLAG) -tags codes
+GOOS    := $(if $(GOOS),$(GOOS),$(shell go env GOOS))
+GOARCH  := $(if $(GOARCH),$(GOARCH),$(shell go env GOARCH))
+GOENV   := GO111MODULE=on CGO_ENABLED=0 GOOS=$(GOOS) GOARCH=$(GOARCH)
+GO      := $(GOENV) go
+GOBUILD := $(GO) build $(BUILD_FLAGS)
 GOTEST    := CGO_ENABLED=0 $(GO) test -p 4
 OVERALLS  := CGO_ENABLED=1 GO111MODULE=on overalls
 
-ARCH      := "`uname -s`"
-LINUX     := "Linux"
-MAC       := "Darwin"
 PACKAGE_LIST  := go list ./...| grep -vE "cmd" | grep -vE "test"
 PACKAGES  := $$($(PACKAGE_LIST))
 PACKAGE_DIRECTORIES := $(PACKAGE_LIST) | sed 's|github.com/pingcap/$(PROJECT)/||'
@@ -45,10 +45,12 @@ LDFLAGS += -X "github.com/pingcap/tidb-foresight/version.GitBranch=$(shell git r
 
 CHECK_LDFLAGS += $(LDFLAGS)
 
-all: collector spliter syncer
+all: fmt build
 
-build:
-	$(GOBUILD)
+build: collector spliter syncer
+
+clean:
+	@rm -rf bin
 
 fmt:
 	@echo "gofmt (simplify)"

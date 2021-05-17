@@ -30,8 +30,19 @@ import (
 	"github.com/pingcap/tiup/pkg/set"
 )
 
-// CollectOptions contains the options for check command
-type CollectOptions struct {
+// Collector is the configuration defining an collecting job
+type Collector interface {
+	Collect() error
+	BaseOptions() *BaseOptions
+	SetUser(string)
+	SetIdentityFile(string)
+	SetUsePassword(bool)
+	SetBegin(string)
+	SetEnd(string)
+}
+
+// BaseOptions contains the options for check command
+type BaseOptions struct {
 	User         string // username to login to the SSH server
 	IdentityFile string // path to the private key file
 	UsePassword  bool   // use password instead of identity file for ssh connection
@@ -40,7 +51,7 @@ type CollectOptions struct {
 }
 
 // CollectClusterInfo collects information and metrics from a tidb cluster
-func (m *Manager) CollectClusterInfo(clusterName string, opt CollectOptions, gOpt operator.Options) error {
+func (m *Manager) CollectClusterInfo(clusterName string, opt *BaseOptions, gOpt *operator.Options) error {
 	var topo spec.Specification
 
 	exist, err := m.specManager.Exist(clusterName)
@@ -88,7 +99,7 @@ func (m *Manager) CollectClusterInfo(clusterName string, opt CollectOptions, gOp
 		}
 	}
 
-	if err := collectSystemInfo(sshConnProps, &topo, &gOpt, &opt, resultDir); err != nil {
+	if err := collectSystemInfo(sshConnProps, &topo, gOpt, opt, resultDir); err != nil {
 		return err
 	}
 
@@ -98,7 +109,7 @@ func (m *Manager) CollectClusterInfo(clusterName string, opt CollectOptions, gOp
 	}
 
 	fmt.Println("Collecting metrics from Prometheus node...")
-	if err := collectMetrics(&topo, &opt, resultDir); err != nil {
+	if err := collectMetrics(&topo, opt, resultDir); err != nil {
 		return err
 	}
 
@@ -111,7 +122,7 @@ func collectSystemInfo(
 	s *cliutil.SSHConnectionProps,
 	topo *spec.Specification,
 	gOpt *operator.Options,
-	opt *CollectOptions,
+	opt *BaseOptions,
 	resultDir string,
 ) error {
 	var (

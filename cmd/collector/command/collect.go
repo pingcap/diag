@@ -23,7 +23,7 @@ import (
 )
 
 func newCheckCmd() *cobra.Command {
-	opt := collector.CollectOptions{
+	opt := collector.BaseOptions{
 		IdentityFile: path.Join(utils.UserHome(), ".ssh", "id_rsa"),
 	}
 	cmd := &cobra.Command{
@@ -37,7 +37,7 @@ func newCheckCmd() *cobra.Command {
 			if gOpt.SSHType == executor.SSHTypeSystem && !utils.IsFlagSetByUser(cmd.Flags(), "identity_file") {
 				opt.IdentityFile = ""
 			}
-			return cm.CollectClusterInfo(args[0], opt, gOpt)
+			return cm.CollectClusterInfo(args[0], &opt, &gOpt)
 		},
 	}
 

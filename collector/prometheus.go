@@ -85,7 +85,7 @@ func collectAlerts(
 // collectMetrics gathers metrics from Prometheus
 func collectMetrics(
 	topo *spec.Specification,
-	opt *CollectOptions,
+	opt *BaseOptions,
 	resultDir string,
 ) error {
 	if len(topo.Monitors) < 1 {
