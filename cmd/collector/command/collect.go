@@ -17,6 +17,7 @@ import (
 	"path"
 
 	"github.com/pingcap/tidb-foresight/collector"
+	"github.com/pingcap/tiup/pkg/cliutil"
 	"github.com/pingcap/tiup/pkg/cluster/executor"
 	"github.com/pingcap/tiup/pkg/utils"
 	"github.com/spf13/cobra"
@@ -24,7 +25,9 @@ import (
 
 func newCheckCmd() *cobra.Command {
 	opt := collector.BaseOptions{
-		IdentityFile: path.Join(utils.UserHome(), ".ssh", "id_rsa"),
+		SSH: &cliutil.SSHConnectionProps{
+			IdentityFile: path.Join(utils.UserHome(), ".ssh", "id_rsa"),
+		},
 	}
 	cmd := &cobra.Command{
 		Use:   "collect <cluster-name>",
@@ -35,14 +38,14 @@ func newCheckCmd() *cobra.Command {
 			}
 			// natvie ssh has it's own logic to find the default identity_file
 			if gOpt.SSHType == executor.SSHTypeSystem && !utils.IsFlagSetByUser(cmd.Flags(), "identity_file") {
-				opt.IdentityFile = ""
+				opt.SSH.IdentityFile = ""
 			}
 			return cm.CollectClusterInfo(args[0], &opt, &gOpt)
 		},
 	}
 
 	cmd.Flags().StringVarP(&opt.User, "user", "u", utils.CurrentUser(), "The user name to login via SSH. The user must has root (or sudo) privilege.")
-	cmd.Flags().StringVarP(&opt.IdentityFile, "identity_file", "i", opt.IdentityFile, "The path of the SSH identity file. If specified, public key authentication will be used.")
+	cmd.Flags().StringVarP(&opt.SSH.IdentityFile, "identity_file", "i", opt.SSH.IdentityFile, "The path of the SSH identity file. If specified, public key authentication will be used.")
 	cmd.Flags().BoolVarP(&opt.UsePassword, "password", "p", false, "Use password of target hosts. If specified, password authentication will be used.")
 	cmd.Flags().StringSliceVarP(&gOpt.Roles, "role", "R", nil, "Only check specified roles")
 	cmd.Flags().StringSliceVarP(&gOpt.Nodes, "node", "N", nil, "Only check specified nodes")

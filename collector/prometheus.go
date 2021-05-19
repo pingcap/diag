@@ -27,6 +27,7 @@ import (
 	"time"
 
 	"github.com/pingcap/tidb-foresight/utils"
+	operator "github.com/pingcap/tiup/pkg/cluster/operation"
 	"github.com/pingcap/tiup/pkg/cluster/spec"
 	log "github.com/sirupsen/logrus"
 )
@@ -37,11 +38,40 @@ const (
 	subdirMetrics = "metrics"
 )
 
-// collectAlerts gathers alert list from Prometheus
-func collectAlerts(
-	topo *spec.Specification,
-	resultDir string,
-) error {
+// AlertCollectOptions is the options collecting alerts
+type AlertCollectOptions struct {
+	*BaseOptions
+	opt       *operator.Options // global operations from cli
+	resultDir string
+}
+
+// Desc implements the Collector interface
+func (c *AlertCollectOptions) Desc() string {
+	return "alert lists from Prometheus node"
+}
+
+// GetBaseOptions implements the Collector interface
+func (c *AlertCollectOptions) GetBaseOptions() *BaseOptions {
+	return c.BaseOptions
+}
+
+// SetBaseOptions implements the Collector interface
+func (c *AlertCollectOptions) SetBaseOptions(opt *BaseOptions) {
+	c.BaseOptions = opt
+}
+
+// SetGlobalOperations sets the global operation fileds
+func (c *AlertCollectOptions) SetGlobalOperations(opt *operator.Options) {
+	c.opt = opt
+}
+
+// SetDir sets the result directory path
+func (c *AlertCollectOptions) SetDir(dir string) {
+	c.resultDir = dir
+}
+
+// Collect implements the Collector interface
+func (c *AlertCollectOptions) Collect(topo *spec.Specification) error {
 	if len(topo.Monitors) < 1 {
 		fmt.Println("No Prometheus node found in topology, skip.")
 		return nil
@@ -51,18 +81,18 @@ func collectAlerts(
 	var queryErr error
 	for _, prom := range topo.Monitors {
 		promAddr := fmt.Sprintf("%s:%d", prom.Host, prom.Port)
-		if err := ensureMonitorDir(resultDir, subdirAlerts, fmt.Sprintf("%s-%d", prom.Host, prom.Port)); err != nil {
+		if err := ensureMonitorDir(c.resultDir, subdirAlerts, fmt.Sprintf("%s-%d", prom.Host, prom.Port)); err != nil {
 			return err
 		}
 
-		c := &http.Client{Timeout: time.Second * 10}
-		resp, err := c.PostForm(fmt.Sprintf("http://%s/api/v1/query", promAddr), url.Values{"query": {"ALERTS"}})
+		client := &http.Client{Timeout: time.Second * 10}
+		resp, err := client.PostForm(fmt.Sprintf("http://%s/api/v1/query", promAddr), url.Values{"query": {"ALERTS"}})
 		if err != nil {
 			return err
 		}
 		defer resp.Body.Close()
 
-		f, err := os.Create(filepath.Join(resultDir, subdirMonitor, subdirAlerts, fmt.Sprintf("%s-%d", prom.Host, prom.Port), "alerts.json"))
+		f, err := os.Create(filepath.Join(c.resultDir, subdirMonitor, subdirAlerts, fmt.Sprintf("%s-%d", prom.Host, prom.Port), "alerts.json"))
 		if err == nil {
 			queryOK = queryOK || true
 		} else {
@@ -82,23 +112,51 @@ func collectAlerts(
 	return nil
 }
 
-// collectMetrics gathers metrics from Prometheus
-func collectMetrics(
-	topo *spec.Specification,
-	opt *BaseOptions,
-	resultDir string,
-) error {
+// MetricCollectOptions is the options collecting metrics
+type MetricCollectOptions struct {
+	*BaseOptions
+	opt       *operator.Options // global operations from cli
+	resultDir string
+}
+
+// Desc implements the Collector interface
+func (c *MetricCollectOptions) Desc() string {
+	return "metrics from Prometheus node"
+}
+
+// GetBaseOptions implements the Collector interface
+func (c *MetricCollectOptions) GetBaseOptions() *BaseOptions {
+	return c.BaseOptions
+}
+
+// SetBaseOptions implements the Collector interface
+func (c *MetricCollectOptions) SetBaseOptions(opt *BaseOptions) {
+	c.BaseOptions = opt
+}
+
+// SetGlobalOperations sets the global operation fileds
+func (c *MetricCollectOptions) SetGlobalOperations(opt *operator.Options) {
+	c.opt = opt
+}
+
+// SetDir sets the result directory path
+func (c *MetricCollectOptions) SetDir(dir string) {
+	c.resultDir = dir
+}
+
+// Collect implements the Collector interface
+func (c *MetricCollectOptions) Collect(topo *spec.Specification) error {
 	if len(topo.Monitors) < 1 {
 		fmt.Println("No Prometheus node found in topology, skip.")
 		return nil
 	}
 
 	currTime := time.Now()
-	end := opt.ScrapeEnd
+	end := c.BaseOptions.ScrapeEnd
 	if end == "" {
 		end = currTime.Format(time.RFC3339)
 	}
-	begin := opt.ScrapeBegin
+	begin := c.BaseOptions.ScrapeBegin
 	if begin == "" {
 		begin = currTime.Add(time.Duration(-1) * time.Hour).Format(time.RFC3339)
 	}
@@ -108,12 +166,12 @@ func collectMetrics(
 	tl := utils.NewTokenLimiter(uint(runtime.NumCPU()))
 	for _, prom := range topo.Monitors {
 		promAddr := fmt.Sprintf("%s:%d", prom.Host, prom.Port)
-		if err := ensureMonitorDir(resultDir, subdirMetrics, fmt.Sprintf("%s-%d", prom.Host, prom.Port)); err != nil {
+		if err := ensureMonitorDir(c.resultDir, subdirMetrics, fmt.Sprintf("%s-%d", prom.Host, prom.Port)); err != nil {
 			return err
 		}
 
-		c := &http.Client{Timeout: time.Second * 10}
-		metrics, err := getMetricList(c, promAddr)
+		client := &http.Client{Timeout: time.Second * 10}
+		metrics, err := getMetricList(client, promAddr)
 		if err == nil {
 			queryOK = queryOK || true
 		}
@@ -121,7 +179,7 @@ func collectMetrics(
 
 		for _, mtc := range metrics {
 			go func(tok *utils.Token, mtc string) {
-				collectMetric(c, prom, begin, end, mtc, resultDir)
+				collectMetric(client, prom, begin, end, mtc, c.resultDir)
 				tl.Put(tok)
 			}(tl.Get(), mtc)
 		}
