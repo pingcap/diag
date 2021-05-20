@@ -22,6 +22,15 @@ import (
 	"github.com/pingcap/tiup/pkg/cluster/executor"
 	operator "github.com/pingcap/tiup/pkg/cluster/operation"
 	"github.com/pingcap/tiup/pkg/cluster/spec"
+	"github.com/pingcap/tiup/pkg/set"
+)
+
+// types of data to collect
+const (
+	CollectTypeSystem  = "system"
+	CollectTypeMonitor = "monitor"
+	CollectTypeLog     = "log"
+	CollectTypeConfig  = "config"
 )
 
 // Collector is the configuration defining an collecting job
@@ -41,8 +50,19 @@ type BaseOptions struct {
 	ScrapeEnd   string                      // stop timepoint when collecting metrics and logs
 }
 
+// CollectOptions contains the options defining which type of data to collect
+type CollectOptions struct {
+	Include set.StringSet
+	Exclude set.StringSet
+}
+
 // CollectClusterInfo collects information and metrics from a tidb cluster
-func (m *Manager) CollectClusterInfo(clusterName string, opt *BaseOptions, gOpt *operator.Options) error {
+func (m *Manager) CollectClusterInfo(
+	clusterName string,
+	opt *BaseOptions,
+	cOpt *CollectOptions,
+	gOpt *operator.Options,
+) error {
 	var topo spec.Specification
 
 	exist, err := m.specManager.Exist(clusterName)
@@ -68,43 +88,53 @@ func (m *Manager) CollectClusterInfo(clusterName string, opt *BaseOptions, gOpt 
 	}
 
 	// build collector list
-	collectors := make([]Collector, 0)
-
-	// collect cluster topology
-	collectors = append(collectors,
-		&MetaCollectOptions{
+	collectors := []Collector{
+		&MetaCollectOptions{ // cluster metadata, always collected
 			BaseOptions: opt,
 			opt:         gOpt,
 			resultDir:   resultDir,
 			filePath:    m.specManager.Path(clusterName, "meta.yaml"),
 		},
-		&AlertCollectOptions{
-			BaseOptions: opt,
-			opt:         gOpt,
-			resultDir:   resultDir,
-		},
-		&MetricCollectOptions{
-			BaseOptions: opt,
-			opt:         gOpt,
-			resultDir:   resultDir,
-		},
-	)
-
-	// collect data from remote servers
-	var sshConnProps *cliutil.SSHConnectionProps = &cliutil.SSHConnectionProps{}
-	if gOpt.SSHType != executor.SSHTypeNone {
-		var err error
-		if sshConnProps, err = cliutil.ReadIdentityFileOrPassword(opt.SSH.IdentityFile, opt.UsePassword); err != nil {
-			return err
-		}
 	}
-	opt.SSH = sshConnProps
 
-	collectors = append(collectors, &SystemCollectOptions{
-		BaseOptions: opt,
-		opt:         gOpt,
-		resultDir:   resultDir,
-	})
+	// collect data from monitoring system
+	if canCollect(cOpt, CollectTypeMonitor) {
+		collectors = append(collectors,
+			&AlertCollectOptions{ // alerts
+				BaseOptions: opt,
+				opt:         gOpt,
+				resultDir:   resultDir,
+			},
+			&MetricCollectOptions{ // metrics
+				BaseOptions: opt,
+				opt:         gOpt,
+				resultDir:   resultDir,
+			},
+		)
+	}
+
+	// populate SSH credentials if needed
+	if canCollect(cOpt, CollectTypeSystem) ||
+		canCollect(cOpt, CollectTypeLog) ||
+		canCollect(cOpt, CollectTypeConfig) {
+		// collect data from remote servers
+		var sshConnProps *cliutil.SSHConnectionProps = &cliutil.SSHConnectionProps{}
+		if gOpt.SSHType != executor.SSHTypeNone {
+			var err error
+			if sshConnProps, err = cliutil.ReadIdentityFileOrPassword(opt.SSH.IdentityFile, opt.UsePassword); err != nil {
+				return err
+			}
+		}
+		opt.SSH = sshConnProps
+	}
+
+	if canCollect(cOpt, CollectTypeSystem) {
+		collectors = append(collectors, &SystemCollectOptions{
+			BaseOptions: opt,
+			opt:         gOpt,
+			resultDir:   resultDir,
+		})
+	}
 
 	// run collectors
 	for _, c := range collectors {
@@ -116,4 +146,8 @@ func (m *Manager) CollectClusterInfo(clusterName string, opt *BaseOptions, gOpt 
 
 	fmt.Printf("Collected data are stored in %s\n", resultDir)
 	return nil
+}
+
+func canCollect(cOpt *CollectOptions, cType string) bool {
+	return cOpt.Include.Exist(cType) && !cOpt.Exclude.Exist(cType)
 }

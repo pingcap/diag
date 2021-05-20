@@ -19,6 +19,7 @@ import (
 	"github.com/pingcap/tidb-foresight/collector"
 	"github.com/pingcap/tiup/pkg/cliutil"
 	"github.com/pingcap/tiup/pkg/cluster/executor"
+	"github.com/pingcap/tiup/pkg/set"
 	"github.com/pingcap/tiup/pkg/utils"
 	"github.com/spf13/cobra"
 )
@@ -29,6 +30,17 @@ func newCheckCmd() *cobra.Command {
 			IdentityFile: path.Join(utils.UserHome(), ".ssh", "id_rsa"),
 		},
 	}
+	cOpt := collector.CollectOptions{
+		Include: set.NewStringSet( // collect all types by default
+			collector.CollectTypeSystem,
+			collector.CollectTypeMonitor,
+			collector.CollectTypeLog,
+			collector.CollectTypeConfig,
+		),
+		Exclude: set.NewStringSet(),
+	}
+	inc := make([]string, 0)
+	ext := make([]string, 0)
 	cmd := &cobra.Command{
 		Use:   "collect <cluster-name>",
 		Short: "Collect information and metrics from the cluster.",
@@ -40,7 +52,14 @@ func newCheckCmd() *cobra.Command {
 			if gOpt.SSHType == executor.SSHTypeSystem && !utils.IsFlagSetByUser(cmd.Flags(), "identity_file") {
 				opt.SSH.IdentityFile = ""
 			}
-			return cm.CollectClusterInfo(args[0], &opt, &gOpt)
+
+			if len(inc) > 0 {
+				cOpt.Include = set.NewStringSet(inc...)
+			}
+			if len(ext) > 0 {
+				cOpt.Exclude = set.NewStringSet(ext...)
+			}
+			return cm.CollectClusterInfo(args[0], &opt, &cOpt, &gOpt)
 		},
 	}
 
@@ -52,6 +71,8 @@ func newCheckCmd() *cobra.Command {
 	cmd.Flags().Uint64Var(&gOpt.APITimeout, "api-timeout", 10, "Timeout in seconds when querying PD APIs.")
 	cmd.Flags().StringVar(&opt.ScrapeBegin, "begin", "", "start timepoint when collecting timeseries data")
 	cmd.Flags().StringVar(&opt.ScrapeEnd, "end", "", "stop timepoint when collecting timeseries data")
+	cmd.Flags().StringSliceVar(&inc, "include", cOpt.Include.Slice(), "types of data to collect")
+	cmd.Flags().StringSliceVar(&ext, "exclude", cOpt.Exclude.Slice(), "types of data not to collect")
 
 	return cmd
 }
