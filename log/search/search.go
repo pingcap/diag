@@ -3,6 +3,7 @@ package search
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"sync"
 	"time"
 
@@ -10,7 +11,6 @@ import (
 	"github.com/pingcap/tidb-foresight/log/item"
 	"github.com/pingcap/tidb-foresight/log/iterator"
 	"github.com/pingcap/tidb-foresight/log/parser"
-	"github.com/pingcap/tidb-foresight/utils"
 )
 
 type Searcher interface {
@@ -135,7 +135,7 @@ func (s *searcher) Search(dir string, begin, end time.Time, level, text, token s
 		return iter, token, err
 	} else {
 		if iter := s.GetIter(token); iter == nil {
-			return nil, token, utils.TargetObjectNotFound
+			return nil, token, fmt.Errorf("not found")
 		} else {
 			return iter, token, nil
 		}
