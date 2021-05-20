@@ -69,10 +69,11 @@ func newCheckCmd() *cobra.Command {
 	cmd.Flags().StringSliceVarP(&gOpt.Roles, "role", "R", nil, "Only check specified roles")
 	cmd.Flags().StringSliceVarP(&gOpt.Nodes, "node", "N", nil, "Only check specified nodes")
 	cmd.Flags().Uint64Var(&gOpt.APITimeout, "api-timeout", 10, "Timeout in seconds when querying PD APIs.")
-	cmd.Flags().StringVar(&opt.ScrapeBegin, "begin", "", "start timepoint when collecting timeseries data")
-	cmd.Flags().StringVar(&opt.ScrapeEnd, "end", "", "stop timepoint when collecting timeseries data")
+	cmd.Flags().StringVarP(&opt.ScrapeBegin, "from", "f", "", "start timepoint when collecting timeseries data")
+	cmd.Flags().StringVarP(&opt.ScrapeEnd, "to", "t", "", "stop timepoint when collecting timeseries data")
 	cmd.Flags().StringSliceVar(&inc, "include", cOpt.Include.Slice(), "types of data to collect")
 	cmd.Flags().StringSliceVar(&ext, "exclude", cOpt.Exclude.Slice(), "types of data not to collect")
+	cmd.Flags().StringVarP(&cOpt.Dir, "output", "o", "", "output directory of collected data")
 
 	return cmd
 }

@@ -151,14 +151,9 @@ func (c *MetricCollectOptions) Collect(topo *spec.Specification) error {
 		return nil
 	}
 
-	currTime := time.Now()
-	end := c.BaseOptions.ScrapeEnd
-	if end == "" {
-		end = currTime.Format(time.RFC3339)
-	}
-	begin := c.BaseOptions.ScrapeBegin
-	if begin == "" {
-		begin = currTime.Add(time.Duration(-1) * time.Hour).Format(time.RFC3339)
+	begin, end, err := parseTimeRange(c.GetBaseOptions().ScrapeBegin, c.GetBaseOptions().ScrapeEnd)
+	if err != nil {
+		return err
 	}
 
 	var queryOK bool
@@ -249,4 +244,33 @@ func ensureMonitorDir(base string, sub ...string) error {
 	e = append(e, sub...)
 	dir := path.Join(e...)
 	return os.MkdirAll(dir, 0755)
+}
+
+func parseTimeRange(scrapeStart, scrapeEnd string) (string, string, error) {
+	currTime := time.Now()
+
+	end := scrapeEnd
+	if end == "" {
+		end = currTime.Format(time.RFC3339)
+	}
+	tsEnd, err := utils.ParseTime(end)
+	if err != nil {
+		return "", "", err
+	}
+	end = tsEnd.Format(time.RFC3339)
+
+	begin := scrapeStart
+	if begin == "" {
+		begin = tsEnd.Add(time.Duration(-1) * time.Hour).Format(time.RFC3339)
+	}
+	tsStart, err := utils.ParseTime(begin)
+	if err != nil {
+		return "", "", err
+	}
+	begin = tsStart.Format(time.RFC3339)
+
+	if !tsStart.Before(tsEnd) {
+		return "", "", fmt.Errorf("start time must be earlier than end time")
+	}
+	return begin, end, nil
 }

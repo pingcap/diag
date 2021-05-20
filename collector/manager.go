@@ -14,6 +14,7 @@
 package collector
 
 import (
+	"fmt"
 	"time"
 
 	perrs "github.com/pingcap/errors"
@@ -34,11 +35,15 @@ type Manager struct {
 
 // NewManager create a Manager.
 func NewManager(sysName string, specManager *spec.SpecManager, bindVersion spec.BindVersion) *Manager {
+	currTime := time.Now()
+	tid := base52.Encode(currTime.UnixNano() + rand.Int63n(1000))
+	ts := currTime.Format("2006-01-02-15-04-05")
+
 	return &Manager{
 		sysName:     sysName,
 		specManager: specManager,
 		bindVersion: bindVersion,
-		session:     base52.Encode(time.Now().UnixNano() + rand.Int63n(1000)),
+		session:     fmt.Sprintf("%s-%s", ts, tid),
 	}
 }
 

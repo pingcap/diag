@@ -107,7 +107,7 @@ func (c *SystemCollectOptions) Collect(topo *spec.Specification) error {
 					RootSSH(
 						inst.GetHost(),
 						inst.GetSSHPort(),
-						c.BaseOptions.User,
+						c.GetBaseOptions().User,
 						c.SSH.Password,
 						c.SSH.IdentityFile,
 						c.SSH.IdentityFilePassphrase,
@@ -115,7 +115,7 @@ func (c *SystemCollectOptions) Collect(topo *spec.Specification) error {
 						c.opt.SSHType,
 						topo.GlobalOptions.SSHType,
 					).
-					Mkdir(c.BaseOptions.User, inst.GetHost(), filepath.Join(task.CheckToolsPathDir, "bin")).
+					Mkdir(c.GetBaseOptions().User, inst.GetHost(), filepath.Join(task.CheckToolsPathDir, "bin")).
 					CopyComponent(
 						spec.ComponentCheckCollector,
 						inst.OS(),
@@ -178,7 +178,7 @@ func (c *SystemCollectOptions) Collect(topo *spec.Specification) error {
 				RootSSH(
 					inst.GetHost(),
 					inst.GetSSHPort(),
-					c.BaseOptions.User,
+					c.GetBaseOptions().User,
 					c.SSH.Password,
 					c.SSH.IdentityFile,
 					c.SSH.IdentityFilePassphrase,

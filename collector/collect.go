@@ -16,6 +16,7 @@ package collector
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 
 	perrs "github.com/pingcap/errors"
 	"github.com/pingcap/tiup/pkg/cliutil"
@@ -54,6 +55,7 @@ type BaseOptions struct {
 type CollectOptions struct {
 	Include set.StringSet
 	Exclude set.StringSet
+	Dir     string // target directory to store collected data
 }
 
 // CollectClusterInfo collects information and metrics from a tidb cluster
@@ -82,7 +84,16 @@ func (m *Manager) CollectClusterInfo(
 	topo = *metadata.Topology
 
 	// prepare output dir of collected data
-	resultDir := m.specManager.Path(clusterName, "collector", m.session)
+	var resultDir string
+	if cOpt.Dir == "" {
+		resultDir = m.specManager.Path(clusterName, "collector", m.session)
+	} else {
+		fp, err := filepath.Abs(cOpt.Dir)
+		if err != nil {
+			return err
+		}
+		resultDir = filepath.Join(fp, m.session)
+	}
 	if err := os.MkdirAll(resultDir, 0755); err != nil {
 		return err
 	}
