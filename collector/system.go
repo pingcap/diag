@@ -154,6 +154,19 @@ func (c *SystemCollectOptions) Collect(topo *spec.Specification) error {
 						func(ctx context.Context) error {
 							return saveOutput(ctx, inst.GetHost(), c.resultDir, "ss.txt")
 						},
+					).
+					// gather kernel configs
+					Shell(
+						inst.GetHost(),
+						"sysctl -a",
+						"",
+						true,
+					).
+					Func(
+						inst.GetHost(),
+						func(ctx context.Context) error {
+							return saveOutput(ctx, inst.GetHost(), c.resultDir, "sysctl.txt")
+						},
 					)
 				checkSysTasks = append(
 					checkSysTasks,
