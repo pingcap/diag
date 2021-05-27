@@ -1,7 +1,7 @@
 PROJECT=tidb-foresight
 
 
-.PHONY: all collector spliter syncer fmt check_prefix build default
+.PHONY: all collector scraper fmt check_prefix build default
 
 default: all
 
@@ -47,7 +47,7 @@ CHECK_LDFLAGS += $(LDFLAGS)
 
 all: fmt build
 
-build: collector spliter syncer
+build: collector scraper
 
 clean:
 	@rm -rf bin
@@ -70,11 +70,8 @@ endif
 collector:
 	$(GOBUILD) $(RACE_FLAG) -ldflags '$(LDFLAGS) $(CHECK_FLAG)' -o bin/collector cmd/collector/*.go
 
-spliter:
-	$(GOBUILD) $(RACE_FLAG) -ldflags '$(LDFLAGS) $(CHECK_FLAG)' -o bin/spliter cmd/spliter/*.go
-
-syncer:
-	$(GOBUILD) $(RACE_FLAG) -ldflags '$(LDFLAGS) $(CHECK_FLAG)' -o bin/syncer cmd/syncer/*.go
+scraper:
+	$(GOBUILD) $(RACE_FLAG) -ldflags '$(LDFLAGS) $(CHECK_FLAG)' -o bin/scraper cmd/scraper/*.go
 
 check-%:
 	@ if [ "${${*}}" = "" ]; then \
