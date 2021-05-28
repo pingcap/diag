@@ -31,14 +31,14 @@ func NewConfigFileScraper(l []string) *ConfigFileScraper {
 }
 
 // Scrap implements the Scraper interface
-func (c *ConfigFileScraper) Scrap(result *Sample) error {
+func (s *ConfigFileScraper) Scrap(result *Sample) error {
 	if result.Config == nil {
 		result.Config = make(FileStat)
 	}
 	fileList := make([]string, 0)
 
 	// extend all file paths
-	for _, fp := range *c {
+	for _, fp := range *s {
 		if fm, err := filepath.Glob(fp); err == nil {
 			fileList = append(fileList, fm...)
 		} else {

@@ -13,7 +13,12 @@
 
 package main
 
-import "github.com/pingcap/tidb-foresight/scraper"
+import (
+	"fmt"
+
+	"github.com/pingcap/tidb-foresight/scraper"
+	"github.com/pingcap/tidb-foresight/utils"
+)
 
 // Scrap run scrapers as Option configured
 func Scrap(opt *scraper.Option) (*scraper.Sample, error) {
@@ -22,11 +27,23 @@ func Scrap(opt *scraper.Option) (*scraper.Sample, error) {
 	if len(opt.ConfigPaths) > 0 {
 		scrapers = append(scrapers, scraper.NewConfigFileScraper(opt.ConfigPaths))
 	}
+	if len(opt.LogPaths) > 0 {
+		s := scraper.NewLogScraper(opt.LogPaths)
+		var err error
+		if s.Start, err = utils.ParseTime(opt.Start); err != nil {
+			return nil, err
+		}
+		if s.End, err = utils.ParseTime(opt.End); err != nil {
+			return nil, err
+		}
+		scrapers = append(scrapers, s)
+	}
 
 	result := &scraper.Sample{}
 	for _, s := range scrapers {
 		if err := s.Scrap(result); err != nil {
-			return result, err
+			//return result, err
+			fmt.Println(err)
 		}
 	}
 
