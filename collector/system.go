@@ -15,17 +15,20 @@ package collector
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
 
 	"github.com/joomcode/errorx"
 	perrs "github.com/pingcap/errors"
+	"github.com/pingcap/tidb-insight/collector/insight"
 	"github.com/pingcap/tiup/pkg/cluster/ctxt"
 	operator "github.com/pingcap/tiup/pkg/cluster/operation"
 	"github.com/pingcap/tiup/pkg/cluster/spec"
 	"github.com/pingcap/tiup/pkg/cluster/task"
 	"github.com/pingcap/tiup/pkg/set"
+	"github.com/pingcap/tiup/pkg/utils"
 )
 
 // SystemCollectOptions are options used collecting system information
@@ -134,7 +137,7 @@ func (c *SystemCollectOptions) Collect(topo *spec.Specification) error {
 					Func(
 						inst.GetHost(),
 						func(ctx context.Context) error {
-							return saveOutput(ctx, inst.GetHost(), c.resultDir, "insight.json")
+							return saveInsightOutput(ctx, inst.GetHost(), c.resultDir)
 						},
 					).
 					BuildAsStep(fmt.Sprintf("  - Getting system info of %s:%d", inst.GetHost(), inst.GetSSHPort()))
@@ -152,20 +155,7 @@ func (c *SystemCollectOptions) Collect(topo *spec.Specification) error {
 					Func(
 						inst.GetHost(),
 						func(ctx context.Context) error {
-							return saveOutput(ctx, inst.GetHost(), c.resultDir, "ss.txt")
-						},
-					).
-					// gather kernel configs
-					Shell(
-						inst.GetHost(),
-						"sysctl -a",
-						"",
-						true,
-					).
-					Func(
-						inst.GetHost(),
-						func(ctx context.Context) error {
-							return saveOutput(ctx, inst.GetHost(), c.resultDir, "sysctl.txt")
+							return saveRawOutput(ctx, inst.GetHost(), c.resultDir, "ss.txt")
 						},
 					)
 				checkSysTasks = append(
@@ -211,26 +201,76 @@ func (c *SystemCollectOptions) Collect(topo *spec.Specification) error {
 	return nil
 }
 
-func saveOutput(ctx context.Context, host, dir, fname string) error {
-	stdout, stderr, _ := ctxt.GetInner(ctx).GetOutputs(host)
+func saveOutput(data []byte, fname string) error {
+	dir := filepath.Dir(fname)
+	if err := utils.CreateDir(dir); err != nil {
+		return err
+	}
 
-	fo, err := os.Create(filepath.Join(dir, fmt.Sprintf("%s.%s", "stdout", fname)))
+	f, err := os.Create(fname)
 	if err != nil {
 		return err
 	}
-	defer fo.Close()
-	fe, err := os.Create(filepath.Join(dir, fmt.Sprintf("%s.%s", "stderr", fname)))
-	if err != nil {
-		return err
-	}
-	defer fe.Close()
+	defer f.Close()
 
-	if _, err := fo.Write(stdout); err != nil {
+	if _, err := f.Write(data); err != nil {
 		return err
 	}
-	if _, err := fe.Write(stderr); err != nil {
-		return err
-	}
-
 	return nil
+}
+
+func saveRawOutput(ctx context.Context, host, dir, fname string) error {
+	stdout, stderr, _ := ctxt.GetInner(ctx).GetOutputs(host)
+	if len(stderr) > 0 {
+		if err := saveOutput(stderr, filepath.Join(dir, fmt.Sprintf("%s.stderr", fname))); err != nil {
+			return err
+		}
+	}
+	return saveOutput(stdout, filepath.Join(dir, host, fname))
+}
+
+func saveInsightOutput(ctx context.Context, host, dir string) error {
+	stdout, stderr, _ := ctxt.GetInner(ctx).GetOutputs(host)
+	if len(stderr) > 0 {
+		if err := saveOutput(stderr, filepath.Join(dir, host, "insight.stderr")); err != nil {
+			return err
+		}
+	}
+
+	var info insight.InsightInfo
+	if err := json.Unmarshal(stdout, &info); err != nil {
+		// save output directly on parsing errors
+		return saveOutput(stdout, filepath.Join(dir, host, "insight.json"))
+	}
+
+	// save limits and kernel parameters
+	seclim := make([]byte, 0)
+	sysctl := make([]byte, 0)
+	for _, item := range info.SysConfig.SecLimit {
+		seclim = append(seclim,
+			[]byte(fmt.Sprintf("%s\t%s\t%s\t%d\n", item.Domain, item.Type, item.Item, item.Value))...,
+		)
+	}
+	if err := saveOutput(seclim, filepath.Join(dir, host, "limits.conf")); err != nil {
+		return err
+	}
+	for k, v := range info.SysConfig.SysCtl {
+		sysctl = append(sysctl,
+			[]byte(fmt.Sprintf("%s = %s\n", k, v))...,
+		)
+	}
+	if err := saveOutput(sysctl, filepath.Join(dir, host, "sysctl.conf")); err != nil {
+		return err
+	}
+
+	// save kernel log
+	dmesg := make([]byte, 0)
+	for _, item := range info.DMesg {
+		dmesg = append(dmesg, []byte(fmt.Sprintln(item))...)
+	}
+	if err := saveOutput(dmesg, filepath.Join(dir, host, "dmesg.log")); err != nil {
+		return err
+	}
+
+	return saveOutput(stdout, filepath.Join(dir, host, "insight.json"))
 }
