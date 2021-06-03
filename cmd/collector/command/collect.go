@@ -24,7 +24,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func newCheckCmd() *cobra.Command {
+func newCollectCmd() *cobra.Command {
 	opt := collector.BaseOptions{
 		SSH: &cliutil.SSHConnectionProps{
 			IdentityFile: path.Join(utils.UserHome(), ".ssh", "id_rsa"),

@@ -36,6 +36,7 @@ const (
 
 // Collector is the configuration defining an collecting job
 type Collector interface {
+	Prepare(*spec.Specification) (map[string]CollectStat, error)
 	Collect(*spec.Specification) error
 	GetBaseOptions() *BaseOptions
 	SetBaseOptions(*BaseOptions)
@@ -56,6 +57,12 @@ type CollectOptions struct {
 	Include set.StringSet
 	Exclude set.StringSet
 	Dir     string // target directory to store collected data
+}
+
+// CollectStat is estimated size stats of data to be collected
+type CollectStat struct {
+	Target string
+	Size   int64
 }
 
 // CollectClusterInfo collects information and metrics from a tidb cluster
@@ -147,6 +154,23 @@ func (m *Manager) CollectClusterInfo(
 		})
 	}
 
+	// prepare
+	// run collectors
+	stats := make([]map[string]CollectStat, 0)
+	for _, c := range collectors {
+		fmt.Printf("Collecting %s...\n", c.Desc())
+		stat, err := c.Prepare(&topo)
+		if err != nil {
+			return err
+		}
+		stats = append(stats, stat)
+	}
+
+	// confirm before really collect
+	if err := confirmStats(stats); err != nil {
+		return err
+	}
+
 	// run collectors
 	for _, c := range collectors {
 		fmt.Printf("Collecting %s...\n", c.Desc())
@@ -157,6 +181,33 @@ func (m *Manager) CollectClusterInfo(
 
 	fmt.Printf("Collected data are stored in %s\n", resultDir)
 	return nil
+}
+
+func confirmStats(stats []map[string]CollectStat) error {
+	fmt.Printf("Estimated size of data to collect (inaccurate):\n")
+	for _, stat := range stats {
+		if stat == nil {
+			continue
+		}
+		for host, item := range stat {
+			fmt.Printf("(%s) %s: %s\n", host, item.Target, readableSize(item.Size))
+		}
+	}
+	return cliutil.PromptForConfirmOrAbortError("Do you want to continue? [y/N]: ")
+}
+
+func readableSize(b int64) string {
+	const unit = 1024
+	if b < unit {
+		return fmt.Sprintf("%d B", b)
+	}
+	div, exp := int64(unit), 0
+	for n := b / unit; n >= unit; n /= unit {
+		div *= unit
+		exp++
+	}
+	return fmt.Sprintf("%.2f %cB",
+		float64(b)/float64(div), "kMGTPE"[exp])
 }
 
 func canCollect(cOpt *CollectOptions, cType string) bool {

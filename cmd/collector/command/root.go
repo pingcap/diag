@@ -66,6 +66,8 @@ func init() {
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 			var err error
 			var env *tiupmeta.Environment
+			// unset component data dir to use clusters'
+			os.Unsetenv(localdata.EnvNameComponentDataDir)
 			if err = spec.Initialize("cluster"); err != nil {
 				return err
 			}
@@ -109,7 +111,7 @@ func init() {
 	_ = rootCmd.PersistentFlags().MarkHidden("native-ssh")
 
 	rootCmd.AddCommand(
-		newCheckCmd(),
+		newCollectCmd(),
 	)
 }
 

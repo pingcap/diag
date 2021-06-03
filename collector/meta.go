@@ -54,6 +54,11 @@ func (c *MetaCollectOptions) SetDir(dir string) {
 	c.resultDir = dir
 }
 
+// Prepare implements the Collector interface
+func (c *MetaCollectOptions) Prepare(topo *spec.Specification) (map[string]CollectStat, error) {
+	return nil, nil
+}
+
 // Collect implements the Collector interface
 func (c *MetaCollectOptions) Collect(topo *spec.Specification) error {
 	// save the topology

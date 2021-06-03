@@ -36,6 +36,7 @@ const (
 	subdirMonitor = "monitor"
 	subdirAlerts  = "alerts"
 	subdirMetrics = "metrics"
+	metricStep    = 15 // use 15s step
 )
 
 // AlertCollectOptions is the options collecting alerts
@@ -68,6 +69,11 @@ func (c *AlertCollectOptions) SetGlobalOperations(opt *operator.Options) {
 // SetDir sets the result directory path
 func (c *AlertCollectOptions) SetDir(dir string) {
 	c.resultDir = dir
+}
+
+// Prepare implements the Collector interface
+func (c *AlertCollectOptions) Prepare(topo *spec.Specification) (map[string]CollectStat, error) {
+	return nil, nil
 }
 
 // Collect implements the Collector interface
@@ -117,6 +123,8 @@ type MetricCollectOptions struct {
 	*BaseOptions
 	opt       *operator.Options // global operations from cli
 	resultDir string
+	timeSteps []string
+	metrics   []string // metric list
 }
 
 // Desc implements the Collector interface
@@ -144,25 +152,27 @@ func (c *MetricCollectOptions) SetDir(dir string) {
 	c.resultDir = dir
 }
 
-// Collect implements the Collector interface
-func (c *MetricCollectOptions) Collect(topo *spec.Specification) error {
+// Prepare implements the Collector interface
+func (c *MetricCollectOptions) Prepare(topo *spec.Specification) (map[string]CollectStat, error) {
 	if len(topo.Monitors) < 1 {
 		fmt.Println("No Prometheus node found in topology, skip.")
-		return nil
+		return nil, nil
 	}
 
-	begin, end, err := parseTimeRange(c.GetBaseOptions().ScrapeBegin, c.GetBaseOptions().ScrapeEnd)
+	ts, nsec, err := parseTimeRange(c.GetBaseOptions().ScrapeBegin, c.GetBaseOptions().ScrapeEnd)
 	if err != nil {
-		return err
+		return nil, err
 	}
+	c.timeSteps = ts
 
 	var queryOK bool
 	var queryErr error
+	var promAddr string
 	tl := utils.NewTokenLimiter(uint(runtime.NumCPU()))
 	for _, prom := range topo.Monitors {
-		promAddr := fmt.Sprintf("%s:%d", prom.Host, prom.Port)
+		promAddr = fmt.Sprintf("%s:%d", prom.Host, prom.Port)
 		if err := ensureMonitorDir(c.resultDir, subdirMetrics, fmt.Sprintf("%s-%d", prom.Host, prom.Port)); err != nil {
-			return err
+			return nil, err
 		}
 
 		client := &http.Client{Timeout: time.Second * 10}
@@ -172,9 +182,47 @@ func (c *MetricCollectOptions) Collect(topo *spec.Specification) error {
 		}
 		queryErr = err
 
-		for _, mtc := range metrics {
+		c.metrics = metrics
+	}
+	tl.Wait()
+
+	result := make(map[string]CollectStat)
+	var insCnt int
+	topo.IterInstance(func(instance spec.Instance) {
+		insCnt++
+	})
+	result[promAddr] = CollectStat{
+		Target: "metrics",
+		Size:   int64(3*len(c.metrics)*insCnt) * nsec, // empirical formula
+	}
+
+	// if query successed for any one of prometheus, ignore errors for other instances
+	if !queryOK {
+		return nil, queryErr
+	}
+	return result, nil
+}
+
+// Collect implements the Collector interface
+func (c *MetricCollectOptions) Collect(topo *spec.Specification) error {
+	if len(topo.Monitors) < 1 {
+		fmt.Println("No Prometheus node found in topology, skip.")
+		return nil
+	}
+
+	var queryOK bool
+	var queryErr error
+	tl := utils.NewTokenLimiter(uint(runtime.NumCPU()))
+	for _, prom := range topo.Monitors {
+		if err := ensureMonitorDir(c.resultDir, subdirMetrics, fmt.Sprintf("%s-%d", prom.Host, prom.Port)); err != nil {
+			return err
+		}
+
+		client := &http.Client{Timeout: time.Second * 10}
+
+		for _, mtc := range c.metrics {
 			go func(tok *utils.Token, mtc string) {
-				collectMetric(client, prom, begin, end, mtc, c.resultDir)
+				collectMetric(client, prom, c.timeSteps, mtc, c.resultDir)
 				tl.Put(tok)
 			}(tl.Get(), mtc)
 		}
@@ -204,38 +252,39 @@ func getMetricList(c *http.Client, prom string) ([]string, error) {
 	return r.Metrics, nil
 }
 
-func collectMetric(c *http.Client, prom *spec.PrometheusSpec, begin, end, mtc, resultDir string) {
+func collectMetric(c *http.Client, prom *spec.PrometheusSpec, ts []string, mtc, resultDir string) {
 	promAddr := fmt.Sprintf("%s:%d", prom.Host, prom.Port)
-	step := 15 // use 15s step
 
-	resp, err := c.PostForm(
-		fmt.Sprintf("http://%s/api/v1/query_range", promAddr),
-		url.Values{
-			"query": {mtc},
-			"start": {begin},
-			"end":   {end},
-			"step":  {strconv.Itoa(step)},
-		},
-	)
-	if err != nil {
-		log.Errorf("collect metric %s: %w", mtc, err)
-		return
-	}
-	defer resp.Body.Close()
+	for i := 0; i < len(ts)-1; i++ {
+		resp, err := c.PostForm(
+			fmt.Sprintf("http://%s/api/v1/query_range", promAddr),
+			url.Values{
+				"query": {mtc},
+				"start": {ts[i]},
+				"end":   {ts[i+1]},
+				"step":  {strconv.Itoa(metricStep)},
+			},
+		)
+		if err != nil {
+			log.Errorf("collect metric %s: %w", mtc, err)
+			return
+		}
+		defer resp.Body.Close()
 
-	dst, err := os.Create(
-		filepath.Join(
-			resultDir, subdirMonitor, subdirMetrics, fmt.Sprintf("%s-%d", prom.Host, prom.Port),
-			fmt.Sprintf("%s_%s_%s.json", mtc, begin, end),
-		),
-	)
-	if err != nil {
-		log.Errorf("collect metric %s: %w", mtc, err)
-	}
-	defer dst.Close()
+		dst, err := os.Create(
+			filepath.Join(
+				resultDir, subdirMonitor, subdirMetrics, fmt.Sprintf("%s-%d", prom.Host, prom.Port),
+				fmt.Sprintf("%s_%s_%s.json", mtc, ts[i], ts[i+1]),
+			),
+		)
+		if err != nil {
+			log.Errorf("collect metric %s: %w", mtc, err)
+		}
+		defer dst.Close()
 
-	if _, err := io.Copy(dst, resp.Body); err != nil {
-		log.Errorf("collect metric %s: %w", mtc, err)
+		if _, err := io.Copy(dst, resp.Body); err != nil {
+			log.Errorf("collect metric %s: %w", mtc, err)
+		}
 	}
 }
 
@@ -246,7 +295,7 @@ func ensureMonitorDir(base string, sub ...string) error {
 	return os.MkdirAll(dir, 0755)
 }
 
-func parseTimeRange(scrapeStart, scrapeEnd string) (string, string, error) {
+func parseTimeRange(scrapeStart, scrapeEnd string) ([]string, int64, error) {
 	currTime := time.Now()
 
 	end := scrapeEnd
@@ -255,9 +304,8 @@ func parseTimeRange(scrapeStart, scrapeEnd string) (string, string, error) {
 	}
 	tsEnd, err := utils.ParseTime(end)
 	if err != nil {
-		return "", "", err
+		return nil, 0, err
 	}
-	end = tsEnd.Format(time.RFC3339)
 
 	begin := scrapeStart
 	if begin == "" {
@@ -265,12 +313,27 @@ func parseTimeRange(scrapeStart, scrapeEnd string) (string, string, error) {
 	}
 	tsStart, err := utils.ParseTime(begin)
 	if err != nil {
-		return "", "", err
+		return nil, 0, err
 	}
-	begin = tsStart.Format(time.RFC3339)
 
-	if !tsStart.Before(tsEnd) {
-		return "", "", fmt.Errorf("start time must be earlier than end time")
+	// split time into smaller ranges to avoid querying too many data
+	// in one request
+	ts := make([]string, 0)
+	block := time.Second * 3600 * 16
+	cursor := tsStart
+	for {
+		if cursor.After(tsEnd) {
+			break
+		}
+		next := cursor.Add(block)
+		if next.Before(tsEnd) {
+			ts = append(ts, cursor.Format(time.RFC3339))
+		} else {
+			ts = append(ts, tsEnd.Format(time.RFC3339))
+			break
+		}
+		cursor = next
 	}
-	return begin, end, nil
+
+	return ts, tsEnd.Unix() - tsStart.Unix(), nil
 }

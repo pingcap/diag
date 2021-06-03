@@ -63,6 +63,11 @@ func (c *SystemCollectOptions) SetDir(dir string) {
 	c.resultDir = dir
 }
 
+// Prepare implements the Collector interface
+func (c *SystemCollectOptions) Prepare(topo *spec.Specification) (map[string]CollectStat, error) {
+	return nil, nil
+}
+
 // Collect implements the Collector interface
 func (c *SystemCollectOptions) Collect(topo *spec.Specification) error {
 	var (

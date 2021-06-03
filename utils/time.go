@@ -30,17 +30,17 @@ func ParseTime(s string) (time.Time, error) {
 	// try to parse some common time formats, all timezones are supposed to be localtime
 	currTime := time.Now()
 	for i, guess := range []string{
-		"2006-01-02 04:05:07",
-		"2006-01-02 04:05",
-		"2006-01-02 04",
+		"2006-01-02 15:04:05",
+		"2006-01-02 15:04",
+		"2006-01-02 15",
 		"2006-01-02",
-		"01-02 04:05:07",
-		"01-02 04:05",
-		"01-02 04",
+		"01-02 15:04:15",
+		"01-02 15:04",
+		"01-02 15",
 		"01-02",
-		"04:05:07",
-		"04:05",
-		"04",
+		"15:04:15",
+		"15:04",
+		"15",
 	} {
 		if t, err := time.Parse(guess, s); err == nil {
 			if i > 3 && t.Year() == 0 {
