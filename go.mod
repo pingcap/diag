@@ -15,7 +15,7 @@ require (
 	github.com/pingcap/log v0.0.0-20201112100606-8f1e84a3abc8 // indirect
 	github.com/pingcap/tidb-insight v0.4.0-dev.1.0.20210531101606-8399c371e79f // indirect
 	github.com/pingcap/tidb-insight/collector v0.0.0-20210531101606-8399c371e79f
-	github.com/pingcap/tiup v1.3.1-0.20210526091206-e895fa789c38
+	github.com/pingcap/tiup v1.3.1-0.20210601031137-b12ae285679a
 	github.com/sirupsen/logrus v1.8.1
 	github.com/spf13/cobra v1.1.3
 	go.uber.org/zap v1.16.1-0.20210329175301-c23abee72d19

@@ -72,7 +72,7 @@ func (c *AlertCollectOptions) SetDir(dir string) {
 }
 
 // Prepare implements the Collector interface
-func (c *AlertCollectOptions) Prepare(topo *spec.Specification) (map[string]CollectStat, error) {
+func (c *AlertCollectOptions) Prepare(topo *spec.Specification) (map[string][]CollectStat, error) {
 	return nil, nil
 }
 
@@ -153,7 +153,7 @@ func (c *MetricCollectOptions) SetDir(dir string) {
 }
 
 // Prepare implements the Collector interface
-func (c *MetricCollectOptions) Prepare(topo *spec.Specification) (map[string]CollectStat, error) {
+func (c *MetricCollectOptions) Prepare(topo *spec.Specification) (map[string][]CollectStat, error) {
 	if len(topo.Monitors) < 1 {
 		fmt.Println("No Prometheus node found in topology, skip.")
 		return nil, nil
@@ -186,15 +186,15 @@ func (c *MetricCollectOptions) Prepare(topo *spec.Specification) (map[string]Col
 	}
 	tl.Wait()
 
-	result := make(map[string]CollectStat)
+	result := make(map[string][]CollectStat)
 	var insCnt int
 	topo.IterInstance(func(instance spec.Instance) {
 		insCnt++
 	})
-	result[promAddr] = CollectStat{
+	result[promAddr] = append(result[promAddr], CollectStat{
 		Target: "metrics",
 		Size:   int64(3*len(c.metrics)*insCnt) * nsec, // empirical formula
-	}
+	})
 
 	// if query successed for any one of prometheus, ignore errors for other instances
 	if !queryOK {

@@ -36,7 +36,7 @@ const (
 
 // Collector is the configuration defining an collecting job
 type Collector interface {
-	Prepare(*spec.Specification) (map[string]CollectStat, error)
+	Prepare(*spec.Specification) (map[string][]CollectStat, error)
 	Collect(*spec.Specification) error
 	GetBaseOptions() *BaseOptions
 	SetBaseOptions(*BaseOptions)
@@ -154,9 +154,20 @@ func (m *Manager) CollectClusterInfo(
 		})
 	}
 
+	// collect log files
+	if canCollect(cOpt, CollectTypeLog) {
+		collectors = append(collectors,
+			&LogCollectOptions{
+				BaseOptions: opt,
+				opt:         gOpt,
+				resultDir:   resultDir,
+				fileStats:   make(map[string][]CollectStat),
+			})
+	}
+
 	// prepare
 	// run collectors
-	stats := make([]map[string]CollectStat, 0)
+	stats := make([]map[string][]CollectStat, 0)
 	for _, c := range collectors {
 		fmt.Printf("Collecting %s...\n", c.Desc())
 		stat, err := c.Prepare(&topo)
@@ -183,16 +194,24 @@ func (m *Manager) CollectClusterInfo(
 	return nil
 }
 
-func confirmStats(stats []map[string]CollectStat) error {
+func confirmStats(stats []map[string][]CollectStat) error {
 	fmt.Printf("Estimated size of data to collect (inaccurate):\n")
+	var total int64
 	for _, stat := range stats {
 		if stat == nil {
 			continue
 		}
-		for host, item := range stat {
-			fmt.Printf("(%s) %s: %s\n", host, item.Target, readableSize(item.Size))
+		for host, items := range stat {
+			if len(items) < 1 {
+				continue
+			}
+			for _, s := range items {
+				total += s.Size
+				fmt.Printf("(%s) %s: %s\n", host, s.Target, readableSize(s.Size))
+			}
 		}
 	}
+	fmt.Printf("Total: %s\n", readableSize(total))
 	return cliutil.PromptForConfirmOrAbortError("Do you want to continue? [y/N]: ")
 }
 

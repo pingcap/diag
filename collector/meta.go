@@ -55,7 +55,7 @@ func (c *MetaCollectOptions) SetDir(dir string) {
 }
 
 // Prepare implements the Collector interface
-func (c *MetaCollectOptions) Prepare(topo *spec.Specification) (map[string]CollectStat, error) {
+func (c *MetaCollectOptions) Prepare(topo *spec.Specification) (map[string][]CollectStat, error) {
 	return nil, nil
 }
 

@@ -15,6 +15,7 @@ package main
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/pingcap/tidb-foresight/scraper"
 	"github.com/pingcap/tidb-foresight/utils"
@@ -43,7 +44,7 @@ func Scrap(opt *scraper.Option) (*scraper.Sample, error) {
 	for _, s := range scrapers {
 		if err := s.Scrap(result); err != nil {
 			//return result, err
-			fmt.Println(err)
+			fmt.Fprint(os.Stderr, err)
 		}
 	}
 
