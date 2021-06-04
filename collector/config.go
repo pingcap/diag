@@ -15,14 +15,12 @@ package collector
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"path/filepath"
 	"strings"
 
 	"github.com/joomcode/errorx"
 	perrs "github.com/pingcap/errors"
-	"github.com/pingcap/tidb-foresight/scraper"
 	"github.com/pingcap/tiup/pkg/cluster/ctxt"
 	operator "github.com/pingcap/tiup/pkg/cluster/operation"
 	"github.com/pingcap/tiup/pkg/cluster/spec"
@@ -30,13 +28,8 @@ import (
 	"github.com/pingcap/tiup/pkg/set"
 )
 
-const (
-	// componentDiagCollector is the component name of diagnostic collector
-	componentDiagCollector = "diagcol"
-)
-
-// LogCollectOptions are options used collecting component logs
-type LogCollectOptions struct {
+// ConfigCollectOptions are options used collecting component logs
+type ConfigCollectOptions struct {
 	*BaseOptions
 	opt       *operator.Options // global operations from cli
 	limit     int               // scp rate limit
@@ -45,32 +38,32 @@ type LogCollectOptions struct {
 }
 
 // Desc implements the Collector interface
-func (c *LogCollectOptions) Desc() string {
-	return "logs of components"
+func (c *ConfigCollectOptions) Desc() string {
+	return "config files of components"
 }
 
 // GetBaseOptions implements the Collector interface
-func (c *LogCollectOptions) GetBaseOptions() *BaseOptions {
+func (c *ConfigCollectOptions) GetBaseOptions() *BaseOptions {
 	return c.BaseOptions
 }
 
 // SetBaseOptions implements the Collector interface
-func (c *LogCollectOptions) SetBaseOptions(opt *BaseOptions) {
+func (c *ConfigCollectOptions) SetBaseOptions(opt *BaseOptions) {
 	c.BaseOptions = opt
 }
 
 // SetGlobalOperations sets the global operation fileds
-func (c *LogCollectOptions) SetGlobalOperations(opt *operator.Options) {
+func (c *ConfigCollectOptions) SetGlobalOperations(opt *operator.Options) {
 	c.opt = opt
 }
 
 // SetDir sets the result directory path
-func (c *LogCollectOptions) SetDir(dir string) {
+func (c *ConfigCollectOptions) SetDir(dir string) {
 	c.resultDir = dir
 }
 
 // Prepare implements the Collector interface
-func (c *LogCollectOptions) Prepare(topo *spec.Specification) (map[string][]CollectStat, error) {
+func (c *ConfigCollectOptions) Prepare(topo *spec.Specification) (map[string][]CollectStat, error) {
 	var (
 		dryRunTasks   []*task.StepDisplay
 		downloadTasks []*task.StepDisplay
@@ -149,7 +142,7 @@ func (c *LogCollectOptions) Prepare(topo *spec.Specification) (map[string][]Coll
 			if _, found := hostPaths[inst.GetHost()]; !found {
 				hostPaths[inst.GetHost()] = set.NewStringSet()
 			}
-			hostPaths[inst.GetHost()].Insert(fmt.Sprintf("%s/*", inst.LogDir()))
+			hostPaths[inst.GetHost()].Insert(fmt.Sprintf("%s/conf/*", inst.DeployDir()))
 		}
 	}
 
@@ -159,7 +152,7 @@ func (c *LogCollectOptions) Prepare(topo *spec.Specification) (map[string][]Coll
 		t = t.
 			Shell(
 				host,
-				fmt.Sprintf("%s --log '%s' -f '%s' -t '%s'",
+				fmt.Sprintf("%s --config '%s' -f '%s' -t '%s'",
 					filepath.Join(task.CheckToolsPathDir, "bin", "scraper"),
 					strings.Join(hostPaths[host].Slice(), ","),
 					c.ScrapeBegin, c.ScrapeEnd,
@@ -202,7 +195,7 @@ func (c *LogCollectOptions) Prepare(topo *spec.Specification) (map[string][]Coll
 }
 
 // Collect implements the Collector interface
-func (c *LogCollectOptions) Collect(topo *spec.Specification) error {
+func (c *ConfigCollectOptions) Collect(topo *spec.Specification) error {
 	var (
 		collectTasks []*task.StepDisplay
 		cleanTasks   []*task.StepDisplay
@@ -257,7 +250,7 @@ func (c *LogCollectOptions) Collect(topo *spec.Specification) error {
 						)
 					collectTasks = append(
 						collectTasks,
-						t2.BuildAsStep(fmt.Sprintf("  - Downloading log files from node %s", inst.GetHost())),
+						t2.BuildAsStep(fmt.Sprintf("  - Downloading config files from node %s", inst.GetHost())),
 					)
 				}
 			}
@@ -295,41 +288,4 @@ func (c *LogCollectOptions) Collect(topo *spec.Specification) error {
 	}
 
 	return nil
-}
-
-func parseScraperSamples(ctx context.Context, host string) (map[string][]CollectStat, error) {
-	stdout, stderr, _ := ctxt.GetInner(ctx).GetOutputs(host)
-	if len(stderr) > 0 {
-		fmt.Printf("error scraping files: %s", stderr)
-	}
-	if len(stdout) < 1 {
-		// no matched files, just skip
-		return nil, nil
-	}
-
-	var s scraper.Sample
-	if err := json.Unmarshal(stdout, &s); err != nil {
-		// save output directly on parsing errors
-		return nil, fmt.Errorf("error parsing scraped stats: %s", stdout)
-	}
-
-	stats := make(map[string][]CollectStat)
-	if _, found := stats[host]; !found {
-		stats[host] = make([]CollectStat, 0)
-	}
-
-	for k, v := range s.Config {
-		stats[host] = append(stats[host], CollectStat{
-			Target: k,
-			Size:   v,
-		})
-	}
-	for k, v := range s.Log {
-		stats[host] = append(stats[host], CollectStat{
-			Target: k,
-			Size:   v,
-		})
-	}
-
-	return stats, nil
 }

@@ -74,6 +74,7 @@ func newCollectCmd() *cobra.Command {
 	cmd.Flags().StringSliceVar(&inc, "include", cOpt.Include.Slice(), "types of data to collect")
 	cmd.Flags().StringSliceVar(&ext, "exclude", cOpt.Exclude.Slice(), "types of data not to collect")
 	cmd.Flags().StringVarP(&cOpt.Dir, "output", "o", "", "output directory of collected data")
+	cmd.Flags().IntVarP(&cOpt.Limit, "limit", "l", 0, "Limits the used bandwidth, specified in Kbit/s")
 
 	return cmd
 }

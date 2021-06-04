@@ -18,6 +18,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/fatih/color"
 	perrs "github.com/pingcap/errors"
 	"github.com/pingcap/tiup/pkg/cliutil"
 	"github.com/pingcap/tiup/pkg/cluster/executor"
@@ -57,6 +58,7 @@ type CollectOptions struct {
 	Include set.StringSet
 	Exclude set.StringSet
 	Dir     string // target directory to store collected data
+	Limit   int    // rate limit of SCP
 }
 
 // CollectStat is estimated size stats of data to be collected
@@ -160,6 +162,19 @@ func (m *Manager) CollectClusterInfo(
 			&LogCollectOptions{
 				BaseOptions: opt,
 				opt:         gOpt,
+				limit:       cOpt.Limit,
+				resultDir:   resultDir,
+				fileStats:   make(map[string][]CollectStat),
+			})
+	}
+
+	// collect config files
+	if canCollect(cOpt, CollectTypeConfig) {
+		collectors = append(collectors,
+			&ConfigCollectOptions{
+				BaseOptions: opt,
+				opt:         gOpt,
+				limit:       cOpt.Limit,
 				resultDir:   resultDir,
 				fileStats:   make(map[string][]CollectStat),
 			})
@@ -197,6 +212,7 @@ func (m *Manager) CollectClusterInfo(
 func confirmStats(stats []map[string][]CollectStat) error {
 	fmt.Printf("Estimated size of data to collect (inaccurate):\n")
 	var total int64
+	statTable := [][]string{{"Host", "Size", "Target"}}
 	for _, stat := range stats {
 		if stat == nil {
 			continue
@@ -207,11 +223,12 @@ func confirmStats(stats []map[string][]CollectStat) error {
 			}
 			for _, s := range items {
 				total += s.Size
-				fmt.Printf("(%s) %s: %s\n", host, s.Target, readableSize(s.Size))
+				statTable = append(statTable, []string{host, color.CyanString(readableSize(s.Size)), s.Target})
 			}
 		}
 	}
-	fmt.Printf("Total: %s\n", readableSize(total))
+	cliutil.PrintTable(statTable, true)
+	fmt.Printf("Total: %s\n", color.YellowString(readableSize(total)))
 	return cliutil.PromptForConfirmOrAbortError("Do you want to continue? [y/N]: ")
 }
 
