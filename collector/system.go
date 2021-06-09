@@ -137,7 +137,7 @@ func (c *SystemCollectOptions) Collect(topo *spec.Specification) error {
 						inst.GetHost(),
 						filepath.Join(task.CheckToolsPathDir, "bin", "insight"),
 						"",
-						false,
+						true,
 					).
 					Func(
 						inst.GetHost(),

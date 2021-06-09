@@ -205,12 +205,12 @@ func (m *Manager) CollectClusterInfo(
 		}
 	}
 
-	fmt.Printf("Collected data are stored in %s\n", resultDir)
+	fmt.Printf("Collected data are stored in %s\n", color.CyanString(resultDir))
 	return nil
 }
 
 func confirmStats(stats []map[string][]CollectStat) error {
-	fmt.Printf("Estimated size of data to collect (inaccurate):\n")
+	fmt.Printf("Estimated size of data to collect:\n")
 	var total int64
 	statTable := [][]string{{"Host", "Size", "Target"}}
 	for _, stat := range stats {
@@ -228,7 +228,7 @@ func confirmStats(stats []map[string][]CollectStat) error {
 		}
 	}
 	cliutil.PrintTable(statTable, true)
-	fmt.Printf("Total: %s\n", color.YellowString(readableSize(total)))
+	fmt.Printf("Total: %s (inaccurate)\n", color.YellowString(readableSize(total)))
 	return cliutil.PromptForConfirmOrAbortError("Do you want to continue? [y/N]: ")
 }
 

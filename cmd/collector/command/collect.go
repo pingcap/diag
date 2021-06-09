@@ -15,6 +15,7 @@ package command
 
 import (
 	"path"
+	"time"
 
 	"github.com/pingcap/tidb-foresight/collector"
 	"github.com/pingcap/tiup/pkg/cliutil"
@@ -63,18 +64,15 @@ func newCollectCmd() *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVarP(&opt.User, "user", "u", utils.CurrentUser(), "The user name to login via SSH. The user must has root (or sudo) privilege.")
-	cmd.Flags().StringVarP(&opt.SSH.IdentityFile, "identity_file", "i", opt.SSH.IdentityFile, "The path of the SSH identity file. If specified, public key authentication will be used.")
-	cmd.Flags().BoolVarP(&opt.UsePassword, "password", "p", false, "Use password of target hosts. If specified, password authentication will be used.")
 	cmd.Flags().StringSliceVarP(&gOpt.Roles, "role", "R", nil, "Only check specified roles")
 	cmd.Flags().StringSliceVarP(&gOpt.Nodes, "node", "N", nil, "Only check specified nodes")
-	cmd.Flags().Uint64Var(&gOpt.APITimeout, "api-timeout", 10, "Timeout in seconds when querying PD APIs.")
-	cmd.Flags().StringVarP(&opt.ScrapeBegin, "from", "f", "", "start timepoint when collecting timeseries data")
-	cmd.Flags().StringVarP(&opt.ScrapeEnd, "to", "t", "", "stop timepoint when collecting timeseries data")
+	cmd.Flags().StringVarP(&opt.ScrapeBegin, "from", "f", time.Now().Add(time.Hour*-2).Format(time.RFC3339), "start timepoint when collecting timeseries data")
+	cmd.Flags().StringVarP(&opt.ScrapeEnd, "to", "t", time.Now().Format(time.RFC3339), "stop timepoint when collecting timeseries data")
 	cmd.Flags().StringSliceVar(&inc, "include", cOpt.Include.Slice(), "types of data to collect")
 	cmd.Flags().StringSliceVar(&ext, "exclude", cOpt.Exclude.Slice(), "types of data not to collect")
 	cmd.Flags().StringVarP(&cOpt.Dir, "output", "o", "", "output directory of collected data")
 	cmd.Flags().IntVarP(&cOpt.Limit, "limit", "l", 0, "Limits the used bandwidth, specified in Kbit/s")
+	cmd.Flags().Uint64Var(&gOpt.APITimeout, "api-timeout", 10, "Timeout in seconds when querying PD APIs.")
 
 	return cmd
 }
