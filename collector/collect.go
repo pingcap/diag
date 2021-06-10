@@ -193,6 +193,7 @@ func (m *Manager) CollectClusterInfo(
 	}
 
 	// confirm before really collect
+
 	if err := confirmStats(stats); err != nil {
 		return err
 	}
@@ -227,8 +228,8 @@ func confirmStats(stats []map[string][]CollectStat) error {
 			}
 		}
 	}
+	statTable = append(statTable, []string{"Total", color.YellowString(readableSize(total)), "(inaccurate)"})
 	cliutil.PrintTable(statTable, true)
-	fmt.Printf("Total: %s (inaccurate)\n", color.YellowString(readableSize(total)))
 	return cliutil.PromptForConfirmOrAbortError("Do you want to continue? [y/N]: ")
 }
 

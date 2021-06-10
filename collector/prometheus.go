@@ -29,7 +29,8 @@ import (
 	"github.com/pingcap/tidb-foresight/utils"
 	operator "github.com/pingcap/tiup/pkg/cluster/operation"
 	"github.com/pingcap/tiup/pkg/cluster/spec"
-	log "github.com/sirupsen/logrus"
+	"github.com/pingcap/tiup/pkg/logger/log"
+	tiuputils "github.com/pingcap/tiup/pkg/utils"
 )
 
 const (
@@ -183,6 +184,10 @@ func (c *MetricCollectOptions) Prepare(topo *spec.Specification) (map[string][]C
 		queryErr = err
 
 		c.metrics = metrics
+
+		if queryOK {
+			break
+		}
 	}
 	tl.Wait()
 
@@ -192,8 +197,8 @@ func (c *MetricCollectOptions) Prepare(topo *spec.Specification) (map[string][]C
 		insCnt++
 	})
 	result[promAddr] = append(result[promAddr], CollectStat{
-		Target: "metrics",
-		Size:   int64(3*len(c.metrics)*insCnt) * nsec, // empirical formula
+		Target: fmt.Sprintf("%d metrics", len(c.metrics)),
+		Size:   int64(12*len(c.metrics)*insCnt) * nsec, // empirical formula, inaccurate
 	})
 
 	// if query successed for any one of prometheus, ignore errors for other instances
@@ -210,15 +215,18 @@ func (c *MetricCollectOptions) Collect(topo *spec.Specification) error {
 		return nil
 	}
 
-	var queryOK bool
-	var queryErr error
-	tl := utils.NewTokenLimiter(uint(runtime.NumCPU()))
+	qLimit := 10 // max parallel query counts
+	cpuCnt := runtime.NumCPU()
+	if cpuCnt < qLimit {
+		qLimit = cpuCnt
+	}
+	tl := utils.NewTokenLimiter(uint(qLimit))
 	for _, prom := range topo.Monitors {
 		if err := ensureMonitorDir(c.resultDir, subdirMetrics, fmt.Sprintf("%s-%d", prom.Host, prom.Port)); err != nil {
 			return err
 		}
 
-		client := &http.Client{Timeout: time.Second * 10}
+		client := &http.Client{Timeout: time.Second * 60}
 
 		for _, mtc := range c.metrics {
 			go func(tok *utils.Token, mtc string) {
@@ -229,10 +237,6 @@ func (c *MetricCollectOptions) Collect(topo *spec.Specification) error {
 	}
 	tl.Wait()
 
-	// if query successed for any one of prometheus, ignore errors for other instances
-	if !queryOK {
-		return queryErr
-	}
 	return nil
 }
 
@@ -253,37 +257,56 @@ func getMetricList(c *http.Client, prom string) ([]string, error) {
 }
 
 func collectMetric(c *http.Client, prom *spec.PrometheusSpec, ts []string, mtc, resultDir string) {
+	log.Debugf("Dumping metric %s...", mtc)
+
 	promAddr := fmt.Sprintf("%s:%d", prom.Host, prom.Port)
 
 	for i := 0; i < len(ts)-1; i++ {
-		resp, err := c.PostForm(
-			fmt.Sprintf("http://%s/api/v1/query_range", promAddr),
-			url.Values{
-				"query": {mtc},
-				"start": {ts[i]},
-				"end":   {ts[i+1]},
-				"step":  {strconv.Itoa(metricStep)},
+		if err := tiuputils.Retry(
+			func() error {
+				resp, err := c.PostForm(
+					fmt.Sprintf("http://%s/api/v1/query_range", promAddr),
+					url.Values{
+						"query": {mtc},
+						"start": {ts[i]},
+						"end":   {ts[i+1]},
+						"step":  {strconv.Itoa(metricStep)},
+					},
+				)
+				if err != nil {
+					log.Errorf("failed query metric %s: %w, retry...", mtc, err)
+					fmt.Printf("failed query metric %s: %s, retry...\n", mtc, err)
+					return err
+				}
+				defer resp.Body.Close()
+
+				dst, err := os.Create(
+					filepath.Join(
+						resultDir, subdirMonitor, subdirMetrics, fmt.Sprintf("%s-%d", prom.Host, prom.Port),
+						fmt.Sprintf("%s_%s_%s.json", mtc, ts[i], ts[i+1]),
+					),
+				)
+				if err != nil {
+					log.Errorf("collect metric %s: %w, retry...", mtc, err)
+					fmt.Printf("collect metric %s: %s, retry...\n", mtc, err)
+				}
+				defer dst.Close()
+
+				n, err := io.Copy(dst, resp.Body)
+				if err != nil {
+					fmt.Printf("failed writing metric %s to file: %s, retry...\n", mtc, err)
+					return err
+				}
+				log.Debugf(" Dumped metric %s from %s to %s (%d bytes)", mtc, ts[i], ts[i+1], n)
+				return nil
 			},
-		)
-		if err != nil {
-			log.Errorf("collect metric %s: %w", mtc, err)
-			return
-		}
-		defer resp.Body.Close()
-
-		dst, err := os.Create(
-			filepath.Join(
-				resultDir, subdirMonitor, subdirMetrics, fmt.Sprintf("%s-%d", prom.Host, prom.Port),
-				fmt.Sprintf("%s_%s_%s.json", mtc, ts[i], ts[i+1]),
-			),
-		)
-		if err != nil {
-			log.Errorf("collect metric %s: %w", mtc, err)
-		}
-		defer dst.Close()
-
-		if _, err := io.Copy(dst, resp.Body); err != nil {
-			log.Errorf("collect metric %s: %w", mtc, err)
+			tiuputils.RetryOption{
+				Attempts: 3,
+				Delay:    time.Microsecond * 300,
+				Timeout:  time.Second * 120,
+			},
+		); err != nil {
+			log.Errorf("Error quering metrics %s: %s", mtc, err)
 		}
 	}
 }
@@ -318,11 +341,12 @@ func parseTimeRange(scrapeStart, scrapeEnd string) ([]string, int64, error) {
 
 	// split time into smaller ranges to avoid querying too many data
 	// in one request
-	ts := make([]string, 0)
-	block := time.Second * 3600 * 16
+	ts := []string{tsStart.Format(time.RFC3339)}
+	block := time.Second * 3600 * 2
 	cursor := tsStart
 	for {
 		if cursor.After(tsEnd) {
+			ts = append(ts, tsEnd.Format(time.RFC3339))
 			break
 		}
 		next := cursor.Add(block)

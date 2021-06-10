@@ -78,7 +78,6 @@ func (s *LogScraper) Scrap(result *Sample) error {
 				return err
 			}
 			if !in {
-				fmt.Println(fp, "not in")
 				continue
 			}
 

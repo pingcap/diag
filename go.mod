@@ -14,8 +14,8 @@ require (
 	github.com/pingcap/check v0.0.0-20200212061837-5e12011dc712
 	github.com/pingcap/errors v0.11.5-0.20201126102027-b0a155152ca3
 	github.com/pingcap/log v0.0.0-20201112100606-8f1e84a3abc8 // indirect
-	github.com/pingcap/tidb-insight v0.4.0-dev.1.0.20210531101606-8399c371e79f // indirect
-	github.com/pingcap/tidb-insight/collector v0.0.0-20210531101606-8399c371e79f
+	github.com/pingcap/tidb-insight v0.4.0-dev.1.0.20210610034452-7985a5287b50 // indirect
+	github.com/pingcap/tidb-insight/collector v0.0.0-20210610034452-7985a5287b50
 	github.com/pingcap/tiup v1.5.0
 	github.com/prometheus/common v0.28.0
 	github.com/sirupsen/logrus v1.8.1
