@@ -24,4 +24,6 @@ require (
 	gopkg.in/check.v1 v1.0.0-20200227125254-8fa46927fb4f // indirect
 )
 
-replace github.com/appleboy/easyssh-proxy => github.com/AstroProfundis/easyssh-proxy v1.3.10-0.20210608083601-84918ecd4595
+replace github.com/appleboy/easyssh-proxy => github.com/AstroProfundis/easyssh-proxy v1.3.10-0.20210611065303-1029d75e5ca5
+
+replace github.com/pingcap/tiup => github.com/AstroProfundis/tiup v1.3.1-0.20210610082924-58624e662417

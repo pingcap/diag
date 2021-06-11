@@ -182,7 +182,7 @@ func (c *ConfigCollectOptions) Prepare(topo *spec.Specification) (map[string][]C
 		ParallelStep("+ Collect host information", false, dryRunTasks...).
 		Build()
 
-	ctx := ctxt.New(context.Background())
+	ctx := ctxt.New(context.Background(), c.opt.Concurrency)
 	if err := t.Execute(ctx); err != nil {
 		if errorx.Cast(err) != nil {
 			// FIXME: Map possible task errors and give suggestions.
@@ -278,7 +278,7 @@ func (c *ConfigCollectOptions) Collect(topo *spec.Specification) error {
 		ParallelStep("+ Cleanup temp files", false, cleanTasks...).
 		Build()
 
-	ctx := ctxt.New(context.Background())
+	ctx := ctxt.New(context.Background(), c.opt.Concurrency)
 	if err := t.Execute(ctx); err != nil {
 		if errorx.Cast(err) != nil {
 			// FIXME: Map possible task errors and give suggestions.

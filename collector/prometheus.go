@@ -215,7 +215,7 @@ func (c *MetricCollectOptions) Collect(topo *spec.Specification) error {
 		return nil
 	}
 
-	qLimit := 10 // max parallel query counts
+	qLimit := c.opt.Concurrency
 	cpuCnt := runtime.NumCPU()
 	if cpuCnt < qLimit {
 		qLimit = cpuCnt
