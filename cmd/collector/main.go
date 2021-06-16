@@ -15,10 +15,10 @@ package main
 
 import (
 	"github.com/pingcap/tidb-foresight/cmd/collector/command"
-	"github.com/pingcap/tiup/pkg/cliutil"
+	"github.com/pingcap/tiup/pkg/tui"
 )
 
 func main() {
-	cliutil.RegisterArg0("tiup collector")
+	tui.RegisterArg0("tiup collector")
 	command.Execute()
 }

@@ -18,16 +18,16 @@ import (
 	"time"
 
 	"github.com/pingcap/tidb-foresight/collector"
-	"github.com/pingcap/tiup/pkg/cliutil"
 	"github.com/pingcap/tiup/pkg/cluster/executor"
 	"github.com/pingcap/tiup/pkg/set"
+	"github.com/pingcap/tiup/pkg/tui"
 	"github.com/pingcap/tiup/pkg/utils"
 	"github.com/spf13/cobra"
 )
 
 func newCollectCmd() *cobra.Command {
 	opt := collector.BaseOptions{
-		SSH: &cliutil.SSHConnectionProps{
+		SSH: &tui.SSHConnectionProps{
 			IdentityFile: path.Join(utils.UserHome(), ".ssh", "id_rsa"),
 		},
 	}

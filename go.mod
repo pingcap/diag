@@ -25,5 +25,3 @@ require (
 )
 
 replace github.com/appleboy/easyssh-proxy => github.com/AstroProfundis/easyssh-proxy v1.3.10-0.20210615044136-d52fc631316d
-
-replace github.com/pingcap/tiup => github.com/AstroProfundis/tiup v1.3.1-0.20210610082924-58624e662417

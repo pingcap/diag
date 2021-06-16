@@ -28,10 +28,10 @@ import (
 	"time"
 
 	"github.com/pingcap/tidb-foresight/utils"
-	"github.com/pingcap/tiup/pkg/cliutil/progress"
 	operator "github.com/pingcap/tiup/pkg/cluster/operation"
 	"github.com/pingcap/tiup/pkg/cluster/spec"
 	"github.com/pingcap/tiup/pkg/logger/log"
+	"github.com/pingcap/tiup/pkg/tui/progress"
 	tiuputils "github.com/pingcap/tiup/pkg/utils"
 )
 

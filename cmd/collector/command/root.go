@@ -22,16 +22,15 @@ import (
 	"github.com/joomcode/errorx"
 	"github.com/pingcap/tidb-foresight/collector"
 	"github.com/pingcap/tidb-foresight/version"
-	"github.com/pingcap/tiup/pkg/cliutil"
 	"github.com/pingcap/tiup/pkg/cluster/executor"
 	operator "github.com/pingcap/tiup/pkg/cluster/operation"
 	"github.com/pingcap/tiup/pkg/cluster/spec"
-	"github.com/pingcap/tiup/pkg/colorutil"
 	tiupmeta "github.com/pingcap/tiup/pkg/environment"
-	"github.com/pingcap/tiup/pkg/errutil"
 	"github.com/pingcap/tiup/pkg/localdata"
 	"github.com/pingcap/tiup/pkg/logger"
 	"github.com/pingcap/tiup/pkg/repository"
+	"github.com/pingcap/tiup/pkg/tui"
+	"github.com/pingcap/tiup/pkg/utils"
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"
 )
@@ -48,7 +47,7 @@ var cm *collector.Manager
 func init() {
 	logger.InitGlobalLogger()
 
-	colorutil.AddColorFunctionsForCobra()
+	tui.AddColorFunctionsForCobra()
 
 	cobra.EnableCommandSorting = false
 
@@ -58,7 +57,7 @@ func init() {
 	}
 
 	rootCmd = &cobra.Command{
-		Use:           cliutil.OsArgs0(),
+		Use:           tui.OsArgs0(),
 		Short:         "Collect metrics and information from a TiDB cluster",
 		SilenceUsage:  true,
 		SilenceErrors: true,
@@ -99,7 +98,7 @@ func init() {
 		},
 	}
 
-	cliutil.BeautifyCobraUsageAndHelp(rootCmd)
+	tui.BeautifyCobraUsageAndHelp(rootCmd)
 
 	rootCmd.PersistentFlags().Uint64Var(&gOpt.SSHTimeout, "ssh-timeout", 5, "Timeout in seconds to connect host via SSH, ignored for operations that don't need an SSH connection.")
 	// the value of wait-timeout is also used for `systemctl` commands, as the default timeout of systemd for
@@ -118,7 +117,7 @@ func init() {
 }
 
 func printErrorMessageForNormalError(err error) {
-	_, _ = colorutil.ColorErrorMsg.Fprintf(os.Stderr, "\nError: %s\n", err.Error())
+	_, _ = tui.ColorErrorMsg.Fprintf(os.Stderr, "\nError: %s\n", err.Error())
 }
 
 func printErrorMessageForErrorX(err *errorx.Error) {
@@ -154,13 +153,13 @@ func printErrorMessageForErrorX(err *errorx.Error) {
 			break
 		}
 	}
-	_, _ = colorutil.ColorErrorMsg.Fprintf(os.Stderr, "\nError: %s", msg)
+	_, _ = tui.ColorErrorMsg.Fprintf(os.Stderr, "\nError: %s", msg)
 }
 
 func extractSuggestionFromErrorX(err *errorx.Error) string {
 	cause := err
 	for cause != nil {
-		v, ok := cause.Property(errutil.ErrPropSuggestion)
+		v, ok := cause.Property(utils.ErrPropSuggestion)
 		if ok {
 			if s, ok := v.(string); ok {
 				return s
@@ -174,7 +173,7 @@ func extractSuggestionFromErrorX(err *errorx.Error) string {
 
 // Execute executes the root command
 func Execute() {
-	zap.L().Info("Execute command", zap.String("command", cliutil.OsArgs()))
+	zap.L().Info("Execute command", zap.String("command", tui.OsArgs()))
 	zap.L().Debug("Environment variables", zap.Strings("env", os.Environ()))
 
 	// Switch current work directory if running in TiUP component mode
@@ -199,7 +198,7 @@ func Execute() {
 			printErrorMessageForNormalError(err)
 		}
 
-		if !errorx.HasTrait(err, errutil.ErrTraitPreCheck) {
+		if !errorx.HasTrait(err, utils.ErrTraitPreCheck) {
 			logger.OutputDebugLog("tiup-cluster")
 		}
 

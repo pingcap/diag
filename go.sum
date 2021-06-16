@@ -45,8 +45,6 @@ github.com/AstroProfundis/sysinfo v0.0.0-20210610033012-3aad056e509d h1:vI7p5iyq
 github.com/AstroProfundis/sysinfo v0.0.0-20210610033012-3aad056e509d/go.mod h1:4m15VhW6ZffaqJNAK/HtN3Qvf97aCe1T39u3UXaA2lA=
 github.com/AstroProfundis/tabby v1.1.1-color h1:gi/Fs4W2KVcC1m29lqa39tDnsGfZG/PYvZmwOhAH5m0=
 github.com/AstroProfundis/tabby v1.1.1-color/go.mod h1:Wcm+uinH1saEOFGLK2LdY37lAOts8HLevz64Y3y3M3Q=
-github.com/AstroProfundis/tiup v1.3.1-0.20210610082924-58624e662417 h1:omWU6I6T+0X2a0Dvzh4LL7xdNbW5B/FEuW1hUWlUX1k=
-github.com/AstroProfundis/tiup v1.3.1-0.20210610082924-58624e662417/go.mod h1:bWrOplwnsqIWjVf6ZrzIytW3j8RgCU20hB919UVDVXE=
 github.com/Azure/azure-sdk-for-go v41.3.0+incompatible/go.mod h1:9XXNKU+eRnpl9moKnB4QOLf1HestfXbmab5FXxiDBjc=
 github.com/Azure/go-autorest/autorest v0.9.0/go.mod h1:xyHB1BMZT0cuDHU7I0+g046+BFDTQ8rEZB0s4Yfa6bI=
 github.com/Azure/go-autorest/autorest v0.9.3/go.mod h1:GsRuLYvwzLjjjRoWEIyMUaYq8GNUx2nRB378IPt/1p0=
@@ -471,7 +469,6 @@ github.com/gorilla/csrf v1.6.0/go.mod h1:7tSf8kmjNYr7IWDCYhd3U8Ck34iQ/Yw5CJu7bAk
 github.com/gorilla/handlers v1.4.1/go.mod h1:Qkdc/uu4tH4g6mTK6auzZ766c4CA0Ng8+o/OAirnOIQ=
 github.com/gorilla/mux v1.6.2/go.mod h1:1lud6UwP+6orDFRuTfBEV8e9/aOM/c4fVVCaMa2zaAs=
 github.com/gorilla/mux v1.7.3/go.mod h1:1lud6UwP+6orDFRuTfBEV8e9/aOM/c4fVVCaMa2zaAs=
-github.com/gorilla/mux v1.8.0 h1:i40aqfkR1h2SlN9hojwV5ZA91wcXFOvkdNIeFDP5koI=
 github.com/gorilla/mux v1.8.0/go.mod h1:DVbg23sWSpFRCP0SfiEN6jmj59UnW/n46BH5rLB71So=
 github.com/gorilla/securecookie v1.1.1/go.mod h1:ra0sb63/xPlUeL+yeDciTfxMRAA+MP+HVt/4epWDjd4=
 github.com/gorilla/websocket v0.0.0-20170926233335-4201258b820c/go.mod h1:E7qHFY5m1UJ88s3WnNqhKjPHQ0heANvMoAMk2YaljkQ=
@@ -733,7 +730,6 @@ github.com/pingcap/errors v0.11.5-0.20201126102027-b0a155152ca3 h1:LllgC9eGfqzkf
 github.com/pingcap/errors v0.11.5-0.20201126102027-b0a155152ca3/go.mod h1:G7x87le1poQzLB/TqvTJI2ILrSgobnq4Ut7luOwvfvI=
 github.com/pingcap/failpoint v0.0.0-20210316064728-7acb0f0a3dfd h1:I8IeI8MNiZVKnwuXhcIIzz6pREcOSbq18Q31KYIzFVM=
 github.com/pingcap/failpoint v0.0.0-20210316064728-7acb0f0a3dfd/go.mod h1:IVF+ijPSMZVtx2oIqxAg7ur6EyixtTYfOHwpfmlhqI4=
-github.com/pingcap/fn v0.0.0-20200306044125-d5540d389059 h1:Pe2LbxRmbTfAoKJ65bZLmhahmvHm7n9DUxGRQT00208=
 github.com/pingcap/fn v0.0.0-20200306044125-d5540d389059/go.mod h1:fMRU1BA1y+r89AxUoaAar4JjrhUkVDt0o0Np6V8XbDQ=
 github.com/pingcap/kvproto v0.0.0-20210603164318-7a046020d1c0 h1:fbTd0Blo+TAUsjrrgMI1ohNkIUmKW2+NCtEQSNFL5DU=
 github.com/pingcap/kvproto v0.0.0-20210603164318-7a046020d1c0/go.mod h1:IOdRDPLyda8GX2hE/jO7gqaCV/PNFh8BZQCQZXfIOqI=
@@ -747,6 +743,8 @@ github.com/pingcap/tidb-insight v0.4.0-dev.1.0.20210610034452-7985a5287b50 h1:qz
 github.com/pingcap/tidb-insight v0.4.0-dev.1.0.20210610034452-7985a5287b50/go.mod h1:ju1jxNOVAdglpaR7dFBV04EtMZ5EaY56tkqdBxhb4E4=
 github.com/pingcap/tidb-insight/collector v0.0.0-20210610034452-7985a5287b50 h1:JmypwIf7n3azPhDxToERPXMbh/nHm1WVtbM5SrJ5C5o=
 github.com/pingcap/tidb-insight/collector v0.0.0-20210610034452-7985a5287b50/go.mod h1:u71UhNPhIJh0xIqED22eNGd/ELawJMivkvppkNgCI5M=
+github.com/pingcap/tiup v1.6.0-dev.0.20210616063037-4e8f1688243d h1:sMBYDAJxh1bzHf3Ng9aMaw0iRur96pADIklUcnjRd0k=
+github.com/pingcap/tiup v1.6.0-dev.0.20210616063037-4e8f1688243d/go.mod h1:bWrOplwnsqIWjVf6ZrzIytW3j8RgCU20hB919UVDVXE=
 github.com/pkg/browser v0.0.0-20180916011732-0a3d74bf9ce4/go.mod h1:4OwLy04Bl9Ef3GJJCoec+30X3LQs/0/m4HFRt/2LUSA=
 github.com/pkg/errors v0.8.0/go.mod h1:bwawxfHBFNV+L2hUp1rHADufV3IMtnDRdf1r5NINEl0=
 github.com/pkg/errors v0.8.1/go.mod h1:bwawxfHBFNV+L2hUp1rHADufV3IMtnDRdf1r5NINEl0=

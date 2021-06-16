@@ -32,7 +32,7 @@ import (
 
 const (
 	// componentDiagCollector is the component name of diagnostic collector
-	componentDiagCollector = "diagcol"
+	componentDiagCollector = "diagcollect"
 )
 
 // LogCollectOptions are options used collecting component logs

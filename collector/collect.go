@@ -20,11 +20,11 @@ import (
 
 	"github.com/fatih/color"
 	perrs "github.com/pingcap/errors"
-	"github.com/pingcap/tiup/pkg/cliutil"
 	"github.com/pingcap/tiup/pkg/cluster/executor"
 	operator "github.com/pingcap/tiup/pkg/cluster/operation"
 	"github.com/pingcap/tiup/pkg/cluster/spec"
 	"github.com/pingcap/tiup/pkg/set"
+	"github.com/pingcap/tiup/pkg/tui"
 )
 
 // types of data to collect
@@ -46,11 +46,11 @@ type Collector interface {
 
 // BaseOptions contains the options for check command
 type BaseOptions struct {
-	User        string                      // username to login to the SSH server
-	UsePassword bool                        // use password instead of identity file for ssh connection
-	SSH         *cliutil.SSHConnectionProps // SSH credentials
-	ScrapeBegin string                      // start timepoint when collecting metrics and logs
-	ScrapeEnd   string                      // stop timepoint when collecting metrics and logs
+	User        string                  // username to login to the SSH server
+	UsePassword bool                    // use password instead of identity file for ssh connection
+	SSH         *tui.SSHConnectionProps // SSH credentials
+	ScrapeBegin string                  // start timepoint when collecting metrics and logs
+	ScrapeEnd   string                  // stop timepoint when collecting metrics and logs
 }
 
 // CollectOptions contains the options defining which type of data to collect
@@ -138,10 +138,10 @@ func (m *Manager) CollectClusterInfo(
 		canCollect(cOpt, CollectTypeLog) ||
 		canCollect(cOpt, CollectTypeConfig) {
 		// collect data from remote servers
-		var sshConnProps *cliutil.SSHConnectionProps = &cliutil.SSHConnectionProps{}
+		var sshConnProps *tui.SSHConnectionProps = &tui.SSHConnectionProps{}
 		if gOpt.SSHType != executor.SSHTypeNone {
 			var err error
-			if sshConnProps, err = cliutil.ReadIdentityFileOrPassword(opt.SSH.IdentityFile, opt.UsePassword); err != nil {
+			if sshConnProps, err = tui.ReadIdentityFileOrPassword(opt.SSH.IdentityFile, opt.UsePassword); err != nil {
 				return err
 			}
 		}
@@ -229,8 +229,8 @@ func confirmStats(stats []map[string][]CollectStat) error {
 		}
 	}
 	statTable = append(statTable, []string{"Total", color.YellowString(readableSize(total)), "(inaccurate)"})
-	cliutil.PrintTable(statTable, true)
-	return cliutil.PromptForConfirmOrAbortError("Do you want to continue? [y/N]: ")
+	tui.PrintTable(statTable, true)
+	return tui.PromptForConfirmOrAbortError("Do you want to continue? [y/N]: ")
 }
 
 func readableSize(b int64) string {
