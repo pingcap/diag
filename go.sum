@@ -37,8 +37,8 @@ cloud.google.com/go/storage v1.8.0/go.mod h1:Wv1Oy7z6Yz3DshWRJFhqM/UCfaWIRTdp0RX
 cloud.google.com/go/storage v1.10.0/go.mod h1:FLPqc6j+Ki4BU591ie1oL6qBQGu2Bl/tZ9ullr3+Kg0=
 collectd.org v0.3.0/go.mod h1:A/8DzQBkF6abtvrT2j/AU/4tiBgJWYyh0y/oB/4MlWE=
 dmitri.shuralyov.com/gpu/mtl v0.0.0-20190408044501-666a987793e9/go.mod h1:H6x//7gZCb22OMCxBHrMx7a5I7Hp++hsVxbQ4BYO7hU=
-github.com/AstroProfundis/easyssh-proxy v1.3.10-0.20210611065303-1029d75e5ca5 h1:YcP0FAK5SkPx8Um/LVH3+8NWOnYadwe9+Yg6D5UiW+8=
-github.com/AstroProfundis/easyssh-proxy v1.3.10-0.20210611065303-1029d75e5ca5/go.mod h1:SnOlkuIAoaj8FvRIGcWp2BbLOwvHZnNNOva+DBMbHWU=
+github.com/AstroProfundis/easyssh-proxy v1.3.10-0.20210615044136-d52fc631316d h1:jsOHh5HJR1sYE1wYxuYQa2nSc01V0/6ZNRIS2qNW1zg=
+github.com/AstroProfundis/easyssh-proxy v1.3.10-0.20210615044136-d52fc631316d/go.mod h1:SnOlkuIAoaj8FvRIGcWp2BbLOwvHZnNNOva+DBMbHWU=
 github.com/AstroProfundis/sysinfo v0.0.0-20210201035811-eb96b87c86b3/go.mod h1:4m15VhW6ZffaqJNAK/HtN3Qvf97aCe1T39u3UXaA2lA=
 github.com/AstroProfundis/sysinfo v0.0.0-20210324083743-d0a51ed49aa2/go.mod h1:4m15VhW6ZffaqJNAK/HtN3Qvf97aCe1T39u3UXaA2lA=
 github.com/AstroProfundis/sysinfo v0.0.0-20210610033012-3aad056e509d h1:vI7p5iyqg9m0XlVyLmI4GaIojer/00BVbrYqE/rm1BE=
@@ -471,6 +471,7 @@ github.com/gorilla/csrf v1.6.0/go.mod h1:7tSf8kmjNYr7IWDCYhd3U8Ck34iQ/Yw5CJu7bAk
 github.com/gorilla/handlers v1.4.1/go.mod h1:Qkdc/uu4tH4g6mTK6auzZ766c4CA0Ng8+o/OAirnOIQ=
 github.com/gorilla/mux v1.6.2/go.mod h1:1lud6UwP+6orDFRuTfBEV8e9/aOM/c4fVVCaMa2zaAs=
 github.com/gorilla/mux v1.7.3/go.mod h1:1lud6UwP+6orDFRuTfBEV8e9/aOM/c4fVVCaMa2zaAs=
+github.com/gorilla/mux v1.8.0 h1:i40aqfkR1h2SlN9hojwV5ZA91wcXFOvkdNIeFDP5koI=
 github.com/gorilla/mux v1.8.0/go.mod h1:DVbg23sWSpFRCP0SfiEN6jmj59UnW/n46BH5rLB71So=
 github.com/gorilla/securecookie v1.1.1/go.mod h1:ra0sb63/xPlUeL+yeDciTfxMRAA+MP+HVt/4epWDjd4=
 github.com/gorilla/websocket v0.0.0-20170926233335-4201258b820c/go.mod h1:E7qHFY5m1UJ88s3WnNqhKjPHQ0heANvMoAMk2YaljkQ=
@@ -732,6 +733,7 @@ github.com/pingcap/errors v0.11.5-0.20201126102027-b0a155152ca3 h1:LllgC9eGfqzkf
 github.com/pingcap/errors v0.11.5-0.20201126102027-b0a155152ca3/go.mod h1:G7x87le1poQzLB/TqvTJI2ILrSgobnq4Ut7luOwvfvI=
 github.com/pingcap/failpoint v0.0.0-20210316064728-7acb0f0a3dfd h1:I8IeI8MNiZVKnwuXhcIIzz6pREcOSbq18Q31KYIzFVM=
 github.com/pingcap/failpoint v0.0.0-20210316064728-7acb0f0a3dfd/go.mod h1:IVF+ijPSMZVtx2oIqxAg7ur6EyixtTYfOHwpfmlhqI4=
+github.com/pingcap/fn v0.0.0-20200306044125-d5540d389059 h1:Pe2LbxRmbTfAoKJ65bZLmhahmvHm7n9DUxGRQT00208=
 github.com/pingcap/fn v0.0.0-20200306044125-d5540d389059/go.mod h1:fMRU1BA1y+r89AxUoaAar4JjrhUkVDt0o0Np6V8XbDQ=
 github.com/pingcap/kvproto v0.0.0-20210603164318-7a046020d1c0 h1:fbTd0Blo+TAUsjrrgMI1ohNkIUmKW2+NCtEQSNFL5DU=
 github.com/pingcap/kvproto v0.0.0-20210603164318-7a046020d1c0/go.mod h1:IOdRDPLyda8GX2hE/jO7gqaCV/PNFh8BZQCQZXfIOqI=

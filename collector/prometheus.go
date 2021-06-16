@@ -24,9 +24,11 @@ import (
 	"path/filepath"
 	"runtime"
 	"strconv"
+	"sync"
 	"time"
 
 	"github.com/pingcap/tidb-foresight/utils"
+	"github.com/pingcap/tiup/pkg/cliutil/progress"
 	operator "github.com/pingcap/tiup/pkg/cluster/operation"
 	"github.com/pingcap/tiup/pkg/cluster/spec"
 	"github.com/pingcap/tiup/pkg/logger/log"
@@ -215,6 +217,19 @@ func (c *MetricCollectOptions) Collect(topo *spec.Specification) error {
 		return nil
 	}
 
+	mb := progress.NewMultiBar("+ Dumping metrics")
+	bars := make(map[string]*progress.MultiBarItem)
+	total := len(c.metrics)
+	mu := sync.Mutex{}
+	for _, prom := range topo.Monitors {
+		key := fmt.Sprintf("%s:%d", prom.Host, prom.Port)
+		if _, ok := bars[key]; !ok {
+			bars[key] = mb.AddBar(fmt.Sprintf("  - Querying server %s", key))
+		}
+	}
+	mb.StartRenderLoop()
+	defer mb.StopRenderLoop()
+
 	qLimit := c.opt.Concurrency
 	cpuCnt := runtime.NumCPU()
 	if cpuCnt < qLimit {
@@ -222,7 +237,14 @@ func (c *MetricCollectOptions) Collect(topo *spec.Specification) error {
 	}
 	tl := utils.NewTokenLimiter(uint(qLimit))
 	for _, prom := range topo.Monitors {
+		key := fmt.Sprintf("%s:%d", prom.Host, prom.Port)
+		done := 1
+
 		if err := ensureMonitorDir(c.resultDir, subdirMetrics, fmt.Sprintf("%s-%d", prom.Host, prom.Port)); err != nil {
+			bars[key].UpdateDisplay(&progress.DisplayProps{
+				Prefix: fmt.Sprintf("  - Query server %s: %s", key, err),
+				Mode:   progress.ModeError,
+			})
 			return err
 		}
 
@@ -230,11 +252,28 @@ func (c *MetricCollectOptions) Collect(topo *spec.Specification) error {
 
 		for _, mtc := range c.metrics {
 			go func(tok *utils.Token, mtc string) {
+				bars[key].UpdateDisplay(&progress.DisplayProps{
+					Prefix: fmt.Sprintf("  - Querying server %s", key),
+					Suffix: fmt.Sprintf("%d/%d querying %s ...", done, total, mtc),
+				})
+
 				collectMetric(client, prom, c.timeSteps, mtc, c.resultDir)
+
+				mu.Lock()
+				done++
+				if done >= total {
+					bars[key].UpdateDisplay(&progress.DisplayProps{
+						Prefix: fmt.Sprintf("  - Query server %s", key),
+						Mode:   progress.ModeDone,
+					})
+				}
+				mu.Unlock()
+
 				tl.Put(tok)
 			}(tl.Get(), mtc)
 		}
 	}
+
 	tl.Wait()
 
 	return nil

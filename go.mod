@@ -16,7 +16,7 @@ require (
 	github.com/pingcap/log v0.0.0-20201112100606-8f1e84a3abc8 // indirect
 	github.com/pingcap/tidb-insight v0.4.0-dev.1.0.20210610034452-7985a5287b50 // indirect
 	github.com/pingcap/tidb-insight/collector v0.0.0-20210610034452-7985a5287b50
-	github.com/pingcap/tiup v1.5.0
+	github.com/pingcap/tiup v1.6.0-dev.0.20210616063037-4e8f1688243d
 	github.com/prometheus/common v0.28.0
 	github.com/sirupsen/logrus v1.8.1
 	github.com/spf13/cobra v1.1.3
@@ -24,6 +24,6 @@ require (
 	gopkg.in/check.v1 v1.0.0-20200227125254-8fa46927fb4f // indirect
 )
 
-replace github.com/appleboy/easyssh-proxy => github.com/AstroProfundis/easyssh-proxy v1.3.10-0.20210611065303-1029d75e5ca5
+replace github.com/appleboy/easyssh-proxy => github.com/AstroProfundis/easyssh-proxy v1.3.10-0.20210615044136-d52fc631316d
 
 replace github.com/pingcap/tiup => github.com/AstroProfundis/tiup v1.3.1-0.20210610082924-58624e662417
