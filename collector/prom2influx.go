@@ -28,13 +28,14 @@ import (
 )
 
 type RebuildOptions struct {
-	Host   string
-	Port   int
-	User   string
-	Passwd string
-	DBName string
-	File   *os.File
-	Chunk  int
+	Host    string
+	Port    int
+	User    string
+	Passwd  string
+	DBName  string
+	Cluster string // cluster name
+	File    *os.File
+	Chunk   int
 }
 
 type promResult struct {
@@ -95,12 +96,12 @@ func buildPoints(
 	opts *RebuildOptions,
 ) []*influx.Point {
 	var ptList []*influx.Point
-	raw_tags := series.Metric
+	rawTags := series.Metric
 	tags := make(map[string]string)
-	for k, v := range raw_tags {
+	for k, v := range rawTags {
 		tags[string(k)] = string(v)
 	}
-	tags["cluster"] = opts.DBName
+	tags["cluster"] = opts.Cluster
 	tags["monitor"] = "prometheus"
 	measurement := tags["__name__"]
 	for _, point := range series.Values {

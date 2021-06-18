@@ -14,42 +14,76 @@
 package command
 
 import (
+	"fmt"
 	"os"
 
 	"github.com/pingcap/tidb-foresight/collector"
+	"github.com/pingcap/tiup/pkg/tui/progress"
 	"github.com/spf13/cobra"
 )
 
 func newRebuildCmd() *cobra.Command {
 	opt := collector.RebuildOptions{}
 	cmd := &cobra.Command{
-		Use:   "rebuild <path-to-metrics-dump>",
+		Use:   "rebuild <cluster-name> <path-to-metrics-dump>",
 		Short: "Rebuild monitoring systems from the dumped metrics.",
+		Long: `Rebuild monitoring systems from the dumped metrics from
+a TiDB cluster. Metrics are reloaded to an InfluxDB instance
+and can be read from Prometheus with the "remote_read" feature.
+A cluster name must be set to identify the data.
+`,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if len(args) < 1 {
+			if len(args) < 2 {
 				return cmd.Help()
 			}
-			dataDir := args[1]
+			opt.Cluster = args[1]
+			dataDir := args[2]
 			files, err := os.ReadDir(dataDir)
 			if err != nil {
 				return err
 			}
 
+			// TODO: add progress bar
+			b := progress.NewSingleBar("Loading metrics")
+			b.StartRenderLoop()
+			defer b.StopRenderLoop()
+
+			cnt := 0
 			for _, file := range files {
 				if file.IsDir() {
 					continue
 				}
+				cnt++
+				b.UpdateDisplay(&progress.DisplayProps{
+					Prefix: "Loading metrics",
+					Suffix: fmt.Sprintf("(%d): %s", cnt, file.Name()),
+				})
 				f, err := os.Open(file.Name())
 				if err != nil {
+					b.UpdateDisplay(&progress.DisplayProps{
+						Prefix: "Load metrics",
+						Suffix: err.Error(),
+						Mode:   progress.ModeError,
+					})
 					return err
 				}
 				defer f.Close()
 				fOpt := opt
 				fOpt.File = f
 				if err := fOpt.Load(); err != nil {
+					b.UpdateDisplay(&progress.DisplayProps{
+						Prefix: "Load metrics",
+						Suffix: err.Error(),
+						Mode:   progress.ModeError,
+					})
 					return err
 				}
 			}
+
+			b.UpdateDisplay(&progress.DisplayProps{
+				Prefix: "Load metrics",
+				Mode:   progress.ModeDone,
+			})
 
 			return nil
 		},

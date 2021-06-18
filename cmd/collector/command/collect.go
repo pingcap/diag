@@ -34,7 +34,7 @@ func newCollectCmd() *cobra.Command {
 	cOpt := collector.CollectOptions{
 		Include: set.NewStringSet( // collect all types by default
 			collector.CollectTypeSystem,
-			collector.CollectTypeMonitor,
+			//collector.CollectTypeMonitor,
 			collector.CollectTypeLog,
 			collector.CollectTypeConfig,
 		),
