@@ -19,6 +19,6 @@ import (
 )
 
 func main() {
-	tui.RegisterArg0("tiup collector")
+	tui.RegisterArg0("tiup diag")
 	command.Execute()
 }

@@ -93,7 +93,7 @@ A cluster name must be set to identify the data.
 	cmd.Flags().IntVar(&opt.Port, "port", 8086, "The port of influxdb.")
 	cmd.Flags().StringVar(&opt.User, "user", "", "The username of influxdb.")
 	cmd.Flags().StringVar(&opt.Passwd, "passwd", "", "The password of user.")
-	cmd.Flags().StringVar(&opt.DBName, "db", "diagcollect", "The database name of imported metrics.")
+	cmd.Flags().StringVar(&opt.DBName, "db", "diagcollector", "The database name of imported metrics.")
 	cmd.Flags().IntVar(&opt.Chunk, "chunk", 2000, "The chunk size of writing.")
 
 	return cmd
