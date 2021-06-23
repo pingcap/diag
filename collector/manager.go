@@ -72,5 +72,5 @@ func (m *Manager) sshTaskBuilder(name string, topo spec.Topology, user string, o
 			m.specManager.Path(name, "ssh", "id_rsa"),
 			m.specManager.Path(name, "ssh", "id_rsa.pub"),
 		).
-		ClusterSSH(topo, user, opts.SSHTimeout, opts.SSHType, topo.BaseTopo().GlobalOptions.SSHType)
+		ClusterSSH(topo, user, opts.SSHTimeout, opts.OptTimeout, opts.SSHType, topo.BaseTopo().GlobalOptions.SSHType)
 }

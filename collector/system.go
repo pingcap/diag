@@ -120,6 +120,7 @@ func (c *SystemCollectOptions) Collect(topo *spec.Specification) error {
 						c.SSH.IdentityFile,
 						c.SSH.IdentityFilePassphrase,
 						c.opt.SSHTimeout,
+						c.opt.OptTimeout,
 						c.opt.SSHType,
 						topo.GlobalOptions.SSHType,
 					).
@@ -178,6 +179,7 @@ func (c *SystemCollectOptions) Collect(topo *spec.Specification) error {
 					c.SSH.IdentityFile,
 					c.SSH.IdentityFilePassphrase,
 					c.opt.SSHTimeout,
+					c.opt.OptTimeout,
 					c.opt.SSHType,
 					topo.GlobalOptions.SSHType,
 				).

@@ -129,6 +129,7 @@ func (c *LogCollectOptions) Prepare(topo *spec.Specification) (map[string][]Coll
 						c.SSH.IdentityFile,
 						c.SSH.IdentityFilePassphrase,
 						c.opt.SSHTimeout,
+						c.opt.OptTimeout,
 						c.opt.SSHType,
 						topo.GlobalOptions.SSHType,
 					).
@@ -241,6 +242,7 @@ func (c *LogCollectOptions) Collect(topo *spec.Specification) error {
 						c.SSH.IdentityFile,
 						c.SSH.IdentityFilePassphrase,
 						c.opt.SSHTimeout,
+						c.opt.OptTimeout,
 						c.opt.SSHType,
 						topo.GlobalOptions.SSHType,
 					)
@@ -271,6 +273,7 @@ func (c *LogCollectOptions) Collect(topo *spec.Specification) error {
 					c.SSH.IdentityFile,
 					c.SSH.IdentityFilePassphrase,
 					c.opt.SSHTimeout,
+					c.opt.OptTimeout,
 					c.opt.SSHType,
 					topo.GlobalOptions.SSHType,
 				).
