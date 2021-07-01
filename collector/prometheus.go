@@ -171,7 +171,6 @@ func (c *MetricCollectOptions) Prepare(topo *spec.Specification) (map[string][]C
 	var queryOK bool
 	var queryErr error
 	var promAddr string
-	tl := utils.NewTokenLimiter(uint(runtime.NumCPU()))
 	for _, prom := range topo.Monitors {
 		promAddr = fmt.Sprintf("%s:%d", prom.Host, prom.Port)
 		if err := ensureMonitorDir(c.resultDir, subdirMetrics, fmt.Sprintf("%s-%d", prom.Host, prom.Port)); err != nil {
@@ -191,7 +190,6 @@ func (c *MetricCollectOptions) Prepare(topo *spec.Specification) (map[string][]C
 			break
 		}
 	}
-	tl.Wait()
 
 	result := make(map[string][]CollectStat)
 	var insCnt int

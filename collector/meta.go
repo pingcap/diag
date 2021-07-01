@@ -21,12 +21,18 @@ import (
 	"github.com/pingcap/tiup/pkg/cluster/spec"
 )
 
+const (
+	fileNameClusterMeta = "meta.yaml"
+	fileNameClusterName = "cluster-name.txt"
+)
+
 // MetaCollectOptions is the options collecting cluster meta
 type MetaCollectOptions struct {
 	*BaseOptions
-	opt       *operator.Options // global operations from cli
-	resultDir string
-	filePath  string
+	opt         *operator.Options // global operations from cli
+	resultDir   string
+	filePath    string
+	clusterName string
 }
 
 // Desc implements the Collector interface
@@ -61,12 +67,22 @@ func (c *MetaCollectOptions) Prepare(topo *spec.Specification) (map[string][]Col
 
 // Collect implements the Collector interface
 func (c *MetaCollectOptions) Collect(topo *spec.Specification) error {
+	// write cluster name to file
+	fn, err := os.Create(filepath.Join(c.resultDir, fileNameClusterName))
+	if err != nil {
+		return err
+	}
+	defer fn.Close()
+	if _, err := fn.Write([]byte(c.clusterName)); err != nil {
+		return err
+	}
+
 	// save the topology
 	yamlMeta, err := os.ReadFile(c.filePath)
 	if err != nil {
 		return err
 	}
-	fm, err := os.Create(filepath.Join(c.resultDir, "meta.yaml"))
+	fm, err := os.Create(filepath.Join(c.resultDir, fileNameClusterMeta))
 	if err != nil {
 		return err
 	}

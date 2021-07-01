@@ -20,22 +20,149 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"io/fs"
 	"log"
 	"os"
+	"path"
+	"strings"
 
 	influx "github.com/influxdata/influxdb/client/v2"
+	"github.com/pingcap/tidb-foresight/utils"
+	"github.com/pingcap/tiup/pkg/tui/progress"
 	"github.com/prometheus/common/model"
 )
 
+// LoadMetrics reads the dumped metric JSON files and reload them
+// to an influxdb instance.
+func LoadMetrics(dataDir string, opt *RebuildOptions) error {
+	// read cluster name
+	clsName, err := os.ReadFile(path.Join(dataDir, fileNameClusterName))
+	if err != nil {
+		return err
+	}
+	opt.Cluster = string(clsName)
+
+	// extract collection session id
+	dirFields := strings.Split(dataDir, "-")
+	opt.Session = dirFields[len(dirFields)-1]
+
+	proms, err := os.ReadDir(path.Join(dataDir, subdirMonitor, subdirMetrics))
+	if err != nil {
+		return err
+	}
+	mtcFiles := make(map[string][]fs.DirEntry)
+	for _, p := range proms {
+		if !p.IsDir() {
+			continue
+		}
+		subs, err := os.ReadDir(path.Join(dataDir, subdirMonitor, subdirMetrics, p.Name()))
+		if err != nil {
+			return err
+		}
+		mtcFiles[p.Name()] = subs
+	}
+
+	// load individual metric files
+	mb := progress.NewMultiBar("Loading metrics")
+	bars := make(map[string]*progress.MultiBarItem)
+	for p := range mtcFiles {
+		bars[p] = mb.AddBar(p)
+	}
+	mb.StartRenderLoop()
+	defer mb.StopRenderLoop()
+
+	// connect to influxdb
+	client := newClient(opt)
+	// create database has no side effect if database already exist
+	_, err = queryDB(client, opt.DBName, fmt.Sprintf("CREATE DATABASE %s", opt.DBName))
+	client.Close()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	var loadErr error
+	tl := utils.NewTokenLimiter(uint(opt.Concurrency))
+	for p, files := range mtcFiles {
+		cnt := 0
+		b := bars[p]
+		go func(tok *utils.Token, parent string, files []fs.DirEntry) {
+			total := len(files)
+			for _, file := range files {
+				if file.IsDir() {
+					continue
+				}
+				cnt++
+				b.UpdateDisplay(&progress.DisplayProps{
+					Prefix: fmt.Sprintf(" - Loading metrics from %s", parent),
+					Suffix: fmt.Sprintf("%d/%d: %s", cnt, total, file.Name()),
+				})
+
+				fOpt := *opt
+				fOpt.File = path.Join(
+					dataDir, subdirMonitor, subdirMetrics,
+					parent, file.Name(),
+				)
+				if err := fOpt.Load(); err != nil {
+					b.UpdateDisplay(&progress.DisplayProps{
+						Prefix: fmt.Sprintf(" - Load metrics from %s", parent),
+						Suffix: err.Error(),
+						Mode:   progress.ModeError,
+					})
+					if loadErr == nil {
+						loadErr = err
+						return
+					}
+				}
+			}
+			b.UpdateDisplay(&progress.DisplayProps{
+				Prefix: fmt.Sprintf(" - Load metrics from %s", parent),
+				Mode:   progress.ModeDone,
+			})
+			tl.Put(tok)
+		}(tl.Get(), p, files)
+	}
+	tl.Wait()
+
+	return loadErr
+}
+
+// RebuildOptions are arguments needed for the rebuild job
 type RebuildOptions struct {
-	Host    string
-	Port    int
-	User    string
-	Passwd  string
-	DBName  string
-	Cluster string // cluster name
-	File    *os.File
-	Chunk   int
+	Host        string
+	Port        int
+	User        string
+	Passwd      string
+	DBName      string
+	Cluster     string // cluster name
+	Session     string // collector session ID
+	File        string
+	Chunk       int
+	Concurrency int // max parallel jobs allowed
+}
+
+func (opt *RebuildOptions) Load() error {
+	f, err := os.Open(opt.File)
+	if err != nil {
+		return err
+	}
+
+	// read JSON data from file
+	input, err := io.ReadAll(f)
+	f.Close()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// decode JSON
+	var data promDump
+	if err = json.Unmarshal(input, &data); err != nil {
+		log.Fatal(err)
+	}
+
+	if err := writeBatchPoints(data, opt); err != nil {
+		log.Fatal(err)
+	}
+	return nil
 }
 
 type promResult struct {
@@ -95,15 +222,19 @@ func buildPoints(
 	client influx.Client,
 	opts *RebuildOptions,
 ) []*influx.Point {
-	var ptList []*influx.Point
+	// build tags
 	rawTags := series.Metric
 	tags := make(map[string]string)
 	for k, v := range rawTags {
 		tags[string(k)] = string(v)
 	}
 	tags["cluster"] = opts.Cluster
+	tags["session"] = opts.Session
 	tags["monitor"] = "prometheus"
 	measurement := tags["__name__"]
+
+	// build points
+	var ptList []*influx.Point
 	for _, point := range series.Values {
 		timestamp := point.Timestamp.Time()
 		fields := map[string]interface{}{
@@ -115,6 +246,7 @@ func buildPoints(
 			ptList = append(ptList, pt)
 		} // errored points are ignored
 	}
+
 	return ptList
 }
 
@@ -140,34 +272,6 @@ func writeBatchPoints(data promDump, opts *RebuildOptions) error {
 			}
 		}
 		client.Close()
-	}
-	return nil
-}
-
-func (opt *RebuildOptions) Load() error {
-	// read JSON data from file
-	input, err := io.ReadAll(opt.File)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	// decode JSON
-	var data promDump
-	if err = json.Unmarshal(input, &data); err != nil {
-		log.Fatal(err)
-	}
-
-	// connect to influxdb
-	client := newClient(opt)
-	// create database has no side effect if database already exist
-	_, err = queryDB(client, opt.DBName, fmt.Sprintf("CREATE DATABASE %s", opt.DBName))
-	if err != nil {
-		log.Fatal(err)
-	}
-	client.Close()
-
-	if err := writeBatchPoints(data, opt); err != nil {
-		log.Fatal(err)
 	}
 	return nil
 }

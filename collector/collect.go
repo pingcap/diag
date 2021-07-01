@@ -114,6 +114,7 @@ func (m *Manager) CollectClusterInfo(
 			opt:         gOpt,
 			resultDir:   resultDir,
 			filePath:    m.specManager.Path(clusterName, "meta.yaml"),
+			clusterName: clusterName,
 		},
 	}
 
