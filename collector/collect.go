@@ -37,8 +37,8 @@ const (
 
 // Collector is the configuration defining an collecting job
 type Collector interface {
-	Prepare(*spec.Specification) (map[string][]CollectStat, error)
-	Collect(*spec.Specification) error
+	Prepare(*Manager, *spec.Specification) (map[string][]CollectStat, error)
+	Collect(*Manager, *spec.Specification) error
 	GetBaseOptions() *BaseOptions
 	SetBaseOptions(*BaseOptions)
 	Desc() string // a brief self description
@@ -46,6 +46,7 @@ type Collector interface {
 
 // BaseOptions contains the options for check command
 type BaseOptions struct {
+	Cluster     string                  // cluster name
 	User        string                  // username to login to the SSH server
 	UsePassword bool                    // use password instead of identity file for ssh connection
 	SSH         *tui.SSHConnectionProps // SSH credentials
@@ -69,33 +70,32 @@ type CollectStat struct {
 
 // CollectClusterInfo collects information and metrics from a tidb cluster
 func (m *Manager) CollectClusterInfo(
-	clusterName string,
 	opt *BaseOptions,
 	cOpt *CollectOptions,
 	gOpt *operator.Options,
 ) error {
 	var topo spec.Specification
 
-	exist, err := m.specManager.Exist(clusterName)
+	exist, err := m.specManager.Exist(opt.Cluster)
 	if err != nil {
 		return err
 	}
 	if !exist {
-		return perrs.Errorf("cluster %s does not exist", clusterName)
+		return perrs.Errorf("cluster %s does not exist", opt.Cluster)
 	}
 
-	metadata, err := spec.ClusterMetadata(clusterName)
+	metadata, err := spec.ClusterMetadata(opt.Cluster)
 	if err != nil {
 		return err
 	}
 	opt.User = metadata.User
-	opt.SSH.IdentityFile = m.specManager.Path(clusterName, "ssh", "id_rsa")
+	opt.SSH.IdentityFile = m.specManager.Path(opt.Cluster, "ssh", "id_rsa")
 	topo = *metadata.Topology
 
 	// prepare output dir of collected data
 	var resultDir string
 	if cOpt.Dir == "" {
-		resultDir = m.specManager.Path(clusterName, "collector", m.session)
+		resultDir = m.specManager.Path(opt.Cluster, "collector", m.session)
 	} else {
 		fp, err := filepath.Abs(cOpt.Dir)
 		if err != nil {
@@ -113,8 +113,7 @@ func (m *Manager) CollectClusterInfo(
 			BaseOptions: opt,
 			opt:         gOpt,
 			resultDir:   resultDir,
-			filePath:    m.specManager.Path(clusterName, "meta.yaml"),
-			clusterName: clusterName,
+			filePath:    m.specManager.Path(opt.Cluster, "meta.yaml"),
 		},
 	}
 
@@ -186,7 +185,7 @@ func (m *Manager) CollectClusterInfo(
 	stats := make([]map[string][]CollectStat, 0)
 	for _, c := range collectors {
 		fmt.Printf("Collecting %s...\n", c.Desc())
-		stat, err := c.Prepare(&topo)
+		stat, err := c.Prepare(m, &topo)
 		if err != nil {
 			return err
 		}
@@ -202,7 +201,7 @@ func (m *Manager) CollectClusterInfo(
 	// run collectors
 	for _, c := range collectors {
 		fmt.Printf("Collecting %s...\n", c.Desc())
-		if err := c.Collect(&topo); err != nil {
+		if err := c.Collect(m, &topo); err != nil {
 			return err
 		}
 	}

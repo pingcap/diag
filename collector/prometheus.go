@@ -75,12 +75,12 @@ func (c *AlertCollectOptions) SetDir(dir string) {
 }
 
 // Prepare implements the Collector interface
-func (c *AlertCollectOptions) Prepare(topo *spec.Specification) (map[string][]CollectStat, error) {
+func (c *AlertCollectOptions) Prepare(m *Manager, topo *spec.Specification) (map[string][]CollectStat, error) {
 	return nil, nil
 }
 
 // Collect implements the Collector interface
-func (c *AlertCollectOptions) Collect(topo *spec.Specification) error {
+func (c *AlertCollectOptions) Collect(m *Manager, topo *spec.Specification) error {
 	if len(topo.Monitors) < 1 {
 		fmt.Println("No Prometheus node found in topology, skip.")
 		return nil
@@ -156,7 +156,7 @@ func (c *MetricCollectOptions) SetDir(dir string) {
 }
 
 // Prepare implements the Collector interface
-func (c *MetricCollectOptions) Prepare(topo *spec.Specification) (map[string][]CollectStat, error) {
+func (c *MetricCollectOptions) Prepare(m *Manager, topo *spec.Specification) (map[string][]CollectStat, error) {
 	if len(topo.Monitors) < 1 {
 		fmt.Println("No Prometheus node found in topology, skip.")
 		return nil, nil
@@ -209,7 +209,7 @@ func (c *MetricCollectOptions) Prepare(topo *spec.Specification) (map[string][]C
 }
 
 // Collect implements the Collector interface
-func (c *MetricCollectOptions) Collect(topo *spec.Specification) error {
+func (c *MetricCollectOptions) Collect(m *Manager, topo *spec.Specification) error {
 	if len(topo.Monitors) < 1 {
 		fmt.Println("No Prometheus node found in topology, skip.")
 		return nil

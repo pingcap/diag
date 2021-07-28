@@ -63,7 +63,7 @@ func (c *ConfigCollectOptions) SetDir(dir string) {
 }
 
 // Prepare implements the Collector interface
-func (c *ConfigCollectOptions) Prepare(topo *spec.Specification) (map[string][]CollectStat, error) {
+func (c *ConfigCollectOptions) Prepare(m *Manager, topo *spec.Specification) (map[string][]CollectStat, error) {
 	var (
 		dryRunTasks   []*task.StepDisplay
 		downloadTasks []*task.StepDisplay
@@ -113,19 +113,11 @@ func (c *ConfigCollectOptions) Prepare(topo *spec.Specification) (map[string][]C
 			if _, found := uniqueHosts[inst.GetHost()]; !found {
 				uniqueHosts[inst.GetHost()] = inst.GetSSHPort()
 				// build system info collecting tasks
-				t1 := task.NewBuilder().
-					RootSSH(
-						inst.GetHost(),
-						inst.GetSSHPort(),
-						c.GetBaseOptions().User,
-						c.SSH.Password,
-						c.SSH.IdentityFile,
-						c.SSH.IdentityFilePassphrase,
-						c.opt.SSHTimeout,
-						c.opt.OptTimeout,
-						c.opt.SSHType,
-						topo.GlobalOptions.SSHType,
-					).
+				b, err := m.sshTaskBuilder(c.GetBaseOptions().Cluster, topo, c.GetBaseOptions().User, *c.opt)
+				if err != nil {
+					return nil, err
+				}
+				t1 := b.
 					Mkdir(c.GetBaseOptions().User, inst.GetHost(), filepath.Join(task.CheckToolsPathDir, "bin")).
 					CopyComponent(
 						componentDiagCollector,
@@ -196,7 +188,7 @@ func (c *ConfigCollectOptions) Prepare(topo *spec.Specification) (map[string][]C
 }
 
 // Collect implements the Collector interface
-func (c *ConfigCollectOptions) Collect(topo *spec.Specification) error {
+func (c *ConfigCollectOptions) Collect(m *Manager, topo *spec.Specification) error {
 	var (
 		collectTasks []*task.StepDisplay
 		cleanTasks   []*task.StepDisplay
@@ -226,19 +218,10 @@ func (c *ConfigCollectOptions) Collect(topo *spec.Specification) error {
 			// checks that applies to each host
 			if _, found := uniqueHosts[inst.GetHost()]; !found {
 				uniqueHosts[inst.GetHost()] = inst.GetSSHPort()
-				t2 := task.NewBuilder().
-					RootSSH(
-						inst.GetHost(),
-						inst.GetSSHPort(),
-						c.GetBaseOptions().User,
-						c.SSH.Password,
-						c.SSH.IdentityFile,
-						c.SSH.IdentityFilePassphrase,
-						c.opt.SSHTimeout,
-						c.opt.OptTimeout,
-						c.opt.SSHType,
-						topo.GlobalOptions.SSHType,
-					)
+				t2, err := m.sshTaskBuilder(c.GetBaseOptions().Cluster, topo, c.GetBaseOptions().User, *c.opt)
+				if err != nil {
+					return err
+				}
 				for _, f := range c.fileStats[inst.GetHost()] {
 					// build checking tasks
 					t2 = t2.
@@ -257,19 +240,11 @@ func (c *ConfigCollectOptions) Collect(topo *spec.Specification) error {
 				}
 			}
 
-			t3 := task.NewBuilder().
-				RootSSH(
-					inst.GetHost(),
-					inst.GetSSHPort(),
-					c.GetBaseOptions().User,
-					c.SSH.Password,
-					c.SSH.IdentityFile,
-					c.SSH.IdentityFilePassphrase,
-					c.opt.SSHTimeout,
-					c.opt.OptTimeout,
-					c.opt.SSHType,
-					topo.GlobalOptions.SSHType,
-				).
+			b, err := m.sshTaskBuilder(c.GetBaseOptions().Cluster, topo, c.GetBaseOptions().User, *c.opt)
+			if err != nil {
+				return err
+			}
+			t3 := b.
 				Rmdir(inst.GetHost(), task.CheckToolsPathDir).
 				BuildAsStep(fmt.Sprintf("  - Cleanup temp files on %s:%d", inst.GetHost(), inst.GetSSHPort()))
 			cleanTasks = append(cleanTasks, t3)

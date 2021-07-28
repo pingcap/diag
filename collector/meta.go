@@ -29,10 +29,9 @@ const (
 // MetaCollectOptions is the options collecting cluster meta
 type MetaCollectOptions struct {
 	*BaseOptions
-	opt         *operator.Options // global operations from cli
-	resultDir   string
-	filePath    string
-	clusterName string
+	opt       *operator.Options // global operations from cli
+	resultDir string
+	filePath  string
 }
 
 // Desc implements the Collector interface
@@ -61,19 +60,19 @@ func (c *MetaCollectOptions) SetDir(dir string) {
 }
 
 // Prepare implements the Collector interface
-func (c *MetaCollectOptions) Prepare(topo *spec.Specification) (map[string][]CollectStat, error) {
+func (c *MetaCollectOptions) Prepare(m *Manager, topo *spec.Specification) (map[string][]CollectStat, error) {
 	return nil, nil
 }
 
 // Collect implements the Collector interface
-func (c *MetaCollectOptions) Collect(topo *spec.Specification) error {
+func (c *MetaCollectOptions) Collect(m *Manager, topo *spec.Specification) error {
 	// write cluster name to file
 	fn, err := os.Create(filepath.Join(c.resultDir, fileNameClusterName))
 	if err != nil {
 		return err
 	}
 	defer fn.Close()
-	if _, err := fn.Write([]byte(c.clusterName)); err != nil {
+	if _, err := fn.Write([]byte(c.GetBaseOptions().Cluster)); err != nil {
 		return err
 	}
 

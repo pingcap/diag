@@ -60,7 +60,8 @@ func newCollectCmd() *cobra.Command {
 			if len(ext) > 0 {
 				cOpt.Exclude = set.NewStringSet(ext...)
 			}
-			return cm.CollectClusterInfo(args[0], &opt, &cOpt, &gOpt)
+			opt.Cluster = args[0]
+			return cm.CollectClusterInfo(&opt, &cOpt, &gOpt)
 		},
 	}
 

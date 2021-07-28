@@ -19,9 +19,11 @@ import (
 
 	perrs "github.com/pingcap/errors"
 	"github.com/pingcap/tiup/pkg/base52"
+	"github.com/pingcap/tiup/pkg/cluster/executor"
 	operator "github.com/pingcap/tiup/pkg/cluster/operation"
 	"github.com/pingcap/tiup/pkg/cluster/spec"
 	"github.com/pingcap/tiup/pkg/cluster/task"
+	"github.com/pingcap/tiup/pkg/tui"
 	"github.com/pingcap/tiup/pkg/utils/rand"
 )
 
@@ -66,11 +68,33 @@ func (m *Manager) meta(name string) (metadata spec.Metadata, err error) {
 	return metadata, nil
 }
 
-func (m *Manager) sshTaskBuilder(name string, topo spec.Topology, user string, opts operator.Options) *task.Builder {
+func (m *Manager) sshTaskBuilder(name string, topo spec.Topology, user string, opts operator.Options) (*task.Builder, error) {
+	var p *tui.SSHConnectionProps = &tui.SSHConnectionProps{}
+	if opts.SSHType != executor.SSHTypeNone && len(opts.SSHProxyHost) != 0 {
+		var err error
+		if p, err = tui.ReadIdentityFileOrPassword(opts.SSHProxyIdentity, opts.SSHProxyUsePassword); err != nil {
+			return nil, err
+		}
+	}
+
 	return task.NewBuilder().
 		SSHKeySet(
 			m.specManager.Path(name, "ssh", "id_rsa"),
 			m.specManager.Path(name, "ssh", "id_rsa.pub"),
 		).
-		ClusterSSH(topo, user, opts.SSHTimeout, opts.OptTimeout, opts.SSHType, topo.BaseTopo().GlobalOptions.SSHType)
+		ClusterSSH(
+			topo,
+			user,
+			opts.SSHTimeout,
+			opts.OptTimeout,
+			opts.SSHProxyHost,
+			opts.SSHProxyPort,
+			opts.SSHProxyUser,
+			p.Password,
+			p.IdentityFile,
+			p.IdentityFilePassphrase,
+			opts.SSHProxyTimeout,
+			opts.SSHType,
+			topo.BaseTopo().GlobalOptions.SSHType,
+		), nil
 }

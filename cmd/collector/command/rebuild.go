@@ -14,6 +14,8 @@
 package command
 
 import (
+	"fmt"
+
 	"github.com/pingcap/tidb-foresight/collector"
 	"github.com/spf13/cobra"
 )
@@ -21,7 +23,7 @@ import (
 func newRebuildCmd() *cobra.Command {
 	opt := collector.RebuildOptions{}
 	cmd := &cobra.Command{
-		Use:   "rebuild <path-to-the-dump>",
+		Use:   "rebuild <path-to-the-dump> [flags]",
 		Short: "Rebuild monitoring systems from the dumped data.",
 		Long: `Rebuild monitoring systems from the dumped metrics from
 a TiDB cluster. Metrics are reloaded to an InfluxDB instance
@@ -35,10 +37,21 @@ the diagnostic collector, where the meta.yaml is available.
 			}
 
 			opt.Concurrency = gOpt.Concurrency
+
+			if opt.Local {
+				fmt.Println("TODO: bootstrap a monitor system on localhost")
+				// TODO: bootstrap influxdb, prometheus and grafana
+				// TODO: modify arguments in opt to reffer to localhost
+				if err := collector.RunLocal(args[0], &opt); err != nil {
+					return err
+				}
+			}
+
 			return collector.LoadMetrics(args[0], &opt)
 		},
 	}
 
+	cmd.Flags().BoolVar(&opt.Local, "local", false, "Rebuild the system on localhost instead of inserting to remote database.")
 	cmd.Flags().StringVar(&opt.Host, "host", "localhost", "The host of influxdb.")
 	cmd.Flags().IntVar(&opt.Port, "port", 8086, "The port of influxdb.")
 	cmd.Flags().StringVar(&opt.User, "user", "", "The username of influxdb.")

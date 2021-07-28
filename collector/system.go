@@ -64,12 +64,12 @@ func (c *SystemCollectOptions) SetDir(dir string) {
 }
 
 // Prepare implements the Collector interface
-func (c *SystemCollectOptions) Prepare(topo *spec.Specification) (map[string][]CollectStat, error) {
+func (c *SystemCollectOptions) Prepare(m *Manager, topo *spec.Specification) (map[string][]CollectStat, error) {
 	return nil, nil
 }
 
 // Collect implements the Collector interface
-func (c *SystemCollectOptions) Collect(topo *spec.Specification) error {
+func (c *SystemCollectOptions) Collect(m *Manager, topo *spec.Specification) error {
 	var (
 		collectInsightTasks []*task.StepDisplay
 		checkSysTasks       []*task.StepDisplay
@@ -111,19 +111,11 @@ func (c *SystemCollectOptions) Collect(topo *spec.Specification) error {
 			if _, found := uniqueHosts[inst.GetHost()]; !found {
 				uniqueHosts[inst.GetHost()] = inst.GetSSHPort()
 				// build system info collecting tasks
-				t1 := task.NewBuilder().
-					RootSSH(
-						inst.GetHost(),
-						inst.GetSSHPort(),
-						c.GetBaseOptions().User,
-						c.SSH.Password,
-						c.SSH.IdentityFile,
-						c.SSH.IdentityFilePassphrase,
-						c.opt.SSHTimeout,
-						c.opt.OptTimeout,
-						c.opt.SSHType,
-						topo.GlobalOptions.SSHType,
-					).
+				b1, err := m.sshTaskBuilder(c.GetBaseOptions().Cluster, topo, c.GetBaseOptions().User, *c.opt)
+				if err != nil {
+					return err
+				}
+				t1 := b1.
 					Mkdir(c.GetBaseOptions().User, inst.GetHost(), filepath.Join(task.CheckToolsPathDir, "bin")).
 					CopyComponent(
 						spec.ComponentCheckCollector,
@@ -170,19 +162,11 @@ func (c *SystemCollectOptions) Collect(topo *spec.Specification) error {
 				)
 			}
 
-			t3 := task.NewBuilder().
-				RootSSH(
-					inst.GetHost(),
-					inst.GetSSHPort(),
-					c.GetBaseOptions().User,
-					c.SSH.Password,
-					c.SSH.IdentityFile,
-					c.SSH.IdentityFilePassphrase,
-					c.opt.SSHTimeout,
-					c.opt.OptTimeout,
-					c.opt.SSHType,
-					topo.GlobalOptions.SSHType,
-				).
+			b3, err := m.sshTaskBuilder(c.GetBaseOptions().Cluster, topo, c.GetBaseOptions().User, *c.opt)
+			if err != nil {
+				return err
+			}
+			t3 := b3.
 				Rmdir(inst.GetHost(), task.CheckToolsPathDir).
 				BuildAsStep(fmt.Sprintf("  - Cleanup temp files on %s:%d", inst.GetHost(), inst.GetSSHPort()))
 			cleanTasks = append(cleanTasks, t3)

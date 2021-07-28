@@ -32,6 +32,31 @@ import (
 	"github.com/prometheus/common/model"
 )
 
+func (opt *RebuildOptions) LoadMetrics() error {
+	f, err := os.Open(opt.File)
+	if err != nil {
+		return err
+	}
+
+	// read JSON data from file
+	input, err := io.ReadAll(f)
+	f.Close()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// decode JSON
+	var data promDump
+	if err = json.Unmarshal(input, &data); err != nil {
+		log.Fatal(err)
+	}
+
+	if err := writeBatchPoints(data, opt); err != nil {
+		log.Fatal(err)
+	}
+	return nil
+}
+
 // LoadMetrics reads the dumped metric JSON files and reload them
 // to an influxdb instance.
 func LoadMetrics(dataDir string, opt *RebuildOptions) error {
@@ -102,7 +127,7 @@ func LoadMetrics(dataDir string, opt *RebuildOptions) error {
 					dataDir, subdirMonitor, subdirMetrics,
 					parent, file.Name(),
 				)
-				if err := fOpt.Load(); err != nil {
+				if err := fOpt.LoadMetrics(); err != nil {
 					b.UpdateDisplay(&progress.DisplayProps{
 						Prefix: fmt.Sprintf(" - Load metrics from %s", parent),
 						Suffix: err.Error(),
@@ -124,45 +149,6 @@ func LoadMetrics(dataDir string, opt *RebuildOptions) error {
 	tl.Wait()
 
 	return loadErr
-}
-
-// RebuildOptions are arguments needed for the rebuild job
-type RebuildOptions struct {
-	Host        string
-	Port        int
-	User        string
-	Passwd      string
-	DBName      string
-	Cluster     string // cluster name
-	Session     string // collector session ID
-	File        string
-	Chunk       int
-	Concurrency int // max parallel jobs allowed
-}
-
-func (opt *RebuildOptions) Load() error {
-	f, err := os.Open(opt.File)
-	if err != nil {
-		return err
-	}
-
-	// read JSON data from file
-	input, err := io.ReadAll(f)
-	f.Close()
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	// decode JSON
-	var data promDump
-	if err = json.Unmarshal(input, &data); err != nil {
-		log.Fatal(err)
-	}
-
-	if err := writeBatchPoints(data, opt); err != nil {
-		log.Fatal(err)
-	}
-	return nil
 }
 
 type promResult struct {
