@@ -16,6 +16,8 @@ package collector
 import (
 	"bytes"
 	"context"
+	"crypto/tls"
+	"encoding/json"
 	"fmt"
 	"os"
 	"os/exec"
@@ -30,6 +32,7 @@ import (
 	"text/template"
 	"time"
 
+	"github.com/fatih/color"
 	"github.com/pingcap/errors"
 	"github.com/pingcap/tiup/components/playground/instance"
 	"github.com/pingcap/tiup/pkg/cluster/spec"
@@ -37,6 +40,8 @@ import (
 	tiupexec "github.com/pingcap/tiup/pkg/exec"
 	"github.com/pingcap/tiup/pkg/localdata"
 	"github.com/pingcap/tiup/pkg/repository"
+	"github.com/pingcap/tiup/pkg/tui/progress"
+	"github.com/pingcap/tiup/pkg/utils"
 	tiuputil "github.com/pingcap/tiup/pkg/utils"
 	"golang.org/x/sync/errgroup"
 	"gopkg.in/yaml.v3"
@@ -63,8 +68,10 @@ func RunLocal(dumpDir string, opt *RebuildOptions) error {
 		return fmt.Errorf("cannot read environment variable %s", localdata.EnvNameInstanceDataDir)
 	}
 
+	fmt.Println("Start bootstrapping a monitoring system on localhost and rebuilding the dashboards.")
+
 	// read clsuter name
-	clsNameFile, err := os.ReadFile(path.Join(dataDir, fileNameClusterName))
+	clsNameFile, err := os.ReadFile(path.Join(dumpDir, fileNameClusterName))
 	if err != nil {
 		return err
 	}
@@ -126,7 +133,7 @@ func RunLocal(dumpDir string, opt *RebuildOptions) error {
 		}
 	}()
 
-	bootErr := p.boot(ctx, dataDir, opt.Host, clsVer, clsName)
+	bootErr := p.boot(ctx, opt, dataDir, clsVer, clsName)
 	if bootErr != nil {
 		// always kill all process started and wait before quit.
 		atomic.StoreInt32(&p.lastSig, int32(syscall.SIGKILL))
@@ -137,17 +144,81 @@ func RunLocal(dumpDir string, opt *RebuildOptions) error {
 
 	atomic.StoreUint32(&booted, 1)
 
-	waitErr := p.wait()
-	if waitErr != nil {
-		return waitErr
+	wg := sync.WaitGroup{}
+	timeoutOpt := utils.RetryOption{
+		Attempts: 200,
+		Delay:    time.Millisecond * 300,
+		Timeout:  time.Second * 60,
 	}
-	return nil
+
+	var loadErr error
+	wg.Add(2)
+	go func() {
+		defer wg.Done()
+		mb := progress.NewMultiBar("Starting monitor components")
+		bars := make(map[string]*progress.MultiBarItem)
+		for comp, ins := range p.Proc {
+			bars[comp] = mb.AddBar(fmt.Sprintf(" - Setting up %s (%s)", comp, ins.addr()))
+		}
+		mb.StartRenderLoop()
+
+		for comp, ins := range p.Proc {
+			if err := utils.Retry(func() error {
+				if ins.ready() {
+					bars[comp].UpdateDisplay(&progress.DisplayProps{
+						Prefix: fmt.Sprintf(" - Set up %s (%s)", comp, ins.addr()),
+						Mode:   progress.ModeDone,
+					})
+					return nil
+				}
+				bars[comp].UpdateDisplay(&progress.DisplayProps{
+					Prefix: fmt.Sprintf(" - Setting up %s (%s)", comp, ins.addr()),
+					Suffix: "waiting process to be ready",
+				})
+				return fmt.Errorf("process of %s not ready yet", comp)
+			}, timeoutOpt); err != nil {
+				bars[comp].UpdateDisplay(&progress.DisplayProps{
+					Prefix: fmt.Sprintf(" - Setting up %s (%s)", comp, ins.addr()),
+					Suffix: err.Error(),
+					Mode:   progress.ModeError,
+				})
+				loadErr = errors.Annotatef(err, "failed to start %s", comp)
+				mb.StopRenderLoop()
+				return
+			}
+		}
+		mb.StopRenderLoop()
+
+		loadErr = LoadMetrics(dumpDir, opt)
+
+		// print addresses
+		fmt.Println("Components are started and listening:")
+		for comp, ins := range p.Proc {
+			fmt.Printf("%s: %s\n", comp, color.CyanString(ins.addr()))
+		}
+	}()
+	if loadErr != nil {
+		return loadErr
+	}
+
+	var waitErr error
+	go func() {
+		defer wg.Done()
+		waitErr = p.wait()
+	}()
+
+	wg.Wait()
+
+	return waitErr
 }
 
 type component interface {
-	start() error
+	start(ctx context.Context) error
 	wait() error
+	ready() bool
+	pid() int
 	getCmd() *exec.Cmd
+	addr() string
 }
 
 // rebuilder is the monitoring services to run
@@ -165,15 +236,16 @@ func newRebuilder() *rebuilder {
 	}
 }
 
-func (b *rebuilder) boot(ctx context.Context, dataDir, host, clsVer, clsName string) error {
+func (b *rebuilder) boot(ctx context.Context, opt *RebuildOptions, dataDir, clsVer, clsName string) error {
 	// prepare influxdb
-	if err := installIfMissing("influxdb", clsVer); err != nil {
+	if err := installIfMissing("influxdb", ""); err != nil { // latest version
 		return err
 	}
 	var influxAddr string
-	if insInflux, err := newInfluxdb(ctx, host, clsVer, dataDir); err == nil {
+	if insInflux, err := newInfluxdb(opt.Host, "", dataDir); err == nil {
 		b.Proc["influxdb"] = insInflux
 		influxAddr = insInflux.addr()
+		opt.Port = insInflux.HTTPPort
 	} else {
 		return err
 	}
@@ -183,7 +255,7 @@ func (b *rebuilder) boot(ctx context.Context, dataDir, host, clsVer, clsName str
 	if err := installIfMissing("prometheus", clsVer); err != nil {
 		return err
 	}
-	if insProm, err := newPrometheus(ctx, host, clsVer, dataDir, influxAddr); err == nil {
+	if insProm, err := newPrometheus(opt.Host, clsVer, dataDir, influxAddr); err == nil {
 		b.Proc["prometheus"] = insProm
 		promAddr = insProm.addr()
 	} else {
@@ -231,22 +303,28 @@ func (b *rebuilder) boot(ctx context.Context, dataDir, host, clsVer, clsName str
 	if err != nil {
 		return err
 	}
-	b.Proc["grafana"] = newGrafana(ctx, host, clsVer, dataDir, clsName, promAddr)
+	if insGrafana, err := newGrafana(opt.Host, clsVer, dataDir, clsName, promAddr); err == nil {
+		b.Proc["grafana"] = insGrafana
+	} else {
+		return err
+	}
 
 	for comp, ins := range b.Proc {
-		fmt.Printf("setting up %s...", comp)
 		i := ins
 		c := comp
 		b.walker.Go(func() error {
-			if err := i.start(); err != nil {
+			if err := i.start(ctx); err != nil {
 				defer b.terminate(syscall.SIGKILL)
 				return err
 			}
-			fmt.Printf("%s started.", c)
-			return nil
+			fmt.Printf("%s started: %s\n", c, i.addr())
+			err := i.wait()
+			if err != nil && atomic.LoadInt32(&b.lastSig) == 0 {
+				fmt.Printf("process quit: %s: %s\n", c, err)
+			}
+			return err
 		})
 	}
-	fmt.Println("finished setting up monitoring system on localhost.")
 
 	return nil
 }
@@ -266,7 +344,7 @@ func (b *rebuilder) terminate(sig syscall.Signal) error {
 	}
 
 	for comp, inst := range b.Proc {
-		pid := inst.getCmd().ProcessState.Pid()
+		pid := inst.pid()
 		if sig == syscall.SIGKILL {
 			fmt.Printf("Force %s(%d) to quit...\n", comp, pid)
 		} else if atomic.LoadInt32(&b.lastSig) == int32(sig) { // In case of double ctr+c
@@ -287,18 +365,64 @@ func (b *rebuilder) wait() error {
 }
 
 type influxdb struct {
-	host     string
-	bindPort int
-	httpPort int
-	dir      string
+	Host     string
+	BindPort int
+	HTTPPort int
+	Dir      string
+	version  string
 	cmd      *exec.Cmd
 
 	waitErr  error
 	waitOnce sync.Once
 }
 
-func (i *influxdb) start() error {
+func (i *influxdb) start(ctx context.Context) error {
+	args := []string{
+		//fmt.Sprintf("--bolt-path %s", filepath.Join(dir, "influxd.bolt")),
+		//fmt.Sprintf("--engine-path %s", filepath.Join(dir, "influxd.engine")),
+	}
+
+	env := environment.GlobalEnv()
+	os.Setenv("INFLUXD_CONFIG_PATH", i.Dir)
+	params := &tiupexec.PrepareCommandParams{
+		Ctx:         ctx,
+		Component:   "influxdb",
+		Version:     tiuputil.Version(i.version),
+		InstanceDir: i.Dir,
+		WD:          i.Dir,
+		Args:        args,
+		SysProcAttr: instance.SysProcAttr,
+		Env:         env,
+	}
+	cmd, err := tiupexec.PrepareCommand(params)
+	if err != nil {
+		return err
+	}
+	cmd.Stdout = nil
+	cmd.Stderr = nil
+
+	i.cmd = cmd
+
 	return i.cmd.Start()
+}
+
+func (i *influxdb) ready() bool {
+	url := fmt.Sprintf("http://%s:%d/health", i.Host, i.HTTPPort)
+	body, err := utils.NewHTTPClient(time.Second*2, &tls.Config{}).Get(url)
+	if err != nil {
+		//fmt.Println("still waiting for influxdb to start...")
+		return false
+	}
+	var status map[string]interface{}
+	if err := json.Unmarshal(body, &status); err != nil {
+		fmt.Printf("still waiting for influxdb to start: %s\n", err)
+		return false
+	}
+	if r, ok := status["status"].(string); !ok || r != "pass" {
+		//fmt.Println("still waiting for influxdb to start...")
+		return false
+	}
+	return true
 }
 
 func (i *influxdb) wait() error {
@@ -311,12 +435,15 @@ func (i *influxdb) wait() error {
 
 func (i *influxdb) getCmd() *exec.Cmd { return i.cmd }
 
+func (i *influxdb) pid() int { return i.cmd.Process.Pid }
+
 func (i *influxdb) addr() string {
-	return fmt.Sprintf("%s:%d", i.host, i.httpPort)
+	return fmt.Sprintf("%s:%d", i.Host, i.HTTPPort)
 }
 
 // the cmd is not started after return
-func newInfluxdb(ctx context.Context, host, version, dir string) (*influxdb, error) {
+func newInfluxdb(host, version, dir string) (*influxdb, error) {
+	dir = filepath.Join(dir, "influxdb")
 	if err := os.MkdirAll(dir, 0755); err != nil {
 		return nil, errors.AddStack(err)
 	}
@@ -331,47 +458,26 @@ func newInfluxdb(ctx context.Context, host, version, dir string) (*influxdb, err
 	}
 
 	i := new(influxdb)
-	i.host = host
-	i.dir = dir
-	i.bindPort = bindPort
-	i.httpPort = httpPort
-
-	args := []string{
-		fmt.Sprintf("-config %s", filepath.Join(dir, "influxdb.conf")),
-	}
-
-	env := environment.GlobalEnv()
-	params := &tiupexec.PrepareCommandParams{
-		Ctx:         ctx,
-		Component:   "influxdb",
-		Version:     tiuputil.Version(version),
-		InstanceDir: dir,
-		WD:          dir,
-		Args:        args,
-		SysProcAttr: instance.SysProcAttr,
-		Env:         env,
-	}
-	cmd, err := tiupexec.PrepareCommand(params)
-	if err != nil {
-		return nil, err
-	}
-
-	i.cmd = cmd
+	i.Host = host
+	i.Dir = dir
+	i.BindPort = bindPort
+	i.HTTPPort = httpPort
+	i.version = version
 
 	const influxCfg = `
-bind-address = "{{.host}}:{{.bindPort}}"
+bind-address = "{{.Host}}:{{.BindPort}}"
 [meta]
-	dir = "{{.dir}}/meta"
+	dir = "{{.Dir}}/meta"
 [data]
-	dir = "{{.dir}}/data"
-	wal-dir = "{{.dir}}/wal"
+	dir = "{{.Dir}}/data"
+	wal-dir = "{{.Dir}}/wal"
 	series-id-set-cache-size = 100
 [coordinator]
 [retention]
 [shard-precreation]
 [monitor]
 [http]
-	bind-address = "{{.host}}:{{.httpPort}}"
+	bind-address = "{{.Host}}:{{.HTTPPort}}"
 [logging]
 [subscriber]
 [[graphite]]
@@ -391,7 +497,7 @@ bind-address = "{{.host}}:{{.bindPort}}"
 		return nil, err
 	}
 
-	if err := os.WriteFile(filepath.Join(dir, "influxdb.conf"), content.Bytes(), os.ModePerm); err != nil {
+	if err := os.WriteFile(filepath.Join(i.Dir, "influxdb.conf"), content.Bytes(), os.ModePerm); err != nil {
 		return nil, errors.AddStack(err)
 	}
 
@@ -399,23 +505,57 @@ bind-address = "{{.host}}:{{.bindPort}}"
 }
 
 type prometheus struct {
-	host string
-	port int
+	Host string
+	Port int
 	cmd  *exec.Cmd
 
-	influxAddr   string
-	influxDBname string
+	dir          string
+	version      string
+	InfluxAddr   string
+	InfluxDBname string
 
 	waitErr  error
 	waitOnce sync.Once
 }
 
 func (m *prometheus) addr() string {
-	return fmt.Sprintf("%s:%d", m.host, m.port)
+	return fmt.Sprintf("%s:%d", m.Host, m.Port)
 }
 
-func (m *prometheus) start() error {
+func (m *prometheus) start(ctx context.Context) error {
+	addr := fmt.Sprintf("%s:%d", m.Host, m.Port)
+	args := []string{
+		fmt.Sprintf("--config.file=%s", filepath.Join(m.dir, "prometheus.yml")),
+		fmt.Sprintf("--web.external-url=http://%s", addr),
+		fmt.Sprintf("--web.listen-address=%s", addr),
+		fmt.Sprintf("--storage.tsdb.path=%s", filepath.Join(m.dir, "data")),
+	}
+
+	env := environment.GlobalEnv()
+	params := &tiupexec.PrepareCommandParams{
+		Ctx:         ctx,
+		Component:   "prometheus",
+		Version:     tiuputil.Version(m.version),
+		InstanceDir: m.dir,
+		WD:          m.dir,
+		Args:        args,
+		SysProcAttr: instance.SysProcAttr,
+		Env:         env,
+	}
+	cmd, err := tiupexec.PrepareCommand(params)
+	if err != nil {
+		return err
+	}
+	cmd.Stdout = nil
+	cmd.Stderr = nil
+
+	m.cmd = cmd
+
 	return m.cmd.Start()
+}
+
+func (m *prometheus) ready() bool {
+	return m.cmd != nil
 }
 
 func (m *prometheus) wait() error {
@@ -428,8 +568,11 @@ func (m *prometheus) wait() error {
 
 func (m *prometheus) getCmd() *exec.Cmd { return m.cmd }
 
+func (m *prometheus) pid() int { return m.cmd.Process.Pid }
+
 // the cmd is not started after return
-func newPrometheus(ctx context.Context, host, version, dir, influx string) (*prometheus, error) {
+func newPrometheus(host, version, dir, influx string) (*prometheus, error) {
+	dir = filepath.Join(dir, "prometheus")
 	if err := os.MkdirAll(dir, 0755); err != nil {
 		return nil, errors.AddStack(err)
 	}
@@ -438,38 +581,14 @@ func newPrometheus(ctx context.Context, host, version, dir, influx string) (*pro
 	if err != nil {
 		return nil, err
 	}
-	addr := fmt.Sprintf("%s:%d", host, port)
 
 	m := new(prometheus)
-	m.host = host
-	m.port = port
-	m.influxAddr = influx
-	m.influxDBname = "diagcollector"
-
-	args := []string{
-		fmt.Sprintf("--config.file=%s", filepath.Join(dir, "prometheus.yml")),
-		fmt.Sprintf("--web.external-url=http://%s", addr),
-		fmt.Sprintf("--web.listen-address=%s:%d", host, port),
-		fmt.Sprintf("--storage.tsdb.path=%s", filepath.Join(dir, "data")),
-	}
-
-	env := environment.GlobalEnv()
-	params := &tiupexec.PrepareCommandParams{
-		Ctx:         ctx,
-		Component:   "prometheus",
-		Version:     tiuputil.Version(version),
-		InstanceDir: dir,
-		WD:          dir,
-		Args:        args,
-		SysProcAttr: instance.SysProcAttr,
-		Env:         env,
-	}
-	cmd, err := tiupexec.PrepareCommand(params)
-	if err != nil {
-		return nil, err
-	}
-
-	m.cmd = cmd
+	m.Host = host
+	m.Port = port
+	m.InfluxAddr = influx
+	m.InfluxDBname = "diagcollector"
+	m.dir = dir
+	m.version = version
 
 	const promCfg = `
 global:
@@ -487,10 +606,10 @@ rule_files:
 scrape_configs:
   - job_name: 'prometheus'
     static_configs:
-    - targets: ['{{.host}}:{{.port}}']
+    - targets: ['{{.Host}}:{{.Port}}']
 
 remote_read:
-  - url: "http://{{.influxAddr}}/api/v1/prom/read?db={{.influxDBname}}"
+  - url: "http://{{.InfluxAddr}}/api/v1/prom/read?db={{.InfluxDBname}}"
     read_recent: true
 `
 
@@ -503,7 +622,7 @@ remote_read:
 		return nil, err
 	}
 
-	if err := os.WriteFile(filepath.Join(dir, "prometheus.yml"), content.Bytes(), os.ModePerm); err != nil {
+	if err := os.WriteFile(filepath.Join(m.dir, "prometheus.yml"), content.Bytes(), os.ModePerm); err != nil {
 		return nil, errors.AddStack(err)
 	}
 
@@ -511,28 +630,74 @@ remote_read:
 }
 
 type grafana struct {
-	host    string
-	port    int
+	Host    string
+	Port    int
+	DataDir string
+	Version string
+	Cluster string
+	Prom    string
 	cmd     *exec.Cmd
-	dataDir string
-	version string
-	cluster string
-	prom    string
 
-	ctx      context.Context
+	customFName string
+
 	waitErr  error
 	waitOnce sync.Once
 }
 
-func newGrafana(ctx context.Context, host, version, dir, clusterName, prom string) *grafana {
-	return &grafana{
-		host:    host,
-		version: version,
-		dataDir: dir,
-		cluster: clusterName,
-		prom:    prom,
-		ctx:     ctx,
+func newGrafana(host, version, dir, clusterName, prom string) (*grafana, error) {
+	if host == "" || host == "127.0.0.1" {
+		host = "0.0.0.0"
 	}
+
+	g := &grafana{
+		Host:    host,
+		Version: version,
+		DataDir: filepath.Join(dir, "grafana"),
+		Cluster: clusterName,
+		Prom:    prom,
+	}
+
+	var err error
+	g.Port, err = tiuputil.GetFreePort(g.Host, 3000)
+	if err != nil {
+		return nil, err
+	}
+
+	fname := filepath.Join(g.DataDir, "conf", "provisioning", "dashboards", "dashboard.yml")
+	err = writeDashboardConfig(fname, g.Cluster, filepath.Join(g.DataDir, "dashboards"))
+	if err != nil {
+		return nil, err
+	}
+
+	fname = filepath.Join(g.DataDir, "conf", "provisioning", "datasources", "datasource.yml")
+	err = writeDatasourceConfig(fname, g.Cluster, g.Prom)
+	if err != nil {
+		return nil, err
+	}
+
+	tpl := `
+[server]
+# The ip address to bind to, empty will bind to all interfaces
+http_addr = %s
+
+# The http port to use
+http_port = %d
+`
+	err = os.MkdirAll(filepath.Join(g.DataDir, "conf"), 0755)
+	if err != nil {
+		return nil, errors.AddStack(err)
+	}
+
+	custom := fmt.Sprintf(tpl, g.Host, g.Port)
+	customFName := filepath.Join(g.DataDir, "conf", "custom.ini")
+
+	err = os.WriteFile(customFName, []byte(custom), 0644)
+	if err != nil {
+		return nil, errors.AddStack(err)
+	}
+	g.customFName = customFName
+
+	return g, nil
 }
 
 // ref: https://grafana.com/docs/grafana/latest/administration/provisioning/
@@ -549,7 +714,7 @@ datasources:
   - name: %s
     type: prometheus
     access: proxy
-    url: %s
+    url: http://%s
     withCredentials: false
     isDefault: false
     tlsAuth: false
@@ -637,60 +802,22 @@ func makeSureDir(fname string) error {
 
 // dir should contains files untar the grafana.
 // return not error iff the Cmd is started successfully.
-func (g *grafana) start() (err error) {
-	g.port, err = tiuputil.GetFreePort(g.host, 3000)
-	if err != nil {
-		return err
-	}
-
-	fname := filepath.Join(g.dataDir, "conf", "provisioning", "dashboards", "dashboard.yml")
-	err = writeDashboardConfig(fname, g.cluster, filepath.Join(g.dataDir, "dashboards"))
-	if err != nil {
-		return err
-	}
-
-	fname = filepath.Join(g.dataDir, "conf", "provisioning", "datasources", "datasource.yml")
-	err = writeDatasourceConfig(fname, g.cluster, g.prom)
-	if err != nil {
-		return err
-	}
-
-	tpl := `
-[server]
-# The ip address to bind to, empty will bind to all interfaces
-http_addr = %s
-
-# The http port to use
-http_port = %d
-`
-	err = os.MkdirAll(filepath.Join(g.dataDir, "conf"), 0755)
-	if err != nil {
-		return errors.AddStack(err)
-	}
-
-	custome := fmt.Sprintf(tpl, g.host, g.port)
-	customeFName := filepath.Join(g.dataDir, "conf", "custom.ini")
-
-	err = os.WriteFile(customeFName, []byte(custome), 0644)
-	if err != nil {
-		return errors.AddStack(err)
-	}
-
+func (g *grafana) start(ctx context.Context) (err error) {
 	args := []string{
-		"--homepath",
-		g.dataDir,
-		"--config",
-		customeFName,
-		fmt.Sprintf("cfg:default.paths.logs=%s", path.Join(g.dataDir, "log")),
+		"--homepath", g.DataDir,
+		"--config", g.customFName,
+		fmt.Sprintf("cfg:default.paths.logs=%s", path.Join(g.DataDir, "log")),
+		fmt.Sprintf("cfg:default.paths.data=%s", path.Join(g.DataDir, "data")),
+		fmt.Sprintf("cfg:default.paths.plugins=%s", path.Join(g.DataDir, "plugins")),
 	}
 
 	env := environment.GlobalEnv()
 	params := &tiupexec.PrepareCommandParams{
-		Ctx:         g.ctx,
+		Ctx:         ctx,
 		Component:   "grafana",
-		Version:     tiuputil.Version(g.version),
-		InstanceDir: g.dataDir,
-		WD:          g.dataDir,
+		Version:     tiuputil.Version(g.Version),
+		InstanceDir: g.DataDir,
+		WD:          g.DataDir,
 		Args:        args,
 		SysProcAttr: instance.SysProcAttr,
 		Env:         env,
@@ -703,8 +830,11 @@ http_port = %d
 	cmd.Stderr = nil
 
 	g.cmd = cmd
-
 	return g.cmd.Start()
+}
+
+func (g *grafana) ready() bool {
+	return g.cmd != nil
 }
 
 func (g *grafana) wait() error {
@@ -716,6 +846,10 @@ func (g *grafana) wait() error {
 }
 
 func (g *grafana) getCmd() *exec.Cmd { return g.cmd }
+
+func (g *grafana) pid() int { return g.cmd.Process.Pid }
+
+func (g *grafana) addr() string { return fmt.Sprintf("%s:%d", g.Host, g.Port) }
 
 func installIfMissing(component, version string) error {
 	env := environment.GlobalEnv()

@@ -38,23 +38,22 @@ the diagnostic collector, where the meta.yaml is available.
 
 			opt.Concurrency = gOpt.Concurrency
 
-			if opt.Local {
-				fmt.Println("TODO: bootstrap a monitor system on localhost")
-				// TODO: bootstrap influxdb, prometheus and grafana
-				// TODO: modify arguments in opt to reffer to localhost
-				if err := collector.RunLocal(args[0], &opt); err != nil {
-					return err
-				}
+			if opt.Host == "" || opt.Host == "localhost" {
+				fmt.Println("Host not set, using localhost(127.0.0.1) as default.")
+				opt.Host = "127.0.0.1"
 			}
-
-			return collector.LoadMetrics(args[0], &opt)
+			if opt.Local {
+				return collector.RunLocal(args[0], &opt)
+			} else {
+				return collector.LoadMetrics(args[0], &opt)
+			}
 		},
 	}
 
 	cmd.Flags().BoolVar(&opt.Local, "local", false, "Rebuild the system on localhost instead of inserting to remote database.")
-	cmd.Flags().StringVar(&opt.Host, "host", "localhost", "The host of influxdb.")
+	cmd.Flags().StringVar(&opt.Host, "host", "", "The host of influxdb.")
 	cmd.Flags().IntVar(&opt.Port, "port", 8086, "The port of influxdb.")
-	cmd.Flags().StringVar(&opt.User, "user", "", "The username of influxdb.")
+	cmd.Flags().StringVar(&opt.User, "user", "root", "The username of influxdb.")
 	cmd.Flags().StringVar(&opt.Passwd, "passwd", "", "The password of user.")
 	cmd.Flags().StringVar(&opt.DBName, "db", "diagcollector", "The database name of imported metrics.")
 	cmd.Flags().IntVar(&opt.Chunk, "chunk", 2000, "The chunk size of writing, larger values could speed the process but may timeout.")
