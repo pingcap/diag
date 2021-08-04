@@ -742,8 +742,8 @@ github.com/pingcap/tidb-insight v0.4.0-dev.1.0.20210610034452-7985a5287b50 h1:qz
 github.com/pingcap/tidb-insight v0.4.0-dev.1.0.20210610034452-7985a5287b50/go.mod h1:ju1jxNOVAdglpaR7dFBV04EtMZ5EaY56tkqdBxhb4E4=
 github.com/pingcap/tidb-insight/collector v0.0.0-20210610034452-7985a5287b50 h1:JmypwIf7n3azPhDxToERPXMbh/nHm1WVtbM5SrJ5C5o=
 github.com/pingcap/tidb-insight/collector v0.0.0-20210610034452-7985a5287b50/go.mod h1:u71UhNPhIJh0xIqED22eNGd/ELawJMivkvppkNgCI5M=
-github.com/pingcap/tiup v1.6.0-dev.0.20210802034506-35abe88f2cc1 h1:YCV/BE0IiNYh0VfOlguRTkyH9asTvtkYzOeQ8MPFw7E=
-github.com/pingcap/tiup v1.6.0-dev.0.20210802034506-35abe88f2cc1/go.mod h1:oPgNTX7nUYUcVtmtovOdEEelGUG4LM5+F/JjOjbqTYY=
+github.com/pingcap/tiup v1.6.0-dev.0.20210804034306-ef7963905a50 h1:lD0uis1VrxIn/rYBI+Ex8rg1694BFrtOS63F0nUp0XY=
+github.com/pingcap/tiup v1.6.0-dev.0.20210804034306-ef7963905a50/go.mod h1:oPgNTX7nUYUcVtmtovOdEEelGUG4LM5+F/JjOjbqTYY=
 github.com/pkg/browser v0.0.0-20180916011732-0a3d74bf9ce4/go.mod h1:4OwLy04Bl9Ef3GJJCoec+30X3LQs/0/m4HFRt/2LUSA=
 github.com/pkg/errors v0.8.0/go.mod h1:bwawxfHBFNV+L2hUp1rHADufV3IMtnDRdf1r5NINEl0=
 github.com/pkg/errors v0.8.1/go.mod h1:bwawxfHBFNV+L2hUp1rHADufV3IMtnDRdf1r5NINEl0=

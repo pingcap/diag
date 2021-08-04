@@ -34,7 +34,7 @@ func newCollectCmd() *cobra.Command {
 	cOpt := collector.CollectOptions{
 		Include: set.NewStringSet( // collect all types by default
 			collector.CollectTypeSystem,
-			//collector.CollectTypeMonitor,
+			collector.CollectTypeMonitor,
 			collector.CollectTypeLog,
 			collector.CollectTypeConfig,
 		),
@@ -72,7 +72,7 @@ func newCollectCmd() *cobra.Command {
 	cmd.Flags().StringSliceVar(&inc, "include", cOpt.Include.Slice(), "types of data to collect")
 	cmd.Flags().StringSliceVar(&ext, "exclude", cOpt.Exclude.Slice(), "types of data not to collect")
 	cmd.Flags().StringVarP(&cOpt.Dir, "output", "o", "", "output directory of collected data")
-	cmd.Flags().IntVarP(&cOpt.Limit, "limit", "l", 0, "Limits the used bandwidth, specified in Kbit/s")
+	cmd.Flags().IntVarP(&cOpt.Limit, "limit", "l", 10000, "Limits the used bandwidth, specified in Kbit/s")
 	cmd.Flags().Uint64Var(&gOpt.APITimeout, "api-timeout", 10, "Timeout in seconds when querying PD APIs.")
 
 	return cmd

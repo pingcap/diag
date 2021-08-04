@@ -408,7 +408,7 @@ func (i *influxdb) start(ctx context.Context) error {
 
 func (i *influxdb) ready() bool {
 	url := fmt.Sprintf("http://%s:%d/health", i.Host, i.HTTPPort)
-	body, err := utils.NewHTTPClient(time.Second*2, &tls.Config{}).Get(url)
+	body, err := utils.NewHTTPClient(time.Second*2, &tls.Config{}).Get(context.TODO(), url)
 	if err != nil {
 		//fmt.Println("still waiting for influxdb to start...")
 		return false
