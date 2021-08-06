@@ -205,7 +205,6 @@ func newClient(opts *RebuildOptions) influx.Client {
 
 func buildPoints(
 	series *model.SampleStream,
-	client influx.Client,
 	opts *RebuildOptions,
 ) []*influx.Point {
 	// build tags
@@ -220,15 +219,14 @@ func buildPoints(
 	measurement := tags["__name__"]
 
 	// build points
-	var ptList []*influx.Point
+	ptList := make([]*influx.Point, 0)
 	for _, point := range series.Values {
 		timestamp := point.Timestamp.Time()
 		fields := map[string]interface{}{
 			// model.SampleValue is alias of float64
 			"value": float64(point.Value),
 		}
-		if pt, err := influx.NewPoint(measurement, tags, fields,
-			timestamp); err == nil {
+		if pt, err := influx.NewPoint(measurement, tags, fields, timestamp); err == nil {
 			ptList = append(ptList, pt)
 		} // errored points are ignored
 	}
@@ -237,27 +235,44 @@ func buildPoints(
 }
 
 func writeBatchPoints(data promDump, opts *RebuildOptions) error {
+	tl := utils.NewTokenLimiter(uint(opts.Concurrency) + 1)
+	errChan := make(chan error)
 	for _, series := range data.Data.Result {
-		client := newClient(opts)
-		ptList := buildPoints(series, client, opts)
+		ptList := buildPoints(series, opts)
 
 		for _, chunk := range slicePoints(ptList, opts.Chunk) {
-			// create influx.Client and close it every time we write a BatchPoints
-			// series to reduce memory usage on large dataset
-			bp, err := influx.NewBatchPoints(influx.BatchPointsConfig{
-				Database:  opts.DBName,
-				Precision: "s",
-			})
-			if err != nil {
-				return err
-			}
-			bp.AddPoints(chunk)
-			// write batch points to influxdb
-			if err := client.Write(bp); err != nil {
-				return err
-			}
+			go func(tok *utils.Token, chunk []*influx.Point) {
+				defer tl.Put(tok)
+
+				bp, err := influx.NewBatchPoints(influx.BatchPointsConfig{
+					Database:  opts.DBName,
+					Precision: "s",
+				})
+				if err != nil {
+					errChan <- err
+					return
+				}
+				bp.AddPoints(chunk)
+
+				// create influx.Client and close it every time we write a BatchPoints
+				// series to reduce memory usage on large dataset
+				client := newClient(opts)
+				defer client.Close()
+
+				// write batch points to influxdb
+				if err := client.Write(bp); err != nil {
+					errChan <- err
+					return
+				}
+			}(tl.Get(), chunk)
 		}
-		client.Close()
 	}
-	return nil
+
+	select {
+	case err := <-errChan:
+		return err
+	default:
+		tl.Wait()
+		return nil
+	}
 }
