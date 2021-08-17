@@ -9,12 +9,13 @@ require (
 	github.com/google/uuid v1.2.0
 	github.com/influxdata/influxdb v1.9.3
 	github.com/joomcode/errorx v1.0.3
+	github.com/klauspost/compress v1.13.4
 	github.com/pingcap/check v0.0.0-20200212061837-5e12011dc712
 	github.com/pingcap/errors v0.11.5-0.20201126102027-b0a155152ca3
 	github.com/pingcap/log v0.0.0-20201112100606-8f1e84a3abc8 // indirect
-	github.com/pingcap/tidb-insight v0.4.0-dev.1.0.20210610034452-7985a5287b50 // indirect
+	github.com/pingcap/tidb-insight v0.4.0-dev.1.0.20210812035908-19d4c37ba1b9 // indirect
 	github.com/pingcap/tidb-insight/collector v0.0.0-20210610034452-7985a5287b50
-	github.com/pingcap/tiup v1.6.0-dev.0.20210804034306-ef7963905a50
+	github.com/pingcap/tiup v1.6.0-dev.0.20210816074400-a7ccf6c2b00e
 	github.com/prometheus/common v0.29.0
 	github.com/sirupsen/logrus v1.8.1
 	github.com/spf13/cobra v1.1.3

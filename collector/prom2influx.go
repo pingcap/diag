@@ -27,6 +27,7 @@ import (
 	"strings"
 
 	influx "github.com/influxdata/influxdb/client/v2"
+	"github.com/klauspost/compress/zstd"
 	"github.com/pingcap/tidb-foresight/utils"
 	"github.com/pingcap/tiup/pkg/tui/progress"
 	"github.com/prometheus/common/model"
@@ -38,16 +39,30 @@ func (opt *RebuildOptions) LoadMetrics() error {
 		return err
 	}
 
+	var input []byte
+	var readErr error
+	var decodeErr error
+
 	// read JSON data from file
-	input, err := io.ReadAll(f)
+	// and try to decompress the data
+	if dec, err := zstd.NewReader(f); err == nil {
+		input, decodeErr = io.ReadAll(dec)
+	}
+	// if any error occured during decompress the data
+	// just try to read the file directly
+	if decodeErr != nil {
+		f.Seek(0, io.SeekStart)
+		input, readErr = io.ReadAll(f)
+	}
 	f.Close()
-	if err != nil {
+	if readErr != nil {
 		log.Fatal(err)
 	}
 
 	// decode JSON
 	var data promDump
 	if err = json.Unmarshal(input, &data); err != nil {
+		fmt.Println(string(input))
 		log.Fatal(err)
 	}
 

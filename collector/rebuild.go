@@ -137,6 +137,7 @@ func RunLocal(dumpDir string, opt *RebuildOptions) error {
 	if bootErr != nil {
 		// always kill all process started and wait before quit.
 		atomic.StoreInt32(&p.lastSig, int32(syscall.SIGKILL))
+		fmt.Printf("error bootstrap, exiting: %s\n", bootErr)
 		p.terminate(syscall.SIGKILL)
 		_ = p.wait()
 		return errors.Annotate(bootErr, "Bootstrapping failed")

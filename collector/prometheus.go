@@ -27,6 +27,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/klauspost/compress/zstd"
 	"github.com/pingcap/tidb-foresight/utils"
 	operator "github.com/pingcap/tiup/pkg/cluster/operation"
 	"github.com/pingcap/tiup/pkg/cluster/spec"
@@ -47,6 +48,7 @@ type AlertCollectOptions struct {
 	*BaseOptions
 	opt       *operator.Options // global operations from cli
 	resultDir string
+	compress  bool // compress collected JSON files
 }
 
 // Desc implements the Collector interface
@@ -109,8 +111,22 @@ func (c *AlertCollectOptions) Collect(m *Manager, topo *spec.Specification) erro
 		}
 		defer f.Close()
 
-		if _, err := io.Copy(f, resp.Body); err != nil {
-			return err
+		if !c.compress {
+			if _, err := io.Copy(f, resp.Body); err != nil {
+				return err
+			}
+		} else {
+			enc, err := zstd.NewWriter(f)
+			if err != nil {
+				log.Errorf("failed compressing alert list: %s, retry...\n", err)
+				return err
+			}
+			defer enc.Close()
+			_, err = io.Copy(enc, resp.Body)
+			if err != nil {
+				log.Errorf("failed writing alert list to file: %s, retry...\n", err)
+				return err
+			}
 		}
 	}
 
@@ -128,6 +144,7 @@ type MetricCollectOptions struct {
 	resultDir string
 	timeSteps []string
 	metrics   []string // metric list
+	compress  bool     // compress collected JSON files
 }
 
 // Desc implements the Collector interface
@@ -196,10 +213,16 @@ func (c *MetricCollectOptions) Prepare(m *Manager, topo *spec.Specification) (ma
 	topo.IterInstance(func(instance spec.Instance) {
 		insCnt++
 	})
-	result[promAddr] = append(result[promAddr], CollectStat{
+	cStat := CollectStat{
 		Target: fmt.Sprintf("%d metrics", len(c.metrics)),
-		Size:   int64(12*len(c.metrics)*insCnt) * nsec, // empirical formula, inaccurate
-	})
+		Size:   int64(11*len(c.metrics)*insCnt) * nsec, // empirical formula, inaccurate
+	}
+	if c.compress {
+		// compression rate is approximately 2.5%
+		cStat.Size = int64(float64(cStat.Size) * 0.025)
+		cStat.Target = fmt.Sprintf("%d metrics, compressed", len(c.metrics))
+	}
+	result[promAddr] = append(result[promAddr], cStat)
 
 	// if query successed for any one of prometheus, ignore errors for other instances
 	if !queryOK {
@@ -255,7 +278,7 @@ func (c *MetricCollectOptions) Collect(m *Manager, topo *spec.Specification) err
 					Suffix: fmt.Sprintf("%d/%d querying %s ...", done, total, mtc),
 				})
 
-				collectMetric(client, prom, c.timeSteps, mtc, c.resultDir)
+				collectMetric(client, prom, c.timeSteps, mtc, c.resultDir, c.compress)
 
 				mu.Lock()
 				done++
@@ -293,7 +316,13 @@ func getMetricList(c *http.Client, prom string) ([]string, error) {
 	return r.Metrics, nil
 }
 
-func collectMetric(c *http.Client, prom *spec.PrometheusSpec, ts []string, mtc, resultDir string) {
+func collectMetric(
+	c *http.Client,
+	prom *spec.PrometheusSpec,
+	ts []string,
+	mtc, resultDir string,
+	compress bool,
+) {
 	log.Debugf("Dumping metric %s...", mtc)
 
 	promAddr := fmt.Sprintf("%s:%d", prom.Host, prom.Port)
@@ -329,10 +358,26 @@ func collectMetric(c *http.Client, prom *spec.PrometheusSpec, ts []string, mtc, 
 				}
 				defer dst.Close()
 
-				n, err := io.Copy(dst, resp.Body)
-				if err != nil {
-					fmt.Printf("failed writing metric %s to file: %s, retry...\n", mtc, err)
-					return err
+				// compress the metric
+				var n int64
+				if !compress {
+					n, err = io.Copy(dst, resp.Body)
+					if err != nil {
+						log.Errorf("failed writing metric %s to file: %s, retry...\n", mtc, err)
+						return err
+					}
+				} else {
+					enc, err := zstd.NewWriter(dst)
+					if err != nil {
+						log.Errorf("failed compressing metric %s: %s, retry...\n", mtc, err)
+						return err
+					}
+					defer enc.Close()
+					n, err = io.Copy(enc, resp.Body)
+					if err != nil {
+						log.Errorf("failed writing metric %s to file: %s, retry...\n", mtc, err)
+						return err
+					}
 				}
 				log.Debugf(" Dumped metric %s from %s to %s (%d bytes)", mtc, ts[i], ts[i+1], n)
 				return nil

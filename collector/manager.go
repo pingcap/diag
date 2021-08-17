@@ -23,8 +23,8 @@ import (
 	operator "github.com/pingcap/tiup/pkg/cluster/operation"
 	"github.com/pingcap/tiup/pkg/cluster/spec"
 	"github.com/pingcap/tiup/pkg/cluster/task"
+	"github.com/pingcap/tiup/pkg/crypto/rand"
 	"github.com/pingcap/tiup/pkg/tui"
-	"github.com/pingcap/tiup/pkg/utils/rand"
 )
 
 // Manager to deploy a cluster.

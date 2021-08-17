@@ -56,10 +56,12 @@ type BaseOptions struct {
 
 // CollectOptions contains the options defining which type of data to collect
 type CollectOptions struct {
-	Include set.StringSet
-	Exclude set.StringSet
-	Dir     string // target directory to store collected data
-	Limit   int    // rate limit of SCP
+	Include         set.StringSet
+	Exclude         set.StringSet
+	Dir             string // target directory to store collected data
+	Limit           int    // rate limit of SCP
+	CompressMetrics bool   // compress of files during collecting
+	CompressLogs    bool   // compress of files during collecting
 }
 
 // CollectStat is estimated size stats of data to be collected
@@ -124,11 +126,13 @@ func (m *Manager) CollectClusterInfo(
 				BaseOptions: opt,
 				opt:         gOpt,
 				resultDir:   resultDir,
+				compress:    cOpt.CompressMetrics,
 			},
 			&MetricCollectOptions{ // metrics
 				BaseOptions: opt,
 				opt:         gOpt,
 				resultDir:   resultDir,
+				compress:    cOpt.CompressMetrics,
 			},
 		)
 	}
