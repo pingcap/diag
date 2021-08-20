@@ -1,7 +1,7 @@
 package iterator
 
 import (
-	"github.com/pingcap/tidb-foresight/log/item"
+	"github.com/pingcap/diag/log/item"
 )
 
 type Iterator interface {

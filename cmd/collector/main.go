@@ -14,7 +14,7 @@
 package main
 
 import (
-	"github.com/pingcap/tidb-foresight/cmd/collector/command"
+	"github.com/pingcap/diag/cmd/collector/command"
 	"github.com/pingcap/tiup/pkg/tui"
 )
 

@@ -762,10 +762,10 @@ github.com/pingcap/tidb-insight v0.3.2 h1:FB18NmA2cVJAL5MmkpLwRIPqCLKUN7Xm+ndW3M
 github.com/pingcap/tidb-insight v0.3.2/go.mod h1:jJMP56M/+MLCrn7/tL4wJmYyK2mjo37ijtyoesccyBE=
 github.com/pingcap/tidb-insight v0.4.0-dev.1.0.20210812035908-19d4c37ba1b9 h1:Y9chiW4rgzRUa3V0tnb/B2NJ6AHh1ItJ0gxyPA6lzEM=
 github.com/pingcap/tidb-insight v0.4.0-dev.1.0.20210812035908-19d4c37ba1b9/go.mod h1:ju1jxNOVAdglpaR7dFBV04EtMZ5EaY56tkqdBxhb4E4=
-github.com/pingcap/tidb-insight/collector v0.0.0-20210610034452-7985a5287b50 h1:JmypwIf7n3azPhDxToERPXMbh/nHm1WVtbM5SrJ5C5o=
-github.com/pingcap/tidb-insight/collector v0.0.0-20210610034452-7985a5287b50/go.mod h1:u71UhNPhIJh0xIqED22eNGd/ELawJMivkvppkNgCI5M=
-github.com/pingcap/tiup v1.6.0-dev.0.20210816074400-a7ccf6c2b00e h1:hUT1Wrcaq82O9/QXLKvriZkAIaFpX3ceSaf9bu/jcyo=
-github.com/pingcap/tiup v1.6.0-dev.0.20210816074400-a7ccf6c2b00e/go.mod h1:3LbEOHIhkh3Ja4oX/TmvVzG7FqsX5yEq9b0wHGHFCxM=
+github.com/pingcap/tidb-insight/collector v0.0.0-20210812035908-19d4c37ba1b9 h1:5C+oT2f8mZ+tDzTTzm6HxqyQTPncXO0bZR02cquZJzU=
+github.com/pingcap/tidb-insight/collector v0.0.0-20210812035908-19d4c37ba1b9/go.mod h1:qN9JWW53IwqS/QuN1qSIsSY0wKwTSHy5xjCBahbEG+I=
+github.com/pingcap/tiup v1.6.0-dev.0.20210819033350-8f4dc5dd94c8 h1:ROjNAW8no23mHBw7wd4cgtmlvqP6kAGHcp8g1hVqmI8=
+github.com/pingcap/tiup v1.6.0-dev.0.20210819033350-8f4dc5dd94c8/go.mod h1:3LbEOHIhkh3Ja4oX/TmvVzG7FqsX5yEq9b0wHGHFCxM=
 github.com/pkg/browser v0.0.0-20180916011732-0a3d74bf9ce4/go.mod h1:4OwLy04Bl9Ef3GJJCoec+30X3LQs/0/m4HFRt/2LUSA=
 github.com/pkg/errors v0.8.0/go.mod h1:bwawxfHBFNV+L2hUp1rHADufV3IMtnDRdf1r5NINEl0=
 github.com/pkg/errors v0.8.1/go.mod h1:bwawxfHBFNV+L2hUp1rHADufV3IMtnDRdf1r5NINEl0=
@@ -930,6 +930,10 @@ github.com/valyala/bytebufferpool v1.0.0/go.mod h1:6bBcMArwyJ5K/AmCkWv1jt77kVWyC
 github.com/valyala/fasttemplate v1.0.1/go.mod h1:UQGH1tvbgY+Nz5t2n7tXsz52dQxojPUpymEIMZ47gx8=
 github.com/valyala/fasttemplate v1.2.1/go.mod h1:KHLXt3tVN2HBp8eijSv/kGJopbvo7S+qRAEEKiv+SiQ=
 github.com/vektah/gqlparser v1.1.2/go.mod h1:1ycwN7Ij5njmMkPPAOaRFY4rET2Enx7IkVv3vaXspKw=
+github.com/vishvananda/netlink v0.0.0-20210530105856-14e832ae1e8f h1:uKAQrhXS4xtXu+lAQ6Rh8rER4nVuUy9km9ayWDCF2x4=
+github.com/vishvananda/netlink v0.0.0-20210530105856-14e832ae1e8f/go.mod h1:twkDnbuQxJYemMlGd4JFIcuhgX83tXhKS2B/PRMpOho=
+github.com/vishvananda/netns v0.0.0-20200728191858-db3c7e526aae h1:4hwBBUfQCFe3Cym0ZtKyq7L16eZUtYKs+BaHDN6mAns=
+github.com/vishvananda/netns v0.0.0-20200728191858-db3c7e526aae/go.mod h1:DD4vA1DwXk04H54A1oHXtwZmA0grkVMdPxx/VGLCah0=
 github.com/vmihailenco/msgpack v4.0.4+incompatible h1:dSLoQfGFAo3F6OoNhwUmLwVgaUXK79GlxNBwueZn0xI=
 github.com/vmihailenco/msgpack v4.0.4+incompatible/go.mod h1:fy3FlTQTDXWkZ7Bh6AcGMlsjHatGryHQYUTf1ShIgkk=
 github.com/willf/bitset v1.1.3/go.mod h1:RjeCKbqT1RxIR/KWY6phxZiaY1IyutSBfGjNPySAYV4=
@@ -1177,6 +1181,7 @@ golang.org/x/sys v0.0.0-20200122134326-e047566fdf82/go.mod h1:h1NjWce9XRLGQEsW7w
 golang.org/x/sys v0.0.0-20200124204421-9fbb57f87de9/go.mod h1:h1NjWce9XRLGQEsW7wpKNCjG9DtNlClVuFLEZdDNbEs=
 golang.org/x/sys v0.0.0-20200202164722-d101bd2416d5/go.mod h1:h1NjWce9XRLGQEsW7wpKNCjG9DtNlClVuFLEZdDNbEs=
 golang.org/x/sys v0.0.0-20200212091648-12a6c2dcc1e4/go.mod h1:h1NjWce9XRLGQEsW7wpKNCjG9DtNlClVuFLEZdDNbEs=
+golang.org/x/sys v0.0.0-20200217220822-9197077df867/go.mod h1:h1NjWce9XRLGQEsW7wpKNCjG9DtNlClVuFLEZdDNbEs=
 golang.org/x/sys v0.0.0-20200219091948-cb0a6d8edb6c/go.mod h1:h1NjWce9XRLGQEsW7wpKNCjG9DtNlClVuFLEZdDNbEs=
 golang.org/x/sys v0.0.0-20200223170610-d5e6a3e2c0ae/go.mod h1:h1NjWce9XRLGQEsW7wpKNCjG9DtNlClVuFLEZdDNbEs=
 golang.org/x/sys v0.0.0-20200302150141-5c8b2ff67527/go.mod h1:h1NjWce9XRLGQEsW7wpKNCjG9DtNlClVuFLEZdDNbEs=
@@ -1189,6 +1194,7 @@ golang.org/x/sys v0.0.0-20200515095857-1151b9dac4a9/go.mod h1:h1NjWce9XRLGQEsW7w
 golang.org/x/sys v0.0.0-20200523222454-059865788121/go.mod h1:h1NjWce9XRLGQEsW7wpKNCjG9DtNlClVuFLEZdDNbEs=
 golang.org/x/sys v0.0.0-20200615200032-f1bc736245b1/go.mod h1:h1NjWce9XRLGQEsW7wpKNCjG9DtNlClVuFLEZdDNbEs=
 golang.org/x/sys v0.0.0-20200625212154-ddb9806d33ae/go.mod h1:h1NjWce9XRLGQEsW7wpKNCjG9DtNlClVuFLEZdDNbEs=
+golang.org/x/sys v0.0.0-20200728102440-3e129f6d46b1/go.mod h1:h1NjWce9XRLGQEsW7wpKNCjG9DtNlClVuFLEZdDNbEs=
 golang.org/x/sys v0.0.0-20200803210538-64077c9b5642/go.mod h1:h1NjWce9XRLGQEsW7wpKNCjG9DtNlClVuFLEZdDNbEs=
 golang.org/x/sys v0.0.0-20200826173525-f9321e4c35a6/go.mod h1:h1NjWce9XRLGQEsW7wpKNCjG9DtNlClVuFLEZdDNbEs=
 golang.org/x/sys v0.0.0-20200930185726-fdedc70b468f/go.mod h1:h1NjWce9XRLGQEsW7wpKNCjG9DtNlClVuFLEZdDNbEs=

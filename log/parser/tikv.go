@@ -4,7 +4,7 @@ import (
 	"regexp"
 	"time"
 
-	"github.com/pingcap/tidb-foresight/log/item"
+	"github.com/pingcap/diag/log/item"
 )
 
 // Parse tikv (v2.x) log, example:

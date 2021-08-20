@@ -17,7 +17,7 @@ import (
 	"path"
 	"time"
 
-	"github.com/pingcap/tidb-foresight/collector"
+	"github.com/pingcap/diag/collector"
 	"github.com/pingcap/tiup/pkg/cluster/executor"
 	"github.com/pingcap/tiup/pkg/set"
 	"github.com/pingcap/tiup/pkg/tui"

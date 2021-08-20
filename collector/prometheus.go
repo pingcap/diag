@@ -28,7 +28,7 @@ import (
 	"time"
 
 	"github.com/klauspost/compress/zstd"
-	"github.com/pingcap/tidb-foresight/utils"
+	"github.com/pingcap/diag/utils"
 	operator "github.com/pingcap/tiup/pkg/cluster/operation"
 	"github.com/pingcap/tiup/pkg/cluster/spec"
 	"github.com/pingcap/tiup/pkg/logger/log"

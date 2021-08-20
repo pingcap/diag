@@ -18,8 +18,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/pingcap/tidb-foresight/scraper"
-	"github.com/pingcap/tidb-foresight/version"
+	"github.com/pingcap/diag/scraper"
+	"github.com/pingcap/diag/version"
 	"github.com/spf13/cobra"
 )
 

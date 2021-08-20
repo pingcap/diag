@@ -16,7 +16,7 @@ package command
 import (
 	"fmt"
 
-	"github.com/pingcap/tidb-foresight/collector"
+	"github.com/pingcap/diag/collector"
 	"github.com/spf13/cobra"
 )
 

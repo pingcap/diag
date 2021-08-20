@@ -3,7 +3,7 @@ package parser
 import (
 	"time"
 
-	"github.com/pingcap/tidb-foresight/log/item"
+	"github.com/pingcap/diag/log/item"
 )
 
 // The log parser representation

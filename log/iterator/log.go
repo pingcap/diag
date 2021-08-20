@@ -7,8 +7,8 @@ import (
 	"os"
 	"time"
 
-	"github.com/pingcap/tidb-foresight/log/item"
-	"github.com/pingcap/tidb-foresight/log/parser"
+	"github.com/pingcap/diag/log/item"
+	"github.com/pingcap/diag/log/parser"
 )
 
 // Only enable seek when position range is more than SEEK_THRESHOLD.

@@ -8,9 +8,9 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/pingcap/tidb-foresight/log/item"
-	"github.com/pingcap/tidb-foresight/log/iterator"
-	"github.com/pingcap/tidb-foresight/log/parser"
+	"github.com/pingcap/diag/log/item"
+	"github.com/pingcap/diag/log/iterator"
+	"github.com/pingcap/diag/log/parser"
 )
 
 type Searcher interface {

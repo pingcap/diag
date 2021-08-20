@@ -1,4 +1,4 @@
-PROJECT=tidb-foresight
+PROJECT=diag
 
 
 .PHONY: all collector scraper fmt check_prefix build default
@@ -39,9 +39,9 @@ FAILPOINT_DISABLE := $$(find $$PWD/ -type d | grep -vE "(\.git|tools)" | xargs t
 FAIL_ON_STDOUT := awk '{ print } END { if (NR > 0) { exit 1 } }'
 
 LDFLAGS += -s -w
-LDFLAGS += -X "github.com/pingcap/tidb-foresight/version.ReleaseVersion=$(shell git describe --tags --dirty --always)"
-LDFLAGS += -X "github.com/pingcap/tidb-foresight/version.GitHash=$(shell git rev-parse HEAD)"
-LDFLAGS += -X "github.com/pingcap/tidb-foresight/version.GitBranch=$(shell git rev-parse --abbrev-ref HEAD)"
+LDFLAGS += -X "github.com/pingcap/diag/version.ReleaseVersion=$(shell git describe --tags --dirty --always)"
+LDFLAGS += -X "github.com/pingcap/diag/version.GitHash=$(shell git rev-parse HEAD)"
+LDFLAGS += -X "github.com/pingcap/diag/version.GitBranch=$(shell git rev-parse --abbrev-ref HEAD)"
 
 CHECK_LDFLAGS += $(LDFLAGS)
 

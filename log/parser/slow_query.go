@@ -4,7 +4,7 @@ import (
 	"regexp"
 	"time"
 
-	"github.com/pingcap/tidb-foresight/log/item"
+	"github.com/pingcap/diag/log/item"
 )
 
 // Parse tidb slow query log, example:

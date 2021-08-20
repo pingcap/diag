@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strconv"
 
-	ts "github.com/pingcap/tidb-foresight/utils/tagd-value/string"
+	ts "github.com/pingcap/diag/utils/tagd-value/string"
 	log "github.com/sirupsen/logrus"
 )
 

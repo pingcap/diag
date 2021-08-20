@@ -17,8 +17,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/pingcap/tidb-foresight/scraper"
-	"github.com/pingcap/tidb-foresight/utils"
+	"github.com/pingcap/diag/scraper"
+	"github.com/pingcap/diag/utils"
 )
 
 // Scrap run scrapers as Option configured

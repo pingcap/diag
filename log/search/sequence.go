@@ -6,9 +6,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/pingcap/tidb-foresight/log/item"
-	"github.com/pingcap/tidb-foresight/log/iterator"
-	"github.com/pingcap/tidb-foresight/log/parser"
+	"github.com/pingcap/diag/log/item"
+	"github.com/pingcap/diag/log/iterator"
+	"github.com/pingcap/diag/log/parser"
 	log "github.com/sirupsen/logrus"
 )
 

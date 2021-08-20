@@ -28,7 +28,7 @@ import (
 
 	influx "github.com/influxdata/influxdb/client/v2"
 	"github.com/klauspost/compress/zstd"
-	"github.com/pingcap/tidb-foresight/utils"
+	"github.com/pingcap/diag/utils"
 	"github.com/pingcap/tiup/pkg/tui/progress"
 	"github.com/prometheus/common/model"
 )

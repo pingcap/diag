@@ -4,7 +4,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/pingcap/tidb-foresight/log/item"
+	"github.com/pingcap/diag/log/item"
 )
 
 const (

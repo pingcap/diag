@@ -4,7 +4,7 @@ import (
 	"regexp"
 	"time"
 
-	"github.com/pingcap/tidb-foresight/log/item"
+	"github.com/pingcap/diag/log/item"
 )
 
 // Parse unified log, include tidb v2 and v3, pd v3 and tikv v3, examples:

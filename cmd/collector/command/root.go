@@ -20,8 +20,8 @@ import (
 
 	"github.com/fatih/color"
 	"github.com/joomcode/errorx"
-	"github.com/pingcap/tidb-foresight/collector"
-	"github.com/pingcap/tidb-foresight/version"
+	"github.com/pingcap/diag/collector"
+	"github.com/pingcap/diag/version"
 	"github.com/pingcap/tiup/pkg/cluster/executor"
 	operator "github.com/pingcap/tiup/pkg/cluster/operation"
 	"github.com/pingcap/tiup/pkg/cluster/spec"

@@ -21,8 +21,8 @@ import (
 	"strings"
 
 	"github.com/joomcode/errorx"
+	"github.com/pingcap/diag/scraper"
 	perrs "github.com/pingcap/errors"
-	"github.com/pingcap/tidb-foresight/scraper"
 	"github.com/pingcap/tiup/pkg/cluster/ctxt"
 	operator "github.com/pingcap/tiup/pkg/cluster/operation"
 	"github.com/pingcap/tiup/pkg/cluster/spec"

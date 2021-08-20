@@ -23,7 +23,7 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/pingcap/tidb-foresight/log/parser"
+	"github.com/pingcap/diag/log/parser"
 )
 
 const (

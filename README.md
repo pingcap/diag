@@ -1,4 +1,4 @@
-# tidb-foresight
+# diag
 
 ## 目录结构
 
