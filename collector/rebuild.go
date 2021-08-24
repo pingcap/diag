@@ -130,6 +130,7 @@ func RunLocal(dumpDir string, opt *RebuildOptions) error {
 		atomic.StoreInt32(&p.lastSig, int32(syscall.SIGKILL))
 		if sig == syscall.SIGINT {
 			p.terminate(syscall.SIGKILL)
+			os.Exit(128 + int(sig))
 		}
 	}()
 
@@ -190,7 +191,9 @@ func RunLocal(dumpDir string, opt *RebuildOptions) error {
 		}
 		mb.StopRenderLoop()
 
-		loadErr = LoadMetrics(dumpDir, opt)
+		loadStart := time.Now()
+		loadErr = LoadMetrics(ctx, dumpDir, opt)
+		fmt.Printf("Load completed in %.2f seconds\n", time.Since(loadStart).Seconds())
 
 		// print addresses
 		fmt.Println("Components are started and listening:")

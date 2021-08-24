@@ -14,6 +14,7 @@
 package command
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/pingcap/diag/collector"
@@ -45,7 +46,7 @@ the diagnostic collector, where the meta.yaml is available.
 			if opt.Local {
 				return collector.RunLocal(args[0], &opt)
 			} else {
-				return collector.LoadMetrics(args[0], &opt)
+				return collector.LoadMetrics(context.Background(), args[0], &opt)
 			}
 		},
 	}

@@ -17,6 +17,7 @@ package collector
 // to a influxdb server
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -25,6 +26,7 @@ import (
 	"os"
 	"path"
 	"strings"
+	"sync"
 
 	influx "github.com/influxdata/influxdb/client/v2"
 	"github.com/klauspost/compress/zstd"
@@ -33,7 +35,7 @@ import (
 	"github.com/prometheus/common/model"
 )
 
-func (opt *RebuildOptions) LoadMetrics() error {
+func (opt *RebuildOptions) LoadMetrics(tl *utils.TokenLimiter) error {
 	f, err := os.Open(opt.File)
 	if err != nil {
 		return err
@@ -46,9 +48,10 @@ func (opt *RebuildOptions) LoadMetrics() error {
 	// read JSON data from file
 	// and try to decompress the data
 	if dec, err := zstd.NewReader(f); err == nil {
+		defer dec.Close()
 		input, decodeErr = io.ReadAll(dec)
 	}
-	// if any error occured during decompress the data
+	// if any error occured during decompressing the data
 	// just try to read the file directly
 	if decodeErr != nil {
 		f.Seek(0, io.SeekStart)
@@ -66,7 +69,7 @@ func (opt *RebuildOptions) LoadMetrics() error {
 		log.Fatal(err)
 	}
 
-	if err := writeBatchPoints(data, opt); err != nil {
+	if err := writeBatchPoints(tl, data, opt); err != nil {
 		log.Fatal(err)
 	}
 	return nil
@@ -74,7 +77,7 @@ func (opt *RebuildOptions) LoadMetrics() error {
 
 // LoadMetrics reads the dumped metric JSON files and reload them
 // to an influxdb instance.
-func LoadMetrics(dataDir string, opt *RebuildOptions) error {
+func LoadMetrics(ctx context.Context, dataDir string, opt *RebuildOptions) error {
 	// read cluster name
 	clsName, err := os.ReadFile(path.Join(dataDir, fileNameClusterName))
 	if err != nil {
@@ -120,8 +123,9 @@ func LoadMetrics(dataDir string, opt *RebuildOptions) error {
 		log.Fatal(err)
 	}
 
-	var loadErr error
-	tl := utils.NewTokenLimiter(uint(opt.Concurrency))
+	errChan := make(chan error)
+	doneChan := make(chan struct{}, 1)
+	tl := utils.NewTokenLimiter(uint(opt.Concurrency) + 1)
 	for p, files := range mtcFiles {
 		cnt := 0
 		b := bars[p]
@@ -142,16 +146,14 @@ func LoadMetrics(dataDir string, opt *RebuildOptions) error {
 					dataDir, subdirMonitor, subdirMetrics,
 					parent, file.Name(),
 				)
-				if err := fOpt.LoadMetrics(); err != nil {
+				if err := fOpt.LoadMetrics(tl); err != nil {
 					b.UpdateDisplay(&progress.DisplayProps{
 						Prefix: fmt.Sprintf(" - Load metrics from %s", parent),
 						Suffix: err.Error(),
 						Mode:   progress.ModeError,
 					})
-					if loadErr == nil {
-						loadErr = err
-						return
-					}
+					errChan <- err
+					return
 				}
 			}
 			b.UpdateDisplay(&progress.DisplayProps{
@@ -162,8 +164,16 @@ func LoadMetrics(dataDir string, opt *RebuildOptions) error {
 		}(tl.Get(), p, files)
 	}
 	tl.Wait()
+	doneChan <- struct{}{}
 
-	return loadErr
+	select {
+	case <-ctx.Done():
+		return nil
+	case err := <-errChan:
+		return err
+	case <-doneChan:
+		return nil
+	}
 }
 
 type promResult struct {
@@ -193,15 +203,27 @@ func queryDB(clnt influx.Client, db_name string, cmd string) (res []influx.Resul
 	return res, nil
 }
 
-func slicePoints(data []*influx.Point, chunkSize int) [][]*influx.Point {
-	var result [][]*influx.Point
-	for i := 0; i < len(data); i += chunkSize {
-		endPos := i + chunkSize
-		if endPos > len(data) {
-			endPos = len(data)
+func slicePoints(data chan *influx.Point, chunkSize int) chan []*influx.Point {
+	result := make(chan []*influx.Point)
+
+	go func() {
+		i := 0
+		chunk := make([]*influx.Point, 0)
+		for p := range data {
+			chunk = append(chunk, p)
+			if i >= chunkSize { // truncate
+				result <- chunk
+				chunk = make([]*influx.Point, 0)
+				i = 0
+			}
+			i++
 		}
-		result = append(result, data[i:endPos])
-	}
+		if len(chunk) > 0 { // tailing points
+			result <- chunk
+		}
+		close(result)
+	}()
+
 	return result
 }
 
@@ -219,9 +241,10 @@ func newClient(opts *RebuildOptions) influx.Client {
 }
 
 func buildPoints(
+	tl *utils.TokenLimiter,
 	series *model.SampleStream,
 	opts *RebuildOptions,
-) []*influx.Point {
+) chan *influx.Point {
 	// build tags
 	rawTags := series.Metric
 	tags := make(map[string]string)
@@ -234,30 +257,44 @@ func buildPoints(
 	measurement := tags["__name__"]
 
 	// build points
-	ptList := make([]*influx.Point, 0)
-	for _, point := range series.Values {
-		timestamp := point.Timestamp.Time()
-		fields := map[string]interface{}{
-			// model.SampleValue is alias of float64
-			"value": float64(point.Value),
+	ptChan := make(chan *influx.Point)
+	go func() {
+		wg := sync.WaitGroup{}
+		for _, point := range series.Values {
+			wg.Add(1)
+			go func(tok *utils.Token, point model.SamplePair) {
+				timestamp := point.Timestamp.Time()
+				fields := map[string]interface{}{
+					// model.SampleValue is alias of float64
+					"value": float64(point.Value),
+				}
+				if pt, err := influx.NewPoint(measurement, tags, fields, timestamp); err == nil {
+					ptChan <- pt
+				} // errored points are ignored
+				tl.Put(tok)
+				wg.Done()
+			}(tl.Get(), point)
 		}
-		if pt, err := influx.NewPoint(measurement, tags, fields, timestamp); err == nil {
-			ptList = append(ptList, pt)
-		} // errored points are ignored
-	}
+		wg.Wait()
+		close(ptChan)
+	}()
 
-	return ptList
+	return ptChan
 }
 
-func writeBatchPoints(data promDump, opts *RebuildOptions) error {
-	tl := utils.NewTokenLimiter(uint(opts.Concurrency) + 1)
+func writeBatchPoints(tl *utils.TokenLimiter, data promDump, opts *RebuildOptions) error {
+	// build and write points
 	errChan := make(chan error)
+	doneChan := make(chan struct{}, 1)
+	wg := sync.WaitGroup{}
 	for _, series := range data.Data.Result {
-		ptList := buildPoints(series, opts)
+		ptChan := buildPoints(tl, series, opts)
 
-		for _, chunk := range slicePoints(ptList, opts.Chunk) {
+		for chunk := range slicePoints(ptChan, opts.Chunk) {
+			wg.Add(1)
 			go func(tok *utils.Token, chunk []*influx.Point) {
 				defer tl.Put(tok)
+				defer wg.Done()
 
 				bp, err := influx.NewBatchPoints(influx.BatchPointsConfig{
 					Database:  opts.DBName,
@@ -282,12 +319,14 @@ func writeBatchPoints(data promDump, opts *RebuildOptions) error {
 			}(tl.Get(), chunk)
 		}
 	}
+	wg.Wait()
+	doneChan <- struct{}{}
 
 	select {
 	case err := <-errChan:
 		return err
-	default:
-		tl.Wait()
+	case <-doneChan:
 		return nil
 	}
+
 }
