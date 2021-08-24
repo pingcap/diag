@@ -18,6 +18,7 @@ var (
 
 // ParseTime converts a string to time.Time, ported from Prometheus: web/api/v1/api.go
 func ParseTime(s string) (time.Time, error) {
+	// try to parse input as a timestamp
 	if t, err := strconv.ParseFloat(s, 64); err == nil {
 		s, ns := math.Modf(t)
 		ns = math.Round(ns*1000) / 1000
@@ -27,23 +28,36 @@ func ParseTime(s string) (time.Time, error) {
 		return t, nil
 	}
 
-	// try to parse some common time formats, all timezones are supposed to be localtime
+	// try to parse input as some common time formats, all timestamps are supposed to
+	// be localtime if not specified
 	currTime := time.Now()
 	for i, guess := range []string{
-		"2006-01-02 15:04:05",
-		"2006-01-02 15:04",
-		"2006-01-02 15",
-		"2006-01-02",
-		"01-02 15:04:15",
-		"01-02 15:04",
-		"01-02 15",
-		"01-02",
-		"15:04:15",
-		"15:04",
-		"15",
+		"2006-01-02 15:04:05 -0700", // 0
+		"2006-01-02 15:04 -0700",    // 1
+		"2006-01-02 15 -0700",       // 2
+		"2006-01-02 -0700",          // 3 ^-- full date time with timezone
+		"2006-01-02 15:04:05",       // 4
+		"2006-01-02 15:04",          // 5
+		"2006-01-02 15",             // 6
+		"2006-01-02",                // 7 ^-- full date time wo/ timezone
+		"01-02 15:04:15 -0700",      // 8
+		"01-02 15:04 -0700",         // 9
+		"01-02 15 -0700",            // 10
+		"01-02 -0700",               // 11 ^-- month date time with timezone
+		"01-02 15:04:15",            // 12
+		"01-02 15:04",               // 13
+		"01-02 15",                  // 14
+		"01-02",                     // 15 ^-- month date time wo/ timezone
+		"15:04:15 -0700",            // 16
+		"15:04 -0700",               // 17
+		"15 -0700",                  // 18 ^-- hour time with timezone
+		"15:04:15",                  // 19
+		"15:04",                     // 20
+		"15",                        // 21 ^-- hour time wo/ timezone
 	} {
 		if t, err := time.Parse(guess, s); err == nil {
-			if i > 3 && t.Year() == 0 {
+			parsedLoc := t.Location()
+			if i > 7 && t.Year() == 0 {
 				t = time.Date(
 					currTime.Year(), t.Month(),
 					t.Day(), t.Hour(),
@@ -51,7 +65,7 @@ func ParseTime(s string) (time.Time, error) {
 					t.Nanosecond(), currTime.Location(),
 				)
 			}
-			if i > 7 && t.Month() == 1 {
+			if i > 15 && t.Month() == 1 {
 				t = time.Date(
 					currTime.Year(), currTime.Month(),
 					t.Day(), t.Hour(),
@@ -59,7 +73,7 @@ func ParseTime(s string) (time.Time, error) {
 					t.Nanosecond(), currTime.Location(),
 				)
 			}
-			if i > 7 && t.Day() == 1 {
+			if i > 15 && t.Day() == 1 {
 				t = time.Date(
 					currTime.Year(), currTime.Month(),
 					currTime.Day(), t.Hour(),
@@ -67,6 +81,16 @@ func ParseTime(s string) (time.Time, error) {
 					t.Nanosecond(), currTime.Location(),
 				)
 			}
+			// set timezone if specified in input
+			if i <= 3 || (i >= 8 && i <= 11) || (i >= 16 && i <= 18) {
+				t = time.Date(
+					t.Year(), t.Month(),
+					t.Day(), t.Hour(),
+					t.Minute(), t.Second(),
+					t.Nanosecond(), parsedLoc,
+				)
+			}
+
 			return t, nil
 		}
 	}

@@ -17,8 +17,10 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/fatih/color"
+	"github.com/pingcap/diag/utils"
 	perrs "github.com/pingcap/errors"
 	"github.com/pingcap/tiup/pkg/cluster/executor"
 	operator "github.com/pingcap/tiup/pkg/cluster/operation"
@@ -93,6 +95,16 @@ func (m *Manager) CollectClusterInfo(
 	opt.User = metadata.User
 	opt.SSH.IdentityFile = m.specManager.Path(opt.Cluster, "ssh", "id_rsa")
 	topo = *metadata.Topology
+
+	// parse time range
+	start, err := utils.ParseTime(opt.ScrapeBegin)
+	if err != nil {
+		return err
+	}
+	end, err := utils.ParseTime(opt.ScrapeEnd)
+	if err != nil {
+		return err
+	}
 
 	// prepare output dir of collected data
 	var resultDir string
@@ -196,8 +208,18 @@ func (m *Manager) CollectClusterInfo(
 		stats = append(stats, stat)
 	}
 
-	// confirm before really collect
+	// show time range
+	fmt.Printf(`Time range:
+  %s - %s (Local)
+  %s - %s (UTC)
+  (total %.0f seconds)
+`,
+		color.HiYellowString(start.Local().Format(time.RFC3339)), color.HiYellowString(end.Local().Format(time.RFC3339)),
+		color.HiYellowString(start.UTC().Format(time.RFC3339)), color.HiYellowString(end.UTC().Format(time.RFC3339)),
+		end.Sub(start).Seconds(),
+	)
 
+	// confirm before really collect
 	if err := confirmStats(stats); err != nil {
 		return err
 	}
