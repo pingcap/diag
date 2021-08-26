@@ -37,6 +37,15 @@ the diagnostic collector, where the meta.yaml is available.
 				return cmd.Help()
 			}
 
+			/*
+				// profiling
+				// add '_ "net/http/pprof"' to import, and
+				// visit '/debug/pprof'
+				go func() {
+					http.ListenAndServe("0.0.0.0:8000", nil)
+				}()
+			*/
+
 			opt.Concurrency = gOpt.Concurrency
 
 			if opt.Host == "" || opt.Host == "localhost" {

@@ -14,7 +14,6 @@
 package collector
 
 import (
-	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -27,6 +26,7 @@ import (
 	"sync"
 	"time"
 
+	jsoniter "github.com/json-iterator/go"
 	"github.com/klauspost/compress/zstd"
 	"github.com/pingcap/diag/utils"
 	operator "github.com/pingcap/tiup/pkg/cluster/operation"
@@ -310,7 +310,7 @@ func getMetricList(c *http.Client, prom string) ([]string, error) {
 	r := struct {
 		Metrics []string `json:"data"`
 	}{}
-	if err := json.NewDecoder(resp.Body).Decode(&r); err != nil {
+	if err := jsoniter.NewDecoder(resp.Body).Decode(&r); err != nil {
 		return []string{}, err
 	}
 	return r.Metrics, nil

@@ -18,7 +18,6 @@ package collector
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"io"
 	"io/fs"
@@ -29,51 +28,12 @@ import (
 	"sync"
 
 	influx "github.com/influxdata/influxdb/client/v2"
+	jsoniter "github.com/json-iterator/go"
 	"github.com/klauspost/compress/zstd"
 	"github.com/pingcap/diag/utils"
 	"github.com/pingcap/tiup/pkg/tui/progress"
 	"github.com/prometheus/common/model"
 )
-
-func (opt *RebuildOptions) LoadMetrics(tl *utils.TokenLimiter) error {
-	f, err := os.Open(opt.File)
-	if err != nil {
-		return err
-	}
-
-	var input []byte
-	var readErr error
-	var decodeErr error
-
-	// read JSON data from file
-	// and try to decompress the data
-	if dec, err := zstd.NewReader(f); err == nil {
-		defer dec.Close()
-		input, decodeErr = io.ReadAll(dec)
-	}
-	// if any error occured during decompressing the data
-	// just try to read the file directly
-	if decodeErr != nil {
-		f.Seek(0, io.SeekStart)
-		input, readErr = io.ReadAll(f)
-	}
-	f.Close()
-	if readErr != nil {
-		log.Fatal(err)
-	}
-
-	// decode JSON
-	var data promDump
-	if err = json.Unmarshal(input, &data); err != nil {
-		fmt.Println(string(input))
-		log.Fatal(err)
-	}
-
-	if err := writeBatchPoints(tl, data, opt); err != nil {
-		log.Fatal(err)
-	}
-	return nil
-}
 
 // LoadMetrics reads the dumped metric JSON files and reload them
 // to an influxdb instance.
@@ -176,6 +136,46 @@ func LoadMetrics(ctx context.Context, dataDir string, opt *RebuildOptions) error
 	}
 }
 
+func (opt *RebuildOptions) LoadMetrics(tl *utils.TokenLimiter) error {
+	f, err := os.Open(opt.File)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	var input []byte
+	var readErr error
+	var decodeErr error
+
+	// read JSON data from file
+	// and try to decompress the data
+	if dec, err := zstd.NewReader(f); err == nil {
+		defer dec.Close()
+		input, decodeErr = io.ReadAll(dec)
+	}
+	// if any error occured during decompressing the data
+	// just try to read the file directly
+	if decodeErr != nil {
+		f.Seek(0, io.SeekStart)
+		input, readErr = io.ReadAll(f)
+	}
+	if readErr != nil {
+		log.Fatal(err)
+	}
+
+	// decode JSON
+	var data promDump
+	if err = jsoniter.Unmarshal(input, &data); err != nil {
+		//fmt.Println(string(input))
+		log.Fatal(err)
+	}
+
+	if err := writeBatchPoints(tl, data, opt); err != nil {
+		log.Fatal(err)
+	}
+	return nil
+}
+
 type promResult struct {
 	ResultType string
 	Result     model.Matrix
@@ -246,9 +246,8 @@ func buildPoints(
 	opts *RebuildOptions,
 ) chan *influx.Point {
 	// build tags
-	rawTags := series.Metric
 	tags := make(map[string]string)
-	for k, v := range rawTags {
+	for k, v := range series.Metric {
 		tags[string(k)] = string(v)
 	}
 	tags["cluster"] = opts.Cluster
@@ -328,5 +327,4 @@ func writeBatchPoints(tl *utils.TokenLimiter, data promDump, opts *RebuildOption
 	case <-doneChan:
 		return nil
 	}
-
 }

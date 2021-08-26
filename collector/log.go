@@ -15,12 +15,12 @@ package collector
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"path/filepath"
 	"strings"
 
 	"github.com/joomcode/errorx"
+	jsoniter "github.com/json-iterator/go"
 	"github.com/pingcap/diag/scraper"
 	perrs "github.com/pingcap/errors"
 	"github.com/pingcap/tiup/pkg/cluster/ctxt"
@@ -286,7 +286,7 @@ func parseScraperSamples(ctx context.Context, host string) (map[string][]Collect
 	}
 
 	var s scraper.Sample
-	if err := json.Unmarshal(stdout, &s); err != nil {
+	if err := jsoniter.Unmarshal(stdout, &s); err != nil {
 		// save output directly on parsing errors
 		return nil, fmt.Errorf("error parsing scraped stats: %s", stdout)
 	}

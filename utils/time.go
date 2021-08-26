@@ -27,6 +27,9 @@ func ParseTime(s string) (time.Time, error) {
 	if t, err := time.Parse(time.RFC3339Nano, s); err == nil {
 		return t, nil
 	}
+	if t, err := time.Parse(time.RFC3339, s); err == nil {
+		return t, nil
+	}
 
 	// try to parse input as some common time formats, all timestamps are supposed to
 	// be localtime if not specified

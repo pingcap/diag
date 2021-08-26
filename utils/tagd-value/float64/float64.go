@@ -1,10 +1,10 @@
 package float64
 
 import (
-	"encoding/json"
 	"fmt"
 	"strconv"
 
+	jsoniter "github.com/json-iterator/go"
 	ts "github.com/pingcap/diag/utils/tagd-value/string"
 	log "github.com/sirupsen/logrus"
 )
@@ -35,7 +35,7 @@ func (tv *Float64) SetValue(value float64) {
 // MarshalJSON implements the json.Marshaler
 func (tv Float64) MarshalJSON() ([]byte, error) {
 	if len(tv.Tags()) == 0 {
-		return json.Marshal(tv.GetValue())
+		return jsoniter.Marshal(tv.GetValue())
 	}
 
 	m := make(map[string]interface{}, 0)
@@ -43,5 +43,5 @@ func (tv Float64) MarshalJSON() ([]byte, error) {
 		m[k] = v
 	}
 	m["value"] = tv.GetValue()
-	return json.Marshal(m)
+	return jsoniter.Marshal(m)
 }

@@ -15,12 +15,12 @@ package collector
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
 
 	"github.com/joomcode/errorx"
+	jsoniter "github.com/json-iterator/go"
 	perrs "github.com/pingcap/errors"
 	"github.com/pingcap/tidb-insight/collector/insight"
 	"github.com/pingcap/tiup/pkg/cluster/ctxt"
@@ -229,7 +229,7 @@ func saveInsightOutput(ctx context.Context, host, dir string) error {
 	}
 
 	var info insight.InsightInfo
-	if err := json.Unmarshal(stdout, &info); err != nil {
+	if err := jsoniter.Unmarshal(stdout, &info); err != nil {
 		// save output directly on parsing errors
 		return saveOutput(stdout, filepath.Join(dir, host, "insight.json"))
 	}

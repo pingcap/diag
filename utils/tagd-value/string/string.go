@@ -2,9 +2,10 @@ package string
 
 import (
 	"database/sql/driver"
-	"encoding/json"
 	"net/url"
 	"strings"
+
+	jsoniter "github.com/json-iterator/go"
 )
 
 type String struct {
@@ -89,7 +90,7 @@ func (tv *String) Tags() map[string]string {
 // MarshalJSON implements the json.Marshaler
 func (tv String) MarshalJSON() ([]byte, error) {
 	if len(tv.Tags()) == 0 {
-		return json.Marshal(tv.GetValue())
+		return jsoniter.Marshal(tv.GetValue())
 	}
 
 	m := make(map[string]interface{}, 0)
@@ -97,5 +98,5 @@ func (tv String) MarshalJSON() ([]byte, error) {
 		m[k] = v
 	}
 	m["value"] = tv.GetValue()
-	return json.Marshal(m)
+	return jsoniter.Marshal(m)
 }

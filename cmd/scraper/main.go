@@ -14,10 +14,10 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"os"
 
+	jsoniter "github.com/json-iterator/go"
 	"github.com/pingcap/diag/scraper"
 	"github.com/pingcap/diag/version"
 	"github.com/spf13/cobra"
@@ -43,7 +43,7 @@ func init() {
 			if err != nil {
 				return err
 			}
-			rb, err := json.MarshalIndent(result, "", "  ")
+			rb, err := jsoniter.MarshalIndent(result, "", "  ")
 			if err != nil {
 				return err
 			}

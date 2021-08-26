@@ -9,6 +9,7 @@ require (
 	github.com/google/uuid v1.2.0
 	github.com/influxdata/influxdb v1.9.3
 	github.com/joomcode/errorx v1.0.3
+	github.com/json-iterator/go v1.1.11
 	github.com/klauspost/compress v1.13.4
 	github.com/pingcap/check v0.0.0-20200212061837-5e12011dc712
 	github.com/pingcap/errors v0.11.5-0.20201126102027-b0a155152ca3
