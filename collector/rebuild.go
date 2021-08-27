@@ -382,8 +382,7 @@ type influxdb struct {
 
 func (i *influxdb) start(ctx context.Context) error {
 	args := []string{
-		//fmt.Sprintf("--bolt-path %s", filepath.Join(dir, "influxd.bolt")),
-		//fmt.Sprintf("--engine-path %s", filepath.Join(dir, "influxd.engine")),
+		"-config", filepath.Join(i.Dir, "influxdb.conf"),
 	}
 
 	env := environment.GlobalEnv()
