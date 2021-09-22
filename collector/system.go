@@ -128,7 +128,10 @@ func (c *SystemCollectOptions) Collect(m *Manager, topo *spec.Specification) err
 					).
 					Shell(
 						inst.GetHost(),
-						filepath.Join(task.CheckToolsPathDir, "bin", "insight"),
+						fmt.Sprintf("%s %s",
+							filepath.Join(task.CheckToolsPathDir, "bin", "insight"),
+							"--syscfg --dmesg", // enable collecting of extra info
+						),
 						"",
 						true,
 					).

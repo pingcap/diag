@@ -26,7 +26,6 @@ GOENV   := GO111MODULE=on CGO_ENABLED=0 GOOS=$(GOOS) GOARCH=$(GOARCH)
 GO      := $(GOENV) go
 GOBUILD := $(GO) build $(BUILD_FLAGS)
 GOTEST    := CGO_ENABLED=0 $(GO) test -p 4
-OVERALLS  := CGO_ENABLED=1 GO111MODULE=on overalls
 
 PACKAGE_LIST  := go list ./...| grep -vE "cmd" | grep -vE "test"
 PACKAGES  := $$($(PACKAGE_LIST))
