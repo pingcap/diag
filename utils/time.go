@@ -31,9 +31,10 @@ func ParseTime(s string) (time.Time, error) {
 		return t, nil
 	}
 
+	currTime := time.Now()
+
 	// try to parse input as some common time formats, all timestamps are supposed to
 	// be localtime if not specified
-	currTime := time.Now()
 	for i, guess := range []string{
 		"2006-01-02 15:04:05 -0700", // 0
 		"2006-01-02 15:04 -0700",    // 1
@@ -96,6 +97,12 @@ func ParseTime(s string) (time.Time, error) {
 
 			return t, nil
 		}
+	}
+
+	// try to parse input as (minus) time duration
+	if td, err := time.ParseDuration(s); err == nil {
+		t := currTime.Add(td)
+		return t, nil
 	}
 
 	// Stdlib's time parser can only handle 4 digit years. As a workaround until
