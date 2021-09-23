@@ -7,15 +7,15 @@ require (
 	github.com/fatih/color v1.13.0
 	github.com/fatih/structs v1.1.0
 	github.com/google/uuid v1.3.0
-	github.com/influxdata/influxdb v1.9.3
+	github.com/influxdata/influxdb v1.9.4
 	github.com/joomcode/errorx v1.0.3
 	github.com/json-iterator/go v1.1.12
 	github.com/klauspost/compress v1.13.6
 	github.com/pingcap/check v0.0.0-20200212061837-5e12011dc712
 	github.com/pingcap/errors v0.11.5-0.20201126102027-b0a155152ca3
 	github.com/pingcap/log v0.0.0-20210818144256-6455d4a4c6f9 // indirect
-	github.com/pingcap/tidb-insight/collector v0.0.0-20210913121105-5a79850a9814
-	github.com/pingcap/tiup v1.6.0-dev.0.20210918034042-20455dbd7b45
+	github.com/pingcap/tidb-insight/collector v0.0.0-20210923072556-14ae4968ce78
+	github.com/pingcap/tiup v1.6.0-dev.0.20210923084245-b0eef6b9667c
 	github.com/prometheus/common v0.30.0
 	github.com/sirupsen/logrus v1.8.1
 	github.com/spf13/cobra v1.2.1

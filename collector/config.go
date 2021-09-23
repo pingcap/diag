@@ -15,9 +15,12 @@ package collector
 
 import (
 	"context"
+	"crypto/tls"
 	"fmt"
+	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/joomcode/errorx"
 	perrs "github.com/pingcap/errors"
@@ -26,6 +29,7 @@ import (
 	"github.com/pingcap/tiup/pkg/cluster/spec"
 	"github.com/pingcap/tiup/pkg/cluster/task"
 	"github.com/pingcap/tiup/pkg/set"
+	"github.com/pingcap/tiup/pkg/utils"
 )
 
 // ConfigCollectOptions are options used collecting component logs
@@ -192,7 +196,10 @@ func (c *ConfigCollectOptions) Collect(m *Manager, topo *spec.Specification) err
 	var (
 		collectTasks []*task.StepDisplay
 		cleanTasks   []*task.StepDisplay
+		queryTasks   []*task.StepDisplay
 	)
+	ctx := ctxt.New(context.Background(), c.opt.Concurrency)
+
 	uniqueHosts := map[string]int{} // host -> ssh-port
 
 	roleFilter := set.NewStringSet(c.opt.Roles...)
@@ -215,16 +222,16 @@ func (c *ConfigCollectOptions) Collect(m *Manager, topo *spec.Specification) err
 		}
 
 		for _, inst := range instances {
-			// checks that applies to each host
+			// ops that applies to each host
 			if _, found := uniqueHosts[inst.GetHost()]; !found {
 				uniqueHosts[inst.GetHost()] = inst.GetSSHPort()
-				t2, err := m.sshTaskBuilder(c.GetBaseOptions().Cluster, topo, c.GetBaseOptions().User, *c.opt)
+				t1, err := m.sshTaskBuilder(c.GetBaseOptions().Cluster, topo, c.GetBaseOptions().User, *c.opt)
 				if err != nil {
 					return err
 				}
 				for _, f := range c.fileStats[inst.GetHost()] {
 					// build checking tasks
-					t2 = t2.
+					t1 = t1.
 						// check for listening ports
 						CopyFile(
 							f.Target,
@@ -235,7 +242,7 @@ func (c *ConfigCollectOptions) Collect(m *Manager, topo *spec.Specification) err
 						)
 					collectTasks = append(
 						collectTasks,
-						t2.BuildAsStep(fmt.Sprintf("  - Downloading config files from node %s", inst.GetHost())),
+						t1.BuildAsStep(fmt.Sprintf("  - Downloading config files from node %s", inst.GetHost())),
 					)
 				}
 			}
@@ -244,19 +251,25 @@ func (c *ConfigCollectOptions) Collect(m *Manager, topo *spec.Specification) err
 			if err != nil {
 				return err
 			}
-			t3 := b.
+			t2 := b.
 				Rmdir(inst.GetHost(), task.CheckToolsPathDir).
 				BuildAsStep(fmt.Sprintf("  - Cleanup temp files on %s:%d", inst.GetHost(), inst.GetSSHPort()))
-			cleanTasks = append(cleanTasks, t3)
+			cleanTasks = append(cleanTasks, t2)
+
+			// query realtime configs for each instance if supported
+			// TODO: support TLS enabled clusters
+			if t3 := buildRealtimeConfigCollectingTasks(ctx, inst, c.resultDir, nil); t3 != nil {
+				queryTasks = append(queryTasks, t3)
+			}
 		}
 	}
 
 	t := task.NewBuilder().
 		ParallelStep("+ Scrap files on nodes", false, collectTasks...).
 		ParallelStep("+ Cleanup temp files", false, cleanTasks...).
+		ParallelStep("+ Query realtime configs", false, queryTasks...).
 		Build()
 
-	ctx := ctxt.New(context.Background(), c.opt.Concurrency)
 	if err := t.Execute(ctx); err != nil {
 		if errorx.Cast(err) != nil {
 			// FIXME: Map possible task errors and give suggestions.
@@ -266,4 +279,55 @@ func (c *ConfigCollectOptions) Collect(m *Manager, topo *spec.Specification) err
 	}
 
 	return nil
+}
+
+func buildRealtimeConfigCollectingTasks(ctx context.Context, inst spec.Instance, resultDir string, tlsCfg *tls.Config) *task.StepDisplay {
+	var url string
+	var instDir string
+	scheme := "http"
+
+	switch inst.ComponentName() {
+	case spec.ComponentPD:
+		i := inst.(*spec.PDInstance).BaseInstance.InstanceSpec.(*spec.PDSpec)
+		url = fmt.Sprintf("%s://%s:%d/pd/api/v1/config", scheme, i.Host, i.ClientPort)
+	case spec.ComponentTiKV:
+		i := inst.(*spec.TiKVInstance).BaseInstance.InstanceSpec.(*spec.TiKVSpec)
+		url = fmt.Sprintf("%s://%s:%d/config", scheme, i.Host, i.StatusPort)
+	case spec.ComponentTiDB:
+		i := inst.(*spec.TiDBInstance).BaseInstance.InstanceSpec.(*spec.TiDBSpec)
+		url = fmt.Sprintf("%s://%s:%d/config", scheme, i.Host, i.StatusPort)
+	case spec.ComponentTiFlash:
+		i := inst.(*spec.TiFlashInstance).BaseInstance.InstanceSpec.(*spec.TiFlashSpec)
+		url = fmt.Sprintf("%s://%s:%d/config", scheme, i.Host, i.FlashProxyStatusPort)
+	default:
+		// not supported yet, just ignore
+		return nil
+	}
+
+	instDir = inst.DeployDir()
+
+	t := task.NewBuilder().
+		Func(
+			fmt.Sprintf("querying %s:%d", inst.GetHost(), inst.GetMainPort()),
+			func(ctx context.Context) error {
+				c := utils.NewHTTPClient(time.Second*3, tlsCfg)
+				resp, err := c.Get(ctx, url)
+				if err != nil {
+					return err
+				}
+				return os.WriteFile(
+					filepath.Join(resultDir, inst.GetHost(), instDir, "conf", "config.json"),
+					resp,
+					0644,
+				)
+			},
+		).
+		BuildAsStep(fmt.Sprintf(
+			"  - Querying configs for %s %s:%d",
+			inst.ComponentName(),
+			inst.GetHost(),
+			inst.GetMainPort(),
+		))
+
+	return t
 }
