@@ -76,6 +76,7 @@ func newCollectCmd() *cobra.Command {
 	cmd.Flags().Uint64Var(&gOpt.APITimeout, "api-timeout", 10, "Timeout in seconds when querying PD APIs.")
 	cmd.Flags().BoolVar(&cOpt.CompressMetrics, "compress-metrics", true, "Compress collected metrics data.")
 	//cmd.Flags().BoolVar(&cOpt.CompressLogs, "compress-logs", false, "Compress collected log files.")
+	cmd.Flags().BoolVar(&cOpt.ExitOnError, "exit-on-error", false, "Stop collecting and exit if an error occurs.")
 
 	return cmd
 }

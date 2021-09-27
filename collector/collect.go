@@ -64,6 +64,7 @@ type CollectOptions struct {
 	Limit           int    // rate limit of SCP
 	CompressMetrics bool   // compress of files during collecting
 	CompressLogs    bool   // compress of files during collecting
+	ExitOnError     bool   // break the process and exit when an error occurs
 }
 
 // CollectStat is estimated size stats of data to be collected
@@ -225,13 +226,24 @@ func (m *Manager) CollectClusterInfo(
 	}
 
 	// run collectors
+	collectErrs := make(map[string]error)
 	for _, c := range collectors {
 		fmt.Printf("Collecting %s...\n", c.Desc())
 		if err := c.Collect(m, &topo); err != nil {
-			return err
+			if cOpt.ExitOnError {
+				return err
+			}
+			fmt.Printf("Error collecting %s: %s, the data might be incomplete.\n", c.Desc(), err)
+			collectErrs[c.Desc()] = err
 		}
 	}
 
+	if len(collectErrs) > 0 {
+		fmt.Println(color.RedString("Some errors occured during the process, please check if data needed are complete:"))
+		for k, v := range collectErrs {
+			fmt.Printf("%s:\t%s\n", k, v)
+		}
+	}
 	fmt.Printf("Collected data are stored in %s\n", color.CyanString(resultDir))
 	return nil
 }
