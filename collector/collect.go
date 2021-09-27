@@ -15,6 +15,7 @@ package collector
 
 import (
 	"fmt"
+	"io/ioutil"
 	"os"
 	"path/filepath"
 	"time"
@@ -107,18 +108,8 @@ func (m *Manager) CollectClusterInfo(
 		return err
 	}
 
-	// prepare output dir of collected data
-	var resultDir string
-	if cOpt.Dir == "" {
-		resultDir = m.specManager.Path(opt.Cluster, "collector", m.session)
-	} else {
-		fp, err := filepath.Abs(cOpt.Dir)
-		if err != nil {
-			return err
-		}
-		resultDir = filepath.Join(fp, m.session)
-	}
-	if err := os.MkdirAll(resultDir, 0755); err != nil {
+	resultDir, err := m.prepareOutputDir(cOpt.Dir)
+	if err != nil {
 		return err
 	}
 
@@ -246,6 +237,34 @@ func (m *Manager) CollectClusterInfo(
 	}
 	fmt.Printf("Collected data are stored in %s\n", color.CyanString(resultDir))
 	return nil
+}
+
+// prepare output dir of collected data
+func (m *Manager) prepareOutputDir(dir string) (string, error) {
+	if dir == "" {
+		dir = filepath.Join(".", m.session)
+	}
+	dir, err := filepath.Abs(dir)
+	if err != nil {
+		return dir, err
+	}
+
+	dirInfo, err := os.Stat(dir)
+	// mkdir if output dir not exists
+	if err != nil {
+		return dir, os.MkdirAll(dir, 0755)
+	}
+
+	if dirInfo.IsDir() {
+		readdir, err := ioutil.ReadDir(dir)
+		if err != nil {
+			return dir, err
+		}
+		if len(readdir) == 0 {
+			return dir, nil
+		}
+	}
+	return dir, fmt.Errorf("%s is not a empty directory", dir)
 }
 
 func confirmStats(stats []map[string][]CollectStat) error {

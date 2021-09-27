@@ -176,18 +176,8 @@ func Execute() {
 	zap.L().Info("Execute command", zap.String("command", tui.OsArgs()))
 	zap.L().Debug("Environment variables", zap.Strings("env", os.Environ()))
 
-	wd, err := os.Getwd()
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "can not get current working directory: %s", err)
-		os.Exit(1)
-	}
-	if err := os.Chdir(wd); err != nil {
-		fmt.Fprintf(os.Stderr, "can not change dir to %s: %s", wd, err)
-		os.Exit(1)
-	}
-
 	code := 0
-	err = rootCmd.Execute()
+	err := rootCmd.Execute()
 	if err != nil {
 		code = 1
 	}
