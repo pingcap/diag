@@ -108,7 +108,7 @@ func (m *Manager) CollectClusterInfo(
 		return err
 	}
 
-	resultDir, err := m.prepareOutputDir(cOpt.Dir)
+	resultDir, mkdir, err := m.prepareOutputDir(cOpt.Dir)
 	if err != nil {
 		return err
 	}
@@ -212,8 +212,14 @@ func (m *Manager) CollectClusterInfo(
 	)
 
 	// confirm before really collect
-	if err := confirmStats(stats); err != nil {
+	if err := confirmStats(stats, resultDir); err != nil {
 		return err
+	}
+	if mkdir {
+		err := os.MkdirAll(resultDir, 0755)
+		if err != nil {
+			return err
+		}
 	}
 
 	// run collectors
@@ -240,34 +246,34 @@ func (m *Manager) CollectClusterInfo(
 }
 
 // prepare output dir of collected data
-func (m *Manager) prepareOutputDir(dir string) (string, error) {
+func (m *Manager) prepareOutputDir(dir string) (string, bool, error) {
 	if dir == "" {
-		dir = filepath.Join(".", m.session)
+		dir = filepath.Join(".", "diag-"+m.session)
 	}
 	dir, err := filepath.Abs(dir)
 	if err != nil {
-		return dir, err
+		return dir, false, err
 	}
 
 	dirInfo, err := os.Stat(dir)
-	// mkdir if output dir not exists
+	// need mkdir if output dir not exists
 	if err != nil {
-		return dir, os.MkdirAll(dir, 0755)
+		return dir, true, nil
 	}
 
 	if dirInfo.IsDir() {
 		readdir, err := ioutil.ReadDir(dir)
 		if err != nil {
-			return dir, err
+			return dir, false, err
 		}
 		if len(readdir) == 0 {
-			return dir, nil
+			return dir, false, nil
 		}
 	}
-	return dir, fmt.Errorf("%s is not a empty directory", dir)
+	return dir, false, fmt.Errorf("%s is not a empty directory", dir)
 }
 
-func confirmStats(stats []map[string][]CollectStat) error {
+func confirmStats(stats []map[string][]CollectStat, resultDir string) error {
 	fmt.Printf("Estimated size of data to collect:\n")
 	var total int64
 	statTable := [][]string{{"Host", "Size", "Target"}}
@@ -287,6 +293,7 @@ func confirmStats(stats []map[string][]CollectStat) error {
 	}
 	statTable = append(statTable, []string{"Total", color.YellowString(readableSize(total)), "(inaccurate)"})
 	tui.PrintTable(statTable, true)
+	fmt.Printf("These data will be stored in %s\n", color.CyanString(resultDir))
 	return tui.PromptForConfirmOrAbortError("Do you want to continue? [y/N]: ")
 }
 

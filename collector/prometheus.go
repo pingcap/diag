@@ -190,10 +190,6 @@ func (c *MetricCollectOptions) Prepare(m *Manager, topo *spec.Specification) (ma
 	var promAddr string
 	for _, prom := range topo.Monitors {
 		promAddr = fmt.Sprintf("%s:%d", prom.Host, prom.Port)
-		if err := ensureMonitorDir(c.resultDir, subdirMetrics, fmt.Sprintf("%s-%d", prom.Host, prom.Port)); err != nil {
-			return nil, err
-		}
-
 		client := &http.Client{Timeout: time.Second * 10}
 		metrics, err := getMetricList(client, promAddr)
 		if err == nil {
