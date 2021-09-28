@@ -15,7 +15,6 @@ package collector
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"time"
@@ -260,18 +259,17 @@ func (m *Manager) getOutputDir(dir string) (string, error) {
 	}
 
 	if dirInfo.IsDir() {
-		readdir, err := ioutil.ReadDir(dir)
+		readdir, err := os.ReadDir(dir)
 		if err != nil {
 			return dir, err
 		}
 		if len(readdir) == 0 {
 			return dir, nil
-		} else {
-			return dir, fmt.Errorf("%s is not an empty directory", dir)
 		}
-	} else {
-		return dir, fmt.Errorf("%s is not a directory", dir)
+		return dir, fmt.Errorf("%s is not an empty directory", dir)
 	}
+
+	return dir, fmt.Errorf("%s is not a directory", dir)
 }
 
 func confirmStats(stats []map[string][]CollectStat, resultDir string) error {
