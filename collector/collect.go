@@ -267,7 +267,7 @@ func (m *Manager) getOutputDir(dir string) (string, error) {
 		if len(readdir) == 0 {
 			return dir, nil
 		} else {
-			return dir, fmt.Errorf("%s is not a empty directory", dir)
+			return dir, fmt.Errorf("%s is not an empty directory", dir)
 		}
 	} else {
 		return dir, fmt.Errorf("%s is not a directory", dir)
