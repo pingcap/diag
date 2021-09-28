@@ -108,7 +108,7 @@ func (m *Manager) CollectClusterInfo(
 		return err
 	}
 
-	resultDir, mkdir, err := m.prepareOutputDir(cOpt.Dir)
+	resultDir, err := m.getOutputDir(cOpt.Dir)
 	if err != nil {
 		return err
 	}
@@ -215,11 +215,9 @@ func (m *Manager) CollectClusterInfo(
 	if err := confirmStats(stats, resultDir); err != nil {
 		return err
 	}
-	if mkdir {
-		err := os.MkdirAll(resultDir, 0755)
-		if err != nil {
-			return err
-		}
+	err = os.MkdirAll(resultDir, 0755)
+	if err != nil {
+		return err
 	}
 
 	// run collectors
@@ -246,31 +244,34 @@ func (m *Manager) CollectClusterInfo(
 }
 
 // prepare output dir of collected data
-func (m *Manager) prepareOutputDir(dir string) (string, bool, error) {
+func (m *Manager) getOutputDir(dir string) (string, error) {
 	if dir == "" {
 		dir = filepath.Join(".", "diag-"+m.session)
 	}
 	dir, err := filepath.Abs(dir)
 	if err != nil {
-		return dir, false, err
+		return dir, err
 	}
 
 	dirInfo, err := os.Stat(dir)
 	// need mkdir if output dir not exists
 	if err != nil {
-		return dir, true, nil
+		return dir, nil
 	}
 
 	if dirInfo.IsDir() {
 		readdir, err := ioutil.ReadDir(dir)
 		if err != nil {
-			return dir, false, err
+			return dir, err
 		}
 		if len(readdir) == 0 {
-			return dir, false, nil
+			return dir, nil
+		} else {
+			return dir, fmt.Errorf("%s is not a empty directory", dir)
 		}
+	} else {
+		return dir, fmt.Errorf("%s is not a directory", dir)
 	}
-	return dir, false, fmt.Errorf("%s is not a empty directory", dir)
 }
 
 func confirmStats(stats []map[string][]CollectStat, resultDir string) error {
