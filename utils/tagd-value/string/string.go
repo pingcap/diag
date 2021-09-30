@@ -51,22 +51,22 @@ func (tv *String) Scan(value interface{}) error {
 		return nil
 	}
 
-	if v, err := url.QueryUnescape(tags[0]); err != nil {
+	v, err := url.QueryUnescape(tags[0])
+	if err != nil {
 		return err
-	} else {
-		tv.value = v
 	}
+	tv.value = v
 
 	if len(tags) < 2 {
 		return nil
 	}
 
-	if ts, err := url.ParseQuery(tags[1]); err != nil {
+	ts, err := url.ParseQuery(tags[1])
+	if err != nil {
 		return err
-	} else {
-		tv.tags = ts
-		return nil
 	}
+	tv.tags = ts
+	return nil
 }
 
 // Value implements the driver Valuer interface.

@@ -60,12 +60,12 @@ func (c *MetaCollectOptions) SetDir(dir string) {
 }
 
 // Prepare implements the Collector interface
-func (c *MetaCollectOptions) Prepare(m *Manager, topo *spec.Specification) (map[string][]CollectStat, error) {
+func (c *MetaCollectOptions) Prepare(_ *Manager, _ *spec.Specification) (map[string][]CollectStat, error) {
 	return nil, nil
 }
 
 // Collect implements the Collector interface
-func (c *MetaCollectOptions) Collect(m *Manager, topo *spec.Specification) error {
+func (c *MetaCollectOptions) Collect(_ *Manager, _ *spec.Specification) error {
 	// write cluster name to file
 	fn, err := os.Create(filepath.Join(c.resultDir, fileNameClusterName))
 	if err != nil {

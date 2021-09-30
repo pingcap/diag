@@ -20,12 +20,12 @@ func New(value int64, tags map[string]string) Int64 {
 }
 
 func (tv *Int64) GetValue() int64 {
-	if v, err := strconv.ParseInt(tv.String.GetValue(), 10, 64); err != nil {
+	v, err := strconv.ParseInt(tv.String.GetValue(), 10, 64)
+	if err != nil {
 		log.Error("parse int64 value:", err)
 		return 0
-	} else {
-		return v
 	}
+	return v
 }
 
 func (tv *Int64) SetValue(value int64) {

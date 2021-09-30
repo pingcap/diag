@@ -77,12 +77,12 @@ func (c *AlertCollectOptions) SetDir(dir string) {
 }
 
 // Prepare implements the Collector interface
-func (c *AlertCollectOptions) Prepare(m *Manager, topo *spec.Specification) (map[string][]CollectStat, error) {
+func (c *AlertCollectOptions) Prepare(_ *Manager, _ *spec.Specification) (map[string][]CollectStat, error) {
 	return nil, nil
 }
 
 // Collect implements the Collector interface
-func (c *AlertCollectOptions) Collect(m *Manager, topo *spec.Specification) error {
+func (c *AlertCollectOptions) Collect(_ *Manager, topo *spec.Specification) error {
 	if len(topo.Monitors) < 1 {
 		fmt.Println("No Prometheus node found in topology, skip.")
 		return nil
@@ -173,7 +173,7 @@ func (c *MetricCollectOptions) SetDir(dir string) {
 }
 
 // Prepare implements the Collector interface
-func (c *MetricCollectOptions) Prepare(m *Manager, topo *spec.Specification) (map[string][]CollectStat, error) {
+func (c *MetricCollectOptions) Prepare(_ *Manager, topo *spec.Specification) (map[string][]CollectStat, error) {
 	if len(topo.Monitors) < 1 {
 		fmt.Println("No Prometheus node found in topology, skip.")
 		return nil, nil
@@ -228,7 +228,7 @@ func (c *MetricCollectOptions) Prepare(m *Manager, topo *spec.Specification) (ma
 }
 
 // Collect implements the Collector interface
-func (c *MetricCollectOptions) Collect(m *Manager, topo *spec.Specification) error {
+func (c *MetricCollectOptions) Collect(_ *Manager, topo *spec.Specification) error {
 	if len(topo.Monitors) < 1 {
 		fmt.Println("No Prometheus node found in topology, skip.")
 		return nil
@@ -336,7 +336,7 @@ func collectMetric(
 					},
 				)
 				if err != nil {
-					log.Errorf("failed query metric %s: %w, retry...", mtc, err)
+					log.Errorf("failed query metric %s: %s, retry...", mtc, err)
 					fmt.Printf("failed query metric %s: %s, retry...\n", mtc, err)
 					return err
 				}
@@ -349,7 +349,7 @@ func collectMetric(
 					),
 				)
 				if err != nil {
-					log.Errorf("collect metric %s: %w, retry...", mtc, err)
+					log.Errorf("collect metric %s: %s, retry...", mtc, err)
 					fmt.Printf("collect metric %s: %s, retry...\n", mtc, err)
 				}
 				defer dst.Close()

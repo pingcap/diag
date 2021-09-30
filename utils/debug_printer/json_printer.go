@@ -1,4 +1,4 @@
-package debug_printer
+package debugprinter
 
 import (
 	"github.com/fatih/structs"
@@ -6,7 +6,7 @@ import (
 )
 
 // panic if marshall return nil
-func FormatJson(object interface{}) string {
+func FormatJSON(object interface{}) string {
 	data, err := jsoniter.MarshalIndent(object, "", "    ")
 	if err != nil {
 		panic(err)
@@ -14,6 +14,7 @@ func FormatJson(object interface{}) string {
 	return string(data)
 }
 
-func JsonMapper(object interface{}) map[string]interface{} {
+//JSONMapper maps the object
+func JSONMapper(object interface{}) map[string]interface{} {
 	return structs.Map(object)
 }

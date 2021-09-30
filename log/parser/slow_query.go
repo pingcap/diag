@@ -7,7 +7,7 @@ import (
 	"github.com/pingcap/diag/log/item"
 )
 
-// Parse tidb slow query log, example:
+// SlowQueryParser is a parser for tidb slow query log, example:
 // # Time: 2019-08-22T10:46:31.81833097+08:00
 // # Txn_start_ts: 410633369355550820
 // # User: root@127.0.0.1
@@ -24,6 +24,7 @@ var (
 	SlowQueryRE = regexp.MustCompile("^# Time: (.*)$")
 )
 
+// ParseHead parses headers
 func (*SlowQueryParser) ParseHead(head []byte) (*time.Time, item.LevelType) {
 	if !SlowQueryRE.Match(head) {
 		return nil, item.LevelInvalid

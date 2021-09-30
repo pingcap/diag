@@ -7,7 +7,7 @@ import (
 	"strings"
 )
 
-// Mapped from a file path, which is in the format
+// FileWrapper is mapped from a file path, which is in the format
 // of /{root}/{ip}/{component}:{port}/{xxx}.log
 type FileWrapper struct {
 	Root     string
@@ -22,7 +22,7 @@ func (fw *FileWrapper) Open() (*os.File, error) {
 	return os.OpenFile(filePath, os.O_RDONLY, os.ModePerm)
 }
 
-// Return the component name and port it listening on.
+// ParseFolderName returns the component name and port it listening on.
 func (fw *FileWrapper) ParseFolderName() (string, string, error) {
 	s := strings.Split(fw.Folder, "-")
 	if len(s) < 2 {
@@ -31,6 +31,7 @@ func (fw *FileWrapper) ParseFolderName() (string, string, error) {
 	return s[0], s[1], nil
 }
 
+// NewFileWrapper creates a file wrapper
 func NewFileWrapper(root, host, folder, filename string) *FileWrapper {
 	return &FileWrapper{
 		Root:     root,
@@ -40,7 +41,7 @@ func NewFileWrapper(root, host, folder, filename string) *FileWrapper {
 	}
 }
 
-// Traversing a folder and parse it's struct, generating
+// ResolveDir traversing a folder and parse it's struct, generating
 // a list of file wrapper.
 func ResolveDir(src string) ([]*FileWrapper, error) {
 	var wrappers []*FileWrapper

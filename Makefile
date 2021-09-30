@@ -1,7 +1,7 @@
 PROJECT=diag
 
 
-.PHONY: all collector scraper fmt check_prefix build default
+.PHONY: all collector scraper fmt vet lint check build default
 
 default: all
 
@@ -44,12 +44,23 @@ LDFLAGS += -X "github.com/pingcap/diag/version.GitBranch=$(shell git rev-parse -
 
 CHECK_LDFLAGS += $(LDFLAGS)
 
-all: fmt build
+all: check build
 
 build: collector scraper
 
 clean:
 	@rm -rf bin
+
+collector:
+	$(GOBUILD) $(RACE_FLAG) -ldflags '$(LDFLAGS) $(CHECK_FLAG)' -o bin/collector cmd/collector/*.go
+
+scraper:
+	$(GOBUILD) $(RACE_FLAG) -ldflags '$(LDFLAGS) $(CHECK_FLAG)' -o bin/scraper cmd/scraper/*.go
+
+test:
+	$(GO) test ./...
+
+check: fmt vet lint
 
 fmt:
 	@echo "gofmt (simplify)"
@@ -66,14 +77,14 @@ ifeq ("$(WITH_CHECK)", "1")
 	CHECK_FLAG = $(TEST_LDFLAGS)
 endif
 
-collector:
-	$(GOBUILD) $(RACE_FLAG) -ldflags '$(LDFLAGS) $(CHECK_FLAG)' -o bin/collector cmd/collector/*.go
+vet:
+	$(GO) vet ./...
 
-scraper:
-	$(GOBUILD) $(RACE_FLAG) -ldflags '$(LDFLAGS) $(CHECK_FLAG)' -o bin/scraper cmd/scraper/*.go
+lint: tests/bin/revive
+	@echo "linting"
+	./tests/check/check-lint.sh
+	@tests/bin/revive -formatter friendly -config tests/check/revive.toml $(FILES)
 
-check-%:
-	@ if [ "${${*}}" = "" ]; then \
-		echo "variable $* not set"; \
-		exit 1; \
-	fi
+tests/bin/revive: tests/check/go.mod
+	cd tests/check; \
+	$(GO) build -o ../bin/revive github.com/mgechev/revive

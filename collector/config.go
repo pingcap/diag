@@ -281,7 +281,7 @@ func (c *ConfigCollectOptions) Collect(m *Manager, topo *spec.Specification) err
 	return nil
 }
 
-func buildRealtimeConfigCollectingTasks(ctx context.Context, inst spec.Instance, resultDir string, tlsCfg *tls.Config) *task.StepDisplay {
+func buildRealtimeConfigCollectingTasks(_ context.Context, inst spec.Instance, resultDir string, tlsCfg *tls.Config) *task.StepDisplay {
 	var url string
 	var instDir string
 	scheme := "http"

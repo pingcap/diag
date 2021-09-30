@@ -27,9 +27,8 @@ func ParseLogLevel(b []byte) item.LevelType {
 	s := strings.ToUpper(string(b))
 	if level, ok := LevelTypeMap[s]; ok {
 		return level
-	} else {
-		return item.LevelInvalid
 	}
+	return item.LevelInvalid
 }
 
 // TiDB / TiKV / PD unified log format

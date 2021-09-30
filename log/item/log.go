@@ -5,7 +5,7 @@ import (
 	"time"
 )
 
-const MAX_LOG_SIZE = 1024 * 1024
+const MaxLogSize = 1024 * 1024
 
 // The LogItem struct implements Item interface
 type LogItem struct {
@@ -48,8 +48,8 @@ func (l *LogItem) GetContent() []byte {
 }
 
 func (l *LogItem) AppendContent(content []byte) error {
-	if len(l.Content) > MAX_LOG_SIZE {
-		return fmt.Errorf("log size exceeds limit, log content:\n%s\n", string(l.Content))
+	if len(l.Content) > MaxLogSize {
+		return fmt.Errorf("log size exceeds limit, log content: %s", string(l.Content))
 	}
 	l.Content = append(l.Content, byte('\n'))
 	l.Content = append(l.Content, content...)

@@ -31,9 +31,8 @@ func (s *Sequence) Next() (item.Item, error) {
 					continue
 				}
 				return nil, err
-			} else {
-				return nil, fmt.Errorf("log iterator return empty item without error")
 			}
+			return nil, fmt.Errorf("log iterator return empty item without error")
 		}
 		ts := iter.Peek().GetTime()
 		if ts.Before(currentTs) {
@@ -44,9 +43,8 @@ func (s *Sequence) Next() (item.Item, error) {
 
 	if currentIter == nil {
 		return nil, io.EOF
-	} else {
-		return currentIter.Next()
 	}
+	return currentIter.Next()
 }
 
 func (s *Sequence) Close() error {

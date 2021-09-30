@@ -9,12 +9,13 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-func CollectLog(collector, home, user, instanceId, inspectionId string, begin, end time.Time) error {
+// CollectLog collects logs
+func CollectLog(collector, home, user, instanceID, inspectionID string, begin, end time.Time) error {
 	cmd := exec.Command(
 		collector,
 		fmt.Sprintf("--home=%s", home),
-		fmt.Sprintf("--instance-id=%s", instanceId),
-		fmt.Sprintf("--inspection-id=%s", inspectionId),
+		fmt.Sprintf("--instance-id=%s", instanceID),
+		fmt.Sprintf("--inspection-id=%s", inspectionID),
 		"--items=log",
 		fmt.Sprintf("--begin=%s", begin.Format(time.RFC3339)),
 		fmt.Sprintf("--end=%s", end.Format(time.RFC3339)),

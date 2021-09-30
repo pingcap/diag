@@ -11,9 +11,9 @@ import (
 	"github.com/pingcap/diag/log/parser"
 )
 
-// Only enable seek when position range is more than SEEK_THRESHOLD.
-// The suggested value of SEEK_THRESHOLD is the biggest log size.
-const SEEK_THRESHOLD = 1024 * 1024
+// Only enable seekLog when position range is more than SeekThreshold.
+// The suggested value of SeekThreshold is the biggest log size.
+const SeekThreshold = 1024 * 1024
 
 // Define the slow query file name
 const SlowLogQueryFileName = "tidb_slow_query.log"
@@ -66,9 +66,8 @@ func New(fw *parser.FileWrapper, begin, end time.Time) (IteratorWithPeek, error)
 
 	if err := iter.Seek(begin); err != nil {
 		return nil, err
-	} else {
-		return &iter, nil
 	}
+	return &iter, nil
 }
 
 // The Close method close all resources the iterator has.
@@ -124,8 +123,8 @@ func (iter *LogIterator) Next() (current item.Item, err error) {
 	return iter.Next()
 }
 
-// The Seek method try to find the first log entity whose
-// time is after the param point, if not found, io.EOF will
+// Seek tries to find the first log entity whose time
+// is after the param point, if not found, io.EOF will
 // be returned.
 //
 // params:
@@ -140,30 +139,30 @@ func (iter *LogIterator) Seek(point time.Time) error {
 		return err
 	}
 
-	return iter.seek(0, info.Size(), point)
+	return iter.seekLog(0, info.Size(), point)
 }
 
-// The implemention of Seek method, recursive call itself until found
+// seekLog is the implemention of Seek method, recursive call itself until found
 // target log.
-func (iter *LogIterator) seek(bpos, epos int64, point time.Time) error {
-	if epos-bpos < SEEK_THRESHOLD {
+func (iter *LogIterator) seekLog(bpos, epos int64, point time.Time) error {
+	if epos-bpos < SeekThreshold {
 		err := iter.carpet(bpos, epos, point)
 		return err
 	}
 
 	begin := (bpos + epos) / 2
 	end := epos
-	if begin+SEEK_THRESHOLD < epos {
-		end = begin + SEEK_THRESHOLD
+	if begin+SeekThreshold < epos {
+		end = begin + SeekThreshold
 	}
 
-	err := iter.seek(begin, end, point)
+	err := iter.seekLog(begin, end, point)
 	if err == io.EOF {
-		return iter.seek(begin, epos, point)
+		return iter.seekLog(begin, epos, point)
 	}
 	if err == nil {
 		// the may not be the very begining of target point
-		if err := iter.seek(bpos, begin, point); err == nil {
+		if err := iter.seekLog(bpos, begin, point); err == nil {
 			return nil
 		} else if err == io.EOF {
 			return iter.carpet(begin, end, point)
@@ -174,7 +173,7 @@ func (iter *LogIterator) seek(bpos, epos int64, point time.Time) error {
 	return err
 }
 
-// Carpet searching try to find the point and seek to it.
+// Carpet searching try to find the point and seekLog to it.
 func (iter *LogIterator) carpet(bpos, epos int64, point time.Time) error {
 	pos := bpos
 	if _, err := iter.file.Seek(pos, 0); err != nil {
@@ -207,7 +206,7 @@ func (iter *LogIterator) carpet(bpos, epos int64, point time.Time) error {
 	return io.EOF
 }
 
-// Reset iterater state, used after file seek.
+// Reset iterater state, used after file seekLog.
 func (iter *LogIterator) reset() {
 	iter.reader.Reset(iter.file)
 	iter.current = nil
@@ -263,9 +262,8 @@ func (iter *LogIterator) itemType() item.ItemType {
 	case "tidb":
 		if iter.filename == SlowLogQueryFileName {
 			return item.TypeTiDBSlowQuery
-		} else {
-			return item.TypeTiDB
 		}
+		return item.TypeTiDB
 	case "tikv":
 		return item.TypeTiKV
 	case "pd":

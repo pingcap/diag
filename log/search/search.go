@@ -133,11 +133,10 @@ func (s *searcher) Search(dir string, begin, end time.Time, level, text, token s
 		iter := NewIter(i, text, level)
 		go s.Gc(token, iter)
 		return iter, token, err
-	} else {
-		if iter := s.GetIter(token); iter == nil {
-			return nil, token, fmt.Errorf("not found")
-		} else {
-			return iter, token, nil
-		}
 	}
+	iter := s.GetIter(token)
+	if iter == nil {
+		return nil, token, fmt.Errorf("not found")
+	}
+	return iter, token, nil
 }

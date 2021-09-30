@@ -21,7 +21,6 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
-	"log"
 	"os"
 	"path"
 	"strings"
@@ -75,12 +74,15 @@ func LoadMetrics(ctx context.Context, dataDir string, opt *RebuildOptions) error
 	defer mb.StopRenderLoop()
 
 	// connect to influxdb
-	client := newClient(opt)
+	client, err := newClient(opt)
+	if err != nil {
+		return err
+	}
 	// create database has no side effect if database already exist
 	_, err = queryDB(client, opt.DBName, fmt.Sprintf("CREATE DATABASE %s", opt.DBName))
 	client.Close()
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 
 	errChan := make(chan error)
@@ -160,20 +162,18 @@ func (opt *RebuildOptions) LoadMetrics(tl *utils.TokenLimiter) error {
 		input, readErr = io.ReadAll(f)
 	}
 	if readErr != nil {
-		log.Fatal(err)
+		return err
 	}
 
 	// decode JSON
 	var data promDump
 	if err = jsoniter.Unmarshal(input, &data); err != nil {
 		//fmt.Println(string(input))
-		log.Fatal(err)
+		return err
 	}
 
-	if err := writeBatchPoints(tl, data, opt); err != nil {
-		log.Fatal(err)
-	}
-	return nil
+	return writeBatchPoints(tl, data, opt)
+
 }
 
 type promResult struct {
@@ -187,10 +187,10 @@ type promDump struct {
 }
 
 // queryDB convenience function to query the database
-func queryDB(clnt influx.Client, db_name string, cmd string) (res []influx.Result, err error) {
+func queryDB(clnt influx.Client, dbName string, cmd string) (res []influx.Result, err error) {
 	q := influx.Query{
 		Command:  cmd,
-		Database: db_name,
+		Database: dbName,
 	}
 	if response, err := clnt.Query(q); err == nil {
 		if response.Error() != nil {
@@ -227,17 +227,14 @@ func slicePoints(data chan *influx.Point, chunkSize int) chan []*influx.Point {
 	return result
 }
 
-func newClient(opts *RebuildOptions) influx.Client {
+func newClient(opts *RebuildOptions) (influx.Client, error) {
 	// connect to influxdb
 	client, err := influx.NewHTTPClient(influx.HTTPConfig{
 		Addr:     fmt.Sprintf("http://%s:%d", opts.Host, opts.Port),
 		Username: opts.User,
 		Password: opts.Passwd,
 	})
-	if err != nil {
-		log.Fatal(err)
-	}
-	return client
+	return client, err
 }
 
 func buildPoints(
@@ -307,7 +304,12 @@ func writeBatchPoints(tl *utils.TokenLimiter, data promDump, opts *RebuildOption
 
 				// create influx.Client and close it every time we write a BatchPoints
 				// series to reduce memory usage on large dataset
-				client := newClient(opts)
+				client, err := newClient(opts)
+				if err != nil {
+					client.Close()
+					errChan <- err
+					return
+				}
 				defer client.Close()
 
 				// write batch points to influxdb
