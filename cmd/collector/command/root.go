@@ -112,6 +112,7 @@ func init() {
 
 	rootCmd.AddCommand(
 		newCollectCmd(),
+		newPackageCmd(),
 		newRebuildCmd(),
 	)
 }
