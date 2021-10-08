@@ -26,24 +26,19 @@ func TestEncryptAndDecrypt(t *testing.T) {
 	assert := require.New(t)
 
 	ciphertext := []byte("Hello, PingCAP")
-	buffer := bytes.NewBuffer(ciphertext)
 
 	priv, err := rsa.GenerateKey(rand.Reader, 4096)
 	assert.Nil(err)
 
-	enc, err := NewEncryptor(&priv.PublicKey, buffer)
+	encB := bytes.NewBuffer(nil)
+	encW, err := NewEncryptWriter(&priv.PublicKey, encB)
 	assert.Nil(err)
 
-	encBuf := make([]byte, 4096)
-	n, err := enc.Read(encBuf)
-	assert.True(n > 0)
-	assert.Nil(err)
-
-	nn, err := enc.Read(encBuf[n:])
+	n, err := encW.Write(ciphertext)
 	assert.Nil(err)
 	assert.True(n > 0)
 
-	dec, err := NewDecryptor(priv, bytes.NewBuffer(encBuf[:n+nn]))
+	dec, err := NewDecryptor(priv, encB)
 	assert.Nil(err)
 
 	decBuf := make([]byte, 4096)
