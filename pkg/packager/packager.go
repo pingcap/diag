@@ -15,7 +15,9 @@ package packager
 
 import (
 	"archive/tar"
-	"compress/gzip"
+	"crypto/rsa"
+	"crypto/x509"
+	"encoding/pem"
 	"fmt"
 	"io"
 	"io/fs"
@@ -24,13 +26,14 @@ import (
 	"strings"
 
 	"github.com/klauspost/compress/zstd"
+	"github.com/pingcap/diag/pkg/crypto"
 	"github.com/pingcap/tiup/pkg/tui"
 )
 
 type PackageOptions struct {
 	InputDir   string // source directory of collected data
 	OutputFile string // target file to store packaged data
-	Compress   string
+	CertPath   string // crt file to encrypt data
 }
 
 func PackageCollectedData(pOpt *PackageOptions) error {
@@ -39,15 +42,28 @@ func PackageCollectedData(pOpt *PackageOptions) error {
 		return err
 	}
 
-	suffix, _ := selectSuffix(pOpt.Compress)
-	output, err := selectOutputFile(input, pOpt.OutputFile, suffix)
+	output, err := selectOutputFile(input, pOpt.OutputFile)
 	if err != nil {
 		return err
 	}
 
+	certPath, err := selectCertFile(pOpt.CertPath)
+	if err != nil {
+		return err
+	}
+
+	certString, err := os.ReadFile(certPath)
+	if err != nil {
+		return err
+	}
+	block, _ := pem.Decode(certString)
+	cert, _ := x509.ParseCertificate(block.Bytes)
+	publicKey := cert.PublicKey.(*rsa.PublicKey)
+
 	fileW, _ := os.Create(output)
 	defer fileW.Close()
-	compressW := newWriterByCompress(fileW, pOpt.Compress)
+	encryptW, _ := crypto.NewEncryptWriter(publicKey, fileW)
+	compressW, _ := zstd.NewWriter(encryptW)
 	defer compressW.Close()
 	tarW := tar.NewWriter(compressW)
 	defer tarW.Close()
@@ -71,6 +87,7 @@ func PackageCollectedData(pOpt *PackageOptions) error {
 		if err != nil {
 			return err
 		}
+		defer fd.Close()
 		io.Copy(tarW, fd)
 		return nil
 	})
@@ -111,40 +128,25 @@ func selectInputDir(dir string) (string, error) {
 	return filepath.Abs(dir)
 }
 
-func newWriterByCompress(w io.Writer, compress string) io.WriteCloser {
-	switch compress {
-	case "", "gzip":
-		return gzip.NewWriter(w)
-	case "zstd":
-		zw, _ := zstd.NewWriter(w)
-		return zw
-	default:
-		return gzip.NewWriter(w)
-	}
-}
-
-func selectSuffix(compress string) (string, error) {
-	var err error
-	suffix := map[string]string{
-		"":     ".tar.gz",
-		"gzip": ".tar.gz",
-		"zstd": ".tar.zst",
-	}
-	if suffix[compress] == "" {
-		err = fmt.Errorf("%s is not supported algorithm", compress)
-	}
-
-	return suffix[compress], err
-}
-
-func selectOutputFile(input, output, outputSuffix string) (string, error) {
+func selectOutputFile(input, output string) (string, error) {
 	if output == "" {
-		output = input
+		output = filepath.Base(input) + ".diag"
 	}
-	output = filepath.Base(output) + outputSuffix
 	_, err := os.Stat(output)
 	if err == nil {
 		return output, fmt.Errorf("%s already exists", output)
 	}
 	return filepath.Abs(output)
+}
+
+func selectCertFile(path string) (string, error) {
+	// choose latest diag directory if not specify
+	if path == "" {
+		path = filepath.Join(filepath.Dir(os.Args[0]), "pingcap.crt")
+	}
+	_, err := os.Stat(path)
+	if err != nil {
+		return "", fmt.Errorf("cannot find cert")
+	}
+	return filepath.Abs(path)
 }

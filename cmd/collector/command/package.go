@@ -1,4 +1,4 @@
-// Copyright 2020 PingCAP, Inc.
+// Copyright 2021 PingCAP, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -34,7 +34,7 @@ func newPackageCmd() *cobra.Command {
 
 	cmd.Flags().StringVarP(&pOpt.InputDir, "input", "i", "", "input directory of collected data")
 	cmd.Flags().StringVarP(&pOpt.OutputFile, "output", "o", "", "output file of packaged data")
-	cmd.Flags().StringVar(&pOpt.Compress, "compress", "", "compression algorithm, use: 'gzip', 'zstd'")
+	cmd.Flags().StringVar(&pOpt.CertPath, "cert", "", "cert file to encrypt the data")
 
 	return cmd
 }
