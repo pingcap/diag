@@ -24,18 +24,14 @@ import (
 	"io"
 )
 
-type Encryptor interface {
-	io.Reader
-}
-
-type encryptor struct {
+type EncryptWriter struct {
 	stream cipher.Stream
-	buffer *bytes.Buffer
-	reader io.Reader
+	header *bytes.Buffer
+	w      io.Writer
 }
 
-func NewEncryptor(pub *rsa.PublicKey, reader io.Reader) (Encryptor, error) {
-	buffer := bytes.NewBuffer(nil)
+func NewEncryptWriter(pub *rsa.PublicKey, w io.Writer) (*EncryptWriter, error) {
+	header := bytes.NewBuffer(nil)
 
 	aesKey := make([]byte, 32)
 	n, err := rand.Read(aesKey)
@@ -46,7 +42,7 @@ func NewEncryptor(pub *rsa.PublicKey, reader io.Reader) (Encryptor, error) {
 	if err != nil {
 		return nil, err
 	}
-	if n, err := buffer.Write(iv); n != len(iv) || err != nil {
+	if n, err := header.Write(iv); n != len(iv) || err != nil {
 		return nil, fmt.Errorf("write buffer failed: %v, %d/%d bytes write", err, n, len(iv))
 	}
 	block, err := aes.NewCipher(aesKey[:])
@@ -54,27 +50,25 @@ func NewEncryptor(pub *rsa.PublicKey, reader io.Reader) (Encryptor, error) {
 		return nil, err
 	}
 
-	return &encryptor{
+	return &EncryptWriter{
 		stream: cipher.NewCFBEncrypter(block, iv[:aes.BlockSize]),
-		buffer: buffer,
-		reader: reader,
+		header: header,
+		w:      w,
 	}, nil
 }
 
-func (e *encryptor) Read(p []byte) (n int, err error) {
-	if e.buffer.Len() == 0 {
-		inBuf := make([]byte, BufferSize)
-		n, err := e.reader.Read(inBuf)
-		if n == 0 {
-			return 0, err
-		}
-
-		outBuf := make([]byte, n)
-		e.stream.XORKeyStream(outBuf, inBuf[:n])
-		if n, err := e.buffer.Write(outBuf); n != len(outBuf) || err != nil {
-			return 0, fmt.Errorf("write buffer failed: %v, %d/%d bytes write", err, n, len(outBuf))
+func (w *EncryptWriter) Write(p []byte) (n int, err error) {
+	var headn int64
+	// write OAEP header at first write
+	if w.header.Len() > 0 {
+		headn, err := io.Copy(w.w, w.header)
+		if err != nil {
+			return int(headn), err
 		}
 	}
+	outBuf := make([]byte, len(p))
+	w.stream.XORKeyStream(outBuf, p)
+	n, err = w.w.Write(outBuf)
+	return int(headn) + n, err
 
-	return e.buffer.Read(p)
 }
