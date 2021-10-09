@@ -117,6 +117,7 @@ func (m *Manager) CollectClusterInfo(
 		&MetaCollectOptions{ // cluster metadata, always collected
 			BaseOptions: opt,
 			opt:         gOpt,
+			session:     m.session,
 			resultDir:   resultDir,
 			filePath:    m.specManager.Path(opt.Cluster, "meta.yaml"),
 		},
