@@ -513,7 +513,6 @@ github.com/gorilla/csrf v1.6.0/go.mod h1:7tSf8kmjNYr7IWDCYhd3U8Ck34iQ/Yw5CJu7bAk
 github.com/gorilla/handlers v1.4.1/go.mod h1:Qkdc/uu4tH4g6mTK6auzZ766c4CA0Ng8+o/OAirnOIQ=
 github.com/gorilla/mux v1.6.2/go.mod h1:1lud6UwP+6orDFRuTfBEV8e9/aOM/c4fVVCaMa2zaAs=
 github.com/gorilla/mux v1.7.3/go.mod h1:1lud6UwP+6orDFRuTfBEV8e9/aOM/c4fVVCaMa2zaAs=
-github.com/gorilla/mux v1.8.0 h1:i40aqfkR1h2SlN9hojwV5ZA91wcXFOvkdNIeFDP5koI=
 github.com/gorilla/mux v1.8.0/go.mod h1:DVbg23sWSpFRCP0SfiEN6jmj59UnW/n46BH5rLB71So=
 github.com/gorilla/securecookie v1.1.1/go.mod h1:ra0sb63/xPlUeL+yeDciTfxMRAA+MP+HVt/4epWDjd4=
 github.com/gorilla/websocket v0.0.0-20170926233335-4201258b820c/go.mod h1:E7qHFY5m1UJ88s3WnNqhKjPHQ0heANvMoAMk2YaljkQ=
@@ -793,7 +792,6 @@ github.com/pingcap/errors v0.11.5-0.20201126102027-b0a155152ca3 h1:LllgC9eGfqzkf
 github.com/pingcap/errors v0.11.5-0.20201126102027-b0a155152ca3/go.mod h1:G7x87le1poQzLB/TqvTJI2ILrSgobnq4Ut7luOwvfvI=
 github.com/pingcap/failpoint v0.0.0-20210918120811-547c13e3eb00 h1:C3N3itkduZXDZFh4N3vQ5HEtld3S+Y+StULhWVvumU0=
 github.com/pingcap/failpoint v0.0.0-20210918120811-547c13e3eb00/go.mod h1:4qGtCB0QK0wBzKtFEGDhxXnSnbQApw1gc9siScUl8ew=
-github.com/pingcap/fn v0.0.0-20200306044125-d5540d389059 h1:Pe2LbxRmbTfAoKJ65bZLmhahmvHm7n9DUxGRQT00208=
 github.com/pingcap/fn v0.0.0-20200306044125-d5540d389059/go.mod h1:fMRU1BA1y+r89AxUoaAar4JjrhUkVDt0o0Np6V8XbDQ=
 github.com/pingcap/kvproto v0.0.0-20210915062418-0f5764a128ad h1:suBPTeuY6yVF7xvTGeTQ9+tiGzufnORJpCRwzbdN2sc=
 github.com/pingcap/kvproto v0.0.0-20210915062418-0f5764a128ad/go.mod h1:IOdRDPLyda8GX2hE/jO7gqaCV/PNFh8BZQCQZXfIOqI=
@@ -803,8 +801,6 @@ github.com/pingcap/log v0.0.0-20210818144256-6455d4a4c6f9 h1:6t7vOzOGF3/iz+wpcwu
 github.com/pingcap/log v0.0.0-20210818144256-6455d4a4c6f9/go.mod h1:DWQW5jICDR7UJh4HtxXSM20Churx4CQL0fwL/SoOSA4=
 github.com/pingcap/tidb-insight/collector v0.0.0-20210923072556-14ae4968ce78 h1:JN3fWkxAJ78atG2uo2dcTN8sleJhsr+TrnsMfrlu0do=
 github.com/pingcap/tidb-insight/collector v0.0.0-20210923072556-14ae4968ce78/go.mod h1:k+GJKVPIdlV/J6hGJy7VKsxRVWV99BJfDKXGVrs4vH4=
-github.com/pingcap/tiup v1.6.0-dev.0.20210923084245-b0eef6b9667c h1:ZIQ0qYf8PNO0iPEOqIRgGARdPa44zTxAjpwH7FhxYZU=
-github.com/pingcap/tiup v1.6.0-dev.0.20210923084245-b0eef6b9667c/go.mod h1:o1o+wOS5kt1BnfqM7PHhOVR6ijLQrp7kYlC/skemdWg=
 github.com/pingcap/tiup v1.6.1-0.20211011061324-bd92867fda97 h1:5MkwoQtASTYNZLKMRXAmGRQ2aVyj4iNAKWW75OaHFPQ=
 github.com/pingcap/tiup v1.6.1-0.20211011061324-bd92867fda97/go.mod h1:o1o+wOS5kt1BnfqM7PHhOVR6ijLQrp7kYlC/skemdWg=
 github.com/pkg/browser v0.0.0-20180916011732-0a3d74bf9ce4/go.mod h1:4OwLy04Bl9Ef3GJJCoec+30X3LQs/0/m4HFRt/2LUSA=
