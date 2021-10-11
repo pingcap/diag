@@ -112,12 +112,25 @@ func (m *Manager) CollectClusterInfo(
 		return err
 	}
 
+	collectorSet := map[string]bool{
+		CollectTypeSystem:  false,
+		CollectTypeMonitor: false,
+		CollectTypeLog:     false,
+		CollectTypeConfig:  false,
+	}
+	for name := range collectorSet {
+		if canCollect(cOpt, name) {
+			collectorSet[name] = true
+		}
+	}
+
 	// build collector list
 	collectors := []Collector{
 		&MetaCollectOptions{ // cluster metadata, always collected
 			BaseOptions: opt,
 			opt:         gOpt,
 			session:     m.session,
+			collectors:  collectorSet,
 			resultDir:   resultDir,
 			filePath:    m.specManager.Path(opt.Cluster, "meta.yaml"),
 		},

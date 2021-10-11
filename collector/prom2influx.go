@@ -18,6 +18,7 @@ package collector
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"io/fs"
@@ -38,11 +39,16 @@ import (
 // to an influxdb instance.
 func LoadMetrics(ctx context.Context, dataDir string, opt *RebuildOptions) error {
 	// read cluster name
-	clsName, err := os.ReadFile(path.Join(dataDir, fileNameClusterName))
+	body, err := os.ReadFile(path.Join(dataDir, fileNameClusterJSON))
 	if err != nil {
 		return err
 	}
-	opt.Cluster = string(clsName)
+	clusterJSON := map[string]interface{}{}
+	err = json.Unmarshal(body, &clusterJSON)
+	if err != nil {
+		return err
+	}
+	opt.Cluster = clusterJSON["cluster_id"].(string)
 
 	// extract collection session id
 	dirFields := strings.Split(dataDir, "-")
