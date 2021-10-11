@@ -14,24 +14,42 @@
 package collector
 
 import (
+	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
+	"time"
 
+	jsoniter "github.com/json-iterator/go"
+	perrs "github.com/pingcap/errors"
+	"github.com/pingcap/tiup/pkg/cluster/api"
 	operator "github.com/pingcap/tiup/pkg/cluster/operation"
 	"github.com/pingcap/tiup/pkg/cluster/spec"
+	"github.com/pingcap/tiup/pkg/meta"
 )
 
 const (
 	fileNameClusterMeta = "meta.yaml"
-	fileNameClusterName = "cluster-name.txt"
+	fileNameClusterJSON = "cluster.json"
 )
 
 // MetaCollectOptions is the options collecting cluster meta
 type MetaCollectOptions struct {
 	*BaseOptions
-	opt       *operator.Options // global operations from cli
-	resultDir string
-	filePath  string
+	opt        *operator.Options // global operations from cli
+	session    string            // an unique session ID of the collection
+	collectors map[string]bool
+	resultDir  string
+	filePath   string
+}
+
+type ClusterJSON struct {
+	ClusterName string   `json:"cluster_name"`
+	ClusterID   string   `json:"cluster_id"`
+	Session     string   `json:"session"`
+	BeginTime   string   `json:"begin_time"`
+	EndTime     string   `json:"end_time"`
+	Collectors  []string `json:"collectors"`
 }
 
 // Desc implements the Collector interface
@@ -66,13 +84,35 @@ func (c *MetaCollectOptions) Prepare(_ *Manager, _ *spec.Specification) (map[str
 
 // Collect implements the Collector interface
 func (c *MetaCollectOptions) Collect(_ *Manager, _ *spec.Specification) error {
-	// write cluster name to file
-	fn, err := os.Create(filepath.Join(c.resultDir, fileNameClusterName))
+	// write cluster.json
+	b := c.GetBaseOptions()
+	clusterID, err := getClusterID(b.Cluster)
+	if err != nil {
+		fmt.Fprint(os.Stderr, fmt.Errorf("cannot get clusterID from PD"))
+		return err
+	}
+	collectors := []string{}
+	for name, enabled := range c.collectors {
+		if enabled {
+			collectors = append(collectors, name)
+		}
+	}
+
+	jsonbyte, _ := jsoniter.MarshalIndent(ClusterJSON{
+		ClusterName: b.Cluster,
+		ClusterID:   clusterID,
+		Session:     c.session,
+		Collectors:  collectors,
+		BeginTime:   b.ScrapeBegin,
+		EndTime:     b.ScrapeEnd,
+	}, "", "  ")
+
+	fn, err := os.Create(filepath.Join(c.resultDir, fileNameClusterJSON))
 	if err != nil {
 		return err
 	}
 	defer fn.Close()
-	if _, err := fn.Write([]byte(c.GetBaseOptions().Cluster)); err != nil {
+	if _, err := fn.Write(jsonbyte); err != nil {
 		return err
 	}
 
@@ -90,4 +130,20 @@ func (c *MetaCollectOptions) Collect(_ *Manager, _ *spec.Specification) error {
 		return err
 	}
 	return nil
+}
+
+func getClusterID(clusterName string) (string, error) {
+	metadata, err := spec.ClusterMetadata(clusterName)
+	if err != nil && !errors.Is(perrs.Cause(err), meta.ErrValidate) &&
+		!errors.Is(perrs.Cause(err), spec.ErrNoTiSparkMaster) {
+		return "", err
+	}
+
+	pdEndpoints := make([]string, 0)
+	for _, pd := range metadata.Topology.PDServers {
+		pdEndpoints = append(pdEndpoints, fmt.Sprintf("%s:%d", pd.Host, pd.ClientPort))
+	}
+
+	pdAPI := api.NewPDClient(pdEndpoints, 2*time.Second, nil)
+	return pdAPI.GetClusterID()
 }

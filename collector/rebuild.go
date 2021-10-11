@@ -17,6 +17,7 @@ import (
 	"bytes"
 	"context"
 	"crypto/tls"
+	"encoding/json"
 	"fmt"
 	"os"
 	"os/exec"
@@ -71,11 +72,16 @@ func RunLocal(dumpDir string, opt *RebuildOptions) error {
 	fmt.Println("Start bootstrapping a monitoring system on localhost and rebuilding the dashboards.")
 
 	// read clsuter name
-	clsNameFile, err := os.ReadFile(path.Join(dumpDir, fileNameClusterName))
+	body, err := os.ReadFile(path.Join(dumpDir, fileNameClusterJSON))
 	if err != nil {
 		return err
 	}
-	clsName := string(clsNameFile)
+	clusterJSON := map[string]interface{}{}
+	err = json.Unmarshal(body, &clusterJSON)
+	if err != nil {
+		return err
+	}
+	clsName := clusterJSON["cluster_id"].(string)
 
 	// read cluster version
 	metaFile, err := os.ReadFile(filepath.Join(dumpDir, "meta.yaml"))

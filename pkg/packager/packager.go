@@ -120,8 +120,8 @@ func selectInputDir(dir string) (string, error) {
 			return dir, err
 		}
 	}
-	// TBD: check cluster.json
-	_, err := os.Stat(filepath.Join(dir, "cluster-name.txt"))
+
+	_, err := os.Stat(filepath.Join(dir, "cluster.json"))
 	if err != nil {
 		return "", fmt.Errorf("%s is not a diag collected data directory", dir)
 	}
