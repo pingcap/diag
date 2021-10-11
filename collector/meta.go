@@ -14,12 +14,18 @@
 package collector
 
 import (
+	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
+	"time"
 
 	jsoniter "github.com/json-iterator/go"
+	perrs "github.com/pingcap/errors"
+	"github.com/pingcap/tiup/pkg/cluster/api"
 	operator "github.com/pingcap/tiup/pkg/cluster/operation"
 	"github.com/pingcap/tiup/pkg/cluster/spec"
+	"github.com/pingcap/tiup/pkg/meta"
 )
 
 const (
@@ -89,7 +95,11 @@ func (c *MetaCollectOptions) Collect(_ *Manager, _ *spec.Specification) error {
 
 	// write cluster.json
 	b := c.GetBaseOptions()
-	clusterID := "[TBD]get cluster if here"
+	clusterID, err := getClusterID(b.Cluster)
+	if err != nil {
+		fmt.Fprint(os.Stderr, fmt.Errorf("cannot get clusterID from PD"))
+		return err
+	}
 	jsonbyte, _ := jsoniter.MarshalIndent(ClusterJSON{
 		ClusterName: b.Cluster,
 		ClusterID:   clusterID,
@@ -120,4 +130,20 @@ func (c *MetaCollectOptions) Collect(_ *Manager, _ *spec.Specification) error {
 		return err
 	}
 	return nil
+}
+
+func getClusterID(clusterName string) (string, error) {
+	metadata, err := spec.ClusterMetadata(clusterName)
+	if err != nil && !errors.Is(perrs.Cause(err), meta.ErrValidate) &&
+		!errors.Is(perrs.Cause(err), spec.ErrNoTiSparkMaster) {
+		return "", err
+	}
+
+	pdEndpoints := make([]string, 0)
+	for _, pd := range metadata.Topology.PDServers {
+		pdEndpoints = append(pdEndpoints, fmt.Sprintf("%s:%d", pd.Host, pd.ClientPort))
+	}
+
+	pdAPI := api.NewPDClient(pdEndpoints, 2*time.Second, nil)
+	return pdAPI.GetClusterID()
 }
