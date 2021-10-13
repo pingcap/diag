@@ -25,9 +25,16 @@ func newPackageCmd() *cobra.Command {
 		Use:   "package <collected-datadir>",
 		Short: "Package collected files",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if len(args) != 0 {
+			if len(args) > 1 {
 				return cmd.Help()
 			}
+
+			// If both specified, the dir path in -i/--input argument has
+			// higher priority
+			if len(args) == 1 && pOpt.InputDir == "" {
+				pOpt.InputDir = args[0]
+			}
+
 			return packager.PackageCollectedData(&pOpt)
 		},
 	}

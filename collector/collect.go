@@ -17,6 +17,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strconv"
 	"time"
 
 	"github.com/fatih/color"
@@ -98,13 +99,21 @@ func (m *Manager) CollectClusterInfo(
 	topo = *metadata.Topology
 
 	// parse time range
-	start, err := utils.ParseTime(opt.ScrapeBegin)
-	if err != nil {
-		return err
-	}
 	end, err := utils.ParseTime(opt.ScrapeEnd)
 	if err != nil {
 		return err
+	}
+	// if the begin time point is a minus integer, assume it as hour offset
+	var start time.Time
+	if offset, err := strconv.Atoi(opt.ScrapeBegin); err == nil && offset < 0 {
+		start = end.Add(time.Hour * time.Duration(offset))
+		// update time string in setting to ensure all collectors work properly
+		opt.ScrapeBegin = start.Format(time.RFC3339)
+	} else {
+		start, err = utils.ParseTime(opt.ScrapeBegin)
+		if err != nil {
+			return err
+		}
 	}
 
 	resultDir, err := m.getOutputDir(cOpt.Dir)

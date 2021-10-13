@@ -112,7 +112,7 @@ func selectInputDir(dir string) (string, error) {
 			}
 		}
 		if dir == "" {
-			return "", fmt.Errorf("cannot find input directory")
+			return "", fmt.Errorf("input directory not specified and can not be auto detected")
 		}
 		fmt.Printf("found possible input directory: %s\n", dir)
 		err = tui.PromptForConfirmOrAbortError("Do you want to use it? [y/N]: ")
@@ -146,7 +146,7 @@ func selectCertFile(path string) (string, error) {
 	}
 	_, err := os.Stat(path)
 	if err != nil {
-		return "", fmt.Errorf("cannot find cert")
+		return "", fmt.Errorf("cannot find cert for encryption: %w", err)
 	}
 	return filepath.Abs(path)
 }
