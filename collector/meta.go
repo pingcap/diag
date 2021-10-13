@@ -45,7 +45,7 @@ type MetaCollectOptions struct {
 
 type ClusterJSON struct {
 	ClusterName string   `json:"cluster_name"`
-	ClusterID   string   `json:"cluster_id"`
+	ClusterID   int64    `json:"cluster_id"` // the id from pd
 	Session     string   `json:"session"`
 	BeginTime   string   `json:"begin_time"`
 	EndTime     string   `json:"end_time"`
@@ -132,11 +132,11 @@ func (c *MetaCollectOptions) Collect(_ *Manager, _ *spec.Specification) error {
 	return nil
 }
 
-func getClusterID(clusterName string) (string, error) {
+func getClusterID(clusterName string) (int64, error) {
 	metadata, err := spec.ClusterMetadata(clusterName)
 	if err != nil && !errors.Is(perrs.Cause(err), meta.ErrValidate) &&
 		!errors.Is(perrs.Cause(err), spec.ErrNoTiSparkMaster) {
-		return "", err
+		return 0, err
 	}
 
 	pdEndpoints := make([]string, 0)

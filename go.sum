@@ -801,8 +801,8 @@ github.com/pingcap/log v0.0.0-20210818144256-6455d4a4c6f9 h1:6t7vOzOGF3/iz+wpcwu
 github.com/pingcap/log v0.0.0-20210818144256-6455d4a4c6f9/go.mod h1:DWQW5jICDR7UJh4HtxXSM20Churx4CQL0fwL/SoOSA4=
 github.com/pingcap/tidb-insight/collector v0.0.0-20210923072556-14ae4968ce78 h1:JN3fWkxAJ78atG2uo2dcTN8sleJhsr+TrnsMfrlu0do=
 github.com/pingcap/tidb-insight/collector v0.0.0-20210923072556-14ae4968ce78/go.mod h1:k+GJKVPIdlV/J6hGJy7VKsxRVWV99BJfDKXGVrs4vH4=
-github.com/pingcap/tiup v1.6.1-0.20211011061324-bd92867fda97 h1:5MkwoQtASTYNZLKMRXAmGRQ2aVyj4iNAKWW75OaHFPQ=
-github.com/pingcap/tiup v1.6.1-0.20211011061324-bd92867fda97/go.mod h1:o1o+wOS5kt1BnfqM7PHhOVR6ijLQrp7kYlC/skemdWg=
+github.com/pingcap/tiup v1.6.1-0.20211013103127-5c91cf928ab0 h1:oXkJS0v9UH6qGc/y7I3RRQIg29gcz01C+0WC8PntX4s=
+github.com/pingcap/tiup v1.6.1-0.20211013103127-5c91cf928ab0/go.mod h1:o1o+wOS5kt1BnfqM7PHhOVR6ijLQrp7kYlC/skemdWg=
 github.com/pkg/browser v0.0.0-20180916011732-0a3d74bf9ce4/go.mod h1:4OwLy04Bl9Ef3GJJCoec+30X3LQs/0/m4HFRt/2LUSA=
 github.com/pkg/errors v0.8.0/go.mod h1:bwawxfHBFNV+L2hUp1rHADufV3IMtnDRdf1r5NINEl0=
 github.com/pkg/errors v0.8.1/go.mod h1:bwawxfHBFNV+L2hUp1rHADufV3IMtnDRdf1r5NINEl0=
