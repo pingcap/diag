@@ -46,13 +46,13 @@ CHECK_LDFLAGS += $(LDFLAGS)
 
 all: check build
 
-build: collector scraper
+build: diag scraper
 
 clean:
 	@rm -rf bin
 
-collector:
-	$(GOBUILD) $(RACE_FLAG) -ldflags '$(LDFLAGS) $(CHECK_FLAG)' -o bin/collector cmd/collector/*.go
+diag:
+	$(GOBUILD) $(RACE_FLAG) -ldflags '$(LDFLAGS) $(CHECK_FLAG)' -o bin/diag cmd/diag/*.go
 
 scraper:
 	$(GOBUILD) $(RACE_FLAG) -ldflags '$(LDFLAGS) $(CHECK_FLAG)' -o bin/scraper cmd/scraper/*.go

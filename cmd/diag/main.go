@@ -14,7 +14,7 @@
 package main
 
 import (
-	"github.com/pingcap/diag/cmd/collector/command"
+	"github.com/pingcap/diag/cmd/diag/command"
 	"github.com/pingcap/tiup/pkg/tui"
 )
 
