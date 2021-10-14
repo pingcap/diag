@@ -212,12 +212,17 @@ func (m *Manager) CollectClusterInfo(
 
 	// prepare
 	// run collectors
+	prepareErrs := make(map[string]error)
 	stats := make([]map[string][]CollectStat, 0)
 	for _, c := range collectors {
 		fmt.Printf("Collecting %s...\n", c.Desc())
 		stat, err := c.Prepare(m, &topo)
 		if err != nil {
-			return err
+			if cOpt.ExitOnError {
+				return err
+			}
+			fmt.Println(color.YellowString("Error collecting %s: %s, the data might be incomplete.", c.Desc(), err))
+			prepareErrs[c.Desc()] = err
 		}
 		stats = append(stats, stat)
 	}
@@ -250,13 +255,16 @@ func (m *Manager) CollectClusterInfo(
 			if cOpt.ExitOnError {
 				return err
 			}
-			fmt.Printf("Error collecting %s: %s, the data might be incomplete.\n", c.Desc(), err)
+			fmt.Println(color.YellowString("Error collecting %s: %s, the data might be incomplete.", c.Desc(), err))
 			collectErrs[c.Desc()] = err
 		}
 	}
 
 	if len(collectErrs) > 0 {
 		fmt.Println(color.RedString("Some errors occured during the process, please check if data needed are complete:"))
+		for k, v := range prepareErrs {
+			fmt.Printf("%s:\t%s\n", k, v)
+		}
 		for k, v := range collectErrs {
 			fmt.Printf("%s:\t%s\n", k, v)
 		}
