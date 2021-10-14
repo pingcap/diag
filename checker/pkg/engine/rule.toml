@@ -1,0 +1,137 @@
+[[rule]]
+id = 1
+name = "grpc-concurrency"
+description = "gRPC 工作线程的数量"
+execute_rule = """
+rule "grpc-concurrency" "num of gRPC work thread"  salience 0
+begin
+    if TikvConfigData.Server.GrpcConcurrency != Min(8, 0.25 * DeviceData.CPU) {
+        return false
+    } else {
+        return true
+    }
+end
+"""
+name_struct = "TikvConfig"
+expect_res = ""   #
+warn_level = "info"
+version = ""
+
+[[rule]]
+id = 2
+name = "apply-pool-size"
+description = "处理数据落盘的线程池线程数"
+execute_rule = """
+rule "apply-pool-size" "number of threads in the thread pool that handles data placement"  salience 1
+begin
+    if TikvConfigData.RaftStoreConfig.ApplyPoolSize != Min(8, 0.25 * DeviceData.CPU) {
+        return false
+    } else {
+        return true
+    }
+end
+"""
+name_struct = "TikvConfig"
+expect_res = ""   #
+warn_level = "info"
+version = ""
+
+[[rule]]
+id = 3
+name = "store-pool-size"
+description = "处理 raft 的线程池线程数"
+execute_rule = """
+rule "store-pool-size" "number of threads in the thread pool for processing raft"  salience 2
+begin
+    if TikvConfigData.RaftStoreConfig.StorePoolSize != Min(8, 0.25 * DeviceData.CPU) {
+        return false
+    } else {
+        return true
+    }
+end
+"""
+name_struct = "TikvConfig"
+expect_res = ""   #
+warn_level = "info"
+version = ""
+
+[[rule]]
+id = 4
+name = "max-background-jobs"
+description = "RocksDB 后台线程个数"
+execute_rule = """
+rule "max-background-jobs" "number of RocksDB background threads"  salience 3
+begin
+    if DeviceData.CPU <= 8 && TikvConfigData.Rocksdb.MaxBackgroundJobs == 4 { 
+        return true
+    } else if DeviceData.CPU > 8 && TikvConfigData.Rocksdb.MaxBackgroundJobs == 8 {
+        return true
+    } else {
+        return false
+    }
+end
+"""
+name_struct = "TikvConfig"
+expect_res = ""   #
+warn_level = "info"
+version = ""
+
+[[rule]]
+id = 5
+name = "max-sub-compactions"
+description = "RocksDB 进行 subcompaction 的并发个数"
+execute_rule = """
+rule "max-sub-compactions" "number of RocksDB background threads"  salience 4
+begin
+    if DeviceData.CPU <= 8 && TikvConfigData.Rocksdb.MaxSubCompactions == 2 { 
+        return true
+    } else if DeviceData.CPU > 8 && TikvConfigData.Rocksdb.MaxSubCompactions == 3 {
+        return true
+    } else {
+        return false
+    }
+end
+"""  # use cpu
+name_struct = "TikvConfig"
+expect_res = ""   #
+warn_level = "info"
+version = ""
+
+[[rule]]
+id = 6
+name = "max-background-jobs"
+description = "RocksDB 后台线程个数"
+execute_rule = ""
+name_struct = "TikvConfig"
+expect_res = ""   #
+warn_level = "info"
+version = ""
+
+[[rule]]
+id = 7
+name = "log-level"
+description = "日志等级。可选值：\"trace\"，\"debug\"，\"info\"，\"warning\"，\"error\"，\"critical\"。默认值：\"info\""
+execute_rule = """
+rule "log-level" "log level of tikv"  salience 6
+begin
+    if ToString(config.GetValueByTagPath("log-level")) == "debug" && ToString(config.GetValueByTagPath("log-level")) == "trace" {
+        return false
+    } else {
+        return true
+    }
+end
+"""
+name_struct = "TikvConfig"
+expect_res = ""   #
+warn_level = "info"
+version = ""
+
+[[rule]]
+id = 8
+name = "gc.enable-compaction-filter"
+description = "是否开启 GC in Compaction Filter 特性"
+execute_rule = "v5.0.1"
+name_struct = "TikvConfig"
+expect_res = ""   #
+warn_level = "warning"
+version = ""

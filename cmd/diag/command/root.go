@@ -117,6 +117,7 @@ func init() {
 		newUploadCommand(),
 		newDownloadCommand(),
 		newHistoryCommand(),
+		newCheckCmd(),
 	)
 }
 

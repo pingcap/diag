@@ -1,0 +1,88 @@
+user: tidb
+tidb_version: v5.0.1
+topology:
+  global:
+    user: tidb
+    ssh_port: 22
+    ssh_type: builtin
+    deploy_dir: /tidb-deploy
+    data_dir: /tidb-data
+    os: linux
+    arch: amd64
+  monitored:
+    node_exporter_port: 9100
+    blackbox_exporter_port: 9115
+    deploy_dir: /tidb-deploy/monitor-9100
+    data_dir: /tidb-data/monitor-9100
+    log_dir: /tidb-deploy/monitor-9100/log
+  tidb_servers:
+    - host: 172.17.16.11
+      ssh_port: 10022
+      port: 4000
+      status_port: 10080
+      deploy_dir: /tidb-deploy/tidb
+      log_dir: /tidb-deploy/tidb/log
+      arch: amd64
+      os: linux
+  tikv_servers:
+    - host: 172.17.16.14
+      ssh_port: 22
+      port: 20160
+      status_port: 20180
+      deploy_dir: /tidb-deploy/tikv
+      data_dir: /tidb-data/tikv
+      log_dir: /tidb-deploy/tikv/log
+      arch: amd64
+      os: linux
+    - host: 172.17.16.13
+      ssh_port: 22
+      port: 20160
+      status_port: 20180
+      deploy_dir: /tidb-deploy/tikv
+      data_dir: /tidb-data/tikv
+      log_dir: /tidb-deploy/tikv/log
+      arch: amd64
+      os: linux
+    - host: 172.17.16.15
+      ssh_port: 22
+      port: 20160
+      status_port: 20180
+      deploy_dir: /tidb-deploy/tikv
+      data_dir: /tidb-data/tikv
+      log_dir: /tidb-deploy/tikv/log
+      arch: amd64
+      os: linux
+  tiflash_servers: []
+  pd_servers:
+    - host: 172.17.16.11
+      ssh_port: 10022
+      name: pd-172.17.16.11-2379
+      client_port: 2379
+      peer_port: 2380
+      deploy_dir: /tidb-deploy/pd
+      data_dir: /tidb-data/pd
+      log_dir: /tidb-deploy/pd/log
+      arch: amd64
+      os: linux
+  monitoring_servers:
+    - host: 172.17.16.11
+      ssh_port: 10022
+      port: 9090
+      deploy_dir: /tidb-deploy/prometheus
+      data_dir: /tidb-data/prometheus
+      log_dir: /tidb-deploy/prometheus/log
+      external_alertmanagers: []
+      arch: amd64
+      os: linux
+  grafana_servers:
+    - host: 172.17.16.11
+      ssh_port: 10022
+      port: 3000
+      deploy_dir: /tidb-deploy/grafana
+      arch: amd64
+      os: linux
+      username: admin
+      password: admin
+      anonymous_enable: false
+      root_url: ""
+      domain: ""
