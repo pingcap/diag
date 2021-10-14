@@ -7,8 +7,8 @@ import (
 	"os"
 	"time"
 
-	"github.com/pingcap/diag/log/item"
-	"github.com/pingcap/diag/log/parser"
+	"github.com/pingcap/diag/collector/log/item"
+	"github.com/pingcap/diag/collector/log/parser"
 )
 
 // Only enable seekLog when position range is more than SeekThreshold.

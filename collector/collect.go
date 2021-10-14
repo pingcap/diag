@@ -21,7 +21,7 @@ import (
 	"time"
 
 	"github.com/fatih/color"
-	"github.com/pingcap/diag/utils"
+	"github.com/pingcap/diag/pkg/utils"
 	perrs "github.com/pingcap/errors"
 	"github.com/pingcap/tiup/pkg/cluster/executor"
 	operator "github.com/pingcap/tiup/pkg/cluster/operation"

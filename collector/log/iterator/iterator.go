@@ -1,7 +1,7 @@
 package iterator
 
 import (
-	"github.com/pingcap/diag/log/item"
+	"github.com/pingcap/diag/collector/log/item"
 )
 
 type Iterator interface {

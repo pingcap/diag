@@ -5,7 +5,7 @@ import (
 	"strconv"
 
 	jsoniter "github.com/json-iterator/go"
-	ts "github.com/pingcap/diag/utils/tagd-value/string"
+	ts "github.com/pingcap/diag/pkg/utils/tagd-value/string"
 	log "github.com/sirupsen/logrus"
 )
 

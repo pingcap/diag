@@ -23,7 +23,7 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/pingcap/diag/log/parser"
+	"github.com/pingcap/diag/collector/log/parser"
 )
 
 const (

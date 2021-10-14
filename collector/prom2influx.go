@@ -30,7 +30,7 @@ import (
 	influx "github.com/influxdata/influxdb/client/v2"
 	jsoniter "github.com/json-iterator/go"
 	"github.com/klauspost/compress/zstd"
-	"github.com/pingcap/diag/utils"
+	"github.com/pingcap/diag/pkg/utils"
 	"github.com/pingcap/tiup/pkg/tui/progress"
 	"github.com/prometheus/common/model"
 )

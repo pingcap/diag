@@ -4,7 +4,7 @@ import (
 	"regexp"
 	"time"
 
-	"github.com/pingcap/diag/log/item"
+	"github.com/pingcap/diag/collector/log/item"
 )
 
 // Parse pd (v2.x) log, example:

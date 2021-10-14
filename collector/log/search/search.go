@@ -8,9 +8,9 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/pingcap/diag/log/item"
-	"github.com/pingcap/diag/log/iterator"
-	"github.com/pingcap/diag/log/parser"
+	"github.com/pingcap/diag/collector/log/item"
+	"github.com/pingcap/diag/collector/log/iterator"
+	"github.com/pingcap/diag/collector/log/parser"
 )
 
 type Searcher interface {

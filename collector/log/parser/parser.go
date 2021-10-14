@@ -3,7 +3,7 @@ package parser
 import (
 	"time"
 
-	"github.com/pingcap/diag/log/item"
+	"github.com/pingcap/diag/collector/log/item"
 )
 
 // Parser is the log parser representation
