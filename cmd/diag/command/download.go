@@ -4,11 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/pingcap/errors"
-	"github.com/pingcap/log"
-	"github.com/spf13/cobra"
-	"go.uber.org/zap"
-	"io/ioutil"
+	"io"
 	"math"
 	"mime"
 	"net/http"
@@ -18,28 +14,33 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/pingcap/errors"
+	"github.com/pingcap/log"
+	"github.com/spf13/cobra"
+	"go.uber.org/zap"
 )
 
 const (
 	maxConcurrent = 10
-	blockSize = 50 * 1024 * 1024
+	blockSize     = 50 * 1024 * 1024
 )
 
 type MetaData struct {
-	ContentLen int64
-	ETag string
+	ContentLen  int64
+	ETag        string
 	AcceptBytes string
-	FileName string
+	FileName    string
 }
 
 type filePart struct {
-	from  int64
-	to    int64
+	from int64
+	to   int64
 }
 
 type downloadOptions struct {
 	fileAlias string
-	fileUUID string
+	fileUUID  string
 	clusterID uint64
 	clientOptions
 }
@@ -51,7 +52,7 @@ type FileIDList struct {
 func newDownloadCommand() *cobra.Command {
 	opt := downloadOptions{}
 	cmd := &cobra.Command{
-		Use: "download --uuid=<uuid>|--alias=<alias>|--cluster=<clusterID>|<url>",
+		Use:   "download --uuid=<uuid>|--alias=<alias>|--cluster=<clusterID>|<url>",
 		Short: "download file",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if len(args) == 0 && opt.endpoint == "" {
@@ -91,8 +92,8 @@ func newDownloadCommand() *cobra.Command {
 	return cmd
 }
 
-func parseURL(opt *downloadOptions, url string){
-	opt.fileUUID = url[strings.LastIndex(url, "/") + 1:]
+func parseURL(opt *downloadOptions, url string) {
+	opt.fileUUID = url[strings.LastIndex(url, "/")+1:]
 
 	opt.endpoint = url[:strings.Index(url, "/api")]
 }
@@ -179,16 +180,16 @@ func computeConcurrent(fileSize int64) int {
 	}
 
 	var concurrent int
-	if fileSize % blockSize == 0 {
+	if fileSize%blockSize == 0 {
 		concurrent = int(fileSize / blockSize)
 	} else {
-		concurrent = int(fileSize / blockSize) + 1
+		concurrent = int(fileSize/blockSize) + 1
 	}
 
 	return int(math.Min(float64(concurrent), float64(maxConcurrent)))
 }
 
-func fetchMeta(opt *downloadOptions) (*MetaData, error){
+func fetchMeta(opt *downloadOptions) (*MetaData, error) {
 	req, err := http.NewRequest(http.MethodHead, fmt.Sprintf("%s/api/internal/files/%s", opt.endpoint, opt.fileUUID), nil)
 	if err != nil {
 		return nil, err
@@ -214,10 +215,10 @@ func fetchMeta(opt *downloadOptions) (*MetaData, error){
 	}
 
 	return &MetaData{
-		ContentLen: int64(length),
-		ETag: resp.Header.Get("ETag"),
+		ContentLen:  int64(length),
+		ETag:        resp.Header.Get("ETag"),
 		AcceptBytes: resp.Header.Get("Accept-Ranges"),
-		FileName: parseFileInfoFrom(resp),
+		FileName:    parseFileInfoFrom(resp),
 	}, nil
 }
 
@@ -247,12 +248,12 @@ func downloadFilePart(part filePart, f *os.File, opt *downloadOptions) error {
 		return errors.New(fmt.Sprintf("server return error code: %v", resp.StatusCode))
 	}
 
-	bs, err := ioutil.ReadAll(resp.Body)
+	bs, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return err
 	}
 
-	if len(bs) != int(part.to - part.from+1) {
+	if len(bs) != int(part.to-part.from+1) {
 		return errors.New("download file part failed")
 	}
 
@@ -284,7 +285,7 @@ func exists(path string) bool {
 	return true
 }
 
-func downloadFilesByAlias(opt *downloadOptions) error{
+func downloadFilesByAlias(opt *downloadOptions) error {
 	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("%s/api/internal/files/alias/%s", opt.endpoint, opt.fileAlias), nil)
 	if err != nil {
 		return err
@@ -296,7 +297,7 @@ func downloadFilesByAlias(opt *downloadOptions) error{
 	}
 	defer resp.Body.Close()
 
-	data, err := ioutil.ReadAll(resp.Body)
+	data, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return err
 	}
@@ -318,7 +319,7 @@ func downloadFilesByAlias(opt *downloadOptions) error{
 	for _, id := range idResp.Ids {
 		nopt := downloadOptions{
 			clientOptions: opt.clientOptions,
-			fileUUID: id,
+			fileUUID:      id,
 		}
 
 		if err = download(&nopt); err != nil {
@@ -329,7 +330,7 @@ func downloadFilesByAlias(opt *downloadOptions) error{
 	return nil
 }
 
-func downloadFilesByClusterID(opt *downloadOptions) error{
+func downloadFilesByClusterID(opt *downloadOptions) error {
 	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("%s/api/internal/files/cluster/%d", opt.endpoint, opt.clusterID), nil)
 	if err != nil {
 		return err
@@ -341,7 +342,7 @@ func downloadFilesByClusterID(opt *downloadOptions) error{
 	}
 	defer resp.Body.Close()
 
-	data, err := ioutil.ReadAll(resp.Body)
+	data, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return err
 	}
@@ -363,7 +364,7 @@ func downloadFilesByClusterID(opt *downloadOptions) error{
 	for _, id := range idResp.Ids {
 		nopt := downloadOptions{
 			clientOptions: opt.clientOptions,
-			fileUUID: id,
+			fileUUID:      id,
 		}
 
 		if err = download(&nopt); err != nil {

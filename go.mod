@@ -11,10 +11,10 @@ require (
 	github.com/joomcode/errorx v1.0.3
 	github.com/json-iterator/go v1.1.12
 	github.com/klauspost/compress v1.13.6
-	github.com/onsi/gomega v1.16.0 // indirect
+	github.com/onsi/gomega v1.16.0
 	github.com/pingcap/check v0.0.0-20200212061837-5e12011dc712
 	github.com/pingcap/errors v0.11.5-0.20201126102027-b0a155152ca3
-	github.com/pingcap/log v0.0.0-20210906054005-afc726e70354 // indirect
+	github.com/pingcap/log v0.0.0-20210906054005-afc726e70354
 	github.com/pingcap/tidb-insight/collector v0.0.0-20210923072556-14ae4968ce78
 	github.com/pingcap/tiup v1.6.1-0.20211013103127-5c91cf928ab0
 	github.com/prometheus/common v0.30.0
@@ -23,7 +23,7 @@ require (
 	github.com/stretchr/testify v1.7.0
 	go.uber.org/zap v1.19.1
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
-	golang.org/x/term v0.0.0-20210927222741-03fcf44c2211 // indirect
+	golang.org/x/term v0.0.0-20210927222741-03fcf44c2211
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b
 )
 

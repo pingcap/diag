@@ -3,10 +3,11 @@ package command
 import (
 	"bytes"
 	"fmt"
-	"github.com/onsi/gomega"
 	"math"
 	"sync"
 	"testing"
+
+	"github.com/onsi/gomega"
 )
 
 func Test_ComputeTotalBlock(t *testing.T) {
@@ -23,12 +24,12 @@ func Test_UploadInitFile(t *testing.T) {
 	blockSize := 6
 
 	contents := make([]byte, 0)
-	for i := 0; i < 100;i++ {
+	for i := 0; i < 100; i++ {
 		contents = append(contents, byte(i))
 	}
 
 	resp := &preCreateResponse{
-		Partseq: 0,
+		Partseq:    0,
 		BlockBytes: int64(blockSize),
 	}
 
@@ -40,7 +41,7 @@ func Test_UploadInitFile(t *testing.T) {
 		results: make(map[int64][]byte),
 	}
 
-	err := UploadFile(resp, int64(len(contents)), flushFunc(g, resp, contents, mt), func() (ReaderAtCloseable, error){
+	err := UploadFile(resp, int64(len(contents)), flushFunc(g, resp, contents, mt), func() (ReaderAtCloseable, error) {
 		return reader, nil
 	}, uploadFunc(g, mt, reader, len(contents), blockSize))
 
@@ -52,14 +53,14 @@ func Test_UploadFileMultiBlock(t *testing.T) {
 	blockSize := 6
 
 	contents := make([]byte, 0)
-	for i := 0; i < 96;i++ {
+	for i := 0; i < 96; i++ {
 		contents = append(contents, byte(i))
 	}
 
 	g := gomega.NewGomegaWithT(t)
 	for i := 0; i < 16; i++ {
 		resp := &preCreateResponse{
-			Partseq: i,
+			Partseq:    i,
 			BlockBytes: int64(blockSize),
 		}
 
@@ -69,7 +70,7 @@ func Test_UploadFileMultiBlock(t *testing.T) {
 			results: make(map[int64][]byte),
 		}
 
-		err := UploadFile(resp, int64(len(contents)), flushFunc(g, resp, contents, mt), func() (ReaderAtCloseable, error){
+		err := UploadFile(resp, int64(len(contents)), flushFunc(g, resp, contents, mt), func() (ReaderAtCloseable, error) {
 			return reader, nil
 		}, uploadFunc(g, mt, reader, len(contents), blockSize))
 
@@ -82,14 +83,14 @@ func Test_UploadFileFromOffset(t *testing.T) {
 	blockSize := 6
 
 	contents := make([]byte, 0)
-	for i := 0; i < 100;i++ {
+	for i := 0; i < 100; i++ {
 		contents = append(contents, byte(i))
 	}
 
 	g := gomega.NewGomegaWithT(t)
 	for i := 1; i < 17; i++ {
 		resp := &preCreateResponse{
-			Partseq: i,
+			Partseq:    i,
 			BlockBytes: int64(blockSize),
 		}
 
@@ -99,7 +100,7 @@ func Test_UploadFileFromOffset(t *testing.T) {
 			results: make(map[int64][]byte),
 		}
 
-		err := UploadFile(resp, int64(len(contents)), flushFunc(g, resp, contents, mt), func() (ReaderAtCloseable, error){
+		err := UploadFile(resp, int64(len(contents)), flushFunc(g, resp, contents, mt), func() (ReaderAtCloseable, error) {
 			return reader, nil
 		}, uploadFunc(g, mt, reader, len(contents), blockSize))
 
@@ -108,14 +109,14 @@ func Test_UploadFileFromOffset(t *testing.T) {
 	}
 }
 
-var uploadFunc = func(g *gomega.WithT, mt *mapTest, reader *MockReader, fileSize int, defaultBlockSize int) UploadPart{
+var uploadFunc = func(g *gomega.WithT, mt *mapTest, reader *MockReader, fileSize int, defaultBlockSize int) UploadPart {
 	return func(i int64, i2 []byte) error {
 		g.Expect(reader.closed).To(gomega.Equal(false))
 		mt.put(i, i2)
 
 		totalBlock := computeTotalBlock(int64(fileSize), int64(defaultBlockSize))
 		if i == int64(totalBlock) {
-			if fileSize % defaultBlockSize == 0 {
+			if fileSize%defaultBlockSize == 0 {
 				g.Expect(len(i2)).To(gomega.Equal(defaultBlockSize))
 			} else {
 				g.Expect(len(i2)).To(gomega.Equal(fileSize % defaultBlockSize))
@@ -138,10 +139,10 @@ var flushFunc = func(g *gomega.WithT, resp *preCreateResponse, contents []byte, 
 		g.Expect(len(mt.results)).To(gomega.Equal(totalBlockSize - resp.Partseq))
 
 		for i := resp.Partseq; i < totalBlockSize; i++ {
-			actualData := mt.results[int64(i + 1)]
+			actualData := mt.results[int64(i+1)]
 
 			offset := i * int(resp.BlockBytes)
-			end := math.Min(float64(offset + int(resp.BlockBytes)), float64(len(contents)))
+			end := math.Min(float64(offset+int(resp.BlockBytes)), float64(len(contents)))
 
 			expectData := contents[offset:int(end)]
 
@@ -158,7 +159,7 @@ var flushFunc = func(g *gomega.WithT, resp *preCreateResponse, contents []byte, 
 }
 
 type mapTest struct {
-	lock sync.Mutex
+	lock    sync.Mutex
 	results map[int64][]byte
 }
 
@@ -173,19 +174,19 @@ type MockReader struct {
 	reader *bytes.Reader
 
 	blockSize int
-	closed bool
+	closed    bool
 }
 
-func NewMockReader(contents []byte, blockSize int) *MockReader{
+func NewMockReader(contents []byte, blockSize int) *MockReader {
 	reader := bytes.NewReader(contents)
 
 	return &MockReader{
-		reader: reader,
+		reader:    reader,
 		blockSize: blockSize,
 	}
 }
 
-func (m *MockReader) Close() error{
+func (m *MockReader) Close() error {
 	m.closed = true
 
 	return nil

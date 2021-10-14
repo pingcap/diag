@@ -7,32 +7,31 @@ import (
 	"crypto/x509"
 	"encoding/json"
 	"fmt"
-	"golang.org/x/term"
 	"hash/fnv"
-	"strings"
-	"syscall"
-
-	"github.com/pingcap/errors"
-	"github.com/pingcap/log"
-	"go.uber.org/zap"
-
-	"io/ioutil"
+	"io"
 	"mime/multipart"
 	"net/http"
 	"os"
+	"strings"
 	"sync"
+	"syscall"
 	"time"
+
+	"github.com/pingcap/errors"
+	"github.com/pingcap/log"
 	"github.com/spf13/cobra"
+	"go.uber.org/zap"
+	"golang.org/x/term"
 )
 
 type preCreateResponse struct {
-	Partseq int
+	Partseq    int
 	BlockBytes int64
 }
 
 type uploadOptions struct {
 	filePath string
-	alias string
+	alias    string
 	clientOptions
 }
 
@@ -40,7 +39,7 @@ type clientOptions struct {
 	endpoint string
 	userName string
 	password string
-	client *http.Client
+	client   *http.Client
 }
 
 func newUploadCommand() *cobra.Command {
@@ -114,7 +113,7 @@ func preCreate(uuid string, fileLen int64, originalName string, opt *uploadOptio
 	}
 	defer resp.Body.Close()
 
-	data, err := ioutil.ReadAll(resp.Body)
+	data, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, err
 	}
@@ -221,7 +220,7 @@ func UploadComplete(fileUUID string, opt *uploadOptions) error {
 	}
 	defer resp.Body.Close()
 
-	body, _ := ioutil.ReadAll(resp.Body)
+	body, _ := io.ReadAll(resp.Body)
 	if resp.StatusCode != http.StatusOK {
 		return errors.Errorf("upload file failed, msg=%v", string(body))
 	}
@@ -290,7 +289,7 @@ func uploadMultipartFile(fileUUID string, serialNum int64, data []byte, opt *upl
 	}
 	defer resp.Body.Close()
 
-	body, _ := ioutil.ReadAll(resp.Body)
+	body, _ := io.ReadAll(resp.Body)
 	if resp.StatusCode != http.StatusOK {
 		return errors.Errorf("upload file failed, msg=%v", string(body))
 	}
@@ -298,7 +297,7 @@ func uploadMultipartFile(fileUUID string, serialNum int64, data []byte, opt *upl
 	return nil
 }
 
-func initClient(endpoint string) *http.Client{
+func initClient(endpoint string) *http.Client {
 	if strings.HasPrefix(strings.ToLower(endpoint), "https://") {
 		roots := x509.NewCertPool()
 		ok := roots.AppendCertsFromPEM([]byte(rootCA))
@@ -375,7 +374,7 @@ func requestWithAuth(opt *clientOptions, req *http.Request) (*http.Response, err
 	if resp.StatusCode == http.StatusBadRequest {
 		defer resp.Body.Close()
 
-		data, err := ioutil.ReadAll(resp.Body)
+		data, err := io.ReadAll(resp.Body)
 		if err != nil {
 			return nil, errors.New(" Bad Request")
 		}
