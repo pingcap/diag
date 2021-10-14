@@ -114,6 +114,9 @@ func init() {
 		newCollectCmd(),
 		newPackageCmd(),
 		newRebuildCmd(),
+		newUploadCommand(),
+		newDownloadCommand(),
+		newHistoryCommand(),
 	)
 }
 
