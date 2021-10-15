@@ -17,8 +17,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/pingcap/diag/scraper"
 	"github.com/pingcap/diag/pkg/utils"
+	"github.com/pingcap/diag/scraper"
 )
 
 // Scrap run scrapers as Option configured

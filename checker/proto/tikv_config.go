@@ -62,7 +62,7 @@ type ServerConfig struct {
 	GrpcConcurrency                  int      `toml:"grpc-concurrency" json:"grpc-concurrency"`
 	GrpcConcurrentStream             int      `toml:"grpc-concurrent-stream" json:"grpc-concurrent-stream"`
 	GrpcRaftConnNum                  int      `toml:"grpc-raft-conn-num" json:"grpc-raft-conn-num"`
-	GrpcMemoryPoolQuota              uint64    `toml:"grpc-memory-pool-quota" json:"grpc-memory-pool-quota"`
+	GrpcMemoryPoolQuota              uint64   `toml:"grpc-memory-pool-quota" json:"grpc-memory-pool-quota"`
 	GrpcStreamInitialWindowSize      string   `toml:"grpc-stream-initial-window-size" json:"grpc-stream-initial-window-size"`
 	GrpcKeepaliveTime                string   `toml:"grpc-keepalive-time" json:"grpc-keepalive-time"`
 	GrpcKeepaliveTimeout             string   `toml:"grpc-keepalive-timeout" json:"grpc-keepalive-timeout"`

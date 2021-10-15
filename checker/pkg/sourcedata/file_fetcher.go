@@ -15,15 +15,15 @@ package sourcedata
 
 import (
 	"encoding/json"
-	"github.com/pingcap/diag/checker/config"
-	"github.com/pingcap/diag/collector"
-	"github.com/pingcap/log"
-	"github.com/sirupsen/logrus"
 	"os"
 	"path"
 
+	"github.com/pingcap/diag/checker/config"
 	"github.com/pingcap/diag/checker/proto"
+	"github.com/pingcap/diag/collector"
+	"github.com/pingcap/log"
 	"github.com/pingcap/tiup/pkg/cluster/spec"
+	"github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v3"
 )
 
@@ -34,7 +34,7 @@ type Fetcher interface {
 // TODO: move to consts pkg later
 const (
 	clusterMetaFileName = "meta.yaml"
-	clusterJsonFileName = "cluster.json"
+	clusterJSONFileName = "cluster.json"
 )
 
 // FileFetcher load all needed data from file
@@ -67,7 +67,7 @@ func (f *FileFetcher) FetchData(rules *config.RuleSpec) (*proto.SourceDataV2, pr
 	}
 	{
 		// decode cluster.json
-		bs, err := os.ReadFile(f.genClusterJsonPath())
+		bs, err := os.ReadFile(f.genClusterJSONPath())
 		if err != nil {
 			return nil, nil, err
 		}
@@ -87,7 +87,7 @@ func (f *FileFetcher) FetchData(rules *config.RuleSpec) (*proto.SourceDataV2, pr
 		TidbVersion: meta.Version,
 	}
 	// decode config.json for related component
-	for name, _ := range rSet {
+	for name := range rSet {
 		switch name {
 		case proto.PdComponentName:
 			for _, spec := range meta.Topology.PDServers {
@@ -162,8 +162,8 @@ func (f *FileFetcher) genMetaConfigPath() string {
 	return path.Join(f.dataDirPath, clusterMetaFileName)
 }
 
-func (f *FileFetcher) genClusterJsonPath() string {
-	return path.Join(f.dataDirPath, clusterJsonFileName)
+func (f *FileFetcher) genClusterJSONPath() string {
+	return path.Join(f.dataDirPath, clusterJSONFileName)
 }
 
 func (f *FileFetcher) GetComponent(meta *spec.ClusterMeta) []string {

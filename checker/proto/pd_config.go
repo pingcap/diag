@@ -242,10 +242,10 @@ type PdConfig struct {
 		Address  string `toml:"address" json:"address"`
 		Interval string `toml:"interval" json:"interval"`
 	} `toml:"metric" json:"metric"`
-	Schedule ScheduleConfig `toml:"schedule" json:"schedule"`
-	Replication ReplicationConfig `toml:"replication" json:"replication"`
-	PdServer PDServerConfig `toml:"pd-server" json:"pd-server"`
-	ClusterVersion string `toml:"cluster-version" json:"cluster-version"`
+	Schedule       ScheduleConfig    `toml:"schedule" json:"schedule"`
+	Replication    ReplicationConfig `toml:"replication" json:"replication"`
+	PdServer       PDServerConfig    `toml:"pd-server" json:"pd-server"`
+	ClusterVersion string            `toml:"cluster-version" json:"cluster-version"`
 	Labels         struct {
 	} `toml:"labels" json:"labels"`
 	QuotaBackendBytes         string `toml:"quota-backend-bytes" json:"quota-backend-bytes"`

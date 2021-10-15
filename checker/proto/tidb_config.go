@@ -15,10 +15,11 @@ package proto
 
 import (
 	"encoding/json"
-	"github.com/pingcap/diag/checker/pkg/utils"
-	"github.com/pingcap/errors"
 	"reflect"
 	"strings"
+
+	"github.com/pingcap/diag/checker/pkg/utils"
+	"github.com/pingcap/errors"
 )
 
 // nullableBool defaults unset bool options to unset instead of false, which enables us to know if the user has set 2
@@ -91,10 +92,9 @@ func (b *nullableBool) UnmarshalJSON(data []byte) error {
 	return err
 }
 
-
 type TidbLogConfig struct {
-	Level             string      `json:"level"`
-	Format            string      `json:"format"`
+	Level             string       `json:"level"`
+	Format            string       `json:"format"`
 	DisableTimestamp  nullableBool `json:"disable-timestamp"`
 	EnableTimestamp   nullableBool `json:"enable-timestamp"`
 	DisableErrorStack nullableBool `json:"disable-error-stack"`
@@ -262,7 +262,7 @@ type TidbConfig struct {
 		Enable              bool `json:"enable"`
 		EnableInternalQuery bool `json:"enable-internal-query"`
 		MaxStmtCount        int  `json:"max-stmt-count"`
-		MaxSqlLength        int  `json:"max-sql-length"`
+		MaxSQLLength        int  `json:"max-sql-length"`
 		RefreshInterval     int  `json:"refresh-interval"`
 		HistorySize         int  `json:"history-size"`
 	} `json:"stmt-summary"`
@@ -323,17 +323,17 @@ func (cfg *TidbConfigData) CheckNil() bool {
 func NewTidbConfigData() *TidbConfigData {
 	return &TidbConfigData{TidbConfig: &TidbConfig{
 		Log: TidbLogConfig{
-			Level:             "info",
-			Format:            "text",
+			Level:  "info",
+			Format: "text",
 			File: struct {
-    Filename   string `json:"filename"`
-    MaxSize    int    `json:"max-size"`
-    MaxDays    int    `json:"max-days"`
-    MaxBackups int    `json:"max-backups"`
-}{
+				Filename   string `json:"filename"`
+				MaxSize    int    `json:"max-size"`
+				MaxDays    int    `json:"max-days"`
+				MaxBackups int    `json:"max-backups"`
+			}{
 				MaxSize: 300,
 			},
-			EnableSlowLog: true,
+			EnableSlowLog:       true,
 			SlowQueryFile:       "tidb-slow.log",
 			SlowThreshold:       300,
 			ExpensiveThreshold:  10000,

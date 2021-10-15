@@ -14,9 +14,10 @@
 package proto
 
 import (
+	"reflect"
+
 	"github.com/Masterminds/semver"
 	"github.com/pingcap/diag/collector"
-	"reflect"
 )
 
 const (
@@ -32,17 +33,17 @@ type SourceDataV2 struct {
 	NodesData   map[string][]Config // {"component": {config, config, config, nil}}
 }
 type OutputData struct {
-	ClusterId   string
+	ClusterID   string
 	ClusterName string
 	TidbVersion string
-	ActionId    string
+	ActionID    string
 	SampleData  Sample
 	NodesData   []RuleResult // rule name
 }
 
 type RuleResult struct {
 	RuleName      string
-	RuleId        int64
+	RuleID        int64
 	Variation     string
 	AlertingRule  string
 	DeployResults []DeployResult // todo init
@@ -50,18 +51,18 @@ type RuleResult struct {
 }
 
 type DeployResult struct {
-	Id    string `header:"node"`  // component_ip:port
+	ID    string `header:"node"`  // component_ip:port
 	Value string `header:"value"` // name:val,name:val
 	Res   string `header:"res"`   // warning ok info nodata
 }
 
 type Sample struct {
-	SampleId      string
+	SampleID      string
 	SampleContent []string // e.g. {"Pd", "TiDB"....}
 }
 
 type NodeData struct {
-	Id         string
+	ID         string
 	Timestamp  string
 	Configs    []Config
 	DeviceData DeviceData
@@ -77,12 +78,11 @@ type Config interface {
 
 type PerformanceData struct{}
 
-
 type DeviceData struct{}
 
 type Rule struct {
 	// version
-	Id           int64  `yaml:"id" toml:"id"`
+	ID           int64  `yaml:"id" toml:"id"`
 	Name         string `yaml:"name" toml:"name"`
 	Description  string `yaml:"description" toml:"description"`
 	ExecuteRule  string `yaml:"execute_rule" toml:"execute_rule"`

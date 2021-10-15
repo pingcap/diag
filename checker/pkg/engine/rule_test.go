@@ -14,12 +14,13 @@
 package engine_test
 
 import (
+	"testing"
+
 	"github.com/bilibili/gengine/builder"
 	"github.com/bilibili/gengine/context"
 	"github.com/bilibili/gengine/engine"
 	"github.com/pingcap/diag/checker/pkg/utils"
 	"github.com/pingcap/diag/checker/proto"
-	"testing"
 )
 
 const rule1 = `
@@ -33,7 +34,7 @@ begin
 end
 `
 
-func Test_WithReflect(t *testing.T){
+func Test_WithReflect(t *testing.T) {
 	dataContext := context.NewDataContext()
 	cfg := proto.NewPdConfigData()
 	cfg.Log.File.MaxDays = 10
@@ -50,8 +51,4 @@ func Test_WithReflect(t *testing.T){
 	}
 	result, _ := eng.GetRulesResultMap()
 	t.Log(result)
-}
-
-func TestRuleCheck_Check(t *testing.T) {
-
 }

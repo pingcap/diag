@@ -57,7 +57,7 @@ func (r *ScreenRender) Output(ctx context.Context) error {
 			for _, result := range data {
 				fmt.Println("# Configuration Check Result")
 				fmt.Println("- RuleName: ", result.RuleName)
-				fmt.Println("- RuleId: ", result.RuleId)
+				fmt.Println("- RuleID: ", result.RuleID)
 				fmt.Println("- Variation: ", result.Variation)
 				fmt.Println("- Alerting Rule: ", result.AlertingRule)
 				fmt.Println("- Check Result: ")

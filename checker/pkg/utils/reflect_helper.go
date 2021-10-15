@@ -80,20 +80,20 @@ func FlatMap(value reflect.Value, tagPath string) reflect.Value {
 	return result
 }
 
-func ElemInRange(value reflect.Value, l int64, h int64 ) bool {
+func ElemInRange(value reflect.Value, l int64, h int64) bool {
 	if value.Kind() != reflect.Slice {
 		return false
 	}
 	switch value.Type().Elem().Kind() {
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-		for i:= 0; i< value.Len(); i++ {
+		for i := 0; i < value.Len(); i++ {
 			if value.Index(i).Int() < l || value.Index(i).Int() > h {
 				return false
 			}
 		}
 		return true
 	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
-		for i:= 0; i< value.Len(); i++ {
+		for i := 0; i < value.Len(); i++ {
 			num := int64(value.Index(i).Uint())
 			if num < l || num > h {
 				return false
@@ -101,7 +101,7 @@ func ElemInRange(value reflect.Value, l int64, h int64 ) bool {
 		}
 		return true
 	case reflect.Float32, reflect.Float64:
-		for i:= 0; i< value.Len(); i++ {
+		for i := 0; i < value.Len(); i++ {
 			num := value.Index(i).Float()
 			if num < float64(l) || num > float64(h) {
 				return false
@@ -134,9 +134,8 @@ func VisitByTagPath(node reflect.Value, tags []string, idx int) reflect.Value {
 			field := value.FieldByName(filedName)
 			if isLast {
 				return field
-			} else {
-				return VisitByTagPath(field, tags, idx+1)
 			}
+			return VisitByTagPath(field, tags, idx+1)
 		}
 		if isLast {
 			for i := 0; i < valueType.NumField(); i++ {
@@ -159,9 +158,8 @@ func VisitByTagPath(node reflect.Value, tags []string, idx int) reflect.Value {
 		// panic if idx out of range
 		if isLast {
 			return value.Index(idx)
-		} else {
-			return VisitByTagPath(value.Index(idx), tags, idx+1)
 		}
+		return VisitByTagPath(value.Index(idx), tags, idx+1)
 	case reflect.Map:
 		keyType := valueType.Key()
 		switch keyType.Kind() {
@@ -169,9 +167,8 @@ func VisitByTagPath(node reflect.Value, tags []string, idx int) reflect.Value {
 			mapValue := value.MapIndex(reflect.ValueOf(tags[idx]))
 			if isLast {
 				return mapValue
-			} else {
-				return VisitByTagPath(mapValue, tags, idx+1)
 			}
+			return VisitByTagPath(mapValue, tags, idx+1)
 		case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
 			k, err := strconv.Atoi(tags[idx])
 			if err != nil {
@@ -179,9 +176,8 @@ func VisitByTagPath(node reflect.Value, tags []string, idx int) reflect.Value {
 			}
 			if isLast {
 				return value.MapIndex(reflect.ValueOf(k))
-			} else {
-				return VisitByTagPath(value.MapIndex(reflect.ValueOf(k)), tags, idx+1)
 			}
+			return VisitByTagPath(value.MapIndex(reflect.ValueOf(k)), tags, idx+1)
 		case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
 			k, err := strconv.ParseUint(tags[idx], 10, 64)
 			if err != nil {
@@ -189,9 +185,8 @@ func VisitByTagPath(node reflect.Value, tags []string, idx int) reflect.Value {
 			}
 			if isLast {
 				return value.MapIndex(reflect.ValueOf(k))
-			} else {
-				return VisitByTagPath(value.MapIndex(reflect.ValueOf(k)), tags, idx+1)
 			}
+			return VisitByTagPath(value.MapIndex(reflect.ValueOf(k)), tags, idx+1)
 		case reflect.Float64, reflect.Float32:
 			k, err := strconv.ParseFloat(tags[idx], 10)
 			if err != nil {
@@ -199,9 +194,8 @@ func VisitByTagPath(node reflect.Value, tags []string, idx int) reflect.Value {
 			}
 			if isLast {
 				return value.MapIndex(reflect.ValueOf(k))
-			} else {
-				return VisitByTagPath(value.MapIndex(reflect.ValueOf(k)), tags, idx+1)
 			}
+			return VisitByTagPath(value.MapIndex(reflect.ValueOf(k)), tags, idx+1)
 		default:
 			// not support return nil
 			return reflect.ValueOf(nil)

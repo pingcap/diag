@@ -31,7 +31,7 @@ type RuleSpec struct {
 
 func (rs *RuleSpec) FilterOnVersion(ver string) (proto.RuleSet, error) {
 	rSet := proto.RuleSet{}
-	for idx, _ := range rs.Rule {
+	for idx := range rs.Rule {
 		ok, err := rs.Rule[idx].Version.Contain(ver)
 		if err != nil {
 			return nil, err
@@ -40,9 +40,9 @@ func (rs *RuleSpec) FilterOnVersion(ver string) (proto.RuleSet, error) {
 			continue
 		}
 		// set match rule to rSet
-		name:= rs.Rule[idx].NameStruct
+		name := rs.Rule[idx].NameStruct
 		if _, ok := rSet[name]; !ok {
-			rSet[name] = make([]*proto.Rule,0)
+			rSet[name] = make([]*proto.Rule, 0)
 		}
 		rSet[name] = append(rSet[name], &rs.Rule[idx].Rule)
 	}

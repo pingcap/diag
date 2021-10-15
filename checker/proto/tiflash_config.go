@@ -658,7 +658,7 @@ type TiflashConfigData struct {
 
 func (cfg *TiflashConfigData) GetValueByTagPath(tagPath string) reflect.Value {
 	tags := strings.Split(tagPath, ".")
-	if len (tags) == 0 {
+	if len(tags) == 0 {
 		return reflect.ValueOf(cfg.TiflashConfig)
 	}
 	value := utils.VisitByTagPath(reflect.ValueOf(cfg.TiflashConfig), tags, 0)
@@ -675,6 +675,6 @@ func (cfg *TiflashConfigData) GetPort() int {
 
 func NewTiflashConfigData() *TiflashConfigData {
 	return &TiflashConfigData{
-		TiflashConfig:&TiflashConfig{},
+		TiflashConfig: &TiflashConfig{},
 	}
 }

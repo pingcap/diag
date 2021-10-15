@@ -24,9 +24,9 @@ import (
 )
 
 func TestVersionRange_IsTarget(t *testing.T) {
-	tt := []struct{
-		Target string
-		VRange VersionRange
+	tt := []struct {
+		Target   string
+		VRange   VersionRange
 		Expected bool
 	}{
 		{Target: "v5.0.1", VRange: VersionRange(">=v5.0.1,<v5.0.2"), Expected: true},
@@ -44,7 +44,7 @@ func TestVersionRange_IsTarget(t *testing.T) {
 		t.Run("", func(t *testing.T) {
 			if ok, err := tc.VRange.Contain(tc.Target); err != nil {
 				t.Fatal(err)
-			}else if ok != tc.Expected {
+			} else if ok != tc.Expected {
 				t.Error("wrong result")
 			}
 		})
@@ -108,46 +108,46 @@ func TestPdConfigData_GetValueByTagPath(t *testing.T) {
 	cfg.Schedule.MaxSnapshotCount = 1
 	cfg.Schedule.MaxPendingPeerCount = 1
 	cfg.Schedule.StoreLimit = map[uint64]StoreLimitConfig{
-		1:StoreLimitConfig{
+		1: {
 			AddPeer:    10,
 			RemovePeer: 11,
 		},
 	}
 	cfg.Log.Level = "debug"
-	tt := []struct{
+	tt := []struct {
 		TagPath string
-		Expect reflect.Value
+		Expect  reflect.Value
 	}{
 		{
 			TagPath: "log.file.max-days",
-			Expect: reflect.ValueOf(10),
+			Expect:  reflect.ValueOf(10),
 		},
 		{
 			TagPath: "schedule.max-snapshot-count",
-			Expect: reflect.ValueOf(1),
+			Expect:  reflect.ValueOf(1),
 		},
 		{
 			TagPath: "schedule.max-pending-peer-count",
-			Expect: reflect.ValueOf(1),
+			Expect:  reflect.ValueOf(1),
 		},
 		{
 			TagPath: "schedule.store-limit.1.add-peer",
-			Expect: reflect.ValueOf(float64(10)),
+			Expect:  reflect.ValueOf(float64(10)),
 		},
 		{
 			TagPath: "schedule.store-limit.1.remove-peer",
-			Expect: reflect.ValueOf(float64(11)),
+			Expect:  reflect.ValueOf(float64(11)),
 		},
 		{
 			TagPath: "log.level",
-			Expect: reflect.ValueOf("debug"),
+			Expect:  reflect.ValueOf("debug"),
 		},
 	}
 
 	for _, tc := range tt {
 		t.Run(tc.TagPath, func(t *testing.T) {
 			result := cfg.GetValueByTagPath(tc.TagPath)
-			if fmt.Sprint(result) != fmt.Sprint(tc.Expect){
+			if fmt.Sprint(result) != fmt.Sprint(tc.Expect) {
 				t.Errorf("wrong value for path: %+v", tc.TagPath)
 			}
 		})
@@ -159,27 +159,27 @@ func TestTidbConfigData_GetValueByTagPath(t *testing.T) {
 	cfg.Log.Level = "debug"
 	cfg.TidbConfig.EnableStreaming = true
 	cfg.Log.File.MaxDays = 10
-	tt := []struct{
+	tt := []struct {
 		TagPath string
-		Expect reflect.Value
+		Expect  reflect.Value
 	}{
 		{
 			TagPath: "log.level",
-			Expect: reflect.ValueOf("debug"),
+			Expect:  reflect.ValueOf("debug"),
 		},
 		{
 			TagPath: "enable-streaming",
-			Expect: reflect.ValueOf(true),
+			Expect:  reflect.ValueOf(true),
 		},
 		{
 			TagPath: "log.file.max-days",
-			Expect: reflect.ValueOf(10),
+			Expect:  reflect.ValueOf(10),
 		},
 	}
 	for _, tc := range tt {
 		t.Run(tc.TagPath, func(t *testing.T) {
 			result := cfg.GetValueByTagPath(tc.TagPath)
-			if fmt.Sprint(result) != fmt.Sprint(tc.Expect){
+			if fmt.Sprint(result) != fmt.Sprint(tc.Expect) {
 				t.Errorf("wrong value for path: %+v", tc.TagPath)
 			}
 		})
@@ -187,7 +187,7 @@ func TestTidbConfigData_GetValueByTagPath(t *testing.T) {
 }
 
 func TestTidbConfigData_GetDeprecatedValueByTagPath(t *testing.T) {
-	bs ,err := os.ReadFile("../testdata/tidb.json")
+	bs, err := os.ReadFile("../testdata/tidb.json")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -199,7 +199,7 @@ func TestTidbConfigData_GetDeprecatedValueByTagPath(t *testing.T) {
 		t.Fatal("wrong")
 	}
 	result := cfg.GetValueByTagPath("enable-streaming")
-	if fmt.Sprint(result) != fmt.Sprint(reflect.ValueOf(true)){
+	if fmt.Sprint(result) != fmt.Sprint(reflect.ValueOf(true)) {
 		t.Errorf("wrong")
 	}
 }
@@ -208,23 +208,23 @@ func TestTikvConfigData_GetValueByTagPath(t *testing.T) {
 	cfg := NewTikvConfigData()
 	cfg.LogLevel = "debug"
 	cfg.Gc.EnableCompactionFilter = true
-	tt := []struct{
+	tt := []struct {
 		TagPath string
-		Expect reflect.Value
+		Expect  reflect.Value
 	}{
 		{
 			TagPath: "log-level",
-			Expect: reflect.ValueOf("debug"),
+			Expect:  reflect.ValueOf("debug"),
 		},
 		{
 			TagPath: "gc.enable-compaction-filter",
-			Expect: reflect.ValueOf(true),
+			Expect:  reflect.ValueOf(true),
 		},
 	}
 	for _, tc := range tt {
 		t.Run(tc.TagPath, func(t *testing.T) {
 			result := cfg.GetValueByTagPath(tc.TagPath)
-			if fmt.Sprint(result) != fmt.Sprint(tc.Expect){
+			if fmt.Sprint(result) != fmt.Sprint(tc.Expect) {
 				t.Errorf("wrong value for path: %+v", tc.TagPath)
 			}
 		})
@@ -232,7 +232,7 @@ func TestTikvConfigData_GetValueByTagPath(t *testing.T) {
 }
 
 func TestPdConfigData_MaxFromMap(t *testing.T) {
-	bs ,err := os.ReadFile("../testdata/pd.json")
+	bs, err := os.ReadFile("../testdata/pd.json")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -240,13 +240,13 @@ func TestPdConfigData_MaxFromMap(t *testing.T) {
 	if err := json.Unmarshal(bs, cfg); err != nil {
 		t.Fatal(err)
 	}
-	t.Logf("%+v\n",cfg.Schedule.StoreLimit)
-	ok := utils.ElemInRange(utils.FlatMap(cfg.GetValueByTagPath("schedule.store-limit"),"add-peer"), 0, 100)
+	t.Logf("%+v\n", cfg.Schedule.StoreLimit)
+	ok := utils.ElemInRange(utils.FlatMap(cfg.GetValueByTagPath("schedule.store-limit"), "add-peer"), 0, 100)
 	if !ok {
 		t.Errorf("wrong")
 	}
-	ok = utils.ElemInRange(utils.FlatMap(cfg.GetValueByTagPath("schedule.store-limit"),"remove-peer"), 0, 100)
-	if !ok{
+	ok = utils.ElemInRange(utils.FlatMap(cfg.GetValueByTagPath("schedule.store-limit"), "remove-peer"), 0, 100)
+	if !ok {
 		t.Errorf("wrong")
 	}
 }

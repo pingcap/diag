@@ -45,7 +45,7 @@ func (c *RuleCheck) Check(data proto.SourceDataV2, rule proto.RuleSet) error {
 	for component, configs := range data.NodesData {
 		configRule, ok := rule[component]
 		if !ok {
-			log.Error("no such component rule, ", zap.String("component",component))
+			log.Error("no such component rule, ", zap.String("component", component))
 			return errors.New("no rule found")
 		}
 		ruleSpread := make(map[string]proto.RuleResult) // todo check pointer

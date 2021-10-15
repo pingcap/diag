@@ -16,7 +16,6 @@ package engine
 import (
 	"errors"
 	"fmt"
-	"go.uber.org/zap"
 	"strings"
 
 	"github.com/bilibili/gengine/builder"
@@ -25,6 +24,7 @@ import (
 	"github.com/pingcap/diag/checker/pkg/utils"
 	"github.com/pingcap/diag/checker/proto"
 	"github.com/pingcap/log"
+	"go.uber.org/zap"
 )
 
 type Rule struct {
@@ -76,7 +76,7 @@ func (r *Rule) FormatString(rules []*proto.Rule) string {
 func (r *Rule) FormatNoDataResult(rules []*proto.Rule, config proto.Config, rr map[string]proto.RuleResult) error {
 	for _, rule := range rules {
 		res := proto.DeployResult{
-			Id:    fmt.Sprintf("%s_%s:%d", config.GetComponent(), config.GetHost(), config.GetPort()),
+			ID:    fmt.Sprintf("%s_%s:%d", config.GetComponent(), config.GetHost(), config.GetPort()),
 			Value: r.GetValue(rule.Variation, config),
 			Res:   "NoData",
 		}
@@ -86,7 +86,7 @@ func (r *Rule) FormatNoDataResult(rules []*proto.Rule, config proto.Config, rr m
 		} else {
 			ds := proto.RuleResult{
 				RuleName:     rule.Name,
-				RuleId:       rule.Id,
+				RuleID:       rule.ID,
 				Variation:    rule.Variation,
 				AlertingRule: rule.AlertingRule,
 				Suggestion:   rule.Suggestion,
@@ -113,7 +113,7 @@ func (r *Rule) FormatResultV2(rawresult map[string]interface{}, rules []*proto.R
 			Pass = rule.WarnLevel
 		}
 		res := proto.DeployResult{
-			Id:    fmt.Sprintf("%s_%s:%d", config.GetComponent(), config.GetHost(), config.GetPort()),
+			ID:    fmt.Sprintf("%s_%s:%d", config.GetComponent(), config.GetHost(), config.GetPort()),
 			Value: r.GetValue(rule.Variation, config),
 			Res:   Pass,
 		}
@@ -123,7 +123,7 @@ func (r *Rule) FormatResultV2(rawresult map[string]interface{}, rules []*proto.R
 		} else {
 			ds := proto.RuleResult{
 				RuleName:     rule.Name,
-				RuleId:       rule.Id,
+				RuleID:       rule.ID,
 				Variation:    rule.Variation,
 				AlertingRule: rule.AlertingRule,
 				Suggestion:   rule.Suggestion,
