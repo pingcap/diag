@@ -14,7 +14,7 @@
 package proto
 
 import (
-	"github.com/pingcap/diag/checker/pkg/utils"
+	"github.com/pingcap/diag/pkg/utils"
 	"github.com/pingcap/tiup/pkg/cluster/api/typeutil"
 	"go.uber.org/zap"
 	"reflect"

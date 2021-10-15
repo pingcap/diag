@@ -19,8 +19,8 @@ import (
 	"github.com/bilibili/gengine/builder"
 	"github.com/bilibili/gengine/context"
 	"github.com/bilibili/gengine/engine"
-	"github.com/pingcap/diag/checker/pkg/utils"
 	"github.com/pingcap/diag/checker/proto"
+	"github.com/pingcap/diag/pkg/utils"
 )
 
 const rule1 = `

@@ -18,7 +18,7 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/pingcap/diag/checker/pkg/utils"
+	"github.com/pingcap/diag/pkg/utils"
 	"github.com/pingcap/errors"
 )
 

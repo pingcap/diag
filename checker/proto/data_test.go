@@ -17,7 +17,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/BurntSushi/toml"
-	"github.com/pingcap/diag/checker/pkg/utils"
+	"github.com/pingcap/diag/pkg/utils"
 	"os"
 	"reflect"
 	"testing"
