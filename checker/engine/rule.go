@@ -37,6 +37,7 @@ func (r *Rule) Mapping(sd proto.Config, rule []*proto.Rule, deviceData proto.Dev
 	dataContext := context.NewDataContext()
 	if sd.CheckNil() {
 		r.FormatNoDataResult(rule, sd, rr)
+		return nil
 	}
 	dataContext.Add("config", sd)
 	dataContext.Add("DeviceData", deviceData)
@@ -74,10 +75,11 @@ func (r *Rule) FormatString(rules []*proto.Rule) string {
 }
 
 func (r *Rule) FormatNoDataResult(rules []*proto.Rule, config proto.Config, rr map[string]proto.RuleResult) error {
+	fmt.Println("check config is nil: ", config.CheckNil())
 	for _, rule := range rules {
 		res := proto.DeployResult{
 			ID:    fmt.Sprintf("%s_%s:%d", config.GetComponent(), config.GetHost(), config.GetPort()),
-			Value: r.GetValue(rule.Variation, config),
+			Value: "",
 			Res:   "NoData",
 		}
 		ds, ok := rr[rule.Name]
@@ -136,9 +138,13 @@ func (r *Rule) FormatResultV2(rawresult map[string]interface{}, rules []*proto.R
 }
 
 func (r *Rule) GetValue(valpath string, config proto.Config) string {
+	if config.CheckNil() {
+		return ""
+	}
 	valpaths := strings.Split(valpath, ",")
 	valmap := []string{}
 	for _, valpath := range valpaths {
+		fmt.Println(config.GetComponent(), ".", valpath)
 		if len(valpath) != 0 {
 			rv := config.GetValueByTagPath(valpath) // empty will coredump
 			valmap = append(valmap, fmt.Sprintf("%s.%s:%v", config.GetComponent(), valpath, rv))
