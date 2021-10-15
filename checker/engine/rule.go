@@ -75,7 +75,6 @@ func (r *Rule) FormatString(rules []*proto.Rule) string {
 }
 
 func (r *Rule) FormatNoDataResult(rules []*proto.Rule, config proto.Config, rr map[string]proto.RuleResult) error {
-	fmt.Println("check config is nil: ", config.CheckNil())
 	for _, rule := range rules {
 		res := proto.DeployResult{
 			ID:    fmt.Sprintf("%s_%s:%d", config.GetComponent(), config.GetHost(), config.GetPort()),
