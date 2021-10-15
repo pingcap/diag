@@ -1,0 +1,133 @@
+[[rule]]
+id = 7
+name = "log-level"
+description = "日志等级。可选值：\"trace\"，\"debug\"，\"info\"，\"warning\"，\"error\"，\"critical\"。默认值：\"info\""
+execute_rule = """
+rule "log-level" "log level of tikv"  salience 6
+begin
+    if ToString(config.GetValueByTagPath("log-level")) == "debug" || ToString(config.GetValueByTagPath("log-level")) == "trace" {
+        return false
+    } else {
+        return true
+    }
+end
+"""
+name_struct = "TikvConfigData"
+expect_res = ""   #
+warn_level = "info"
+version = ""
+
+# todo check if TiFlash exist
+[[rule]]
+id = 8
+name = "gc.enable-compaction-filter"
+description = "是否开启 GC in Compaction Filter 特性"
+execute_rule = """
+rule "gc.enable-compaction-filter"
+begin
+    if ToBool(config.GetValueByTagPath("gc.enable-compaction-filter")) == true && config.Extra.TiFlashCnt > 0 {
+        return false
+    } else {
+        return true
+    }
+end
+"""
+name_struct = "TikvConfigData"
+expect_res = ""   #
+warn_level = "warning"
+version = "v5.0.1"
+
+[[rule]]
+id = 100
+name = "max-days"
+description = "日志保留的最长天数"
+execute_rule = """
+rule "max-days"
+begin
+    if ToInt(confg.GetValueByTagPath("log.file.max-days")) < 1 {
+        return false
+    } else {
+        return true
+    }
+end
+"""
+name_struct = "TidbConfigData"
+expect_res = ""   #
+warn_level = "warning"
+version = ""
+
+[[rule]]
+id = 101
+name = "max-backups"
+description = "日志文件保留的最大个数"
+execute_rule = """
+rule "max-backups"
+begin
+    if ToInt(confg.GetValueByTagPath("log.file.max-backups")) < 1 {
+        return false
+    } else {
+        return true
+    }
+end
+"""
+name_struct = "TidbConfigData"
+expect_res = ""   #
+warn_level = "warning"
+version = ""
+
+[[rule]]
+id = 102
+name = "log-level"
+description = "日志等级。可选值：\"trace\"，\"debug\"，\"info\"，\"warning\"，\"error\"，\"critical\"。默认值：\"info\""
+execute_rule = """
+rule "log-level"
+begin
+    if ToString(confg.GetValueByTagPath("log.level")) == "debug" {
+        return false
+    } else {
+        return true
+    }
+end
+"""
+name_struct = "TidbConfigData"
+expect_res = ""   #
+warn_level = "info"
+version = ""
+
+[[rule]]
+id = 103
+name = "enable-stream"
+description = "3.0.20, 4.0.9, 5.2.0 已废弃"
+execute_rule = """
+rule "enable-stream"
+begin
+    if ToBool(confg.GetValueByTagPath("enable-stream")) == true {
+        return false
+    } else {
+        return true
+    }
+end
+"""
+name_struct = "TidbConfigData"
+expect_res = ""   #
+warn_level = "info"
+version = ""
+
+[[rule]]
+id = 200
+name = "max-snapshot-count"
+description = "控制单个 store 最多同时接收或发送的 snapshot 数量，调度受制于这个配置来防止抢占正常业务的资源。"
+execute_rule = """
+rule "max-snapshot-count"
+begin
+    if ToInt(confg.GetValueByTagPath("schedule.max-snapshot-count")) <= 0 {
+        return false
+    } else {
+        return true
+    }
+end
+"""
+name_struct = "PdConfigData"
+expect_res = ""   #
+warn_level = "info"
+version = "> v4.0.0"

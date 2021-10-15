@@ -1,0 +1,209 @@
+{
+  "client-urls": "http://0.0.0.0:2379",
+  "peer-urls": "http://0.0.0.0:2380",
+  "advertise-client-urls": "http://172.17.16.11:2379",
+  "advertise-peer-urls": "http://172.17.16.11:2380",
+  "name": "pd-172.17.16.11-2379",
+  "data-dir": "/tidb-data/pd",
+  "force-new-cluster": false,
+  "enable-grpc-gateway": true,
+  "initial-cluster": "pd-172.17.16.11-2379=http://172.17.16.11:2380",
+  "initial-cluster-state": "new",
+  "initial-cluster-token": "pd-cluster",
+  "join": "",
+  "lease": 3,
+  "log": {
+    "level": "",
+    "format": "text",
+    "disable-timestamp": false,
+    "file": {
+      "filename": "/tidb-deploy/pd/log/pd.log",
+      "max-size": 300,
+      "max-days": 1,
+      "max-backups": 1
+    },
+    "development": false,
+    "disable-caller": false,
+    "disable-stacktrace": false,
+    "disable-error-verbose": true,
+    "sampling": null
+  },
+  "tso-save-interval": "3s",
+  "tso-update-physical-interval": "50ms",
+  "enable-local-tso": false,
+  "metric": {
+    "job": "pd-172.17.16.11-2379",
+    "address": "",
+    "interval": "15s"
+  },
+  "schedule": {
+    "max-snapshot-count": 3,
+    "max-pending-peer-count": 16,
+    "max-merge-region-size": 20,
+    "max-merge-region-keys": 200000,
+    "split-merge-interval": "1h0m0s",
+    "enable-one-way-merge": "false",
+    "enable-cross-table-merge": "false",
+    "patrol-region-interval": "100ms",
+    "max-store-down-time": "30m0s",
+    "leader-schedule-limit": 4,
+    "leader-schedule-policy": "count",
+    "region-schedule-limit": 2048,
+    "replica-schedule-limit": 64,
+    "merge-schedule-limit": 8,
+    "hot-region-schedule-limit": 4,
+    "hot-region-cache-hits-threshold": 3,
+    "store-limit": {
+      "1": {
+        "add-peer": 21,
+        "remove-peer": 11
+      },
+      "4": {
+        "add-peer": 22,
+        "remove-peer": 12
+      },
+      "5": {
+        "add-peer": 23,
+        "remove-peer": 13
+      }
+    },
+    "tolerant-size-ratio": 0,
+    "low-space-ratio": 0.8,
+    "high-space-ratio": 0.7,
+    "region-score-formula-version": "",
+    "scheduler-max-waiting-operator": 5,
+    "enable-remove-down-replica": "true",
+    "enable-replace-offline-replica": "true",
+    "enable-make-up-replica": "true",
+    "enable-remove-extra-replica": "true",
+    "enable-location-replacement": "true",
+    "enable-debug-metrics": "false",
+    "enable-joint-consensus": "true",
+    "schedulers-v2": [
+      {
+        "type": "balance-region",
+        "args": null,
+        "disable": false,
+        "args-payload": ""
+      },
+      {
+        "type": "balance-leader",
+        "args": null,
+        "disable": false,
+        "args-payload": ""
+      },
+      {
+        "type": "hot-region",
+        "args": null,
+        "disable": false,
+        "args-payload": ""
+      },
+      {
+        "type": "label",
+        "args": null,
+        "disable": false,
+        "args-payload": ""
+      }
+    ],
+    "schedulers-payload": {
+      "balance-hot-region-scheduler": null,
+      "balance-leader-scheduler": {
+        "name": "balance-leader-scheduler",
+        "ranges": [
+          {
+            "end-key": "",
+            "start-key": ""
+          }
+        ]
+      },
+      "balance-region-scheduler": {
+        "name": "balance-region-scheduler",
+        "ranges": [
+          {
+            "end-key": "",
+            "start-key": ""
+          }
+        ]
+      },
+      "label-scheduler": {
+        "name": "label-scheduler",
+        "ranges": [
+          {
+            "end-key": "",
+            "start-key": ""
+          }
+        ]
+      }
+    },
+    "store-limit-mode": "manual"
+  },
+  "replication": {
+    "max-replicas": 3,
+    "location-labels": "",
+    "strictly-match-label": "false",
+    "enable-placement-rules": "false",
+    "isolation-level": ""
+  },
+  "pd-server": {
+    "use-region-storage": "true",
+    "max-gap-reset-ts": "24h0m0s",
+    "key-type": "table",
+    "runtime-services": "",
+    "metric-storage": "http://172.17.16.11:9090",
+    "dashboard-address": "http://172.17.16.11:2379",
+    "trace-region-flow": "false"
+  },
+  "cluster-version": "5.0.1",
+  "labels": {},
+  "quota-backend-bytes": "8GiB",
+  "auto-compaction-mode": "periodic",
+  "auto-compaction-retention-v2": "1h",
+  "TickInterval": "500ms",
+  "ElectionInterval": "3s",
+  "PreVote": true,
+  "security": {
+    "cacert-path": "",
+    "cert-path": "",
+    "key-path": "",
+    "cert-allowed-cn": null,
+    "redact-info-log": false,
+    "encryption": {
+      "data-encryption-method": "plaintext",
+      "data-key-rotation-period": "168h0m0s",
+      "master-key": {
+        "type": "plaintext",
+        "key-id": "",
+        "region": "",
+        "endpoint": "",
+        "path": ""
+      }
+    }
+  },
+  "label-property": {},
+  "WarningMsgs": null,
+  "DisableStrictReconfigCheck": false,
+  "HeartbeatStreamBindInterval": "1m0s",
+  "LeaderPriorityCheckInterval": "1m0s",
+  "dashboard": {
+    "tidb-cacert-path": "",
+    "tidb-cert-path": "",
+    "tidb-key-path": "",
+    "public-path-prefix": "",
+    "internal-proxy": false,
+    "enable-telemetry": true,
+    "enable-experimental": false
+  },
+  "replication-mode": {
+    "replication-mode": "majority",
+    "dr-auto-sync": {
+      "label-key": "",
+      "primary": "",
+      "dr": "",
+      "primary-replicas": 0,
+      "dr-replicas": 0,
+      "wait-store-timeout": "1m0s",
+      "wait-sync-timeout": "1m0s",
+      "wait-async-timeout": "2m0s"
+    }
+  }
+}
