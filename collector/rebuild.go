@@ -81,7 +81,7 @@ func RunLocal(dumpDir string, opt *RebuildOptions) error {
 	if err != nil {
 		return err
 	}
-	clsName := clusterJSON["cluster_id"].(string)
+	clsName := clusterJSON["cluster_name"].(string)
 
 	// read cluster version
 	metaFile, err := os.ReadFile(filepath.Join(dumpDir, "meta.yaml"))

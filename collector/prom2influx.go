@@ -48,7 +48,7 @@ func LoadMetrics(ctx context.Context, dataDir string, opt *RebuildOptions) error
 	if err != nil {
 		return err
 	}
-	opt.Cluster = clusterJSON["cluster_id"].(string)
+	opt.Cluster = clusterJSON["cluster_name"].(string)
 
 	// extract collection session id
 	dirFields := strings.Split(dataDir, "-")
