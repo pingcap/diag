@@ -48,6 +48,7 @@ func init() {
 	logger.InitGlobalLogger()
 
 	tui.AddColorFunctionsForCobra()
+	tui.RegisterArg0("tiup diag")
 
 	cobra.EnableCommandSorting = false
 
@@ -99,6 +100,8 @@ func init() {
 	}
 
 	tui.BeautifyCobraUsageAndHelp(rootCmd)
+
+	rootCmd.SetVersionTemplate(fmt.Sprintf("%s {{.Version}}\n", tui.OsArgs0()))
 
 	rootCmd.PersistentFlags().Uint64Var(&gOpt.SSHTimeout, "ssh-timeout", 5, "Timeout in seconds to connect host via SSH, ignored for operations that don't need an SSH connection.")
 	// the value of wait-timeout is also used for `systemctl` commands, as the default timeout of systemd for
