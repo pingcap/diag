@@ -17,10 +17,13 @@ import (
 	"os"
 	"strconv"
 
+	pingcapv1alpha1 "github.com/pingcap/diag/k8s/apis/pingcap/v1alpha1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
-	klog "k8s.io/klog/v2"
+	klog "k8s.io/klog"
 )
+
+var _ = pingcapv1alpha1.TidbCluster{}
 
 func init() {
 	klog.InitFlags(nil)
@@ -46,7 +49,7 @@ func main() {
 		tcTls = true
 	}
 
-	klog.Info("initialized kube client %v", kubeCli)
-	klog.Info("initialized TLS flag as %v", tcTls)
+	klog.Infof("initialized kube client %v", kubeCli)
+	klog.Infof("initialized TLS flag as %v", tcTls)
 	klog.Info("demo ended, exit.")
 }
