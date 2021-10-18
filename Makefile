@@ -1,7 +1,7 @@
 PROJECT=diag
 
 
-.PHONY: all collector scraper fmt vet lint check build default
+.PHONY: all collector scraper k8s fmt vet lint check build default
 
 default: all
 
@@ -56,6 +56,9 @@ diag:
 
 scraper:
 	$(GOBUILD) $(RACE_FLAG) -ldflags '$(LDFLAGS) $(CHECK_FLAG)' -o bin/scraper cmd/scraper/*.go
+
+k8s:
+	$(GOBUILD) $(RACE_FLAG) -ldflags '$(LDFLAGS) $(CHECK_FLAG)' -o bin/k8s-pod cmd/k8s/*.go
 
 test:
 	$(GO) test ./...
