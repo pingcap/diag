@@ -31,7 +31,7 @@ func ParseTime(s string) (time.Time, error) {
 		return t, nil
 	}
 
-	currTime := time.Now().Local()
+	currTime := time.Now().UTC()
 
 	// try to parse input as some common time formats, all timestamps are supposed to
 	// be localtime if not specified
