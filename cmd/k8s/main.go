@@ -15,13 +15,15 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"os/signal"
-	"strconv"
+	"strings"
 	"syscall"
 
 	pingcapv1alpha1 "github.com/pingcap/diag/k8s/apis/pingcap/v1alpha1"
 	"github.com/pingcap/diag/version"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -54,20 +56,77 @@ func main() {
 	if len(tcName) < 1 {
 		klog.Fatal("ENV TC_NAME is not set")
 	}
-	tcTls := false
-	tlsEnabled := os.Getenv("TC_TLS_ENABLED")
-	if tlsEnabled == strconv.FormatBool(true) {
-		tcTls = true
-	}
 
-	klog.Infof("initialized kube client %v", kubeCli)
-	klog.Infof("initialized TLS flag as %v", tcTls)
+	klog.Info("initialized kube client")
 
 	podList, err := kubeCli.CoreV1().Pods(ns).List(context.TODO(), metav1.ListOptions{})
 	if err != nil {
-		klog.Fatal("failed to list pods in namespace %s: %v", ns, err)
+		klog.Fatalf("failed to list pods in namespace %s: %v", ns, err)
 	}
-	klog.Infof("listed pods in namespace %s: %v", ns, podList)
+	klog.Infof("listed pods in namespace %s:", ns)
+	for _, pod := range podList.Items {
+		podName := pod.Name
+		cTime := pod.CreationTimestamp
+		hostIP := pod.Status.HostIP
+		podIPs := pod.Status.PodIPs
+		podStatus := pod.Status.Phase
+		klog.Infof("%s (%s) on %s, %s, created at %s", podName, podIPs[0], hostIP, podStatus, cTime)
+	}
+
+	svcList, err := kubeCli.CoreV1().Services(ns).List(context.TODO(), metav1.ListOptions{})
+	if err != nil {
+		klog.Fatalf("failed to list services in namespace %s: %v", ns, err)
+	}
+	klog.Infof("listed services in namespace %s:", ns)
+	for _, svc := range svcList.Items {
+		svcName := svc.Name
+		svcType := svc.Spec.Type
+		var svcIP string
+		var svcPort string
+		switch svcType {
+		case corev1.ServiceTypeClusterIP:
+			svcIP = svc.Spec.ClusterIP
+			ports := make([]string, 0)
+			for _, p := range svc.Spec.Ports {
+				svcPort := p.Port
+				svcTarget := p.TargetPort
+				portName := p.Name
+				portProto := p.Protocol
+				ports = append(ports,
+					fmt.Sprintf("%d->%s(%s:%s)", svcPort, svcTarget.String(), portProto, portName),
+				)
+			}
+			svcPort = strings.Join(ports, ",")
+		case corev1.ServiceTypeNodePort:
+			svcIP = "*"
+			ports := make([]string, 0)
+			for _, p := range svc.Spec.Ports {
+				svcPort := p.NodePort
+				svcTarget := p.TargetPort
+				portName := p.Name
+				portProto := p.Protocol
+				ports = append(ports,
+					fmt.Sprintf("%d->%s(%s:%s)", svcPort, svcTarget.String(), portProto, portName),
+				)
+			}
+			svcPort = strings.Join(ports, ",")
+		case corev1.ServiceTypeLoadBalancer:
+			svcIP = svc.Spec.LoadBalancerIP
+			ports := make([]string, 0)
+			for _, p := range svc.Spec.Ports {
+				svcPort := p.Port
+				svcTarget := p.TargetPort
+				portName := p.Name
+				portProto := p.Protocol
+				ports = append(ports,
+					fmt.Sprintf("%d->%s(%s:%s)", svcPort, svcTarget.String(), portProto, portName),
+				)
+			}
+			svcPort = strings.Join(ports, ",")
+		}
+
+		klog.Infof("%s (%s) %s %s", svcName, svcType, svcIP, svcPort)
+	}
 
 	klog.Info("demo ended, sleep forever.")
 
