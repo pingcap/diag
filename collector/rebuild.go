@@ -355,6 +355,11 @@ func (b *rebuilder) terminate(sig syscall.Signal) error {
 
 	for comp, inst := range b.Proc {
 		pid := inst.pid()
+		if pid == 0 { // the process does not exist
+			fmt.Printf("Component %s not started, skip.", comp)
+			continue
+		}
+
 		if sig == syscall.SIGKILL {
 			fmt.Printf("Force %s(%d) to quit...\n", comp, pid)
 		} else if atomic.LoadInt32(&b.lastSig) == int32(sig) { // In case of double ctr+c
@@ -444,7 +449,12 @@ func (i *influxdb) wait() error {
 
 func (i *influxdb) getCmd() *exec.Cmd { return i.cmd }
 
-func (i *influxdb) pid() int { return i.cmd.Process.Pid }
+func (i *influxdb) pid() int {
+	if i.cmd != nil && i.cmd.Process != nil {
+		return i.cmd.Process.Pid
+	}
+	return 0
+}
 
 func (i *influxdb) addr() string {
 	return fmt.Sprintf("%s:%d", i.Host, i.HTTPPort)
@@ -577,7 +587,12 @@ func (m *prometheus) wait() error {
 
 func (m *prometheus) getCmd() *exec.Cmd { return m.cmd }
 
-func (m *prometheus) pid() int { return m.cmd.Process.Pid }
+func (m *prometheus) pid() int {
+	if m.cmd != nil && m.cmd.Process != nil {
+		return m.cmd.Process.Pid
+	}
+	return 0
+}
 
 // the cmd is not started after return
 func newPrometheus(host, version, dir, influx string) (*prometheus, error) {
@@ -856,7 +871,12 @@ func (g *grafana) wait() error {
 
 func (g *grafana) getCmd() *exec.Cmd { return g.cmd }
 
-func (g *grafana) pid() int { return g.cmd.Process.Pid }
+func (g *grafana) pid() int {
+	if g.cmd != nil && g.cmd.Process != nil {
+		return g.cmd.Process.Pid
+	}
+	return 0
+}
 
 func (g *grafana) addr() string { return fmt.Sprintf("%s:%d", g.Host, g.Port) }
 
