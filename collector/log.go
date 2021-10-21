@@ -27,6 +27,7 @@ import (
 	operator "github.com/pingcap/tiup/pkg/cluster/operation"
 	"github.com/pingcap/tiup/pkg/cluster/spec"
 	"github.com/pingcap/tiup/pkg/cluster/task"
+	"github.com/pingcap/tiup/pkg/logger/log"
 	"github.com/pingcap/tiup/pkg/set"
 )
 
@@ -278,7 +279,7 @@ func (c *LogCollectOptions) Collect(m *Manager, topo *spec.Specification) error 
 func parseScraperSamples(ctx context.Context, host string) (map[string][]CollectStat, error) {
 	stdout, stderr, _ := ctxt.GetInner(ctx).GetOutputs(host)
 	if len(stderr) > 0 {
-		fmt.Printf("error scraping files: %s", stderr)
+		log.Errorf("error scraping files: %s, logs might be incomplete", stderr)
 	}
 	if len(stdout) < 1 {
 		// no matched files, just skip

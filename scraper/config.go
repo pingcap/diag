@@ -14,6 +14,7 @@
 package scraper
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 )
@@ -42,7 +43,8 @@ func (s *ConfigFileScraper) Scrap(result *Sample) error {
 		if fm, err := filepath.Glob(fp); err == nil {
 			fileList = append(fileList, fm...)
 		} else {
-			return err
+			fmt.Fprintf(os.Stderr, "error scrapping %s: %s\n", fp, err)
+			continue
 		}
 	}
 
@@ -54,7 +56,7 @@ func (s *ConfigFileScraper) Scrap(result *Sample) error {
 			}
 			result.Config[fp] = fi.Size()
 		} else {
-			return err
+			fmt.Fprintf(os.Stderr, "error checking %s: %s\n", fi.Name(), err)
 		}
 	}
 
