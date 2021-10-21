@@ -58,7 +58,8 @@ func (s *LogScraper) Scrap(result *Sample) error {
 		if fm, err := filepath.Glob(fp); err == nil {
 			fileList = append(fileList, fm...)
 		} else {
-			return err
+			fmt.Fprintf(os.Stderr, "error scrapping %s: %s\n", fp, err)
+			continue
 		}
 	}
 
@@ -75,7 +76,8 @@ func (s *LogScraper) Scrap(result *Sample) error {
 			// check log content to filter by scrap time range
 			in, err := logInRange(fp, fi, s.Start, s.End)
 			if err != nil {
-				return err
+				fmt.Fprintf(os.Stderr, "error parsing %s: %s\n", fi.Name(), err)
+				continue
 			}
 			if !in {
 				continue
@@ -83,7 +85,7 @@ func (s *LogScraper) Scrap(result *Sample) error {
 
 			result.Log[fp] = fi.Size()
 		} else {
-			return err
+			fmt.Fprintf(os.Stderr, "error checking %s: %s\n", fi.Name(), err)
 		}
 	}
 

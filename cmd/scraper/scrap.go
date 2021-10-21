@@ -43,7 +43,6 @@ func Scrap(opt *scraper.Option) (*scraper.Sample, error) {
 	result := &scraper.Sample{}
 	for _, s := range scrapers {
 		if err := s.Scrap(result); err != nil {
-			//return result, err
 			fmt.Fprint(os.Stderr, err)
 		}
 	}
