@@ -60,7 +60,9 @@ func newDownloadCommand() *cobra.Command {
 			}
 
 			if len(args) >= 1 {
-				parseURL(&opt, args[0])
+				if err := parseURL(&opt, args[0]); err != nil {
+					return err
+				}
 			}
 
 			userName, password := credentials()
@@ -92,10 +94,20 @@ func newDownloadCommand() *cobra.Command {
 	return cmd
 }
 
-func parseURL(opt *downloadOptions, url string) {
-	opt.fileUUID = url[strings.LastIndex(url, "/")+1:]
+func parseURL(opt *downloadOptions, url string) error {
+	findex := strings.LastIndex(url, "/")
+	if findex < 0 {
+		return errors.New("invalid url")
+	}
+	opt.fileUUID = url[findex+1:]
 
-	opt.endpoint = url[:strings.Index(url, "/api")]
+	eindex := strings.Index(url, "/api")
+	if eindex < 0 {
+		return errors.New("invalid url")
+	}
+	opt.endpoint = url[:eindex]
+
+	return nil
 }
 
 func download(opt *downloadOptions) error {
