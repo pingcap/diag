@@ -144,7 +144,7 @@ func (r *Rule) GetValue(valpath string, config proto.Config) string {
 	valpaths := strings.Split(valpath, ",")
 	valmap := []string{}
 	for _, valpath := range valpaths {
-		fmt.Println(config.GetComponent(), ".", valpath)
+		// fmt.Println(config.GetComponent(), ".", valpath)
 		if len(valpath) != 0 {
 			rv := config.GetValueByTagPath(valpath) // empty will coredump
 			valmap = append(valmap, fmt.Sprintf("%s.%s:%v", config.GetComponent(), valpath, rv))
