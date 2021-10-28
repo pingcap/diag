@@ -21,16 +21,17 @@ import (
 	"strings"
 	"syscall"
 
+	jsoniter "github.com/json-iterator/go"
 	pingcapv1alpha1 "github.com/pingcap/diag/k8s/apis/pingcap/v1alpha1"
 	"github.com/pingcap/diag/version"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	klog "k8s.io/klog"
 )
-
-var _ = pingcapv1alpha1.TidbCluster{}
 
 func init() {
 	klog.InitFlags(nil)
@@ -47,6 +48,15 @@ func main() {
 	if err != nil {
 		klog.Fatalf("failed to get kubernetes Clientset: %v", err)
 	}
+	dynCli, err := dynamic.NewForConfig(cfg)
+	if err != nil {
+		klog.Fatalf("failed to get kubernetes dynamic client interface: %v", err)
+	}
+	gvr := schema.GroupVersionResource{
+		Group:    "pingcap.com",
+		Version:  "v1alpha1",
+		Resource: "tidbclusters",
+	}
 
 	ns := os.Getenv("NAMESPACE")
 	if ns == "" {
@@ -57,7 +67,7 @@ func main() {
 		klog.Fatal("ENV TC_NAME is not set")
 	}
 
-	klog.Info("initialized kube client")
+	klog.Info("initialized kube clients")
 
 	podList, err := kubeCli.CoreV1().Pods(ns).List(context.TODO(), metav1.ListOptions{})
 	if err != nil {
@@ -126,6 +136,54 @@ func main() {
 		}
 
 		klog.Infof("%s (%s) %s %s", svcName, svcType, svcIP, svcPort)
+	}
+
+	tcList, err := dynCli.Resource(gvr).Namespace(ns).List(context.TODO(), metav1.ListOptions{})
+	if err != nil {
+		klog.Fatalf("failed to list tidbclusters in namespace %s: %v", ns, err)
+	}
+	tcData, err := tcList.MarshalJSON()
+	if err != nil {
+		klog.Fatalf("failed to marshal tidbclusters to json: %v", err)
+	}
+	var tcs pingcapv1alpha1.TidbClusterList
+	if err := jsoniter.Unmarshal(tcData, &tcs); err != nil {
+		klog.Fatalf("failed to unmarshal tidbclusters crd: %v", err)
+	}
+	klog.Infof("listed %d tidbclusters:", len(tcs.Items))
+	for _, tc := range tcs.Items {
+		clsName := tc.ObjectMeta.Name
+		cTime := tc.ObjectMeta.CreationTimestamp
+		status := tc.Status.Conditions[0].Type
+		klog.Infof("TiDB Cluster '%s': %s, %s, created at %s",
+			clsName, tc.Spec.Version, status, cTime)
+		if tc.Spec.PD != nil {
+			klog.Infof("  PD:      %d  %s (%s)", tc.Spec.PD.Replicas, tc.Status.PD.Phase, tc.Status.PD.Image)
+			for _, member := range tc.Status.PD.Members {
+				var status string
+				if member.Health {
+					status = "healthy"
+				} else {
+					status = "unhealthy"
+				}
+				klog.Infof("    %s, %s, %s", member.Name, status, member.ClientURL)
+			}
+		}
+		if tc.Spec.TiDB != nil {
+			klog.Infof("  TiDB:    %d  %s (%s)", tc.Spec.TiDB.Replicas, tc.Status.TiDB.Phase, tc.Status.TiDB.Image)
+		}
+		if tc.Spec.TiKV != nil {
+			klog.Infof("  TiKV:    %d  %s (%s)", tc.Spec.TiKV.Replicas, tc.Status.TiKV.Phase, tc.Status.TiKV.Image)
+		}
+		if tc.Spec.TiFlash != nil {
+			klog.Infof("  TiFlash: %d  %s (%s)", tc.Spec.TiFlash.Replicas, tc.Status.TiFlash.Phase, tc.Status.TiFlash.Image)
+		}
+		if tc.Spec.TiCDC != nil {
+			klog.Infof("  TiCDC:   %d  %s", tc.Spec.TiCDC.Replicas, tc.Status.TiCDC.Phase)
+		}
+		if tc.Spec.Pump != nil {
+			klog.Infof("  Pump:    %d  %s", tc.Spec.Pump.Replicas, tc.Status.Pump.Phase)
+		}
 	}
 
 	klog.Info("demo ended, sleep forever.")
