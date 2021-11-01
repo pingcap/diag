@@ -23,6 +23,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -145,6 +146,7 @@ type MetricCollectOptions struct {
 	timeSteps []string
 	metrics   []string // metric list
 	compress  bool     // compress collected JSON files
+	filter    []string
 }
 
 // Desc implements the Collector interface
@@ -185,24 +187,22 @@ func (c *MetricCollectOptions) Prepare(_ *Manager, topo *spec.Specification) (ma
 	}
 	c.timeSteps = ts
 
-	var queryOK bool
 	var queryErr error
 	var promAddr string
 	for _, prom := range topo.Monitors {
 		promAddr = fmt.Sprintf("%s:%d", prom.Host, prom.Port)
 		client := &http.Client{Timeout: time.Second * 10}
-		metrics, err := getMetricList(client, promAddr)
-		if err == nil {
-			queryOK = queryOK || true
-		}
-		queryErr = err
-
-		c.metrics = metrics
-
-		if queryOK {
+		c.metrics, queryErr = getMetricList(client, promAddr)
+		if queryErr == nil {
 			break
 		}
 	}
+	// if query successed for any one of prometheus, ignore errors for other instances
+	if queryErr != nil {
+		return nil, queryErr
+	}
+
+	c.metrics = filterMetrics(c.metrics, c.filter)
 
 	result := make(map[string][]CollectStat)
 	var insCnt int
@@ -220,10 +220,6 @@ func (c *MetricCollectOptions) Prepare(_ *Manager, topo *spec.Specification) (ma
 	}
 	result[promAddr] = append(result[promAddr], cStat)
 
-	// if query successed for any one of prometheus, ignore errors for other instances
-	if !queryOK {
-		return nil, queryErr
-	}
 	return result, nil
 }
 
@@ -438,4 +434,19 @@ func parseTimeRange(scrapeStart, scrapeEnd string) ([]string, int64, error) {
 	}
 
 	return ts, tsEnd.Unix() - tsStart.Unix(), nil
+}
+
+func filterMetrics(src, filter []string) []string {
+	if filter == nil {
+		return src
+	}
+	var res []string
+	for _, metric := range src {
+		for _, prefix := range filter {
+			if strings.HasPrefix(metric, prefix) {
+				res = append(res, metric)
+			}
+		}
+	}
+	return res
 }
