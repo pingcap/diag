@@ -61,6 +61,7 @@ type BaseOptions struct {
 type CollectOptions struct {
 	Include         set.StringSet
 	Exclude         set.StringSet
+	MetricsFilter   []string
 	Dir             string // target directory to store collected data
 	Limit           int    // rate limit of SCP
 	CompressMetrics bool   // compress of files during collecting
@@ -159,6 +160,7 @@ func (m *Manager) CollectClusterInfo(
 				opt:         gOpt,
 				resultDir:   resultDir,
 				compress:    cOpt.CompressMetrics,
+				filter:      cOpt.MetricsFilter,
 			},
 		)
 	}
