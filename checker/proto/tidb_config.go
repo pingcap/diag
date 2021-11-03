@@ -200,11 +200,11 @@ type TidbConfig struct {
 		Enable     bool `json:"enable"`
 		RPCMetrics bool `json:"rpc-metrics"`
 		Sampler    struct {
-			Type                    string `json:"type"`
-			Param                   int    `json:"param"`
-			SamplingServerURL       string `json:"sampling-server-url"`
-			MaxOperations           int    `json:"max-operations"`
-			SamplingRefreshInterval int    `json:"sampling-refresh-interval"`
+			Type                    string  `json:"type"`
+			Param                   float64 `json:"param"`
+			SamplingServerURL       string  `json:"sampling-server-url"`
+			MaxOperations           int     `json:"max-operations"`
+			SamplingRefreshInterval int     `json:"sampling-refresh-interval"`
 		} `json:"sampler"`
 		Reporter struct {
 			QueueSize           int    `json:"queue-size"`
