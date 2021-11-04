@@ -48,6 +48,17 @@ func NewManager(sysName string, specManager *spec.SpecManager, bindVersion spec.
 	}
 }
 
+// NewManager creates a Manager without initialing specManager
+func NewEmptyManager(sysName string) *Manager {
+	currTime := time.Now()
+	tid := base52.Encode(currTime.UnixNano() + rand.Int63n(1000))
+
+	return &Manager{
+		sysName: sysName,
+		session: tid,
+	}
+}
+
 func (m *Manager) meta(name string) (metadata spec.Metadata, err error) {
 	exist, err := m.specManager.Exist(name)
 	if err != nil {

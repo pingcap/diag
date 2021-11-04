@@ -14,27 +14,39 @@
 package main
 
 import (
-	"context"
-	"fmt"
 	"os"
 	"os/signal"
-	"strings"
 	"syscall"
+	"time"
 
-	jsoniter "github.com/json-iterator/go"
-	pingcapv1alpha1 "github.com/pingcap/diag/k8s/apis/pingcap/v1alpha1"
+	"github.com/pingcap/diag/collector"
 	"github.com/pingcap/diag/version"
-	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime/schema"
+	"github.com/pingcap/tiup/pkg/set"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	klog "k8s.io/klog"
 )
 
+var (
+	cm   *collector.Manager
+	cOpt collector.CollectOptions
+	opt  collector.BaseOptions
+)
+
 func init() {
 	klog.InitFlags(nil)
+	cm = collector.NewEmptyManager("tidb")
+	cOpt = collector.CollectOptions{
+		Include: set.NewStringSet( // collect all types by default
+			collector.CollectTypeSystem,
+			collector.CollectTypeMonitor,
+			collector.CollectTypeLog,
+			collector.CollectTypeConfig,
+		),
+		Exclude: set.NewStringSet(),
+	}
+	opt = collector.BaseOptions{}
 }
 
 func main() {
@@ -52,138 +64,15 @@ func main() {
 	if err != nil {
 		klog.Fatalf("failed to get kubernetes dynamic client interface: %v", err)
 	}
-	gvr := schema.GroupVersionResource{
-		Group:    "pingcap.com",
-		Version:  "v1alpha1",
-		Resource: "tidbclusters",
-	}
-
-	ns := os.Getenv("NAMESPACE")
-	if ns == "" {
-		klog.Fatal("NAMESPACE environment variable not set")
-	}
-	tcName := os.Getenv("TC_NAME")
-	if len(tcName) < 1 {
-		klog.Fatal("ENV TC_NAME is not set")
-	}
-
 	klog.Info("initialized kube clients")
 
-	podList, err := kubeCli.CoreV1().Pods(ns).List(context.TODO(), metav1.ListOptions{})
-	if err != nil {
-		klog.Fatalf("failed to list pods in namespace %s: %v", ns, err)
-	}
-	klog.Infof("listed pods in namespace %s:", ns)
-	for _, pod := range podList.Items {
-		podName := pod.Name
-		cTime := pod.CreationTimestamp
-		hostIP := pod.Status.HostIP
-		podIPs := pod.Status.PodIPs
-		podStatus := pod.Status.Phase
-		klog.Infof("%s (%s) on %s, %s, created at %s", podName, podIPs[0], hostIP, podStatus, cTime)
-	}
-
-	svcList, err := kubeCli.CoreV1().Services(ns).List(context.TODO(), metav1.ListOptions{})
-	if err != nil {
-		klog.Fatalf("failed to list services in namespace %s: %v", ns, err)
-	}
-	klog.Infof("listed services in namespace %s:", ns)
-	for _, svc := range svcList.Items {
-		svcName := svc.Name
-		svcType := svc.Spec.Type
-		var svcIP string
-		var svcPort string
-		switch svcType {
-		case corev1.ServiceTypeClusterIP:
-			svcIP = svc.Spec.ClusterIP
-			ports := make([]string, 0)
-			for _, p := range svc.Spec.Ports {
-				svcPort := p.Port
-				svcTarget := p.TargetPort
-				portName := p.Name
-				portProto := p.Protocol
-				ports = append(ports,
-					fmt.Sprintf("%d->%s(%s:%s)", svcPort, svcTarget.String(), portProto, portName),
-				)
-			}
-			svcPort = strings.Join(ports, ",")
-		case corev1.ServiceTypeNodePort:
-			svcIP = "*"
-			ports := make([]string, 0)
-			for _, p := range svc.Spec.Ports {
-				svcPort := p.NodePort
-				svcTarget := p.TargetPort
-				portName := p.Name
-				portProto := p.Protocol
-				ports = append(ports,
-					fmt.Sprintf("%d->%s(%s:%s)", svcPort, svcTarget.String(), portProto, portName),
-				)
-			}
-			svcPort = strings.Join(ports, ",")
-		case corev1.ServiceTypeLoadBalancer:
-			svcIP = svc.Spec.LoadBalancerIP
-			ports := make([]string, 0)
-			for _, p := range svc.Spec.Ports {
-				svcPort := p.Port
-				svcTarget := p.TargetPort
-				portName := p.Name
-				portProto := p.Protocol
-				ports = append(ports,
-					fmt.Sprintf("%d->%s(%s:%s)", svcPort, svcTarget.String(), portProto, portName),
-				)
-			}
-			svcPort = strings.Join(ports, ",")
-		}
-
-		klog.Infof("%s (%s) %s %s", svcName, svcType, svcIP, svcPort)
-	}
-
-	tcList, err := dynCli.Resource(gvr).Namespace(ns).List(context.TODO(), metav1.ListOptions{})
-	if err != nil {
-		klog.Fatalf("failed to list tidbclusters in namespace %s: %v", ns, err)
-	}
-	tcData, err := tcList.MarshalJSON()
-	if err != nil {
-		klog.Fatalf("failed to marshal tidbclusters to json: %v", err)
-	}
-	var tcs pingcapv1alpha1.TidbClusterList
-	if err := jsoniter.Unmarshal(tcData, &tcs); err != nil {
-		klog.Fatalf("failed to unmarshal tidbclusters crd: %v", err)
-	}
-	klog.Infof("listed %d tidbclusters:", len(tcs.Items))
-	for _, tc := range tcs.Items {
-		clsName := tc.ObjectMeta.Name
-		cTime := tc.ObjectMeta.CreationTimestamp
-		status := tc.Status.Conditions[0].Type
-		klog.Infof("TiDB Cluster '%s': %s, %s, created at %s",
-			clsName, tc.Spec.Version, status, cTime)
-		if tc.Spec.PD != nil {
-			klog.Infof("  PD:      %d  %s (%s)", tc.Spec.PD.Replicas, tc.Status.PD.Phase, tc.Status.PD.Image)
-			for _, member := range tc.Status.PD.Members {
-				var status string
-				if member.Health {
-					status = "healthy"
-				} else {
-					status = "unhealthy"
-				}
-				klog.Infof("    %s, %s, %s", member.Name, status, member.ClientURL)
-			}
-		}
-		if tc.Spec.TiDB != nil {
-			klog.Infof("  TiDB:    %d  %s (%s)", tc.Spec.TiDB.Replicas, tc.Status.TiDB.Phase, tc.Status.TiDB.Image)
-		}
-		if tc.Spec.TiKV != nil {
-			klog.Infof("  TiKV:    %d  %s (%s)", tc.Spec.TiKV.Replicas, tc.Status.TiKV.Phase, tc.Status.TiKV.Image)
-		}
-		if tc.Spec.TiFlash != nil {
-			klog.Infof("  TiFlash: %d  %s (%s)", tc.Spec.TiFlash.Replicas, tc.Status.TiFlash.Phase, tc.Status.TiFlash.Image)
-		}
-		if tc.Spec.TiCDC != nil {
-			klog.Infof("  TiCDC:   %d  %s", tc.Spec.TiCDC.Replicas, tc.Status.TiCDC.Phase)
-		}
-		if tc.Spec.Pump != nil {
-			klog.Infof("  Pump:    %d  %s", tc.Spec.Pump.Replicas, tc.Status.Pump.Phase)
-		}
+	// run collectors
+	cOpt.Mode = collector.CollectModeK8s
+	opt.Cluster = "m31"
+	opt.ScrapeBegin = time.Now().Add(time.Hour * -2).Format(time.RFC3339)
+	opt.ScrapeEnd = time.Now().Format(time.RFC3339)
+	if err := cm.CollectClusterInfo(&opt, &cOpt, nil, kubeCli, dynCli); err != nil {
+		klog.Errorf("error collecting info: %s", err)
 	}
 
 	klog.Info("demo ended, sleep forever.")
