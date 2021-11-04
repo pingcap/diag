@@ -21,6 +21,7 @@ import (
 	"time"
 
 	"github.com/fatih/color"
+	"github.com/pingcap/diag/pkg/models"
 	"github.com/pingcap/diag/pkg/utils"
 	perrs "github.com/pingcap/errors"
 	"github.com/pingcap/tiup/pkg/cluster/executor"
@@ -37,6 +38,9 @@ const (
 	CollectTypeLog     = "log"
 	CollectTypeConfig  = "config"
 	CollectTypeSchema  = "info_schema"
+	CollectModeTiUP    = "tiup-cluster"  // collect from a tiup-cluster deployed cluster
+	CollectModeK8s     = "tidb-operator" // collect from a tidb-operator deployed cluster
+
 )
 
 var CollectAllSet set.StringSet = set.NewStringSet( // collect all types by default
@@ -49,8 +53,8 @@ var CollectAllSet set.StringSet = set.NewStringSet( // collect all types by defa
 
 // Collector is the configuration defining an collecting job
 type Collector interface {
-	Prepare(*Manager, *spec.Specification) (map[string][]CollectStat, error)
-	Collect(*Manager, *spec.Specification) error
+	Prepare(*Manager, *models.TiDBCluster) (map[string][]CollectStat, error)
+	Collect(*Manager, *models.TiDBCluster) error
 	GetBaseOptions() *BaseOptions
 	SetBaseOptions(*BaseOptions)
 	Desc() string // a brief self description
@@ -68,6 +72,7 @@ type BaseOptions struct {
 
 // CollectOptions contains the options defining which type of data to collect
 type CollectOptions struct {
+	Mode            string // the cluster is deployed with what type of tool
 	Include         set.StringSet
 	Exclude         set.StringSet
 	MetricsFilter   []string
@@ -90,23 +95,20 @@ func (m *Manager) CollectClusterInfo(
 	cOpt *CollectOptions,
 	gOpt *operator.Options,
 ) error {
-	var topo spec.Specification
+	m.mode = cOpt.Mode
 
-	exist, err := m.specManager.Exist(opt.Cluster)
-	if err != nil {
-		return err
+	var cls *models.TiDBCluster
+	var err error
+	switch cOpt.Mode {
+	case CollectModeTiUP:
+		cls, err = buildTopoForTiUPCluster(m, opt)
+		if err != nil {
+			return err
+		}
+	case CollectModeK8s:
+	default:
+		return fmt.Errorf("unknown collect mode '%s'", cOpt.Mode)
 	}
-	if !exist {
-		return perrs.Errorf("cluster %s does not exist", opt.Cluster)
-	}
-
-	metadata, err := spec.ClusterMetadata(opt.Cluster)
-	if err != nil {
-		return err
-	}
-	opt.User = metadata.User
-	opt.SSH.IdentityFile = m.specManager.Path(opt.Cluster, "ssh", "id_rsa")
-	topo = *metadata.Topology
 
 	// parse time range
 	end, err := utils.ParseTime(opt.ScrapeEnd)
@@ -244,7 +246,7 @@ func (m *Manager) CollectClusterInfo(
 	stats := make([]map[string][]CollectStat, 0)
 	for _, c := range collectors {
 		fmt.Printf("Collecting %s...\n", c.Desc())
-		stat, err := c.Prepare(m, &topo)
+		stat, err := c.Prepare(m, cls)
 		if err != nil {
 			if cOpt.ExitOnError {
 				return err
@@ -279,7 +281,7 @@ func (m *Manager) CollectClusterInfo(
 	collectErrs := make(map[string]error)
 	for _, c := range collectors {
 		fmt.Printf("Collecting %s...\n", c.Desc())
-		if err := c.Collect(m, &topo); err != nil {
+		if err := c.Collect(m, cls); err != nil {
 			if cOpt.ExitOnError {
 				return err
 			}
@@ -371,4 +373,270 @@ func readableSize(b int64) string {
 
 func canCollect(cOpt *CollectOptions, cType string) bool {
 	return cOpt.Include.Exist(cType) && !cOpt.Exclude.Exist(cType)
+}
+
+// buildTopoForTiUPCluster creates an abstract topo from tiup-cluster metadata
+func buildTopoForTiUPCluster(m *Manager, opt *BaseOptions) (*models.TiDBCluster, error) {
+	var topo spec.Specification
+
+	exist, err := m.specManager.Exist(opt.Cluster)
+	if err != nil {
+		return nil, err
+	}
+	if !exist {
+		return nil, perrs.Errorf("cluster %s does not exist", opt.Cluster)
+	}
+
+	metadata, err := spec.ClusterMetadata(opt.Cluster)
+	if err != nil {
+		return nil, err
+	}
+	opt.User = metadata.User
+	opt.SSH.IdentityFile = m.specManager.Path(opt.Cluster, "ssh", "id_rsa")
+	topo = *metadata.Topology
+
+	// build the abstract topology
+	cls := &models.TiDBCluster{
+		Attributes: map[string]interface{}{
+			CollectModeTiUP: &topo,
+		},
+	}
+	topo.IterInstance(func(ins spec.Instance) {
+		switch ins.ComponentName() {
+		case spec.ComponentPD:
+			if cls.PD == nil {
+				cls.PD = make([]*models.PDSpec, 0)
+			}
+			i := ins.(*spec.PDInstance).BaseInstance.InstanceSpec.(*spec.PDSpec)
+			cls.PD = append(cls.PD, &models.PDSpec{
+				ComponentSpec: models.ComponentSpec{
+					Host:       i.Host,
+					Port:       i.GetMainPort(),
+					StatusPort: i.ClientPort,
+					SSHPort:    i.SSHPort,
+					Attributes: map[string]interface{}{
+						"name":       i.Name,
+						"imported":   i.Imported,
+						"patched":    i.Patched,
+						"deploy_dir": i.DeployDir,
+						"data_dir":   i.DataDir,
+						"log_dir":    i.LogDir,
+						"config":     i.Config,
+						"os":         i.OS,
+						"arch":       i.Arch,
+					},
+				},
+			})
+		case spec.ComponentTiKV:
+			if cls.TiKV == nil {
+				cls.TiKV = make([]*models.TiKVSpec, 0)
+			}
+			i := ins.(*spec.TiKVInstance).BaseInstance.InstanceSpec.(*spec.TiKVSpec)
+			cls.TiKV = append(cls.TiKV, &models.TiKVSpec{
+				ComponentSpec: models.ComponentSpec{
+					Host:       i.Host,
+					Port:       i.GetMainPort(),
+					StatusPort: i.StatusPort,
+					SSHPort:    i.SSHPort,
+					Attributes: map[string]interface{}{
+						"imported":   i.Imported,
+						"patched":    i.Patched,
+						"deploy_dir": i.DeployDir,
+						"data_dir":   i.DataDir,
+						"log_dir":    i.LogDir,
+						"config":     i.Config,
+						"os":         i.OS,
+						"arch":       i.Arch,
+					},
+				},
+			})
+		case spec.ComponentTiDB:
+			if cls.TiDB == nil {
+				cls.TiDB = make([]*models.TiDBSpec, 0)
+			}
+			i := ins.(*spec.TiDBInstance).BaseInstance.InstanceSpec.(*spec.TiDBSpec)
+			cls.TiDB = append(cls.TiDB, &models.TiDBSpec{
+				ComponentSpec: models.ComponentSpec{
+					Host:       i.Host,
+					Port:       i.GetMainPort(),
+					StatusPort: i.StatusPort,
+					SSHPort:    i.SSHPort,
+					Attributes: map[string]interface{}{
+						"imported":   i.Imported,
+						"patched":    i.Patched,
+						"deploy_dir": i.DeployDir,
+						"log_dir":    i.LogDir,
+						"config":     i.Config,
+						"os":         i.OS,
+						"arch":       i.Arch,
+					},
+				},
+			})
+		case spec.ComponentTiFlash:
+			if cls.TiFlash == nil {
+				cls.TiFlash = make([]*models.TiFlashSpec, 0)
+			}
+			i := ins.(*spec.TiFlashInstance).BaseInstance.InstanceSpec.(*spec.TiFlashSpec)
+			cls.TiFlash = append(cls.TiFlash, &models.TiFlashSpec{
+				ComponentSpec: models.ComponentSpec{
+					Host:       i.Host,
+					Port:       i.GetMainPort(),
+					StatusPort: i.FlashProxyStatusPort,
+					SSHPort:    i.SSHPort,
+					Attributes: map[string]interface{}{
+						"imported":   i.Imported,
+						"patched":    i.Patched,
+						"deploy_dir": i.DeployDir,
+						"log_dir":    i.LogDir,
+						"config":     i.Config,
+						"os":         i.OS,
+						"arch":       i.Arch,
+					},
+				},
+			})
+		case spec.ComponentPump:
+			if cls.Pump == nil {
+				cls.Pump = make([]*models.PumpSpec, 0)
+			}
+			i := ins.(*spec.PumpInstance).BaseInstance.InstanceSpec.(*spec.PumpSpec)
+			cls.Pump = append(cls.Pump, &models.PumpSpec{
+				ComponentSpec: models.ComponentSpec{
+					Host:       i.Host,
+					Port:       i.GetMainPort(),
+					StatusPort: 0,
+					SSHPort:    i.SSHPort,
+					Attributes: map[string]interface{}{
+						"imported":   i.Imported,
+						"patched":    i.Patched,
+						"deploy_dir": i.DeployDir,
+						"log_dir":    i.LogDir,
+						"config":     i.Config,
+						"os":         i.OS,
+						"arch":       i.Arch,
+					},
+				},
+			})
+		case spec.ComponentDrainer:
+			if cls.Drainer == nil {
+				cls.Drainer = make([]*models.DrainerSpec, 0)
+			}
+			i := ins.(*spec.DrainerInstance).BaseInstance.InstanceSpec.(*spec.DrainerSpec)
+			cls.Drainer = append(cls.Drainer, &models.DrainerSpec{
+				ComponentSpec: models.ComponentSpec{
+					Host:       i.Host,
+					Port:       i.GetMainPort(),
+					StatusPort: 0,
+					SSHPort:    i.SSHPort,
+					Attributes: map[string]interface{}{
+						"imported":   i.Imported,
+						"patched":    i.Patched,
+						"deploy_dir": i.DeployDir,
+						"log_dir":    i.LogDir,
+						"config":     i.Config,
+						"os":         i.OS,
+						"arch":       i.Arch,
+						"ssh_port":   i.SSHPort,
+					},
+				},
+			})
+		case spec.ComponentCDC:
+			if cls.TiCDC == nil {
+				cls.TiCDC = make([]*models.TiCDCSpec, 0)
+			}
+			i := ins.(*spec.CDCInstance).BaseInstance.InstanceSpec.(*spec.CDCSpec)
+			cls.TiCDC = append(cls.TiCDC, &models.TiCDCSpec{
+				ComponentSpec: models.ComponentSpec{
+					Host:       i.Host,
+					Port:       i.GetMainPort(),
+					StatusPort: 0,
+					SSHPort:    i.SSHPort,
+					Attributes: map[string]interface{}{
+						"imported":   i.Imported,
+						"patched":    i.Patched,
+						"deploy_dir": i.DeployDir,
+						"log_dir":    i.LogDir,
+						"config":     i.Config,
+						"os":         i.OS,
+						"arch":       i.Arch,
+						"gc-ttl":     i.GCTTL,
+						"tz":         i.TZ,
+					},
+				},
+			})
+		case spec.ComponentTiSpark:
+			if cls.TiSpark == nil {
+				cls.TiSpark = make([]*models.TiSparkCSpec, 0)
+			}
+			switch ins.Role() {
+			case spec.RoleTiSparkMaster:
+				i := ins.(*spec.TiSparkMasterInstance).BaseInstance.InstanceSpec.(*spec.TiSparkMasterSpec)
+				cls.TiSpark = append(cls.TiSpark, &models.TiSparkCSpec{
+					ComponentSpec: models.ComponentSpec{
+						Host:       i.Host,
+						Port:       i.GetMainPort(),
+						StatusPort: 0,
+						SSHPort:    i.SSHPort,
+						Attributes: map[string]interface{}{
+							"imported":   i.Imported,
+							"patched":    i.Patched,
+							"deploy_dir": i.DeployDir,
+							"os":         i.OS,
+							"arch":       i.Arch,
+						},
+					},
+				})
+			case spec.RoleTiSparkWorker:
+				i := ins.(*spec.TiSparkWorkerInstance).BaseInstance.InstanceSpec.(*spec.TiSparkWorkerSpec)
+				cls.TiSpark = append(cls.TiSpark, &models.TiSparkCSpec{
+					ComponentSpec: models.ComponentSpec{
+						Host:       i.Host,
+						Port:       i.GetMainPort(),
+						StatusPort: 0,
+						SSHPort:    i.SSHPort,
+						Attributes: map[string]interface{}{
+							"imported":   i.Imported,
+							"patched":    i.Patched,
+							"deploy_dir": i.DeployDir,
+							"os":         i.OS,
+							"arch":       i.Arch,
+						},
+					},
+				})
+			}
+		case spec.ComponentPrometheus:
+			if cls.Monitors == nil {
+				cls.Monitors = make([]*models.MonitorSpec, 0)
+			}
+			i := ins.(*spec.MonitorInstance).BaseInstance.InstanceSpec.(*spec.PrometheusSpec)
+			cls.Monitors = append(cls.Monitors, &models.MonitorSpec{
+				ComponentSpec: models.ComponentSpec{
+					Host:       i.Host,
+					Port:       i.GetMainPort(),
+					StatusPort: 0,
+					SSHPort:    i.SSHPort,
+					Attributes: map[string]interface{}{
+						"imported":   i.Imported,
+						"patched":    i.Patched,
+						"deploy_dir": i.DeployDir,
+						"log_dir":    i.LogDir,
+						"data_dir":   i.DataDir,
+						"os":         i.OS,
+						"arch":       i.Arch,
+					},
+				},
+			})
+		case spec.ComponentGrafana,
+			spec.ComponentAlertmanager,
+			spec.ComponentPushwaygate,
+			spec.ComponentBlackboxExporter,
+			spec.ComponentNodeExporter:
+			// do nothing, skip
+		default:
+			fmt.Fprintf(os.Stderr,
+				"instance %s is an unsupport/unecessary component (%s), skipped",
+				ins.ID(), ins.ComponentName())
+		}
+	})
+
+	return cls, nil
 }

@@ -23,6 +23,7 @@ import (
 	"time"
 
 	"github.com/joomcode/errorx"
+	"github.com/pingcap/diag/pkg/models"
 	perrs "github.com/pingcap/errors"
 	"github.com/pingcap/tiup/pkg/cluster/ctxt"
 	operator "github.com/pingcap/tiup/pkg/cluster/operation"
@@ -67,7 +68,19 @@ func (c *ConfigCollectOptions) SetDir(dir string) {
 }
 
 // Prepare implements the Collector interface
-func (c *ConfigCollectOptions) Prepare(m *Manager, topo *spec.Specification) (map[string][]CollectStat, error) {
+func (c *ConfigCollectOptions) Prepare(m *Manager, topo *models.TiDBCluster) (map[string][]CollectStat, error) {
+	if m.mode != CollectModeTiUP {
+		// only needed if the cluster is deployed by tiup-cluster
+		return nil, nil
+	}
+
+	return c.prepareForTiUP(m, topo)
+}
+
+// prepareForTiUP implements preparation for tiup-cluster deployed clusters
+func (c *ConfigCollectOptions) prepareForTiUP(m *Manager, topo *models.TiDBCluster) (map[string][]CollectStat, error) {
+	rawTopo := topo.Attributes[CollectModeTiUP].(*spec.Specification)
+
 	var (
 		dryRunTasks   []*task.StepDisplay
 		downloadTasks []*task.StepDisplay
@@ -81,66 +94,60 @@ func (c *ConfigCollectOptions) Prepare(m *Manager, topo *spec.Specification) (ma
 
 	roleFilter := set.NewStringSet(c.opt.Roles...)
 	nodeFilter := set.NewStringSet(c.opt.Nodes...)
-	components := topo.ComponentsByUpdateOrder()
-	components = operator.FilterComponent(components, roleFilter)
+	components := topo.Components()
+	components = models.FilterComponent(components, roleFilter)
+	instances := models.FilterInstance(components, nodeFilter)
 
-	for _, comp := range components {
-		switch comp.Name() {
-		case spec.ComponentPrometheus,
-			spec.ComponentGrafana,
-			spec.ComponentAlertmanager,
-			spec.ComponentTiSpark,
-			spec.ComponentSpark:
-			continue
-		}
-		instances := operator.FilterInstance(comp.Instances(), nodeFilter)
-		if len(instances) < 1 {
+	for _, inst := range instances {
+		switch inst.Type() {
+		case models.ComponentTypeMonitor,
+			models.ComponentTypeTiSpark:
 			continue
 		}
 
-		for _, inst := range instances {
-			archKey := fmt.Sprintf("%s-%s", inst.OS(), inst.Arch())
-			if _, found := uniqueArchList[archKey]; !found {
-				uniqueArchList[archKey] = struct{}{}
-				t0 := task.NewBuilder().
-					Download(
-						componentDiagCollector,
-						inst.OS(),
-						inst.Arch(),
-						diagcolVer,
-					).
-					BuildAsStep(fmt.Sprintf("  - Downloading collecting tools for %s/%s", inst.OS(), inst.Arch()))
-				downloadTasks = append(downloadTasks, t0)
-			}
-
-			// tasks that applies to each host
-			if _, found := uniqueHosts[inst.GetHost()]; !found {
-				uniqueHosts[inst.GetHost()] = inst.GetSSHPort()
-				// build system info collecting tasks
-				b, err := m.sshTaskBuilder(c.GetBaseOptions().Cluster, topo, c.GetBaseOptions().User, *c.opt)
-				if err != nil {
-					return nil, err
-				}
-				t1 := b.
-					Mkdir(c.GetBaseOptions().User, inst.GetHost(), filepath.Join(task.CheckToolsPathDir, "bin")).
-					CopyComponent(
-						componentDiagCollector,
-						inst.OS(),
-						inst.Arch(),
-						diagcolVer,
-						"", // use default srcPath
-						inst.GetHost(),
-						task.CheckToolsPathDir,
-					)
-				hostTasks[inst.GetHost()] = t1
-			}
-
-			// add filepaths to list
-			if _, found := hostPaths[inst.GetHost()]; !found {
-				hostPaths[inst.GetHost()] = set.NewStringSet()
-			}
-			hostPaths[inst.GetHost()].Insert(fmt.Sprintf("%s/conf/*", inst.DeployDir()))
+		os := inst.Attributes()["os"].(string)
+		arch := inst.Attributes()["arch"].(string)
+		archKey := fmt.Sprintf("%s-%s", os, arch)
+		if _, found := uniqueArchList[archKey]; !found {
+			uniqueArchList[archKey] = struct{}{}
+			t0 := task.NewBuilder().
+				Download(
+					componentDiagCollector,
+					os,
+					arch,
+					diagcolVer,
+				).
+				BuildAsStep(fmt.Sprintf("  - Downloading collecting tools for %s/%s", os, arch))
+			downloadTasks = append(downloadTasks, t0)
 		}
+
+		// tasks that applies to each host
+		if _, found := uniqueHosts[inst.Host()]; !found {
+			uniqueHosts[inst.Host()] = inst.SSHPort()
+			// build system info collecting tasks
+			b, err := m.sshTaskBuilder(c.GetBaseOptions().Cluster, rawTopo, c.GetBaseOptions().User, *c.opt)
+			if err != nil {
+				return nil, err
+			}
+			t1 := b.
+				Mkdir(c.GetBaseOptions().User, inst.Host(), filepath.Join(task.CheckToolsPathDir, "bin")).
+				CopyComponent(
+					componentDiagCollector,
+					os,
+					arch,
+					diagcolVer,
+					"", // use default srcPath
+					inst.Host(),
+					task.CheckToolsPathDir,
+				)
+			hostTasks[inst.Host()] = t1
+		}
+
+		// add filepaths to list
+		if _, found := hostPaths[inst.Host()]; !found {
+			hostPaths[inst.Host()] = set.NewStringSet()
+		}
+		hostPaths[inst.Host()].Insert(fmt.Sprintf("%s/conf/*", inst.Attributes()["deploy_dir"]))
 	}
 
 	// build scraper tasks
@@ -192,7 +199,22 @@ func (c *ConfigCollectOptions) Prepare(m *Manager, topo *spec.Specification) (ma
 }
 
 // Collect implements the Collector interface
-func (c *ConfigCollectOptions) Collect(m *Manager, topo *spec.Specification) error {
+func (c *ConfigCollectOptions) Collect(m *Manager, topo *models.TiDBCluster) error {
+	switch m.mode {
+	case CollectModeTiUP:
+		return c.collectForTiUP(m, topo)
+	case CollectModeK8s:
+		// TODO
+		return nil
+	default:
+		return nil
+	}
+}
+
+// collectForTiUP implements config collecting for tiup-cluster deployed clusters
+func (c *ConfigCollectOptions) collectForTiUP(m *Manager, topo *models.TiDBCluster) error {
+	rawTopo := topo.Attributes[CollectModeTiUP].(*spec.Specification)
+
 	var (
 		collectTasks []*task.StepDisplay
 		cleanTasks   []*task.StepDisplay
@@ -204,63 +226,55 @@ func (c *ConfigCollectOptions) Collect(m *Manager, topo *spec.Specification) err
 
 	roleFilter := set.NewStringSet(c.opt.Roles...)
 	nodeFilter := set.NewStringSet(c.opt.Nodes...)
-	components := topo.ComponentsByUpdateOrder()
-	components = operator.FilterComponent(components, roleFilter)
+	components := topo.Components()
+	components = models.FilterComponent(components, roleFilter)
+	instances := models.FilterInstance(components, nodeFilter)
 
-	for _, comp := range components {
-		switch comp.Name() {
-		case spec.ComponentPrometheus,
-			spec.ComponentGrafana,
-			spec.ComponentAlertmanager,
-			spec.ComponentTiSpark,
-			spec.ComponentSpark:
-			continue
-		}
-		instances := operator.FilterInstance(comp.Instances(), nodeFilter)
-		if len(instances) < 1 {
+	for _, inst := range instances {
+		switch inst.Type() {
+		case models.ComponentTypeMonitor,
+			models.ComponentTypeTiSpark:
 			continue
 		}
 
-		for _, inst := range instances {
-			// ops that applies to each host
-			if _, found := uniqueHosts[inst.GetHost()]; !found {
-				uniqueHosts[inst.GetHost()] = inst.GetSSHPort()
-				t1, err := m.sshTaskBuilder(c.GetBaseOptions().Cluster, topo, c.GetBaseOptions().User, *c.opt)
-				if err != nil {
-					return err
-				}
-				for _, f := range c.fileStats[inst.GetHost()] {
-					// build checking tasks
-					t1 = t1.
-						// check for listening ports
-						CopyFile(
-							f.Target,
-							filepath.Join(c.resultDir, inst.GetHost(), f.Target),
-							inst.GetHost(),
-							true,
-							c.limit,
-						)
-					collectTasks = append(
-						collectTasks,
-						t1.BuildAsStep(fmt.Sprintf("  - Downloading config files from node %s", inst.GetHost())),
-					)
-				}
-			}
-
-			b, err := m.sshTaskBuilder(c.GetBaseOptions().Cluster, topo, c.GetBaseOptions().User, *c.opt)
+		// ops that applies to each host
+		if _, found := uniqueHosts[inst.Host()]; !found {
+			uniqueHosts[inst.Host()] = inst.SSHPort()
+			t1, err := m.sshTaskBuilder(c.GetBaseOptions().Cluster, rawTopo, c.GetBaseOptions().User, *c.opt)
 			if err != nil {
 				return err
 			}
-			t2 := b.
-				Rmdir(inst.GetHost(), task.CheckToolsPathDir).
-				BuildAsStep(fmt.Sprintf("  - Cleanup temp files on %s:%d", inst.GetHost(), inst.GetSSHPort()))
-			cleanTasks = append(cleanTasks, t2)
-
-			// query realtime configs for each instance if supported
-			// TODO: support TLS enabled clusters
-			if t3 := buildRealtimeConfigCollectingTasks(ctx, inst, c.resultDir, nil); t3 != nil {
-				queryTasks = append(queryTasks, t3)
+			for _, f := range c.fileStats[inst.Host()] {
+				// build checking tasks
+				t1 = t1.
+					// check for listening ports
+					CopyFile(
+						f.Target,
+						filepath.Join(c.resultDir, inst.Host(), f.Target),
+						inst.Host(),
+						true,
+						c.limit,
+					)
+				collectTasks = append(
+					collectTasks,
+					t1.BuildAsStep(fmt.Sprintf("  - Downloading config files from node %s", inst.Host())),
+				)
 			}
+		}
+
+		b, err := m.sshTaskBuilder(c.GetBaseOptions().Cluster, rawTopo, c.GetBaseOptions().User, *c.opt)
+		if err != nil {
+			return err
+		}
+		t2 := b.
+			Rmdir(inst.Host(), task.CheckToolsPathDir).
+			BuildAsStep(fmt.Sprintf("  - Cleanup temp files on %s:%d", inst.Host(), inst.SSHPort()))
+		cleanTasks = append(cleanTasks, t2)
+
+		// query realtime configs for each instance if supported
+		// TODO: support TLS enabled clusters
+		if t3 := buildRealtimeConfigCollectingTasks(ctx, inst, c.resultDir, nil); t3 != nil {
+			queryTasks = append(queryTasks, t3)
 		}
 	}
 
@@ -286,35 +300,34 @@ type rtConfig struct {
 	url      string
 }
 
-func buildRealtimeConfigCollectingTasks(_ context.Context, inst spec.Instance, resultDir string, tlsCfg *tls.Config) *task.StepDisplay {
+func buildRealtimeConfigCollectingTasks(_ context.Context, inst models.Component, resultDir string, tlsCfg *tls.Config) *task.StepDisplay {
 	var configs []rtConfig
 	var instDir string
 	scheme := "http"
 
-	switch inst.ComponentName() {
-	case spec.ComponentPD:
-		i := inst.(*spec.PDInstance).BaseInstance.InstanceSpec.(*spec.PDSpec)
-		configs = append(configs, rtConfig{"config.json", fmt.Sprintf("%s://%s:%d/pd/api/v1/config", scheme, i.Host, i.ClientPort)})
-		configs = append(configs, rtConfig{"placement-rule.json", fmt.Sprintf("%s://%s:%d/pd/api/v1/config/placement-rule", scheme, i.Host, i.ClientPort)})
-	case spec.ComponentTiKV:
-		i := inst.(*spec.TiKVInstance).BaseInstance.InstanceSpec.(*spec.TiKVSpec)
-		configs = append(configs, rtConfig{"config.json", fmt.Sprintf("%s://%s:%d/config", scheme, i.Host, i.StatusPort)})
-	case spec.ComponentTiDB:
-		i := inst.(*spec.TiDBInstance).BaseInstance.InstanceSpec.(*spec.TiDBSpec)
-		configs = append(configs, rtConfig{"config.json", fmt.Sprintf("%s://%s:%d/config", scheme, i.Host, i.StatusPort)})
-	case spec.ComponentTiFlash:
-		i := inst.(*spec.TiFlashInstance).BaseInstance.InstanceSpec.(*spec.TiFlashSpec)
-		configs = append(configs, rtConfig{"config.json", fmt.Sprintf("%s://%s:%d/config", scheme, i.Host, i.FlashProxyStatusPort)})
+	switch inst.Type() {
+	case models.ComponentTypePD:
+		configs = append(configs, rtConfig{"config.json", fmt.Sprintf("%s://%s:%d/pd/api/v1/config", scheme, inst.Host(), inst.StatusPort())})
+		configs = append(configs, rtConfig{"placement-rule.json", fmt.Sprintf("%s://%s:%d/pd/api/v1/config/placement-rule", scheme, inst.Host(), inst.StatusPort())})
+	case models.ComponentTypeTiKV:
+		configs = append(configs, rtConfig{"config.json", fmt.Sprintf("%s://%s:%d/config", scheme, inst.Host(), inst.StatusPort())})
+	case models.ComponentTypeTiDB:
+		configs = append(configs, rtConfig{"config.json", fmt.Sprintf("%s://%s:%d/config", scheme, inst.Host(), inst.StatusPort())})
+	case models.ComponentTypeTiFlash:
+		configs = append(configs, rtConfig{"config.json", fmt.Sprintf("%s://%s:%d/config", scheme, inst.Host(), inst.StatusPort())})
 	default:
 		// not supported yet, just ignore
 		return nil
 	}
 
-	instDir = inst.DeployDir()
+	instDir, ok := inst.Attributes()["deploy_dir"].(string)
+	if !ok {
+		return nil
+	}
 
 	t := task.NewBuilder().
 		Func(
-			fmt.Sprintf("querying %s:%d", inst.GetHost(), inst.GetMainPort()),
+			fmt.Sprintf("querying %s:%d", inst.Host(), inst.MainPort()),
 			func(ctx context.Context) error {
 				c := utils.NewHTTPClient(time.Second*3, tlsCfg)
 				for _, config := range configs {
@@ -323,7 +336,7 @@ func buildRealtimeConfigCollectingTasks(_ context.Context, inst spec.Instance, r
 						return err
 					}
 					err = os.WriteFile(
-						filepath.Join(resultDir, inst.GetHost(), instDir, "conf", config.filename),
+						filepath.Join(resultDir, inst.Host(), instDir, "conf", config.filename),
 						resp,
 						0644,
 					)
@@ -336,9 +349,9 @@ func buildRealtimeConfigCollectingTasks(_ context.Context, inst spec.Instance, r
 		).
 		BuildAsStep(fmt.Sprintf(
 			"  - Querying configs for %s %s:%d",
-			inst.ComponentName(),
-			inst.GetHost(),
-			inst.GetMainPort(),
+			inst.Type(),
+			inst.Host(),
+			inst.MainPort(),
 		))
 
 	return t

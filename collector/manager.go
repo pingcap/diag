@@ -32,6 +32,7 @@ type Manager struct {
 	specManager *spec.SpecManager
 	bindVersion spec.BindVersion
 	session     string // an unique ID of the collection
+	mode        string // tiup-cluster or tidb-operator
 }
 
 // NewManager create a Manager.

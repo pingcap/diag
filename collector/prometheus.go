@@ -29,9 +29,9 @@ import (
 
 	jsoniter "github.com/json-iterator/go"
 	"github.com/klauspost/compress/zstd"
+	"github.com/pingcap/diag/pkg/models"
 	"github.com/pingcap/diag/pkg/utils"
 	operator "github.com/pingcap/tiup/pkg/cluster/operation"
-	"github.com/pingcap/tiup/pkg/cluster/spec"
 	"github.com/pingcap/tiup/pkg/logger/log"
 	"github.com/pingcap/tiup/pkg/tui/progress"
 	tiuputils "github.com/pingcap/tiup/pkg/utils"
@@ -78,22 +78,22 @@ func (c *AlertCollectOptions) SetDir(dir string) {
 }
 
 // Prepare implements the Collector interface
-func (c *AlertCollectOptions) Prepare(_ *Manager, _ *spec.Specification) (map[string][]CollectStat, error) {
+func (c *AlertCollectOptions) Prepare(_ *Manager, _ *models.TiDBCluster) (map[string][]CollectStat, error) {
 	return nil, nil
 }
 
 // Collect implements the Collector interface
-func (c *AlertCollectOptions) Collect(_ *Manager, topo *spec.Specification) error {
+func (c *AlertCollectOptions) Collect(_ *Manager, topo *models.TiDBCluster) error {
 	if len(topo.Monitors) < 1 {
-		fmt.Println("No Prometheus node found in topology, skip.")
+		fmt.Println("No monitoring node (prometheus) found in topology, skip.")
 		return nil
 	}
 
 	var queryOK bool
 	var queryErr error
 	for _, prom := range topo.Monitors {
-		promAddr := fmt.Sprintf("%s:%d", prom.Host, prom.Port)
-		if err := ensureMonitorDir(c.resultDir, subdirAlerts, fmt.Sprintf("%s-%d", prom.Host, prom.Port)); err != nil {
+		promAddr := fmt.Sprintf("%s:%d", prom.Host(), prom.MainPort())
+		if err := ensureMonitorDir(c.resultDir, subdirAlerts, fmt.Sprintf("%s-%d", prom.Host(), prom.MainPort())); err != nil {
 			return err
 		}
 
@@ -104,7 +104,7 @@ func (c *AlertCollectOptions) Collect(_ *Manager, topo *spec.Specification) erro
 		}
 		defer resp.Body.Close()
 
-		f, err := os.Create(filepath.Join(c.resultDir, subdirMonitor, subdirAlerts, fmt.Sprintf("%s-%d", prom.Host, prom.Port), "alerts.json"))
+		f, err := os.Create(filepath.Join(c.resultDir, subdirMonitor, subdirAlerts, fmt.Sprintf("%s-%d", prom.Host(), prom.MainPort()), "alerts.json"))
 		if err == nil {
 			queryOK = queryOK || true
 		} else {
@@ -175,7 +175,7 @@ func (c *MetricCollectOptions) SetDir(dir string) {
 }
 
 // Prepare implements the Collector interface
-func (c *MetricCollectOptions) Prepare(_ *Manager, topo *spec.Specification) (map[string][]CollectStat, error) {
+func (c *MetricCollectOptions) Prepare(_ *Manager, topo *models.TiDBCluster) (map[string][]CollectStat, error) {
 	if len(topo.Monitors) < 1 {
 		fmt.Println("No Prometheus node found in topology, skip.")
 		return nil, nil
@@ -190,7 +190,7 @@ func (c *MetricCollectOptions) Prepare(_ *Manager, topo *spec.Specification) (ma
 	var queryErr error
 	var promAddr string
 	for _, prom := range topo.Monitors {
-		promAddr = fmt.Sprintf("%s:%d", prom.Host, prom.Port)
+		promAddr = fmt.Sprintf("%s:%d", prom.Host(), prom.MainPort())
 		client := &http.Client{Timeout: time.Second * 10}
 		c.metrics, queryErr = getMetricList(client, promAddr)
 		if queryErr == nil {
@@ -205,10 +205,7 @@ func (c *MetricCollectOptions) Prepare(_ *Manager, topo *spec.Specification) (ma
 	c.metrics = filterMetrics(c.metrics, c.filter)
 
 	result := make(map[string][]CollectStat)
-	var insCnt int
-	topo.IterInstance(func(instance spec.Instance) {
-		insCnt++
-	})
+	insCnt := len(topo.Components())
 	cStat := CollectStat{
 		Target: fmt.Sprintf("%d metrics", len(c.metrics)),
 		Size:   int64(11*len(c.metrics)*insCnt) * nsec, // empirical formula, inaccurate
@@ -224,7 +221,7 @@ func (c *MetricCollectOptions) Prepare(_ *Manager, topo *spec.Specification) (ma
 }
 
 // Collect implements the Collector interface
-func (c *MetricCollectOptions) Collect(_ *Manager, topo *spec.Specification) error {
+func (c *MetricCollectOptions) Collect(m *Manager, topo *models.TiDBCluster) error {
 	if len(topo.Monitors) < 1 {
 		fmt.Println("No Prometheus node found in topology, skip.")
 		return nil
@@ -235,13 +232,15 @@ func (c *MetricCollectOptions) Collect(_ *Manager, topo *spec.Specification) err
 	total := len(c.metrics)
 	mu := sync.Mutex{}
 	for _, prom := range topo.Monitors {
-		key := fmt.Sprintf("%s:%d", prom.Host, prom.Port)
+		key := fmt.Sprintf("%s:%d", prom.Host(), prom.MainPort())
 		if _, ok := bars[key]; !ok {
 			bars[key] = mb.AddBar(fmt.Sprintf("  - Querying server %s", key))
 		}
 	}
-	mb.StartRenderLoop()
-	defer mb.StopRenderLoop()
+	if m.mode == CollectModeTiUP {
+		mb.StartRenderLoop()
+		defer mb.StopRenderLoop()
+	}
 
 	qLimit := c.opt.Concurrency
 	cpuCnt := runtime.NumCPU()
@@ -250,10 +249,10 @@ func (c *MetricCollectOptions) Collect(_ *Manager, topo *spec.Specification) err
 	}
 	tl := utils.NewTokenLimiter(uint(qLimit))
 	for _, prom := range topo.Monitors {
-		key := fmt.Sprintf("%s:%d", prom.Host, prom.Port)
+		key := fmt.Sprintf("%s:%d", prom.Host(), prom.MainPort())
 		done := 1
 
-		if err := ensureMonitorDir(c.resultDir, subdirMetrics, fmt.Sprintf("%s-%d", prom.Host, prom.Port)); err != nil {
+		if err := ensureMonitorDir(c.resultDir, subdirMetrics, fmt.Sprintf("%s-%d", prom.Host(), prom.MainPort())); err != nil {
 			bars[key].UpdateDisplay(&progress.DisplayProps{
 				Prefix: fmt.Sprintf("  - Query server %s: %s", key, err),
 				Mode:   progress.ModeError,
@@ -310,14 +309,14 @@ func getMetricList(c *http.Client, prom string) ([]string, error) {
 
 func collectMetric(
 	c *http.Client,
-	prom *spec.PrometheusSpec,
+	prom *models.MonitorSpec,
 	ts []string,
 	mtc, resultDir string,
 	compress bool,
 ) {
 	log.Debugf("Dumping metric %s...", mtc)
 
-	promAddr := fmt.Sprintf("%s:%d", prom.Host, prom.Port)
+	promAddr := fmt.Sprintf("%s:%d", prom.Host(), prom.MainPort())
 
 	for i := 0; i < len(ts)-1; i++ {
 		if err := tiuputils.Retry(
@@ -340,7 +339,7 @@ func collectMetric(
 
 				dst, err := os.Create(
 					filepath.Join(
-						resultDir, subdirMonitor, subdirMetrics, fmt.Sprintf("%s-%d", prom.Host, prom.Port),
+						resultDir, subdirMonitor, subdirMetrics, fmt.Sprintf("%s-%d", prom.Host(), prom.MainPort()),
 						fmt.Sprintf("%s_%s_%s.json", mtc, ts[i], ts[i+1]),
 					),
 				)

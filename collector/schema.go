@@ -24,10 +24,10 @@ import (
 	_ "github.com/go-sql-driver/mysql" // import for sql
 	"github.com/joho/sqltocsv"
 	"github.com/joomcode/errorx"
+	"github.com/pingcap/diag/pkg/models"
 	perrs "github.com/pingcap/errors"
 	"github.com/pingcap/tiup/pkg/cluster/ctxt"
 	operator "github.com/pingcap/tiup/pkg/cluster/operation"
-	"github.com/pingcap/tiup/pkg/cluster/spec"
 	"github.com/pingcap/tiup/pkg/cluster/task"
 )
 
@@ -99,19 +99,19 @@ func (c *SchemaCollectOptions) SetDir(dir string) {
 }
 
 // Prepare implements the Collector interface
-func (c *SchemaCollectOptions) Prepare(_ *Manager, _ *spec.Specification) (map[string][]CollectStat, error) {
+func (c *SchemaCollectOptions) Prepare(_ *Manager, _ *models.TiDBCluster) (map[string][]CollectStat, error) {
 	return nil, nil
 }
 
 // Collect implements the Collector interface
-func (c *SchemaCollectOptions) Collect(_ *Manager, topo *spec.Specification) error {
+func (c *SchemaCollectOptions) Collect(_ *Manager, topo *models.TiDBCluster) error {
 	err := os.Mkdir(filepath.Join(c.resultDir, "info_schema"), 0755)
 	if err != nil {
 		return err
 	}
 	ctx := ctxt.New(context.Background(), c.opt.Concurrency)
 
-	tidbInstants := topo.TiDBServers
+	tidbInstants := topo.TiDB
 
 	t := task.NewBuilder().
 		Func(
@@ -119,7 +119,7 @@ func (c *SchemaCollectOptions) Collect(_ *Manager, topo *spec.Specification) err
 			func(ctx context.Context) error {
 				var db *sql.DB
 				for _, inst := range tidbInstants {
-					trydb, err := sql.Open("mysql", fmt.Sprintf("%s:%s@tcp(%s:%d)/", c.dbuser, c.dbpasswd, inst.Host, inst.Port))
+					trydb, err := sql.Open("mysql", fmt.Sprintf("%s:%s@tcp(%s:%d)/", c.dbuser, c.dbpasswd, inst.Host(), inst.MainPort()))
 					defer trydb.Close()
 					if err != nil {
 						return err

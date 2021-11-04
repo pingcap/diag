@@ -36,7 +36,7 @@ const (
 	ComponentTypeDrainer ComponentType = "drainer"
 	ComponentTypeTiCDC   ComponentType = "ticdc"
 	ComponentTypeTiSpark ComponentType = "tispark"
-	ComponentTypeMonitor ComponentType = "monitor"
+	ComponentTypeMonitor ComponentType = "monitor" // prometheus and/or ng-monitor
 )
 
 // Component is the interface for any component
@@ -45,6 +45,7 @@ type Component interface {
 	Host() string
 	MainPort() int
 	StatusPort() int
+	SSHPort() int      // empty for tidb-operator
 	ID() string        // host:port identifier
 	ConfigURL() string // the url to request for realtime configs, without http/https scheme
 	Attributes() AttributeMap
@@ -102,6 +103,7 @@ type ComponentSpec struct {
 	Host       string       `json:"host"`
 	Port       int          `json:"port"`
 	StatusPort int          `json:"status_port"`
+	SSHPort    int          `json:"ssh_port,omitempty"`
 	Attributes AttributeMap `json:"attributes,omitempty"`
 }
 
@@ -123,6 +125,9 @@ func (s *MonitorSpec) MainPort() int { return s.ComponentSpec.Port }
 
 // StatusPort implements Component interface
 func (s *MonitorSpec) StatusPort() int { return s.ComponentSpec.StatusPort }
+
+// SSHPort implements Component interface
+func (s *MonitorSpec) SSHPort() int { return s.ComponentSpec.SSHPort }
 
 // ConfigURL implements Component interface
 func (s *MonitorSpec) ConfigURL() string {
@@ -152,6 +157,9 @@ func (s *PDSpec) MainPort() int { return s.ComponentSpec.Port }
 // StatusPort implements Component interface
 func (s *PDSpec) StatusPort() int { return s.ComponentSpec.StatusPort }
 
+// SSHPort implements Component interface
+func (s *PDSpec) SSHPort() int { return s.ComponentSpec.SSHPort }
+
 // ConfigURL implements Component interface
 func (s *PDSpec) ConfigURL() string {
 	return fmt.Sprintf("%s:%d/pd/api/v1/config", s.Host(), s.StatusPort())
@@ -179,6 +187,9 @@ func (s *TiKVSpec) MainPort() int { return s.ComponentSpec.Port }
 
 // StatusPort implements Component interface
 func (s *TiKVSpec) StatusPort() int { return s.ComponentSpec.StatusPort }
+
+// SSHPort implements Component interface
+func (s *TiKVSpec) SSHPort() int { return s.ComponentSpec.SSHPort }
 
 // ConfigURL implements Component interface
 func (s *TiKVSpec) ConfigURL() string {
@@ -208,6 +219,9 @@ func (s *TiDBSpec) MainPort() int { return s.ComponentSpec.Port }
 // StatusPort implements Component interface
 func (s *TiDBSpec) StatusPort() int { return s.ComponentSpec.StatusPort }
 
+// SSHPort implements Component interface
+func (s *TiDBSpec) SSHPort() int { return s.ComponentSpec.SSHPort }
+
 // ConfigURL implements Component interface
 func (s *TiDBSpec) ConfigURL() string {
 	return fmt.Sprintf("%s:%d/config", s.Host(), s.StatusPort())
@@ -235,6 +249,9 @@ func (s *TiFlashSpec) MainPort() int { return s.ComponentSpec.Port }
 
 // StatusPort implements Component interface
 func (s *TiFlashSpec) StatusPort() int { return s.ComponentSpec.StatusPort }
+
+// SSHPort implements Component interface
+func (s *TiFlashSpec) SSHPort() int { return s.ComponentSpec.SSHPort }
 
 // ConfigURL implements Component interface
 func (s *TiFlashSpec) ConfigURL() string {
@@ -264,6 +281,9 @@ func (s *PumpSpec) MainPort() int { return s.ComponentSpec.Port }
 // StatusPort implements Component interface
 func (s *PumpSpec) StatusPort() int { return s.ComponentSpec.StatusPort }
 
+// SSHPort implements Component interface
+func (s *PumpSpec) SSHPort() int { return s.ComponentSpec.SSHPort }
+
 // ConfigURL implements Component interface
 func (s *PumpSpec) ConfigURL() string {
 	return ""
@@ -291,6 +311,9 @@ func (s *DrainerSpec) MainPort() int { return s.ComponentSpec.Port }
 
 // StatusPort implements Component interface
 func (s *DrainerSpec) StatusPort() int { return s.ComponentSpec.StatusPort }
+
+// SSHPort implements Component interface
+func (s *DrainerSpec) SSHPort() int { return s.ComponentSpec.SSHPort }
 
 // ConfigURL implements Component interface
 func (s *DrainerSpec) ConfigURL() string {
@@ -320,6 +343,9 @@ func (s *TiCDCSpec) MainPort() int { return s.ComponentSpec.Port }
 // StatusPort implements Component interface
 func (s *TiCDCSpec) StatusPort() int { return s.ComponentSpec.StatusPort }
 
+// SSHPort implements Component interface
+func (s *TiCDCSpec) SSHPort() int { return s.ComponentSpec.SSHPort }
+
 // ConfigURL implements Component interface
 func (s *TiCDCSpec) ConfigURL() string {
 	return ""
@@ -348,6 +374,9 @@ func (s *TiSparkCSpec) MainPort() int { return s.ComponentSpec.Port }
 
 // StatusPort implements Component interface
 func (s *TiSparkCSpec) StatusPort() int { return s.ComponentSpec.StatusPort }
+
+// SSHPort implements Component interface
+func (s *TiSparkCSpec) SSHPort() int { return s.ComponentSpec.SSHPort }
 
 // ConfigURL implements Component interface
 func (s *TiSparkCSpec) ConfigURL() string {

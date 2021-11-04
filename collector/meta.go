@@ -21,6 +21,7 @@ import (
 	"time"
 
 	jsoniter "github.com/json-iterator/go"
+	"github.com/pingcap/diag/pkg/models"
 	perrs "github.com/pingcap/errors"
 	"github.com/pingcap/tiup/pkg/cluster/api"
 	operator "github.com/pingcap/tiup/pkg/cluster/operation"
@@ -78,19 +79,30 @@ func (c *MetaCollectOptions) SetDir(dir string) {
 }
 
 // Prepare implements the Collector interface
-func (c *MetaCollectOptions) Prepare(_ *Manager, _ *spec.Specification) (map[string][]CollectStat, error) {
+func (c *MetaCollectOptions) Prepare(_ *Manager, _ *models.TiDBCluster) (map[string][]CollectStat, error) {
 	return nil, nil
 }
 
 // Collect implements the Collector interface
-func (c *MetaCollectOptions) Collect(_ *Manager, _ *spec.Specification) error {
+func (c *MetaCollectOptions) Collect(m *Manager, _ *models.TiDBCluster) error {
 	// write cluster.json
 	b := c.GetBaseOptions()
-	clusterID, err := getClusterID(b.Cluster)
+	var clusterID int64
+	var err error
+
+	switch m.mode {
+	case CollectModeTiUP:
+		clusterID, err = getTiUPClusterID(b.Cluster)
+	case CollectModeK8s:
+		// todo
+	default:
+		// nothing
+	}
 	if err != nil {
 		fmt.Fprint(os.Stderr, fmt.Errorf("cannot get clusterID from PD"))
 		return err
 	}
+
 	collectors := []string{}
 	for name, enabled := range c.collectors {
 		if enabled {
@@ -132,7 +144,7 @@ func (c *MetaCollectOptions) Collect(_ *Manager, _ *spec.Specification) error {
 	return nil
 }
 
-func getClusterID(clusterName string) (int64, error) {
+func getTiUPClusterID(clusterName string) (int64, error) {
 	metadata, err := spec.ClusterMetadata(clusterName)
 	if err != nil && !errors.Is(perrs.Cause(err), meta.ErrValidate) &&
 		!errors.Is(perrs.Cause(err), spec.ErrNoTiSparkMaster) {

@@ -79,6 +79,8 @@ func newCollectCmd() *cobra.Command {
 					cOpt.MetricsFilter = append(cOpt.MetricsFilter, s.Text())
 				}
 			}
+
+			cOpt.Mode = collector.CollectModeTiUP
 			return cm.CollectClusterInfo(&opt, &cOpt, &gOpt)
 		},
 	}
