@@ -280,9 +280,12 @@ func (m *Manager) CollectClusterInfo(
 	)
 
 	// confirm before really collect
-	if err := confirmStats(stats, resultDir); err != nil {
-		return err
+	if m.mode == CollectModeTiUP {
+		if err := confirmStats(stats, resultDir); err != nil {
+			return err
+		}
 	}
+
 	err = os.MkdirAll(resultDir, 0755)
 	if err != nil {
 		return err

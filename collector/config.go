@@ -69,12 +69,12 @@ func (c *ConfigCollectOptions) SetDir(dir string) {
 
 // Prepare implements the Collector interface
 func (c *ConfigCollectOptions) Prepare(m *Manager, topo *models.TiDBCluster) (map[string][]CollectStat, error) {
-	if m.mode != CollectModeTiUP {
-		// only needed if the cluster is deployed by tiup-cluster
-		return nil, nil
+	switch m.mode {
+	case CollectModeTiUP:
+		return c.prepareForTiUP(m, topo)
 	}
 
-	return c.prepareForTiUP(m, topo)
+	return nil, nil
 }
 
 // prepareForTiUP implements preparation for tiup-cluster deployed clusters
@@ -204,11 +204,10 @@ func (c *ConfigCollectOptions) Collect(m *Manager, topo *models.TiDBCluster) err
 	case CollectModeTiUP:
 		return c.collectForTiUP(m, topo)
 	case CollectModeK8s:
-		// TODO
-		return nil
-	default:
-		return nil
+		return c.collectForK8s(m, topo)
 	}
+
+	return nil
 }
 
 // collectForTiUP implements config collecting for tiup-cluster deployed clusters
@@ -295,6 +294,51 @@ func (c *ConfigCollectOptions) collectForTiUP(m *Manager, topo *models.TiDBClust
 	return nil
 }
 
+// collectForK8s implements config collecting for tidb-operator deployed clusters
+func (c *ConfigCollectOptions) collectForK8s(_ *Manager, topo *models.TiDBCluster) error {
+	var (
+		queryTasks []*task.StepDisplay
+	)
+	ctx := ctxt.New(context.Background(), 2)
+
+	/*
+		roleFilter := set.NewStringSet(c.opt.Roles...)
+		nodeFilter := set.NewStringSet(c.opt.Nodes...)
+		components := topo.Components()
+		components = models.FilterComponent(components, roleFilter)
+		instances := models.FilterInstance(components, nodeFilter)
+	*/
+	instances := topo.Components()
+
+	for _, inst := range instances {
+		switch inst.Type() {
+		case models.ComponentTypeMonitor,
+			models.ComponentTypeTiSpark:
+			continue
+		}
+
+		// query realtime configs for each instance if supported
+		// TODO: support TLS enabled clusters
+		if t3 := buildRealtimeConfigCollectingTasks(ctx, inst, c.resultDir, nil); t3 != nil {
+			queryTasks = append(queryTasks, t3)
+		}
+	}
+
+	t := task.NewBuilder().
+		ParallelStep("+ Query realtime configs", false, queryTasks...).
+		Build()
+
+	if err := t.Execute(ctx); err != nil {
+		if errorx.Cast(err) != nil {
+			// FIXME: Map possible task errors and give suggestions.
+			return err
+		}
+		return perrs.Trace(err)
+	}
+
+	return nil
+}
+
 type rtConfig struct {
 	filename string
 	url      string
@@ -320,19 +364,29 @@ func buildRealtimeConfigCollectingTasks(_ context.Context, inst models.Component
 		return nil
 	}
 
+	host := inst.Host()
 	instDir, ok := inst.Attributes()["deploy_dir"].(string)
 	if !ok {
-		return nil
+		// for tidb-operator deployed cluster
+		instDir = ""
+	}
+	if pod, ok := inst.Attributes()["pod"].(string); ok {
+		host = pod
 	}
 
 	t := task.NewBuilder().
 		Func(
-			fmt.Sprintf("querying %s:%d", inst.Host(), inst.MainPort()),
+			fmt.Sprintf("querying %s:%d", host, inst.MainPort()),
 			func(ctx context.Context) error {
 				c := utils.NewHTTPClient(time.Second*3, tlsCfg)
 				for _, config := range configs {
 					resp, err := c.Get(ctx, config.url)
 					if err != nil {
+						fmt.Printf("fail querying %s: %s, continue", config.url, err)
+						return nil
+					}
+					fpath := filepath.Join(resultDir, host, instDir, "conf")
+					if err := utils.CreateDir(fpath); err != nil {
 						return err
 					}
 					err = os.WriteFile(

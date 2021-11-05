@@ -20,6 +20,7 @@ import (
 	jsoniter "github.com/json-iterator/go"
 	pingcapv1alpha1 "github.com/pingcap/diag/k8s/apis/pingcap/v1alpha1"
 	"github.com/pingcap/diag/pkg/models"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/dynamic"
@@ -31,13 +32,18 @@ import (
 func buildTopoForK8sCluster(
 	_ *Manager,
 	opt *BaseOptions,
-	_ *kubernetes.Clientset,
+	kubeCli *kubernetes.Clientset,
 	dynCli dynamic.Interface,
 ) (*models.TiDBCluster, error) {
-	gvr := schema.GroupVersionResource{
+	gvrTiDB := schema.GroupVersionResource{
 		Group:    "pingcap.com",
 		Version:  "v1alpha1",
 		Resource: "tidbclusters",
+	}
+	gvrMonitor := schema.GroupVersionResource{
+		Group:    "pingcap.com",
+		Version:  "v1alpha1",
+		Resource: "tidbmonitors",
 	}
 
 	ns := os.Getenv("NAMESPACE")
@@ -62,7 +68,7 @@ func buildTopoForK8sCluster(
 		}
 	*/
 
-	tcList, err := dynCli.Resource(gvr).Namespace(ns).List(context.TODO(), metav1.ListOptions{})
+	tcList, err := dynCli.Resource(gvrTiDB).Namespace(ns).List(context.TODO(), metav1.ListOptions{})
 	if err != nil {
 		klog.Fatalf("failed to list tidbclusters in namespace %s: %v", ns, err)
 	}
@@ -76,7 +82,23 @@ func buildTopoForK8sCluster(
 	}
 
 	klog.Infof("found %d tidbclusters in namespace '%s'", len(tcs.Items), ns)
-	cls := &models.TiDBCluster{}
+
+	monList, err := dynCli.Resource(gvrMonitor).Namespace(ns).List(context.TODO(), metav1.ListOptions{})
+	if err != nil {
+		klog.Fatalf("failed to list tidbmonitors in namespace %s: %v", ns, err)
+	}
+	monData, err := monList.MarshalJSON()
+	if err != nil {
+		klog.Fatalf("failed to marshal tidbmonitors to json: %v", err)
+	}
+	var mon pingcapv1alpha1.TidbMonitorList
+	if err := jsoniter.Unmarshal(monData, &mon); err != nil {
+		klog.Fatalf("failed to unmarshal tidbmonitors crd: %v", err)
+	}
+
+	klog.Infof("found %d tidbmonitors in namespace '%s'", len(mon.Items), ns)
+
+	cls := &models.TiDBCluster{Namespace: ns}
 
 	for i, tc := range tcs.Items {
 		clsName := tc.ObjectMeta.Name
@@ -94,9 +116,19 @@ func buildTopoForK8sCluster(
 			if len(cls.PD) < 1 {
 				cls.PD = make([]*models.PDSpec, 0)
 			}
+
+			pod, err := kubeCli.CoreV1().Pods(ns).Get(context.TODO(), ins.Name, metav1.GetOptions{})
+			if err != nil {
+				klog.Errorf("error getting pod '%s' in '%s'", ins.Name, ns)
+			}
+			if pod.Status.Phase != corev1.PodRunning {
+				klog.Warningf("pod '%s' is in '%s' status, skip it", ins.Name, pod.Status.Phase)
+				continue
+			}
+
 			cls.PD = append(cls.PD, &models.PDSpec{
 				ComponentSpec: models.ComponentSpec{
-					Host:       ins.Name,
+					Host:       pod.Status.PodIP,
 					Port:       2379,
 					StatusPort: 2379,
 					Attributes: map[string]interface{}{
@@ -104,6 +136,7 @@ func buildTopoForK8sCluster(
 						"id":         ins.ID,
 						"client_url": ins.ClientURL,
 						"image":      tc.Status.PD.Image,
+						"pod":        ins.Name,
 					},
 				},
 			})
@@ -113,14 +146,25 @@ func buildTopoForK8sCluster(
 				if len(cls.TiDB) < 1 {
 					cls.TiDB = make([]*models.TiDBSpec, 0)
 				}
+
+				pod, err := kubeCli.CoreV1().Pods(ns).Get(context.TODO(), ins.Name, metav1.GetOptions{})
+				if err != nil {
+					klog.Errorf("error getting pod '%s' in '%s'", ins.Name, ns)
+				}
+				if pod.Status.Phase != corev1.PodRunning {
+					klog.Warningf("pod '%s' is in '%s' status, skip it", ins.Name, pod.Status.Phase)
+					continue
+				}
+
 				cls.TiDB = append(cls.TiDB, &models.TiDBSpec{
 					ComponentSpec: models.ComponentSpec{
-						Host:       ins.Name,
+						Host:       pod.Status.PodIP,
 						Port:       4000,
 						StatusPort: 10080,
 						Attributes: map[string]interface{}{
 							"health": ins.Health,
 							"image":  tc.Status.TiDB.Image,
+							"pod":    ins.Name,
 						},
 					},
 				})
@@ -131,9 +175,19 @@ func buildTopoForK8sCluster(
 				if len(cls.TiKV) < 1 {
 					cls.TiKV = make([]*models.TiKVSpec, 0)
 				}
+
+				pod, err := kubeCli.CoreV1().Pods(ns).Get(context.TODO(), ins.PodName, metav1.GetOptions{})
+				if err != nil {
+					klog.Errorf("error getting pod '%s' in '%s'", ins.PodName, ns)
+				}
+				if pod.Status.Phase != corev1.PodRunning {
+					klog.Warningf("pod '%s' is in '%s' status, skip it", ins.PodName, pod.Status.Phase)
+					continue
+				}
+
 				cls.TiKV = append(cls.TiKV, &models.TiKVSpec{
 					ComponentSpec: models.ComponentSpec{
-						Host:       ins.PodName,
+						Host:       pod.Status.PodIP,
 						Port:       20160,
 						StatusPort: 20180,
 						Attributes: map[string]interface{}{
@@ -141,6 +195,7 @@ func buildTopoForK8sCluster(
 							"id":           ins.ID,
 							"leader_count": ins.LeaderCount,
 							"image":        tc.Status.TiKV.Image,
+							"pod":          ins.PodName,
 						},
 					},
 				})
@@ -151,9 +206,19 @@ func buildTopoForK8sCluster(
 				if len(cls.TiFlash) < 1 {
 					cls.TiFlash = make([]*models.TiFlashSpec, 0)
 				}
+
+				pod, err := kubeCli.CoreV1().Pods(ns).Get(context.TODO(), ins.PodName, metav1.GetOptions{})
+				if err != nil {
+					klog.Errorf("error getting pod '%s' in '%s'", ins.PodName, ns)
+				}
+				if pod.Status.Phase != corev1.PodRunning {
+					klog.Warningf("pod '%s' is in '%s' status, skip it", ins.PodName, pod.Status.Phase)
+					continue
+				}
+
 				cls.TiFlash = append(cls.TiFlash, &models.TiFlashSpec{
 					ComponentSpec: models.ComponentSpec{
-						Host:       ins.PodName,
+						Host:       pod.Status.PodIP,
 						Port:       3930,
 						StatusPort: 20292,
 						Attributes: map[string]interface{}{
@@ -161,6 +226,7 @@ func buildTopoForK8sCluster(
 							"id":           ins.ID,
 							"leader_count": ins.LeaderCount,
 							"image":        tc.Status.TiFlash.Image,
+							"pod":          ins.PodName,
 						},
 					},
 				})
@@ -171,12 +237,23 @@ func buildTopoForK8sCluster(
 				if len(cls.TiCDC) < 1 {
 					cls.TiCDC = make([]*models.TiCDCSpec, 0)
 				}
+
+				pod, err := kubeCli.CoreV1().Pods(ns).Get(context.TODO(), ins.PodName, metav1.GetOptions{})
+				if err != nil {
+					klog.Errorf("error getting pod '%s' in '%s'", ins.PodName, ns)
+				}
+				if pod.Status.Phase != corev1.PodRunning {
+					klog.Warningf("pod '%s' is in '%s' status, skip it", ins.PodName, pod.Status.Phase)
+					continue
+				}
+
 				cls.TiCDC = append(cls.TiCDC, &models.TiCDCSpec{
 					ComponentSpec: models.ComponentSpec{
-						Host: ins.PodName,
+						Host: pod.Status.PodIP,
 						Port: 8301,
 						Attributes: map[string]interface{}{
-							"id": ins.ID,
+							"id":  ins.ID,
+							"pod": ins.PodName,
 						},
 					},
 				})
@@ -187,18 +264,47 @@ func buildTopoForK8sCluster(
 				if len(cls.Pump) < 1 {
 					cls.Pump = make([]*models.PumpSpec, 0)
 				}
+
+				pod, err := kubeCli.CoreV1().Pods(ns).Get(context.TODO(), ins.Host, metav1.GetOptions{})
+				if err != nil {
+					klog.Errorf("error getting pod '%s' in '%s'", ins.Host, ns)
+				}
+				if pod.Status.Phase != corev1.PodRunning {
+					klog.Warningf("pod '%s' is in '%s' status, skip it", ins.Host, pod.Status.Phase)
+					continue
+				}
+
 				cls.Pump = append(cls.Pump, &models.PumpSpec{
 					ComponentSpec: models.ComponentSpec{
-						Host: ins.Host,
+						Host: pod.Status.PodIP,
 						Port: 8250,
 						Attributes: map[string]interface{}{
 							"node":  ins.NodeID,
 							"state": ins.State,
+							"pod":   ins.Host,
 						},
 					},
 				})
 			}
 		}
+	}
+
+	for i, m := range mon.Items {
+		monName := m.ObjectMeta.Name
+		matched := false
+		for _, clsRef := range m.Spec.Clusters {
+			if clsRef.Name == opt.Cluster {
+				matched = true
+				break
+			}
+		}
+		if !matched {
+			klog.Infof("monitor %d ('%s') is not the one we want to collect ('%s'), skip.", i, monName, opt.Cluster)
+			continue
+		}
+
+		cTime := m.ObjectMeta.CreationTimestamp
+		klog.Infof("found monitor '%s', created at %s", monName, cTime)
 	}
 
 	return cls, nil
