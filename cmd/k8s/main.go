@@ -41,9 +41,7 @@ func init() {
 	cm = collector.NewEmptyManager("tidb")
 	cOpt = collector.CollectOptions{
 		Include: set.NewStringSet( // collect all types by default
-			collector.CollectTypeSystem,
 			collector.CollectTypeMonitor,
-			collector.CollectTypeLog,
 			collector.CollectTypeConfig,
 		),
 		Exclude: set.NewStringSet(),
@@ -71,14 +69,28 @@ func main() {
 
 	// run collectors
 	cOpt.Mode = collector.CollectModeK8s
-	opt.Cluster = "m31"
-	opt.ScrapeBegin = time.Now().Add(time.Hour * -2).Format(time.RFC3339)
-	opt.ScrapeEnd = time.Now().Format(time.RFC3339)
+	tc := os.Getenv("TC_NAME")
+	if tc == "" {
+		klog.Fatal("TC_NAME environment variable not set")
+	}
+	klog.Infof("collecting for tidb cluster '%s'", tc)
+	opt.Cluster = tc
+
+	// parsing time
+	opt.ScrapeBegin = os.Getenv("TIME_BEGIN")
+	if opt.ScrapeBegin == "" {
+		opt.ScrapeBegin = time.Now().Add(time.Hour * -2).Format(time.RFC3339)
+	}
+	opt.ScrapeEnd = os.Getenv("TIME_END")
+	if opt.ScrapeEnd == "" {
+		opt.ScrapeEnd = time.Now().Format(time.RFC3339)
+	}
+
 	if err := cm.CollectClusterInfo(&opt, &cOpt, &gOpt, kubeCli, dynCli); err != nil {
 		klog.Errorf("error collecting info: %s", err)
 	}
 
-	klog.Info("demo ended, sleep forever.")
+	klog.Info("collecting finished, backup the data before deleting this pod.")
 
 	sc := make(chan os.Signal, 1)
 	signal.Notify(sc,

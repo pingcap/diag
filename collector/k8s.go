@@ -35,7 +35,12 @@ func buildTopoForK8sCluster(
 	opt *BaseOptions,
 	kubeCli *kubernetes.Clientset,
 	dynCli dynamic.Interface,
-) (*models.TiDBCluster, error) {
+) (
+	*models.TiDBCluster,
+	*pingcapv1alpha1.TidbCluster,
+	*pingcapv1alpha1.TidbMonitor,
+	error,
+) {
 	gvrTiDB := schema.GroupVersionResource{
 		Group:    "pingcap.com",
 		Version:  "v1alpha1",
@@ -100,6 +105,7 @@ func buildTopoForK8sCluster(
 	klog.Infof("found %d tidbmonitors in namespace '%s'", len(mon.Items), ns)
 
 	cls := &models.TiDBCluster{Namespace: ns}
+	var cluster *pingcapv1alpha1.TidbCluster
 
 	for i, tc := range tcs.Items {
 		clsName := tc.ObjectMeta.Name
@@ -112,6 +118,7 @@ func buildTopoForK8sCluster(
 		status := tc.Status.Conditions[0].Type
 		klog.Infof("found cluster '%s': %s, %s, created at %s",
 			clsName, tc.Spec.Version, status, cTime)
+		cluster = &tc
 
 		for _, ins := range tc.Status.PD.Members {
 			if len(cls.PD) < 1 {
@@ -365,5 +372,5 @@ func buildTopoForK8sCluster(
 		})
 	}
 
-	return cls, nil
+	return cls, cluster, &matchedMon, nil
 }

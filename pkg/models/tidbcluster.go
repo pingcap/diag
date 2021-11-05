@@ -53,7 +53,7 @@ type Component interface {
 
 // TiDBCluster is the abstract topology of a TiDB cluster
 type TiDBCluster struct {
-	ID         int64           `json:"name"` // cluster ID from PD
+	ID         int64           `json:"cluster_id"` // cluster ID from PD
 	Namespace  string          `json:"namespace,omitempty"`
 	Attributes AttributeMap    `json:"attributes,omitempty"`
 	PD         []*PDSpec       `json:"pd"` // PD is the minimal required component for a cluster
@@ -111,7 +111,7 @@ type ComponentSpec struct {
 // MonitorSpec is the spec needed for monitoring nodes
 type MonitorSpec struct {
 	ComponentSpec `json:",inline"`
-	Endpoint      string `json:"endpoint"`              // the metric endpoint, normally prometheus address
+	Endpoint      string `json:"endpoint,omitempty"`    // the metric endpoint, normally prometheus address
 	NGEndpoint    string `json:"ng_endpoint,omitempty"` // the endpoint of NG-monitor, might be empty
 }
 

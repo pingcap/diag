@@ -18,9 +18,11 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strconv"
 	"time"
 
 	jsoniter "github.com/json-iterator/go"
+	pingcapv1alpha1 "github.com/pingcap/diag/k8s/apis/pingcap/v1alpha1"
 	"github.com/pingcap/diag/pkg/models"
 	perrs "github.com/pingcap/errors"
 	"github.com/pingcap/tiup/pkg/cluster/api"
@@ -30,8 +32,11 @@ import (
 )
 
 const (
-	fileNameClusterMeta = "meta.yaml"
-	fileNameClusterJSON = "cluster.json"
+	fileNameClusterAbstract = "topology.json"
+	fileNameClusterMeta     = "meta.yaml"
+	fileNameClusterJSON     = "cluster.json"
+	fileNameClusterCRD      = "tidbcluster.json"
+	fileNameClusterMonitor  = "tidbmonitor.json"
 )
 
 // MetaCollectOptions is the options collecting cluster meta
@@ -42,6 +47,9 @@ type MetaCollectOptions struct {
 	collectors map[string]bool
 	resultDir  string
 	filePath   string
+	cluster    *models.TiDBCluster
+	tc         *pingcapv1alpha1.TidbCluster
+	tm         *pingcapv1alpha1.TidbMonitor
 }
 
 type ClusterJSON struct {
@@ -94,7 +102,9 @@ func (c *MetaCollectOptions) Collect(m *Manager, _ *models.TiDBCluster) error {
 	case CollectModeTiUP:
 		clusterID, err = getTiUPClusterID(b.Cluster)
 	case CollectModeK8s:
-		// todo
+		var id int
+		id, err = strconv.Atoi(c.tc.GetClusterID())
+		clusterID = int64(id)
 	default:
 		// nothing
 	}
@@ -102,6 +112,7 @@ func (c *MetaCollectOptions) Collect(m *Manager, _ *models.TiDBCluster) error {
 		fmt.Fprint(os.Stderr, fmt.Errorf("cannot get clusterID from PD"))
 		return err
 	}
+	c.cluster.ID = clusterID
 
 	collectors := []string{}
 	for name, enabled := range c.collectors {
@@ -129,17 +140,62 @@ func (c *MetaCollectOptions) Collect(m *Manager, _ *models.TiDBCluster) error {
 	}
 
 	// save the topology
-	yamlMeta, err := os.ReadFile(c.filePath)
+	// save the abstract topology
+	clsData, err := jsoniter.MarshalIndent(c.cluster, "", "  ")
 	if err != nil {
 		return err
 	}
-	fm, err := os.Create(filepath.Join(c.resultDir, fileNameClusterMeta))
+	fcls, err := os.Create(filepath.Join(c.resultDir, fileNameClusterAbstract))
 	if err != nil {
 		return err
 	}
-	defer fm.Close()
-	if _, err := fm.Write(yamlMeta); err != nil {
+	defer fcls.Close()
+	if _, err := fcls.Write(clsData); err != nil {
 		return err
+	}
+
+	// save deployment related topology
+	switch m.mode {
+	case CollectModeTiUP:
+		yamlMeta, err := os.ReadFile(c.filePath)
+		if err != nil {
+			return err
+		}
+		fm, err := os.Create(filepath.Join(c.resultDir, fileNameClusterMeta))
+		if err != nil {
+			return err
+		}
+		defer fm.Close()
+		if _, err := fm.Write(yamlMeta); err != nil {
+			return err
+		}
+	case CollectModeK8s:
+		tcData, err := jsoniter.MarshalIndent(c.tc, "", "  ")
+		if err != nil {
+			return err
+		}
+		fc, err := os.Create(filepath.Join(c.resultDir, fileNameClusterCRD))
+		if err != nil {
+			return err
+		}
+		defer fc.Close()
+		if _, err := fc.Write(tcData); err != nil {
+			return err
+		}
+		if c.tm != nil {
+			tmData, err := jsoniter.MarshalIndent(c.tm, "", "  ")
+			if err != nil {
+				return err
+			}
+			fm, err := os.Create(filepath.Join(c.resultDir, fileNameClusterMonitor))
+			if err != nil {
+				return err
+			}
+			defer fm.Close()
+			if _, err := fm.Write(tmData); err != nil {
+				return err
+			}
+		}
 	}
 	return nil
 }

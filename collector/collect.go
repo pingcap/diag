@@ -21,6 +21,7 @@ import (
 	"time"
 
 	"github.com/fatih/color"
+	pingcapv1alpha1 "github.com/pingcap/diag/k8s/apis/pingcap/v1alpha1"
 	"github.com/pingcap/diag/pkg/models"
 	"github.com/pingcap/diag/pkg/utils"
 	"github.com/pingcap/tiup/pkg/cluster/executor"
@@ -100,12 +101,14 @@ func (m *Manager) CollectClusterInfo(
 	m.mode = cOpt.Mode
 
 	var cls *models.TiDBCluster
+	var tc *pingcapv1alpha1.TidbCluster
+	var tm *pingcapv1alpha1.TidbMonitor
 	var err error
 	switch cOpt.Mode {
 	case CollectModeTiUP:
 		cls, err = buildTopoForTiUPCluster(m, opt)
 	case CollectModeK8s:
-		cls, err = buildTopoForK8sCluster(m, opt, kubeCli, dynCli)
+		cls, tc, tm, err = buildTopoForK8sCluster(m, opt, kubeCli, dynCli)
 	default:
 		return fmt.Errorf("unknown collect mode '%s'", cOpt.Mode)
 	}
@@ -163,9 +166,19 @@ func (m *Manager) CollectClusterInfo(
 			collectors:  collectorSet,
 			resultDir:   resultDir,
 			filePath:    m.specManager.Path(opt.Cluster, "meta.yaml"),
+			cluster:     cls,
 		})
 	case CollectModeK8s:
-		// todo
+		collectors = append(collectors, &MetaCollectOptions{ // cluster metadata, always collected
+			BaseOptions: opt,
+			opt:         gOpt,
+			session:     m.session,
+			collectors:  collectorSet,
+			resultDir:   resultDir,
+			cluster:     cls,
+			tc:          tc,
+			tm:          tm,
+		})
 	}
 
 	// collect data from monitoring system
