@@ -299,7 +299,7 @@ func (c *ConfigCollectOptions) collectForK8s(_ *Manager, topo *models.TiDBCluste
 	var (
 		queryTasks []*task.StepDisplay
 	)
-	ctx := ctxt.New(context.Background(), 2)
+	ctx := ctxt.New(context.Background(), c.opt.Concurrency)
 
 	/*
 		roleFilter := set.NewStringSet(c.opt.Roles...)

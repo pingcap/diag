@@ -21,6 +21,7 @@ import (
 
 	"github.com/pingcap/diag/collector"
 	"github.com/pingcap/diag/version"
+	operator "github.com/pingcap/tiup/pkg/cluster/operation"
 	"github.com/pingcap/tiup/pkg/set"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
@@ -31,6 +32,7 @@ import (
 var (
 	cm   *collector.Manager
 	cOpt collector.CollectOptions
+	gOpt operator.Options
 	opt  collector.BaseOptions
 )
 
@@ -46,6 +48,7 @@ func init() {
 		),
 		Exclude: set.NewStringSet(),
 	}
+	gOpt.Concurrency = 2
 	opt = collector.BaseOptions{}
 }
 
@@ -71,7 +74,7 @@ func main() {
 	opt.Cluster = "m31"
 	opt.ScrapeBegin = time.Now().Add(time.Hour * -2).Format(time.RFC3339)
 	opt.ScrapeEnd = time.Now().Format(time.RFC3339)
-	if err := cm.CollectClusterInfo(&opt, &cOpt, nil, kubeCli, dynCli); err != nil {
+	if err := cm.CollectClusterInfo(&opt, &cOpt, &gOpt, kubeCli, dynCli); err != nil {
 		klog.Errorf("error collecting info: %s", err)
 	}
 
