@@ -54,6 +54,7 @@ type Component interface {
 // TiDBCluster is the abstract topology of a TiDB cluster
 type TiDBCluster struct {
 	ID         int64           `json:"cluster_id"` // cluster ID from PD
+	Version    string          `json:"version"`    // cluster version
 	Namespace  string          `json:"namespace,omitempty"`
 	Attributes AttributeMap    `json:"attributes,omitempty"`
 	PD         []*PDSpec       `json:"pd"` // PD is the minimal required component for a cluster

@@ -44,8 +44,10 @@ func buildTopoForTiUPCluster(m *Manager, opt *BaseOptions) (*models.TiDBCluster,
 
 	// build the abstract topology
 	cls := &models.TiDBCluster{
+		Version: metadata.Version,
 		Attributes: map[string]interface{}{
 			CollectModeTiUP: &topo,
+			"last_ops_ver":  metadata.OpsVer,
 		},
 	}
 	topo.IterInstance(func(ins spec.Instance) {

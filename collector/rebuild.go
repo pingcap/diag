@@ -72,7 +72,7 @@ func RunLocal(dumpDir string, opt *RebuildOptions) error {
 	fmt.Println("Start bootstrapping a monitoring system on localhost and rebuilding the dashboards.")
 
 	// read clsuter name
-	body, err := os.ReadFile(path.Join(dumpDir, fileNameClusterJSON))
+	body, err := os.ReadFile(path.Join(dumpDir, FileNameClusterJSON))
 	if err != nil {
 		return err
 	}

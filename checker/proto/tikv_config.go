@@ -17,8 +17,8 @@ import (
 	"reflect"
 	"strings"
 
+	"github.com/pingcap/diag/pkg/models"
 	"github.com/pingcap/diag/pkg/utils"
-	"github.com/pingcap/tiup/pkg/cluster/spec"
 )
 
 type ReadPoolConfig struct {
@@ -479,11 +479,11 @@ type TikvConfigData struct {
 	Host  string
 }
 
-func (cfg *TikvConfigData) LoadClusterMeta(meta *spec.ClusterMeta) {
+func (cfg *TikvConfigData) LoadClusterMeta(meta *models.TiDBCluster) {
 	if cfg.Extra == nil {
-		cfg.Extra = &TikvExtraData{TiFlashCnt: len(meta.Topology.TiFlashServers)}
+		cfg.Extra = &TikvExtraData{TiFlashCnt: len(meta.TiFlash)}
 	} else {
-		cfg.Extra.TiFlashCnt = len(meta.Topology.TiFlashServers)
+		cfg.Extra.TiFlashCnt = len(meta.TiFlash)
 	}
 }
 

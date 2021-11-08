@@ -41,12 +41,12 @@ type SchemaCollectOptions struct {
 	fileStats map[string][]CollectStat
 }
 
-type schema struct {
+type infoSchema struct {
 	filename string
 	sql      string
 }
 
-var schemas []schema = []schema{
+var infoSchemas []infoSchema = []infoSchema{
 	{
 		"avg_process_time_by_plan.csv", `
 SELECT a.Digest, a.Plan_Digest, a.avg_process_time, a.last_time FROM
@@ -105,7 +105,7 @@ func (c *SchemaCollectOptions) Prepare(_ *Manager, _ *models.TiDBCluster) (map[s
 
 // Collect implements the Collector interface
 func (c *SchemaCollectOptions) Collect(_ *Manager, topo *models.TiDBCluster) error {
-	err := os.Mkdir(filepath.Join(c.resultDir, "info_schema"), 0755)
+	err := os.Mkdir(filepath.Join(c.resultDir, "info_infoSchema"), 0755)
 	if err != nil {
 		return err
 	}
@@ -115,7 +115,7 @@ func (c *SchemaCollectOptions) Collect(_ *Manager, topo *models.TiDBCluster) err
 
 	t := task.NewBuilder().
 		Func(
-			"collect info schema",
+			"collect info infoSchema",
 			func(ctx context.Context) error {
 				var db *sql.DB
 				for _, inst := range tidbInstants {
@@ -134,19 +134,19 @@ func (c *SchemaCollectOptions) Collect(_ *Manager, topo *models.TiDBCluster) err
 					return fmt.Errorf("cannot connect to any TiDB instance")
 				}
 
-				_, err = db.Exec("USE information_schema;")
+				_, err = db.Exec("USE information_infoSchema;")
 				if err != nil {
 					return err
 				}
 
 				var errs []string
-				for _, s := range schemas {
+				for _, s := range infoSchemas {
 					rows, err := db.Query(s.sql)
 					if err != nil {
 						errs = append(errs, err.Error())
 						continue
 					}
-					err = sqltocsv.WriteFile(filepath.Join(c.resultDir, "info_schema", s.filename), rows)
+					err = sqltocsv.WriteFile(filepath.Join(c.resultDir, "info_infoSchema", s.filename), rows)
 					if err != nil {
 						return err
 					}
@@ -157,7 +157,7 @@ func (c *SchemaCollectOptions) Collect(_ *Manager, topo *models.TiDBCluster) err
 				return nil
 			},
 		).
-		BuildAsStep("  - Querying schema")
+		BuildAsStep("  - Querying infoSchema")
 
 	if err := t.Execute(ctx); err != nil {
 		if errorx.Cast(err) != nil {

@@ -32,11 +32,12 @@ import (
 )
 
 const (
-	fileNameClusterAbstract = "topology.json"
-	fileNameClusterMeta     = "meta.yaml"
-	fileNameClusterJSON     = "cluster.json"
-	fileNameClusterCRD      = "tidbcluster.json"
-	fileNameClusterMonitor  = "tidbmonitor.json"
+	FileNameClusterAbstractTopo = "topology.json"    // abstract topology
+	FileNameClusterJSON         = "cluster.json"     // general cluster info
+	FileNameTiUPClusterMeta     = "meta.yaml"        // tiup-cluster topology
+	FileNameK8sClusterCRD       = "tidbcluster.json" // tidb-operator crd
+	FileNameK8sClusterMonitor   = "tidbmonitor.json" // tidb-operator crd
+	DirNameInfoSchema           = "info_schema"
 )
 
 // MetaCollectOptions is the options collecting cluster meta
@@ -54,7 +55,8 @@ type MetaCollectOptions struct {
 
 type ClusterJSON struct {
 	ClusterName string   `json:"cluster_name"`
-	ClusterID   int64    `json:"cluster_id"` // the id from pd
+	ClusterID   int64    `json:"cluster_id"`  // the id from pd
+	DeployType  string   `json:"deploy_type"` // deployment type
 	Session     string   `json:"session"`
 	BeginTime   string   `json:"begin_time"`
 	EndTime     string   `json:"end_time"`
@@ -124,13 +126,14 @@ func (c *MetaCollectOptions) Collect(m *Manager, _ *models.TiDBCluster) error {
 	jsonbyte, _ := jsoniter.MarshalIndent(ClusterJSON{
 		ClusterName: b.Cluster,
 		ClusterID:   clusterID,
+		DeployType:  m.mode,
 		Session:     c.session,
 		Collectors:  collectors,
 		BeginTime:   b.ScrapeBegin,
 		EndTime:     b.ScrapeEnd,
 	}, "", "  ")
 
-	fn, err := os.Create(filepath.Join(c.resultDir, fileNameClusterJSON))
+	fn, err := os.Create(filepath.Join(c.resultDir, FileNameClusterJSON))
 	if err != nil {
 		return err
 	}
@@ -145,7 +148,7 @@ func (c *MetaCollectOptions) Collect(m *Manager, _ *models.TiDBCluster) error {
 	if err != nil {
 		return err
 	}
-	fcls, err := os.Create(filepath.Join(c.resultDir, fileNameClusterAbstract))
+	fcls, err := os.Create(filepath.Join(c.resultDir, FileNameClusterAbstractTopo))
 	if err != nil {
 		return err
 	}
@@ -161,7 +164,7 @@ func (c *MetaCollectOptions) Collect(m *Manager, _ *models.TiDBCluster) error {
 		if err != nil {
 			return err
 		}
-		fm, err := os.Create(filepath.Join(c.resultDir, fileNameClusterMeta))
+		fm, err := os.Create(filepath.Join(c.resultDir, FileNameTiUPClusterMeta))
 		if err != nil {
 			return err
 		}
@@ -174,7 +177,7 @@ func (c *MetaCollectOptions) Collect(m *Manager, _ *models.TiDBCluster) error {
 		if err != nil {
 			return err
 		}
-		fc, err := os.Create(filepath.Join(c.resultDir, fileNameClusterCRD))
+		fc, err := os.Create(filepath.Join(c.resultDir, FileNameK8sClusterCRD))
 		if err != nil {
 			return err
 		}
@@ -187,7 +190,7 @@ func (c *MetaCollectOptions) Collect(m *Manager, _ *models.TiDBCluster) error {
 			if err != nil {
 				return err
 			}
-			fm, err := os.Create(filepath.Join(c.resultDir, fileNameClusterMonitor))
+			fm, err := os.Create(filepath.Join(c.resultDir, FileNameK8sClusterMonitor))
 			if err != nil {
 				return err
 			}

@@ -58,22 +58,6 @@ func buildTopoForK8sCluster(
 	}
 	klog.Infof("got namespace '%s'", ns)
 
-	/*
-		podList, err := kubeCli.CoreV1().Pods(ns).List(context.TODO(), metav1.ListOptions{})
-		if err != nil {
-			klog.Fatalf("failed to list pods in namespace %s: %v", ns, err)
-		}
-		klog.Infof("listed pods in namespace %s:", ns)
-		for _, pod := range podList.Items {
-			podName := pod.Name
-			cTime := pod.CreationTimestamp
-			hostIP := pod.Status.HostIP
-			podIPs := pod.Status.PodIPs
-			podStatus := pod.Status.Phase
-			klog.Infof("%s (%s) on %s, %s, created at %s", podName, podIPs[0], hostIP, podStatus, cTime)
-		}
-	*/
-
 	tcList, err := dynCli.Resource(gvrTiDB).Namespace(ns).List(context.TODO(), metav1.ListOptions{})
 	if err != nil {
 		klog.Fatalf("failed to list tidbclusters in namespace %s: %v", ns, err)
@@ -119,6 +103,7 @@ func buildTopoForK8sCluster(
 		klog.Infof("found cluster '%s': %s, %s, created at %s",
 			clsName, tc.Spec.Version, status, cTime)
 		cluster = &tc
+		cls.Version = tc.Spec.Version
 
 		for _, ins := range tc.Status.PD.Members {
 			if len(cls.PD) < 1 {

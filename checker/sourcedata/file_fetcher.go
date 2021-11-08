@@ -27,6 +27,7 @@ import (
 	"github.com/pingcap/diag/checker/config"
 	"github.com/pingcap/diag/checker/proto"
 	"github.com/pingcap/diag/collector"
+	"github.com/pingcap/diag/pkg/models"
 	"github.com/pingcap/errors"
 	"github.com/pingcap/log"
 	"github.com/pingcap/tiup/pkg/cluster/spec"
@@ -38,13 +39,6 @@ import (
 type Fetcher interface {
 	FetchData(rules *config.RuleSpec) (*proto.SourceDataV2, proto.RuleSet, error)
 }
-
-// TODO: move to consts pkg later
-const (
-	clusterMetaFileName = "meta.yaml"
-	clusterJSONFileName = "cluster.json"
-	infoSchemaDirName   = "info_schema"
-)
 
 const (
 	ConfigFlag CheckFlag = 1 << iota
@@ -94,19 +88,8 @@ func NewFileFetcher(dataDirPath string, opts ...FileFetcherOpt) (*FileFetcher, e
 // FetchData retrieve config data from file path, and filter rules by component version
 // dataPath is the path to the top folder which contain the data collected by diag collect.
 func (f *FileFetcher) FetchData(rules *config.RuleSpec) (*proto.SourceDataV2, proto.RuleSet, error) {
-	meta := &spec.ClusterMeta{}
+	meta := &models.TiDBCluster{}
 	clusterJSON := &collector.ClusterJSON{}
-	{
-		// decode meta.yaml
-		bs, err := os.ReadFile(f.genMetaConfigPath())
-		if err != nil {
-			return nil, nil, err
-		}
-		if err := yaml.Unmarshal(bs, meta); err != nil {
-			log.Error(err.Error())
-			return nil, nil, err
-		}
-	}
 	{
 		// decode cluster.json
 		bs, err := os.ReadFile(f.genClusterJSONPath())
@@ -114,6 +97,18 @@ func (f *FileFetcher) FetchData(rules *config.RuleSpec) (*proto.SourceDataV2, pr
 			return nil, nil, err
 		}
 		if err := json.Unmarshal(bs, clusterJSON); err != nil {
+			log.Error(err.Error())
+			return nil, nil, err
+		}
+	}
+
+	{
+		// decode topology.json
+		bs, err := os.ReadFile(f.genMetaConfigPath())
+		if err != nil {
+			return nil, nil, err
+		}
+		if err := yaml.Unmarshal(bs, meta); err != nil {
 			log.Error(err.Error())
 			return nil, nil, err
 		}
@@ -144,9 +139,9 @@ func (f *FileFetcher) FetchData(rules *config.RuleSpec) (*proto.SourceDataV2, pr
 		return nil, nil, err
 	}
 	sourceData := &proto.SourceDataV2{
-		ClusterInfo: clusterJSON,
-		NodesData:   make(map[string][]proto.Config),
-		TidbVersion: meta.Version,
+		ClusterInfo:   clusterJSON,
+		NodesData:     make(map[string][]proto.Config),
+		TidbVersion:   meta.Version,
 		DashboardData: &proto.DashboardData{},
 	}
 	ctx := context.Background()
@@ -224,14 +219,17 @@ func (f *FileFetcher) FetchData(rules *config.RuleSpec) (*proto.SourceDataV2, pr
 }
 
 // sourceData will be updated
-func (f *FileFetcher) loadRealTimeConfig(ctx context.Context, sourceData *proto.SourceDataV2, meta *spec.ClusterMeta, rSet proto.RuleSet) error {
+func (f *FileFetcher) loadRealTimeConfig(ctx context.Context, sourceData *proto.SourceDataV2, meta *models.TiDBCluster, rSet proto.RuleSet) error {
 	nameStructs := rSet.GetNameStructs()
 	for name := range nameStructs {
 		switch name {
 		case proto.PdComponentName:
-			for _, spec := range meta.Topology.PDServers {
+			for _, spec := range meta.PD {
 				// todo add no data
-				cfgPath := path.Join(f.dataDirPath, spec.Host, spec.DeployDir, "conf", "config.json")
+				cfgPath := path.Join(f.dataDirPath, spec.Host(), "conf", "config.json")
+				if deployDir, ok := spec.Attributes()["deploy_dir"]; ok {
+					cfgPath = path.Join(f.dataDirPath, spec.Host(), deployDir.(string), "conf", "config.json")
+				}
 				bs, err := os.ReadFile(cfgPath)
 				cfg := proto.NewPdConfigData()
 				if err != nil {
@@ -242,13 +240,16 @@ func (f *FileFetcher) loadRealTimeConfig(ctx context.Context, sourceData *proto.
 						return err
 					}
 				}
-				cfg.Port = spec.ClientPort
-				cfg.Host = spec.Host
+				cfg.Host = spec.Host()
+				cfg.Port = spec.MainPort()
 				sourceData.AppendConfig(cfg, proto.PdComponentName)
 			}
 		case proto.TikvComponentName:
-			for _, spec := range meta.Topology.TiKVServers {
-				cfgPath := path.Join(f.dataDirPath, spec.Host, spec.DeployDir, "conf", "config.json")
+			for _, spec := range meta.TiKV {
+				cfgPath := path.Join(f.dataDirPath, spec.Host(), "conf", "config.json")
+				if deployDir, ok := spec.Attributes()["deploy_dir"]; ok {
+					cfgPath = path.Join(f.dataDirPath, spec.Host(), deployDir.(string), "conf", "config.json")
+				}
 				bs, err := os.ReadFile(cfgPath)
 				cfg := proto.NewTikvConfigData()
 				if err != nil {
@@ -260,13 +261,16 @@ func (f *FileFetcher) loadRealTimeConfig(ctx context.Context, sourceData *proto.
 					}
 					cfg.LoadClusterMeta(meta)
 				}
-				cfg.Host = spec.Host
-				cfg.Port = spec.Port
+				cfg.Host = spec.Host()
+				cfg.Port = spec.MainPort()
 				sourceData.AppendConfig(cfg, proto.TikvComponentName)
 			}
 		case proto.TidbComponentName:
-			for _, spec := range meta.Topology.TiDBServers {
-				cfgPath := path.Join(f.dataDirPath, spec.Host, spec.DeployDir, "conf", "config.json")
+			for _, spec := range meta.TiDB {
+				cfgPath := path.Join(f.dataDirPath, spec.Host(), "conf", "config.json")
+				if deployDir, ok := spec.Attributes()["deploy_dir"]; ok {
+					cfgPath = path.Join(f.dataDirPath, spec.Host(), deployDir.(string), "conf", "config.json")
+				}
 				bs, err := os.ReadFile(cfgPath)
 				cfg := proto.NewTidbConfigData()
 				if err != nil {
@@ -277,8 +281,8 @@ func (f *FileFetcher) loadRealTimeConfig(ctx context.Context, sourceData *proto.
 						return err
 					}
 				}
-				cfg.Host = spec.Host
-				cfg.Port = spec.Port
+				cfg.Host = spec.Host()
+				cfg.Port = spec.MainPort()
 				sourceData.AppendConfig(cfg, proto.TidbComponentName)
 			}
 		default:
@@ -287,9 +291,8 @@ func (f *FileFetcher) loadRealTimeConfig(ctx context.Context, sourceData *proto.
 	return nil
 }
 
-
 // todo sourceData will be updated
-func (f *FileFetcher) loadSlowLog(ctx context.Context, sourceData *proto.SourceDataV2, meta *spec.ClusterMeta) (err error) {
+func (f *FileFetcher) loadSlowLog(ctx context.Context, sourceData *proto.SourceDataV2, meta *models.TiDBCluster) (err error) {
 	header := []string{"Time", "Digest", "Plan_digest", "Process_time", "Process_keys", "Rocksdb_delete_skipped_count", "Total_keys"}
 	idxLookUp := NewIdxLookup(header)
 	avgProcessTimePlanAcc := avgProcessTimePlanAccumulator{
@@ -304,11 +307,14 @@ func (f *FileFetcher) loadSlowLog(ctx context.Context, sourceData *proto.SourceD
 		idxLookUp: idxLookUp,
 		data:      make(map[string]map[string]struct{}),
 	}
-	closers:= make([]io.Closer, 0)
-	for _, spec := range meta.Topology.TiDBServers {
-		slowLogPath := path.Join(f.dataDirPath, spec.Host, spec.DeployDir, "log", "tidb_slow_query.log")
+	closers := make([]io.Closer, 0)
+	for _, spec := range meta.TiDB {
+		slowLogPath := path.Join(f.dataDirPath, spec.Host(), "log", "tidb_slow_query.log")
+		if deployDir, ok := spec.Attributes()["deploy_dir"]; ok {
+			slowLogPath = path.Join(f.dataDirPath, spec.Host(), deployDir.(string), "log", "tidb_slow_query.log")
+		}
 		// todo
-		retriever, err := NewSlowQueryRetriever(5, time.Local, header, slowLogPath, WithTimeRanges(time.Now().AddDate(0,0,-7), time.Now()) )
+		retriever, err := NewSlowQueryRetriever(5, time.Local, header, slowLogPath, WithTimeRanges(time.Now().AddDate(0, 0, -7), time.Now()))
 		if err != nil {
 			return err
 		}
@@ -437,7 +443,7 @@ func (f *FileFetcher) loadDigest(reader io.Reader) ([]proto.DigestPair, error) {
 	for idx, col := range header {
 		idxLookUp[strings.ToLower(col)] = idx
 	}
-	data := make([]proto.DigestPair,0)
+	data := make([]proto.DigestPair, 0)
 	for {
 		record, err := csvReader.Read()
 		if err == io.EOF {
@@ -485,15 +491,15 @@ func (f *FileFetcher) loadSysVariables(reader io.Reader) (map[string]string, err
 }
 
 func (f *FileFetcher) genMetaConfigPath() string {
-	return path.Join(f.dataDirPath, clusterMetaFileName)
+	return path.Join(f.dataDirPath, collector.FileNameClusterAbstractTopo)
 }
 
 func (f *FileFetcher) genClusterJSONPath() string {
-	return path.Join(f.dataDirPath, clusterJSONFileName)
+	return path.Join(f.dataDirPath, collector.FileNameClusterJSON)
 }
 
 func (f *FileFetcher) genInfoSchemaCSVPath(fileName string) string {
-	return path.Join(f.dataDirPath, infoSchemaDirName, fileName)
+	return path.Join(f.dataDirPath, collector.DirNameInfoSchema, fileName)
 }
 
 func (f *FileFetcher) GetComponent(meta *spec.ClusterMeta) []string {
