@@ -1,0 +1,37 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: diag-collector
+  labels:
+    app: pingcap-clinic
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: pingcap-clinic
+  template:
+    metadata:
+      labels:
+        app: pingcap-clinic
+    spec:
+      serviceAccount: pingcap-clinic
+      serviceAccountName: pingcap-clinic
+      containers:
+      - name: collector
+        image: hub.pingcap.net/zhongbenli/diag:latest
+        imagePullPolicy: Always
+        command:
+        - /usr/local/bin/diag
+        env:
+        - name: NAMESPACE
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.namespace
+        - name: TC_NAME
+          value: "demo-cluster"
+        - name: TIME_BEGIN
+          value: "-2h"
+        - name: TIME_END
+          value: ""
+
