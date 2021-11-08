@@ -16,7 +16,6 @@ package sourcedata
 import (
 	"context"
 	"encoding/csv"
-	"encoding/json"
 	"io"
 	"os"
 	"path"
@@ -24,6 +23,7 @@ import (
 	"strings"
 	"time"
 
+	jsoniter "github.com/json-iterator/go"
 	"github.com/pingcap/diag/checker/config"
 	"github.com/pingcap/diag/checker/proto"
 	"github.com/pingcap/diag/collector"
@@ -33,7 +33,6 @@ import (
 	"github.com/pingcap/tiup/pkg/cluster/spec"
 	"github.com/sirupsen/logrus"
 	"go.uber.org/zap"
-	"gopkg.in/yaml.v3"
 )
 
 type Fetcher interface {
@@ -96,7 +95,7 @@ func (f *FileFetcher) FetchData(rules *config.RuleSpec) (*proto.SourceDataV2, pr
 		if err != nil {
 			return nil, nil, err
 		}
-		if err := json.Unmarshal(bs, clusterJSON); err != nil {
+		if err := jsoniter.Unmarshal(bs, clusterJSON); err != nil {
 			log.Error(err.Error())
 			return nil, nil, err
 		}
@@ -108,7 +107,7 @@ func (f *FileFetcher) FetchData(rules *config.RuleSpec) (*proto.SourceDataV2, pr
 		if err != nil {
 			return nil, nil, err
 		}
-		if err := yaml.Unmarshal(bs, meta); err != nil {
+		if err := jsoniter.Unmarshal(bs, meta); err != nil {
 			log.Error(err.Error())
 			return nil, nil, err
 		}
@@ -226,16 +225,20 @@ func (f *FileFetcher) loadRealTimeConfig(ctx context.Context, sourceData *proto.
 		case proto.PdComponentName:
 			for _, spec := range meta.PD {
 				// todo add no data
-				cfgPath := path.Join(f.dataDirPath, spec.Host(), "conf", "config.json")
-				if deployDir, ok := spec.Attributes()["deploy_dir"]; ok {
-					cfgPath = path.Join(f.dataDirPath, spec.Host(), deployDir.(string), "conf", "config.json")
+				host := spec.Host()
+				if pod, ok := spec.Attributes()["pod"].(string); ok {
+					host = pod
+				}
+				cfgPath := path.Join(f.dataDirPath, host, "conf", "config.json")
+				if deployDir, ok := spec.Attributes()["deploy_dir"].(string); ok {
+					cfgPath = path.Join(f.dataDirPath, host, deployDir, "conf", "config.json")
 				}
 				bs, err := os.ReadFile(cfgPath)
 				cfg := proto.NewPdConfigData()
 				if err != nil {
 					cfg.PdConfig = nil // skip error
 				} else {
-					if err := json.Unmarshal(bs, cfg); err != nil {
+					if err := jsoniter.Unmarshal(bs, cfg); err != nil {
 						logrus.Error(err)
 						return err
 					}
@@ -246,16 +249,20 @@ func (f *FileFetcher) loadRealTimeConfig(ctx context.Context, sourceData *proto.
 			}
 		case proto.TikvComponentName:
 			for _, spec := range meta.TiKV {
-				cfgPath := path.Join(f.dataDirPath, spec.Host(), "conf", "config.json")
-				if deployDir, ok := spec.Attributes()["deploy_dir"]; ok {
-					cfgPath = path.Join(f.dataDirPath, spec.Host(), deployDir.(string), "conf", "config.json")
+				host := spec.Host()
+				if pod, ok := spec.Attributes()["pod"].(string); ok {
+					host = pod
+				}
+				cfgPath := path.Join(f.dataDirPath, host, "conf", "config.json")
+				if deployDir, ok := spec.Attributes()["deploy_dir"].(string); ok {
+					cfgPath = path.Join(f.dataDirPath, host, deployDir, "conf", "config.json")
 				}
 				bs, err := os.ReadFile(cfgPath)
 				cfg := proto.NewTikvConfigData()
 				if err != nil {
 					cfg.TikvConfig = nil // skip error
 				} else {
-					if err := json.Unmarshal(bs, cfg); err != nil {
+					if err := jsoniter.Unmarshal(bs, cfg); err != nil {
 						logrus.Error(err)
 						return err
 					}
@@ -267,16 +274,20 @@ func (f *FileFetcher) loadRealTimeConfig(ctx context.Context, sourceData *proto.
 			}
 		case proto.TidbComponentName:
 			for _, spec := range meta.TiDB {
-				cfgPath := path.Join(f.dataDirPath, spec.Host(), "conf", "config.json")
-				if deployDir, ok := spec.Attributes()["deploy_dir"]; ok {
-					cfgPath = path.Join(f.dataDirPath, spec.Host(), deployDir.(string), "conf", "config.json")
+				host := spec.Host()
+				if pod, ok := spec.Attributes()["pod"].(string); ok {
+					host = pod
+				}
+				cfgPath := path.Join(f.dataDirPath, host, "conf", "config.json")
+				if deployDir, ok := spec.Attributes()["deploy_dir"].(string); ok {
+					cfgPath = path.Join(f.dataDirPath, host, deployDir, "conf", "config.json")
 				}
 				bs, err := os.ReadFile(cfgPath)
 				cfg := proto.NewTidbConfigData()
 				if err != nil {
 					cfg.TidbConfig = nil
 				} else {
-					if err := json.Unmarshal(bs, cfg); err != nil {
+					if err := jsoniter.Unmarshal(bs, cfg); err != nil {
 						logrus.Error(err)
 						return err
 					}

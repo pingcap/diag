@@ -346,19 +346,18 @@ type rtConfig struct {
 
 func buildRealtimeConfigCollectingTasks(_ context.Context, inst models.Component, resultDir string, tlsCfg *tls.Config) *task.StepDisplay {
 	var configs []rtConfig
-	var instDir string
 	scheme := "http"
 
 	switch inst.Type() {
 	case models.ComponentTypePD:
-		configs = append(configs, rtConfig{"config.json", fmt.Sprintf("%s://%s:%d/pd/api/v1/config", scheme, inst.Host(), inst.StatusPort())})
-		configs = append(configs, rtConfig{"placement-rule.json", fmt.Sprintf("%s://%s:%d/pd/api/v1/config/placement-rule", scheme, inst.Host(), inst.StatusPort())})
+		configs = append(configs, rtConfig{"config.json", inst.ConfigURL()})
+		configs = append(configs, rtConfig{"placement-rule.json", fmt.Sprintf("%s:%d/pd/api/v1/config/placement-rule", inst.Host(), inst.StatusPort())})
 	case models.ComponentTypeTiKV:
-		configs = append(configs, rtConfig{"config.json", fmt.Sprintf("%s://%s:%d/config", scheme, inst.Host(), inst.StatusPort())})
+		configs = append(configs, rtConfig{"config.json", inst.ConfigURL()})
 	case models.ComponentTypeTiDB:
-		configs = append(configs, rtConfig{"config.json", fmt.Sprintf("%s://%s:%d/config", scheme, inst.Host(), inst.StatusPort())})
+		configs = append(configs, rtConfig{"config.json", inst.ConfigURL()})
 	case models.ComponentTypeTiFlash:
-		configs = append(configs, rtConfig{"config.json", fmt.Sprintf("%s://%s:%d/config", scheme, inst.Host(), inst.StatusPort())})
+		configs = append(configs, rtConfig{"config.json", inst.ConfigURL()})
 	default:
 		// not supported yet, just ignore
 		return nil
@@ -380,9 +379,10 @@ func buildRealtimeConfigCollectingTasks(_ context.Context, inst models.Component
 			func(ctx context.Context) error {
 				c := utils.NewHTTPClient(time.Second*3, tlsCfg)
 				for _, config := range configs {
-					resp, err := c.Get(ctx, config.url)
+					url := fmt.Sprintf("%s://%s", scheme, config.url)
+					resp, err := c.Get(ctx, url)
 					if err != nil {
-						fmt.Printf("fail querying %s: %s, continue", config.url, err)
+						fmt.Printf("fail querying %s: %s, continue", url, err)
 						return nil
 					}
 					fpath := filepath.Join(resultDir, host, instDir, "conf")
@@ -390,7 +390,7 @@ func buildRealtimeConfigCollectingTasks(_ context.Context, inst models.Component
 						return err
 					}
 					err = os.WriteFile(
-						filepath.Join(resultDir, inst.Host(), instDir, "conf", config.filename),
+						filepath.Join(resultDir, host, instDir, "conf", config.filename),
 						resp,
 						0644,
 					)
