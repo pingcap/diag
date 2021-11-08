@@ -16,6 +16,7 @@ package command
 import (
 	"context"
 	"fmt"
+
 	"github.com/pingcap/diag/checker/config"
 	"github.com/pingcap/diag/checker/engine"
 	"github.com/pingcap/diag/checker/render"
@@ -102,5 +103,6 @@ func newCheckCmd() *cobra.Command {
 	}
 
 	cmd.Flags().StringVar(&datapath, "datapath", "./data", "path to collected data")
+	// cmd.Flags().StringVar(checktag, "checktag", "*", "path to collected data") // checktype: {performance, config}
 	return cmd
 }
