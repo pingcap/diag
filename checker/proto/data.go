@@ -15,6 +15,7 @@ package proto
 
 import (
 	"reflect"
+	"time"
 
 	"github.com/Masterminds/semver"
 	"github.com/pingcap/diag/collector"
@@ -28,10 +29,12 @@ const (
 )
 
 type SourceDataV2 struct {
-	ClusterInfo *collector.ClusterJSON
-	TidbVersion string
-	NodesData   map[string][]Config // {"component": {config, config, config, nil}}
+	ClusterInfo   *collector.ClusterJSON
+	TidbVersion   string
+	NodesData     map[string][]Config // {"component": {config, config, config, nil}}
+	DashboardData DashboardData
 }
+
 type OutputData struct {
 	ClusterID   string
 	ClusterName string
@@ -76,17 +79,32 @@ type Config interface {
 	GetValueByTagPath(tagPath string) reflect.Value
 }
 
-type PerformanceData struct{}
+type DashboardData struct {
+	ExecutionPlanInfoList     map[string][2]ExecutionPlanInfo // e.g {"xsdfasdf22sdf": {{min_execution_info}, {max_execution_info}}}
+	OldVersionProcesskeyCount struct {
+		GcLifeTime time.Duration
+		Count      int
+	}
+	TombStoneStatistics struct {
+		Count int
+	}
+}
+
+type ExecutionPlanInfo struct {
+	MaxLastTime    time.Time
+	AvgProcessTime time.Duration
+}
 
 type DeviceData struct{}
 
+// ruletag: checkType, datatype, component
 type Rule struct {
 	// version
 	ID           int64  `yaml:"id" toml:"id"`
 	Name         string `yaml:"name" toml:"name"`
 	Description  string `yaml:"description" toml:"description"`
 	ExecuteRule  string `yaml:"execute_rule" toml:"execute_rule"`
-	NameStruct   string `yaml:"name_struct" toml:"name_struct"` // -> "TidbConfigData" or "PdConfigData" or "TikvConfigData"
+	CheckTag     string `yaml:"check_tag" toml:"check_tag"` // datatype.component
 	ExpectRes    string `yaml:"expect_res" toml:"expect_res"`
 	WarnLevel    string `yaml:"warn_level" toml:"warn_level"`
 	Variation    string `yaml:"variation" toml:"variation"` // e.g. tidb.file.max_days,
@@ -94,16 +112,7 @@ type Rule struct {
 	Suggestion   string `yaml:"suggestion" toml:"suggestion"`
 }
 
-type RuleSet map[string][]*Rule // e.g {"TidbConfigData": {&Rule{}, &Rule{}}}
-type Result struct {
-	Name        string `header:"rule"`
-	CheckState  bool   `header:"pass"`
-	WarnLevel   string `header:"warn-level"`
-	Component   string `header:"component"`
-	Node        string `header:"node"`
-	ExpectValue string `header:"expect-value"`
-	Port        int    `header:"port"`
-}
+type RuleSet map[string]map[string][]*Rule // e.g {"Config": {"TidbConfigData": {&Rule{}, &Rule{}}}, "Dashboard": {}}
 
 type VersionRange string
 
