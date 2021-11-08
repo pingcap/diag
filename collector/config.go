@@ -281,24 +281,30 @@ func (c *ConfigCollectOptions) Collect(m *Manager, topo *spec.Specification) err
 	return nil
 }
 
+type rtConfig struct {
+	filename string
+	url      string
+}
+
 func buildRealtimeConfigCollectingTasks(_ context.Context, inst spec.Instance, resultDir string, tlsCfg *tls.Config) *task.StepDisplay {
-	var url string
+	var configs []rtConfig
 	var instDir string
 	scheme := "http"
 
 	switch inst.ComponentName() {
 	case spec.ComponentPD:
 		i := inst.(*spec.PDInstance).BaseInstance.InstanceSpec.(*spec.PDSpec)
-		url = fmt.Sprintf("%s://%s:%d/pd/api/v1/config", scheme, i.Host, i.ClientPort)
+		configs = append(configs, rtConfig{"config.json", fmt.Sprintf("%s://%s:%d/pd/api/v1/config", scheme, i.Host, i.ClientPort)})
+		configs = append(configs, rtConfig{"placement-rule.json", fmt.Sprintf("%s://%s:%d/pd/api/v1/config/placement-rule", scheme, i.Host, i.ClientPort)})
 	case spec.ComponentTiKV:
 		i := inst.(*spec.TiKVInstance).BaseInstance.InstanceSpec.(*spec.TiKVSpec)
-		url = fmt.Sprintf("%s://%s:%d/config", scheme, i.Host, i.StatusPort)
+		configs = append(configs, rtConfig{"config.json", fmt.Sprintf("%s://%s:%d/config", scheme, i.Host, i.StatusPort)})
 	case spec.ComponentTiDB:
 		i := inst.(*spec.TiDBInstance).BaseInstance.InstanceSpec.(*spec.TiDBSpec)
-		url = fmt.Sprintf("%s://%s:%d/config", scheme, i.Host, i.StatusPort)
+		configs = append(configs, rtConfig{"config.json", fmt.Sprintf("%s://%s:%d/config", scheme, i.Host, i.StatusPort)})
 	case spec.ComponentTiFlash:
 		i := inst.(*spec.TiFlashInstance).BaseInstance.InstanceSpec.(*spec.TiFlashSpec)
-		url = fmt.Sprintf("%s://%s:%d/config", scheme, i.Host, i.FlashProxyStatusPort)
+		configs = append(configs, rtConfig{"config.json", fmt.Sprintf("%s://%s:%d/config", scheme, i.Host, i.FlashProxyStatusPort)})
 	default:
 		// not supported yet, just ignore
 		return nil
@@ -311,15 +317,21 @@ func buildRealtimeConfigCollectingTasks(_ context.Context, inst spec.Instance, r
 			fmt.Sprintf("querying %s:%d", inst.GetHost(), inst.GetMainPort()),
 			func(ctx context.Context) error {
 				c := utils.NewHTTPClient(time.Second*3, tlsCfg)
-				resp, err := c.Get(ctx, url)
-				if err != nil {
-					return err
+				for _, config := range configs {
+					resp, err := c.Get(ctx, config.url)
+					if err != nil {
+						return err
+					}
+					err = os.WriteFile(
+						filepath.Join(resultDir, inst.GetHost(), instDir, "conf", config.filename),
+						resp,
+						0644,
+					)
+					if err != nil {
+						return err
+					}
 				}
-				return os.WriteFile(
-					filepath.Join(resultDir, inst.GetHost(), instDir, "conf", "config.json"),
-					resp,
-					0644,
-				)
+				return nil
 			},
 		).
 		BuildAsStep(fmt.Sprintf(
