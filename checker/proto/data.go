@@ -57,7 +57,6 @@ type Data interface {
 }
 
 type OutputMetaData struct {
-	ClusterID   string
 	ClusterName string
 	TidbVersion string
 	ActionID    string
