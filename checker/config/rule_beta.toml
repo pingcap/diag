@@ -375,7 +375,9 @@ rule "poor_effective_index"
 begin
     maxExecutionInfo = dashboard.ExecutionPlanInfoList[0]
     minExecutionInfo = dashboard.ExecutionPlanInfoList[1]
-    if maxExecutionInfo.AvgProcessTime > 50 * minExecutionInfo.AvgProcessTime 
+    if !isNil(maxExecutionInfo) 
+        && !isNil(minExecutionInfo) 
+        && maxExecutionInfo.AvgProcessTime > 50 * minExecutionInfo.AvgProcessTime 
         && maxExecutionInfo.MaxLastTime > minExecutionInfo.MaxLastTime {
         return false
     }
