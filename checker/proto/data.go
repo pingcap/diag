@@ -15,7 +15,6 @@ package proto
 
 import (
 	"reflect"
-	"time"
 
 	"github.com/Masterminds/semver"
 	"github.com/pingcap/diag/collector"
@@ -82,7 +81,7 @@ type Config interface {
 type DashboardData struct {
 	ExecutionPlanInfoList     map[string][2]ExecutionPlanInfo // e.g {"xsdfasdf22sdf": {{min_execution_info}, {max_execution_info}}}
 	OldVersionProcesskeyCount struct {
-		GcLifeTime time.Duration
+		GcLifeTime int // s
 		Count      int
 	}
 	TombStoneStatistics struct {
@@ -91,8 +90,8 @@ type DashboardData struct {
 }
 
 type ExecutionPlanInfo struct {
-	MaxLastTime    time.Time
-	AvgProcessTime time.Duration
+	MaxLastTime    int64
+	AvgProcessTime int64 // ms
 }
 
 type DeviceData struct{}
@@ -104,7 +103,7 @@ type Rule struct {
 	Name         string `yaml:"name" toml:"name"`
 	Description  string `yaml:"description" toml:"description"`
 	ExecuteRule  string `yaml:"execute_rule" toml:"execute_rule"`
-	CheckTag     string `yaml:"check_tag" toml:"check_tag"` // datatype.component
+	NameStruct   string `yaml:"name_struct" toml:"name_struct"` // datatype.component
 	ExpectRes    string `yaml:"expect_res" toml:"expect_res"`
 	WarnLevel    string `yaml:"warn_level" toml:"warn_level"`
 	Variation    string `yaml:"variation" toml:"variation"` // e.g. tidb.file.max_days,
@@ -112,7 +111,7 @@ type Rule struct {
 	Suggestion   string `yaml:"suggestion" toml:"suggestion"`
 }
 
-type RuleSet map[string]map[string][]*Rule // e.g {"Config": {"TidbConfigData": {&Rule{}, &Rule{}}}, "Dashboard": {}}
+type RuleSet map[string][]*Rule // e.g {"Config": {"TidbConfigData": {&Rule{}, &Rule{}}}, "Dashboard": {}}
 
 type VersionRange string
 
