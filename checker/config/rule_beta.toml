@@ -364,3 +364,65 @@ name_struct = "PdConfig"
 expect_res = ""   #
 warn_level = "info"
 version = "> v4.0.0"
+
+[[rule]]
+id = 300
+name = "poor_effective_index"
+description = "执行计划选择了错误的索引"
+variation = "plan_process_time"
+execute_rule = """
+rule "poor_effective_index"
+begin
+    maxExecutionInfo = dashboard.ExecutionPlanInfoList[0]
+    minExecutionInfo = dashboard.ExecutionPlanInfoList[1]
+    if maxExecutionInfo.AvgProcessTime > 50 * minExecutionInfo.AvgProcessTime 
+        && maxExecutionInfo.MaxLastTime > minExecutionInfo.MaxLastTime {
+        return false
+    }
+    return true
+end
+"""
+name_struct = "performance.dashboard"
+expect_res = ""   #
+warn_level = "warning"
+version = "> v4.0.0"
+
+[[rule]]
+id = 301
+name = "old_version_count"
+description = ""
+variation = "total_key,process_key"
+execute_rule = """
+rule ""
+begin
+    if dashboard.OldVersionProcesskeyCount.Count > 0 && dashboard.OldVersionProcesskeyCount.GcLifeTime > 10 * 60 {
+        return false
+    }
+    return true
+end
+"""
+name_struct = "performance.dashboard"
+expect_res = ""   #
+warn_level = "warning"
+version = "> v4.0.0"
+
+[[rule]]
+id = 302
+name = "key_skip"  # todo check
+description = ""
+variation = "rocksdb_delete_skipped_count,process_keys"
+execute_rule = """
+rule "key_skip"
+begin
+    if dashboard.TombStoneStatistics.Count > 0 {
+        return false
+    } 
+    return true
+end
+"""
+name_struct = "performance.dashboard"
+expect_res = ""   #
+warn_level = "info"
+version = "> v4.0.0"
+
+
