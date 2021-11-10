@@ -166,7 +166,6 @@ func (m *Manager) CollectClusterInfo(
 			collectors:  collectorSet,
 			resultDir:   resultDir,
 			filePath:    m.specManager.Path(opt.Cluster, "meta.yaml"),
-			cluster:     cls,
 		})
 	case CollectModeK8s:
 		collectors = append(collectors, &MetaCollectOptions{ // cluster metadata, always collected
@@ -175,7 +174,6 @@ func (m *Manager) CollectClusterInfo(
 			session:     m.session,
 			collectors:  collectorSet,
 			resultDir:   resultDir,
-			cluster:     cls,
 			tc:          tc,
 			tm:          tm,
 		})

@@ -87,34 +87,20 @@ func NewFileFetcher(dataDirPath string, opts ...FileFetcherOpt) (*FileFetcher, e
 // FetchData retrieve config data from file path, and filter rules by component version
 // dataPath is the path to the top folder which contain the data collected by diag collect.
 func (f *FileFetcher) FetchData(rules *config.RuleSpec) (*proto.SourceDataV2, proto.RuleSet, error) {
-	meta := &models.TiDBCluster{}
 	clusterJSON := &collector.ClusterJSON{}
-	{
-		// decode cluster.json
-		bs, err := os.ReadFile(f.genClusterJSONPath())
-		if err != nil {
-			return nil, nil, err
-		}
-		if err := jsoniter.Unmarshal(bs, clusterJSON); err != nil {
-			log.Error(err.Error())
-			return nil, nil, err
-		}
-	}
 
-	{
-		// decode topology.json
-		bs, err := os.ReadFile(f.genMetaConfigPath())
-		if err != nil {
-			return nil, nil, err
-		}
-		if err := jsoniter.Unmarshal(bs, meta); err != nil {
-			log.Error(err.Error())
-			return nil, nil, err
-		}
+	// decode cluster.json
+	bs, err := os.ReadFile(f.genClusterJSONPath())
+	if err != nil {
+		return nil, nil, err
+	}
+	if err := jsoniter.Unmarshal(bs, clusterJSON); err != nil {
+		log.Error(err.Error())
+		return nil, nil, err
 	}
 	filterFunc := func(item config.RuleItem) (bool, error) {
 		// filter on version
-		ok, err := item.Version.Contain(meta.Version)
+		ok, err := item.Version.Contain(clusterJSON.Topology.Version)
 		if err != nil {
 			return false, err
 		} else if !ok {
@@ -133,6 +119,8 @@ func (f *FileFetcher) FetchData(rules *config.RuleSpec) (*proto.SourceDataV2, pr
 	}
 	// rSet contain all rules match the cluster version
 	rSet, err := rules.FilterOn(filterFunc)
+
+	meta := clusterJSON.Topology
 	if err != nil {
 		log.Error(err.Error())
 		return nil, nil, err
@@ -499,10 +487,6 @@ func (f *FileFetcher) loadSysVariables(reader io.Reader) (map[string]string, err
 		data[variableName] = variableValue
 	}
 	return data, nil
-}
-
-func (f *FileFetcher) genMetaConfigPath() string {
-	return path.Join(f.dataDirPath, collector.FileNameClusterAbstractTopo)
 }
 
 func (f *FileFetcher) genClusterJSONPath() string {

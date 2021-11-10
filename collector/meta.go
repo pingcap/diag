@@ -32,12 +32,11 @@ import (
 )
 
 const (
-	FileNameClusterAbstractTopo = "topology.json"    // abstract topology
-	FileNameClusterJSON         = "cluster.json"     // general cluster info
-	FileNameTiUPClusterMeta     = "meta.yaml"        // tiup-cluster topology
-	FileNameK8sClusterCRD       = "tidbcluster.json" // tidb-operator crd
-	FileNameK8sClusterMonitor   = "tidbmonitor.json" // tidb-operator crd
-	DirNameInfoSchema           = "info_schema"
+	FileNameClusterJSON       = "cluster.json"     // general cluster info
+	FileNameTiUPClusterMeta   = "meta.yaml"        // tiup-cluster topology
+	FileNameK8sClusterCRD     = "tidbcluster.json" // tidb-operator crd
+	FileNameK8sClusterMonitor = "tidbmonitor.json" // tidb-operator crd
+	DirNameInfoSchema         = "info_schema"
 )
 
 // MetaCollectOptions is the options collecting cluster meta
@@ -48,19 +47,19 @@ type MetaCollectOptions struct {
 	collectors map[string]bool
 	resultDir  string
 	filePath   string
-	cluster    *models.TiDBCluster
 	tc         *pingcapv1alpha1.TidbCluster
 	tm         *pingcapv1alpha1.TidbMonitor
 }
 
 type ClusterJSON struct {
-	ClusterName string   `json:"cluster_name"`
-	ClusterID   int64    `json:"cluster_id"`  // the id from pd
-	DeployType  string   `json:"deploy_type"` // deployment type
-	Session     string   `json:"session"`
-	BeginTime   string   `json:"begin_time"`
-	EndTime     string   `json:"end_time"`
-	Collectors  []string `json:"collectors"`
+	ClusterName string              `json:"cluster_name"`
+	ClusterID   int64               `json:"cluster_id"`  // the id from pd
+	DeployType  string              `json:"deploy_type"` // deployment type
+	Session     string              `json:"session"`
+	BeginTime   string              `json:"begin_time"`
+	EndTime     string              `json:"end_time"`
+	Collectors  []string            `json:"collectors"`
+	Topology    *models.TiDBCluster `json:"topology"` // abstract cluster topo
 }
 
 // Desc implements the Collector interface
@@ -94,7 +93,7 @@ func (c *MetaCollectOptions) Prepare(_ *Manager, _ *models.TiDBCluster) (map[str
 }
 
 // Collect implements the Collector interface
-func (c *MetaCollectOptions) Collect(m *Manager, _ *models.TiDBCluster) error {
+func (c *MetaCollectOptions) Collect(m *Manager, topo *models.TiDBCluster) error {
 	// write cluster.json
 	b := c.GetBaseOptions()
 	var clusterID int64
@@ -114,7 +113,6 @@ func (c *MetaCollectOptions) Collect(m *Manager, _ *models.TiDBCluster) error {
 		fmt.Fprint(os.Stderr, fmt.Errorf("cannot get clusterID from PD"))
 		return err
 	}
-	c.cluster.ID = clusterID
 
 	collectors := []string{}
 	for name, enabled := range c.collectors {
@@ -131,6 +129,7 @@ func (c *MetaCollectOptions) Collect(m *Manager, _ *models.TiDBCluster) error {
 		Collectors:  collectors,
 		BeginTime:   b.ScrapeBegin,
 		EndTime:     b.ScrapeEnd,
+		Topology:    topo,
 	}, "", "  ")
 
 	fn, err := os.Create(filepath.Join(c.resultDir, FileNameClusterJSON))
@@ -139,21 +138,6 @@ func (c *MetaCollectOptions) Collect(m *Manager, _ *models.TiDBCluster) error {
 	}
 	defer fn.Close()
 	if _, err := fn.Write(jsonbyte); err != nil {
-		return err
-	}
-
-	// save the topology
-	// save the abstract topology
-	clsData, err := jsoniter.MarshalIndent(c.cluster, "", "  ")
-	if err != nil {
-		return err
-	}
-	fcls, err := os.Create(filepath.Join(c.resultDir, FileNameClusterAbstractTopo))
-	if err != nil {
-		return err
-	}
-	defer fcls.Close()
-	if _, err := fcls.Write(clsData); err != nil {
 		return err
 	}
 
