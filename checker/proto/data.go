@@ -21,10 +21,11 @@ import (
 )
 
 const (
-	PdComponentName      = "PdConfig"
-	TidbComponentName    = "TidbConfig"
-	TikvComponentName    = "TikvConfig"
-	TiflashComponentName = "TiflashConfig"
+	PdComponentName                   = "PdConfig"
+	TidbComponentName                 = "TidbConfig"
+	TikvComponentName                 = "TikvConfig"
+	TiflashComponentName              = "TiflashConfig"
+	PerformanceDashboardComponentName = "performance.dashboard"
 )
 
 type SourceDataV2 struct {
@@ -32,6 +33,15 @@ type SourceDataV2 struct {
 	TidbVersion   string
 	NodesData     map[string][]Config // {"component": {config, config, config, nil}}
 	DashboardData DashboardData
+}
+
+func (sd *SourceDataV2) AppendConfig(cfg Config, component string) {
+	if n, ok := sd.NodesData[component]; ok {
+		n = append(n, cfg)
+		sd.NodesData[component] = n
+	} else {
+		sd.NodesData[component] = []Config{cfg}
+	}
 }
 
 type OutputData struct {
@@ -69,6 +79,7 @@ type NodeData struct {
 	Configs    []Config
 	DeviceData DeviceData
 }
+
 type Config interface {
 	GetComponent() string
 	GetPort() int
@@ -90,6 +101,7 @@ type DashboardData struct {
 }
 
 type ExecutionPlanInfo struct {
+	PlanDigest     string
 	MaxLastTime    int64
 	AvgProcessTime int64 // ms
 }

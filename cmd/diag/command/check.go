@@ -29,6 +29,7 @@ import (
 
 func newCheckCmd() *cobra.Command {
 	var datapath = ""
+	var inc = []string{"config"}
 	cmd := &cobra.Command{
 		Use:   "check",
 		Short: "Check config collected from a TiDB cluster",
@@ -39,7 +40,16 @@ func newCheckCmd() *cobra.Command {
 			// todo: checker action id
 			// todo: checker action time
 			// todo: version
-			fetch, err := sourcedata.NewFileFetcher(datapath)
+			var checkFlag sourcedata.CheckFlag
+			for _, val := range inc {
+				if val == "config" {
+					checkFlag |= sourcedata.ConfigFlag
+				}
+				if val == "performance" {
+					checkFlag |= sourcedata.PerformanceFlag
+				}
+			}
+			fetch, err := sourcedata.NewFileFetcher(datapath, sourcedata.WithCheckFlag(checkFlag))
 			if err != nil {
 				log.Error(err.Error())
 				return err
@@ -104,5 +114,6 @@ func newCheckCmd() *cobra.Command {
 
 	cmd.Flags().StringVar(&datapath, "datapath", "./data", "path to collected data")
 	// cmd.Flags().StringVar(checktag, "checktag", "*", "path to collected data") // checktype: {performance, config}
+	cmd.Flags().StringSliceVar(&inc, "include", inc, "types of data to check, supported value is config, performance")
 	return cmd
 }
