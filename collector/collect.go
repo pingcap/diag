@@ -36,6 +36,7 @@ const (
 	CollectTypeMonitor = "monitor"
 	CollectTypeLog     = "log"
 	CollectTypeConfig  = "config"
+	CollectTypeSchema  = "info_schema"
 )
 
 // Collector is the configuration defining an collecting job
@@ -207,6 +208,21 @@ func (m *Manager) CollectClusterInfo(
 				BaseOptions: opt,
 				opt:         gOpt,
 				limit:       cOpt.Limit,
+				resultDir:   resultDir,
+				fileStats:   make(map[string][]CollectStat),
+			})
+	}
+
+	if canCollect(cOpt, CollectTypeSchema) {
+		user := tui.PromptForPassword("please enter database username:")
+		password := tui.PromptForPassword("please enter database password:")
+		collectors = append(collectors,
+			&SchemaCollectOptions{
+
+				BaseOptions: opt,
+				opt:         gOpt,
+				dbuser:      user,
+				dbpasswd:    password,
 				resultDir:   resultDir,
 				fileStats:   make(map[string][]CollectStat),
 			})
