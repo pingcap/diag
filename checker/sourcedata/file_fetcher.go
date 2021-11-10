@@ -14,17 +14,22 @@
 package sourcedata
 
 import (
+	"encoding/csv"
 	"encoding/json"
-	"os"
-	"path"
-
 	"github.com/pingcap/diag/checker/config"
 	"github.com/pingcap/diag/checker/proto"
 	"github.com/pingcap/diag/collector"
+	"github.com/pingcap/errors"
 	"github.com/pingcap/log"
 	"github.com/pingcap/tiup/pkg/cluster/spec"
 	"github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v3"
+	"io"
+	"os"
+	"path"
+	"strconv"
+	"strings"
+	"time"
 )
 
 type Fetcher interface {
@@ -35,18 +40,52 @@ type Fetcher interface {
 const (
 	clusterMetaFileName = "meta.yaml"
 	clusterJSONFileName = "cluster.json"
+	infoSchemaDirName   = "info_schema"
 )
+
+const (
+	ConfigFlag CheckFlag = 1 << iota
+	PerformanceFlag
+)
+
+type CheckFlag int
+
+func (cf CheckFlag) checkConfig() bool {
+	return cf&ConfigFlag > 0
+}
+
+func (cf CheckFlag) checkPerformance() bool {
+	return cf&PerformanceFlag > 0
+}
 
 // FileFetcher load all needed data from file
 type FileFetcher struct {
 	dataDirPath string // dataDirPath point to a folder
+	checkFlag   CheckFlag
 }
 
-func NewFileFetcher(dataDirPath string) (*FileFetcher, error) {
-	ff := FileFetcher{
-		dataDirPath: dataDirPath,
+type FileFetcherOpt func(ff *FileFetcher) error
+
+func WithCheckFlag(flags ...CheckFlag) FileFetcherOpt {
+	return func(ff *FileFetcher) error {
+		for _, flag := range flags {
+			ff.checkFlag |= flag
+		}
+		return nil
 	}
-	return &ff, nil
+}
+
+func NewFileFetcher(dataDirPath string, opts ...FileFetcherOpt) (*FileFetcher, error) {
+	ff := &FileFetcher{
+		dataDirPath: dataDirPath,
+		checkFlag:   0,
+	}
+	for _, opt := range opts {
+		if err := opt(ff); err != nil {
+			return nil, err
+		}
+	}
+	return ff, nil
 }
 
 // FetchData retrieve config data from file path, and filter rules by component version
@@ -76,7 +115,27 @@ func (f *FileFetcher) FetchData(rules *config.RuleSpec) (*proto.SourceDataV2, pr
 			return nil, nil, err
 		}
 	}
-	rSet, err := rules.FilterOnVersion(meta.Version)
+	filterFunc := func(item config.RuleItem) (bool, error) {
+		// filter on version
+		ok, err := item.Version.Contain(meta.Version)
+		if err != nil {
+			return false, err
+		} else if !ok {
+			return false, nil
+		}
+
+		// filter on check flag
+		switch item.NameStruct {
+		case proto.PdComponentName, proto.TikvComponentName, proto.TidbComponentName, proto.TiflashComponentName:
+			return f.checkFlag.checkPerformance(), nil
+		case proto.PerformanceDashboardComponentName:
+			return f.checkFlag.checkPerformance(), nil
+		default:
+			return false, nil
+		}
+	}
+	// rSet contain all rules match the cluster version
+	rSet, err := rules.FilterOn(filterFunc)
 	if err != nil {
 		log.Error(err.Error())
 		return nil, nil, err
@@ -86,7 +145,72 @@ func (f *FileFetcher) FetchData(rules *config.RuleSpec) (*proto.SourceDataV2, pr
 		NodesData:   make(map[string][]proto.Config),
 		TidbVersion: meta.Version,
 	}
-	// decode config.json for related component
+	// decode config.json for related config component
+	if f.checkFlag.checkConfig() {
+		if err := f.loadRealTimeConfig(sourceData, meta, rSet); err != nil {
+			return nil, nil, err
+		}
+	}
+	// decode sql performance data
+	if f.checkFlag.checkPerformance() {
+		{
+			reader, err := os.Open(f.genInfoSchemaCSVPath("avg_process_time_by_plan.csv"))
+			if err != nil {
+				return nil, nil, err
+			}
+			defer reader.Close()
+			data, err := f.loadSlowPlanData(reader)
+			if err != nil {
+				return nil, nil, err
+			}
+			sourceData.DashboardData.ExecutionPlanInfoList = data
+		}
+		{
+			reader, err := os.Open(f.genInfoSchemaCSVPath("key_old_version_count.csv"))
+			if err != nil {
+				return nil, nil, err
+			}
+			defer reader.Close()
+			cnt, err := f.loadCount(reader)
+			if err != nil {
+				return nil, nil, err
+			}
+			sourceData.DashboardData.OldVersionProcesskeyCount.Count = cnt
+		}
+		{
+			reader, err := os.Open(f.genInfoSchemaCSVPath("mysql.tidb.csv"))
+			if err != nil {
+				return nil, nil, err
+			}
+			defer reader.Close()
+			data, err := f.loadSysVariables(reader)
+			if err != nil {
+				return nil, nil, err
+			}
+			gcLifeTime, err := time.ParseDuration(data["tikv_gc_life_time"])
+			if err != nil {
+				return nil, nil, err
+			}
+			sourceData.DashboardData.OldVersionProcesskeyCount.GcLifeTime = int(gcLifeTime.Nanoseconds() / 1e9)
+		}
+		{
+			reader, err := os.Open(f.genInfoSchemaCSVPath("skip_toomany_keys_count.csv"))
+			if err != nil {
+				return nil, nil, err
+			}
+			defer reader.Close()
+			cnt, err := f.loadCount(reader)
+			if err != nil {
+				return nil, nil, err
+			}
+			sourceData.DashboardData.TombStoneStatistics.Count = cnt
+		}
+	}
+
+	return sourceData, rSet, nil
+}
+
+func (f *FileFetcher) loadRealTimeConfig(sourceData *proto.SourceDataV2, meta *spec.ClusterMeta, rSet proto.RuleSet) error {
 	for name := range rSet {
 		switch name {
 		case proto.PdComponentName:
@@ -100,12 +224,12 @@ func (f *FileFetcher) FetchData(rules *config.RuleSpec) (*proto.SourceDataV2, pr
 				} else {
 					if err := json.Unmarshal(bs, cfg); err != nil {
 						logrus.Error(err)
-						return nil, nil, err
+						return err
 					}
 				}
 				cfg.Port = spec.ClientPort
 				cfg.Host = spec.Host
-				f.Append(sourceData, cfg, proto.PdComponentName)
+				sourceData.AppendConfig(cfg, proto.PdComponentName)
 			}
 		case proto.TikvComponentName:
 			for _, spec := range meta.Topology.TiKVServers {
@@ -117,13 +241,13 @@ func (f *FileFetcher) FetchData(rules *config.RuleSpec) (*proto.SourceDataV2, pr
 				} else {
 					if err := json.Unmarshal(bs, cfg); err != nil {
 						logrus.Error(err)
-						return nil, nil, err
+						return err
 					}
 					cfg.LoadClusterMeta(meta)
 				}
 				cfg.Host = spec.Host
 				cfg.Port = spec.Port
-				f.Append(sourceData, cfg, proto.TikvComponentName)
+				sourceData.AppendConfig(cfg, proto.TikvComponentName)
 			}
 		case proto.TidbComponentName:
 			for _, spec := range meta.Topology.TiDBServers {
@@ -135,27 +259,134 @@ func (f *FileFetcher) FetchData(rules *config.RuleSpec) (*proto.SourceDataV2, pr
 				} else {
 					if err := json.Unmarshal(bs, cfg); err != nil {
 						logrus.Error(err)
-						return nil, nil, err
+						return err
 					}
 				}
 				cfg.Host = spec.Host
 				cfg.Port = spec.Port
-				f.Append(sourceData, cfg, proto.TidbComponentName)
+				sourceData.AppendConfig(cfg, proto.TidbComponentName)
 			}
 		default:
 		}
 	}
-	return sourceData, rSet, nil
+	return nil
 }
 
-func (f *FileFetcher) Append(sourceData *proto.SourceDataV2, cfg proto.Config, component string) {
-	if n, ok := sourceData.NodesData[component]; ok {
-		n = append(n, cfg)
-		sourceData.NodesData[component] = n
-	} else {
-		n = []proto.Config{cfg}
-		sourceData.NodesData[component] = n
+func (f *FileFetcher) loadSlowPlanData(reader io.Reader) (data map[string][2]proto.ExecutionPlanInfo, err error) {
+	csvReader := csv.NewReader(reader)
+	header, err := csvReader.Read()
+	if err != nil {
+		if err == io.EOF {
+			return nil, nil
+		}
+		return nil, err
 	}
+	if len(header) == 0 {
+		return nil, errors.New("invalid csv content")
+	}
+	idxLookUp := make(map[string]int)
+	// todo
+	for idx, col := range header {
+		idxLookUp[strings.ToLower(col)] = idx
+	}
+	execPlan := make(map[string]*[2]proto.ExecutionPlanInfo)
+	for {
+		record, err := csvReader.Read()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			return nil, err
+		}
+		digest := record[idxLookUp["digest"]]
+		planDigest := record[idxLookUp["plan_digest"]]
+		avgPTime, err := strconv.ParseFloat(record[idxLookUp["avg_process_time"]], 64)
+		if err != nil {
+			return nil, err
+		}
+		lastTime, err := time.Parse("2006-01-02 15:04:05", record[idxLookUp["last_time"]])
+		if err != nil {
+			return nil, err
+		}
+		avgPTimeSeconds := int64(avgPTime)
+		lastTimeUnix := lastTime.Unix()
+		if _, ok := execPlan[digest]; !ok {
+			execPlan[digest] = &[2]proto.ExecutionPlanInfo{
+				{PlanDigest: planDigest, AvgProcessTime: avgPTimeSeconds, MaxLastTime: lastTimeUnix},
+				{PlanDigest: planDigest, AvgProcessTime: avgPTimeSeconds, MaxLastTime: lastTimeUnix},
+			}
+		} else {
+			// check min and max
+			if avgPTimeSeconds < execPlan[digest][0].AvgProcessTime {
+				execPlan[digest][0].PlanDigest = planDigest
+				execPlan[digest][0].AvgProcessTime = avgPTimeSeconds
+				execPlan[digest][0].MaxLastTime = lastTimeUnix
+			}
+			if avgPTimeSeconds > execPlan[digest][1].AvgProcessTime {
+				execPlan[digest][1].PlanDigest = planDigest
+				execPlan[digest][1].AvgProcessTime = avgPTimeSeconds
+				execPlan[digest][1].MaxLastTime = lastTimeUnix
+			}
+		}
+	}
+	for digest, plan := range execPlan {
+		data[digest] = *plan
+	}
+	return data, nil
+}
+
+func (f *FileFetcher) loadCount(reader io.Reader) (int, error) {
+	csvReader := csv.NewReader(reader)
+	header, err := csvReader.Read()
+	if err != nil {
+		if err == io.EOF {
+			return 0, nil
+		}
+		return 0, err
+	}
+	if len(header) == 0 {
+		return 0, errors.New("invalid csv content")
+	}
+	record, err := csvReader.Read()
+	if err == io.EOF {
+		return 0, nil
+	}
+	if err != nil {
+		return 0, err
+	}
+	cnt, err := strconv.Atoi(record[0])
+	if err != nil {
+		return 0, err
+	}
+	return cnt, nil
+}
+
+func (f *FileFetcher) loadSysVariables(reader io.Reader) (map[string]string, error) {
+	csvReader := csv.NewReader(reader)
+	header, err := csvReader.Read()
+	if err != nil {
+		if err == io.EOF {
+			return nil, nil
+		}
+		return nil, err
+	}
+	if len(header) != 2 {
+		return nil, errors.New("invalid csv content")
+	}
+	data := make(map[string]string)
+	for {
+		record, err := csvReader.Read()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			return nil, err
+		}
+		variableName := record[0]
+		variableValue := record[1]
+		data[variableName] = variableValue
+	}
+	return data, nil
 }
 
 func (f *FileFetcher) genMetaConfigPath() string {
@@ -164,6 +395,10 @@ func (f *FileFetcher) genMetaConfigPath() string {
 
 func (f *FileFetcher) genClusterJSONPath() string {
 	return path.Join(f.dataDirPath, clusterJSONFileName)
+}
+
+func (f *FileFetcher) genInfoSchemaCSVPath(fileName string) string {
+	return path.Join(f.dataDirPath, infoSchemaDirName, fileName)
 }
 
 func (f *FileFetcher) GetComponent(meta *spec.ClusterMeta) []string {
