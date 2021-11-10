@@ -269,6 +269,7 @@ type NodeData struct {
 	Configs    []Config
 	DeviceData DeviceData
 }
+
 type Config interface {
 	GetComponent() string
 	GetPort() int
