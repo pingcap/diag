@@ -280,6 +280,11 @@ type Config interface {
 	GetValueByTagPath(tagPath string) reflect.Value
 }
 
+type DigestPair struct {
+	Digest     string
+	PlanDigest string
+}
+
 type DeviceData struct{}
 
 // ruletag: checkType, datatype, component

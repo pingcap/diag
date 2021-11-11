@@ -167,16 +167,16 @@ func (f *FileFetcher) FetchData(rules *config.RuleSpec) (*proto.SourceDataV2, pr
 			sourceData.DashboardData.ExecutionPlanInfoList = data
 		}
 		{
-			reader, err := os.Open(f.genInfoSchemaCSVPath("key_old_version_count.csv"))
+			reader, err := os.Open(f.genInfoSchemaCSVPath("key_old_version_plan.csv"))
 			if err != nil {
 				return nil, nil, err
 			}
 			defer reader.Close()
-			cnt, err := f.loadCount(reader)
+			data, err := f.loadDigest(reader)
 			if err != nil {
 				return nil, nil, err
 			}
-			sourceData.DashboardData.OldVersionProcesskey.Count = cnt
+			sourceData.DashboardData.OldVersionProcesskey.Count = len(data)
 		}
 		{
 			reader, err := os.Open(f.genInfoSchemaCSVPath("mysql.tidb.csv"))
@@ -195,16 +195,16 @@ func (f *FileFetcher) FetchData(rules *config.RuleSpec) (*proto.SourceDataV2, pr
 			sourceData.DashboardData.OldVersionProcesskey.GcLifeTime = int(gcLifeTime.Nanoseconds() / 1e9)
 		}
 		{
-			reader, err := os.Open(f.genInfoSchemaCSVPath("skip_toomany_keys_count.csv"))
+			reader, err := os.Open(f.genInfoSchemaCSVPath("skip_toomany_keys_plan.csv"))
 			if err != nil {
 				return nil, nil, err
 			}
 			defer reader.Close()
-			cnt, err := f.loadCount(reader)
+			data, err := f.loadDigest(reader)
 			if err != nil {
 				return nil, nil, err
 			}
-			sourceData.DashboardData.TombStoneStatistics.Count = cnt
+			sourceData.DashboardData.TombStoneStatistics.Count = len(data)
 		}
 	}
 
@@ -336,30 +336,39 @@ func (f *FileFetcher) loadSlowPlanData(reader io.Reader) (data map[string][2]pro
 	return data, nil
 }
 
-func (f *FileFetcher) loadCount(reader io.Reader) (int, error) {
+func (f *FileFetcher) loadDigest(reader io.Reader) ([]proto.DigestPair, error) {
 	csvReader := csv.NewReader(reader)
 	header, err := csvReader.Read()
 	if err != nil {
 		if err == io.EOF {
-			return 0, nil
+			return nil, nil
 		}
-		return 0, err
+		return nil, err
 	}
 	if len(header) == 0 {
-		return 0, errors.New("invalid csv content")
+		return nil, errors.New("invalid csv content")
 	}
-	record, err := csvReader.Read()
-	if err == io.EOF {
-		return 0, nil
+	idxLookUp := make(map[string]int)
+	for idx, col := range header {
+		idxLookUp[strings.ToLower(col)] = idx
 	}
-	if err != nil {
-		return 0, err
+	data := make([]proto.DigestPair,0)
+	for {
+		record, err := csvReader.Read()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			return nil, err
+		}
+		digest := record[idxLookUp["digest"]]
+		planDigest := record[idxLookUp["plan_digest"]]
+		data = append(data, proto.DigestPair{
+			Digest:     digest,
+			PlanDigest: planDigest,
+		})
 	}
-	cnt, err := strconv.Atoi(record[0])
-	if err != nil {
-		return 0, err
-	}
-	return cnt, nil
+	return data, nil
 }
 
 func (f *FileFetcher) loadSysVariables(reader io.Reader) (map[string]string, error) {
