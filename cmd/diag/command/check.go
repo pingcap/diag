@@ -19,7 +19,6 @@ import (
 
 	"github.com/pingcap/diag/checker/config"
 	"github.com/pingcap/diag/checker/engine"
-	"github.com/pingcap/diag/checker/render"
 	"github.com/pingcap/diag/checker/sourcedata"
 	"github.com/pingcap/log"
 	"github.com/spf13/cobra"
@@ -64,11 +63,12 @@ func newCheckCmd() *cobra.Command {
 				log.Error(err.Error())
 				return err
 			}
-			checkline := engine.RuleCheck{}
-			checkline.Init()
-			pipe := checkline.GetResultChan()
-			screenRender := render.NewScreenRender(pipe)
-			errG, ctx := errgroup.WithContext(context.Background())
+			wrapper := engine.NewWrapper(data, ruleSet)
+			// checkline.Init()
+			// pipe := checkline.GetResultChan()
+			// screenRender := render.NewScreenRender(pipe)
+			errG, _ := errgroup.WithContext(context.Background())
+
 			// todo receive context
 			// cluster id
 			// cluster name
@@ -99,10 +99,7 @@ func newCheckCmd() *cobra.Command {
 			fmt.Print("\n")
 
 			errG.Go(func() error {
-				return checkline.Check(*data, ruleSet)
-			})
-			errG.Go(func() error {
-				return screenRender.Output(ctx)
+				return wrapper.Start()
 			})
 			if err := errG.Wait(); err != nil {
 				log.Error("check meet error: %+v", zap.Error(err))
@@ -113,7 +110,6 @@ func newCheckCmd() *cobra.Command {
 	}
 
 	cmd.Flags().StringVar(&datapath, "datapath", "./data", "path to collected data")
-	// cmd.Flags().StringVar(checktag, "checktag", "*", "path to collected data") // checktype: {performance, config}
 	cmd.Flags().StringSliceVar(&inc, "include", inc, "types of data to check, supported value is config, performance")
 	return cmd
 }

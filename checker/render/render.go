@@ -14,65 +14,100 @@
 package render
 
 import (
-	"context"
 	"fmt"
-	"os"
-	"reflect"
 
-	"github.com/lensesio/tableprinter"
 	"github.com/pingcap/diag/checker/proto"
-	"github.com/sirupsen/logrus"
+	"github.com/pingcap/tiup/pkg/logger/log"
 )
 
-type Render interface {
-	Output(data map[string]interface{}) error
+type ResultWrapper struct {
+	RuleSet map[string]*proto.Rule
+	// outputMetaData proto.OutputMetaData
 }
 
-type ScreenRender struct {
-	// TODO: remove logger
-	logger logrus.StdLogger
-	source <-chan map[string]proto.RuleResult
-	//	printer *tableprinter.Printer
-}
-
-func NewScreenRender(source <-chan map[string]proto.RuleResult) *ScreenRender {
-	// printer := tableprinter.New(os.Stdout)
-	// header := tableprinter.StructParser.ParseHeaders(reflect.ValueOf(&proto.DeployResult{}))
-	// printer.Render(header, nil, nil, false)
-	return &ScreenRender{
-		logger: logrus.StandardLogger(),
-		source: source,
-		//printer: printer,
+func NewResultWrapper(rs map[string]*proto.Rule) *ResultWrapper {
+	return &ResultWrapper{
+		RuleSet: rs,
 	}
 }
 
-// change to channel
-func (r *ScreenRender) Output(ctx context.Context) error {
-	for {
-		select {
-		case data, ok := <-r.source:
-			if !ok {
-				return nil
-			}
-			for _, result := range data {
-				fmt.Println("# Configuration Check Result")
-				fmt.Println("- RuleName: ", result.RuleName)
-				fmt.Println("- RuleID: ", result.RuleID)
-				fmt.Println("- Variation: ", result.Variation)
-				fmt.Println("- Alerting Rule: ", result.AlertingRule)
-				fmt.Println("- Check Result: ")
-				printer := tableprinter.New(os.Stdout)
-				// _ := tableprinter.StructParser.ParseHeaders(reflect.ValueOf(&proto.DeployResult{}))
-				// printer.Render(header, nil, nil, false)
-				for _, rr := range result.DeployResults {
-					row, nums := tableprinter.StructParser.ParseRow(reflect.ValueOf(rr))
-					printer.RenderRow(row, nums)
-				}
-				fmt.Print("\n")
-			}
-		case <-ctx.Done():
-			return nil
+// data variable name, data variable value.
+func (w *ResultWrapper) Output(checkresult map[string]proto.PrintTemplate) error {
+	// todo@toto find rule check result
+	// print OutputMetaData
+	for rulename, printer := range checkresult {
+		rule, ok := w.RuleSet[rulename]
+		if !ok {
+			log.Errorf("unknown rule name for output ", rulename)
+			continue
 		}
+		fmt.Println("# Configuration Check Result")
+		fmt.Println("- RuleName: ", rulename)
+		fmt.Println("- RuleID: ", rule.ID)
+		fmt.Println("- Variation: ", rule.Variation)
+		fmt.Println("- Alerting Rule: ", rule.AlertingRule)
+		fmt.Println("- Check Result: ")
+		printer.Print() // change print
+		fmt.Print("\n")
 	}
-
+	return nil
 }
+
+// ------------------------------------------------------------------------------
+// ------------------------------------------------------------------------------
+// ------------------------------------------------------------------------------
+// ------------------------------------------------------------------------------
+// ------------------------------------------------------------------------------
+// ------------------------------------------------------------------------------
+// type Render interface {
+// 	Output(data map[string]interface{}) error
+// }
+
+// type ScreenRender struct {
+// 	// TODO: remove logger
+// 	logger logrus.StdLogger
+// 	source <-chan map[string]proto.RuleResult
+// 	//	printer *tableprinter.Printer
+// }
+
+// func NewScreenRender(source <-chan map[string]proto.RuleResult) *ScreenRender {
+// 	// printer := tableprinter.New(os.Stdout)
+// 	// header := tableprinter.StructParser.ParseHeaders(reflect.ValueOf(&proto.DeployResult{}))
+// 	// printer.Render(header, nil, nil, false)
+// 	return &ScreenRender{
+// 		logger: logrus.StandardLogger(),
+// 		source: source,
+// 		//printer: printer,
+// 	}
+// }
+
+// // change to channel
+// func (r *ScreenRender) Output(ctx context.Context) error {
+// 	for {
+// 		select {
+// 		case data, ok := <-r.source:
+// 			if !ok {
+// 				return nil
+// 			}
+// 			for _, result := range data {
+// 				fmt.Println("# Configuration Check Result")
+// 				fmt.Println("- RuleName: ", result.RuleName)
+// 				fmt.Println("- RuleID: ", result.RuleID)
+// 				fmt.Println("- Variation: ", result.Variation)
+// 				fmt.Println("- Alerting Rule: ", result.AlertingRule)
+// 				fmt.Println("- Check Result: ")
+// 				printer := tableprinter.New(os.Stdout)
+// 				// _ := tableprinter.StructParser.ParseHeaders(reflect.ValueOf(&proto.DeployResult{}))
+// 				// printer.Render(header, nil, nil, false)
+// 				for _, rr := range result.DeployResults {
+// 					row, nums := tableprinter.StructParser.ParseRow(reflect.ValueOf(rr))
+// 					printer.RenderRow(row, nums)
+// 				}
+// 				fmt.Print("\n")
+// 			}
+// 		case <-ctx.Done():
+// 			return nil
+// 		}
+// 	}
+
+// }

@@ -2,7 +2,7 @@
 id = 7
 name = "log-level"
 description = "日志等级。可选值：\"trace\"，\"debug\"，\"info\"，\"warning\"，\"error\"，\"critical\"。默认值：\"info\""
-variation =  "log-level"
+variation =  "TikvConfig.log-level"
 execute_rule = """
 rule "log-level" "log level of tikv"  salience 6
 begin
@@ -23,7 +23,7 @@ version = ""
 id = 8
 name = "gc.enable-compaction-filter"
 description = "是否开启 GC in Compaction Filter 特性"
-variation =  "gc.enable-compaction-filter"
+variation =  "TikvConfig.gc.enable-compaction-filter"
 execute_rule = """
 rule "gc.enable-compaction-filter"
 begin
@@ -43,7 +43,7 @@ version = "v5.0.1"
 id = 100
 name = "max-days"
 description = "日志保留的最长天数"
-variation =  "log.file.max-days"
+variation =  "TidbConfig.log.file.max-days"
 execute_rule = """
 rule "max-days"
 begin
@@ -63,7 +63,7 @@ version = ""
 id = 101
 name = "max-backups"
 description = "日志文件保留的最大个数"
-variation = "log.file.max-backups"
+variation = "TidbConfig.log.file.max-backups"
 execute_rule = """
 rule "max-backups"
 begin
@@ -83,7 +83,7 @@ version = ""
 id = 102
 name = "log-level"
 description = "日志等级。可选值：\"trace\"，\"debug\"，\"info\"，\"warning\"，\"error\"，\"critical\"。默认值：\"info\""
-variation = "log.level"
+variation = "TidbConfig.log.level"
 execute_rule = """
 rule "log-level"
 begin
@@ -103,7 +103,7 @@ version = ""
 id = 103
 name = "enable-stream"
 description = "3.0.20, 4.0.9, 5.2.0 已废弃"
-variation = "enable-streaming"
+variation = "TidbConfig.enable-streaming"
 execute_rule = """
 rule "enable-stream"
 begin
@@ -123,7 +123,7 @@ version = ""
 id = 200
 name = "max-snapshot-count"
 description = "控制单个 store 最多同时接收或发送的 snapshot 数量，调度受制于这个配置来防止抢占正常业务的资源。"
-variation = "schedule.max-snapshot-count"
+variation = "PdConfig.schedule.max-snapshot-count"
 execute_rule = """
 rule "max-snapshot-count"
 begin
@@ -143,7 +143,7 @@ version = "> v4.0.0"
 id = 201
 name = "max-pending-peer-count"
 description = "控制单个 store 的 pending peer 上限，调度受制于这个配置来防止在部分节点产生大量日志落后的 Region。"
-variation = "schedule.max-pending-peer-count"
+variation = "PdConfig.schedule.max-pending-peer-count"
 execute_rule = """
 rule "max-pending-peer-count"
 begin
@@ -163,7 +163,7 @@ version = "> v4.0.0"
 id = 202
 name = "leader-schedule-limit"
 description = "同时进行 leader 调度的任务个数。"
-variation = "schedule.leader-schedule-limit"
+variation = "PdConfig.schedule.leader-schedule-limit"
 execute_rule = """
 rule "leader-schedule-limit"
 begin
@@ -183,7 +183,7 @@ version = "> v4.0.0"
 id = 203
 name = "replica-schedule-limit-a"
 description = "同时进行 replica 调度的任务个数。"
-variation =  "schedule.replica-schedule-limit,schedule.replica-schedule-limit"
+variation =  "PdConfig.schedule.replica-schedule-limit,schedule.replica-schedule-limit"
 execute_rule = """
 rule "replica-schedule-limit-a"
 begin
@@ -204,7 +204,7 @@ version = "> v4.0.0"
 id = 204
 name = "merge-schedule-limit"
 description = "同时进行的 Region Merge 调度的任务，设置为 0 则关闭 Region Merge。"
-variation = "schedule.merge-schedule-limit"
+variation = "PdConfig.schedule.merge-schedule-limit"
 execute_rule = """
 rule "merge-schedule-limit"
 begin
@@ -225,7 +225,7 @@ version = "> v4.0.0"
 id = 205
 name = "hot-region-schedule-limit"
 description = "控制同时进行的 hot Region 任务。该配置项独立于 Region 调度。"
-variation = "schedule.hot-region-schedule-limit"
+variation = "PdConfig.schedule.hot-region-schedule-limit"
 execute_rule = """
 rule "hot-region-schedule-limit"
 begin
@@ -248,7 +248,7 @@ version = "> v4.0.0"
 id = 206
 name = "store limit-n-add-peer"
 description = "Store Limit 限制的主要是 operator 的消费速度，{n} 指 store id，这里对所有 store limit 都有同样的限制。"
-variation = "schedule.store-limit"
+variation = "PdConfig.schedule.store-limit"
 execute_rule = """
 rule "store limit-n-add-peer"
 begin
@@ -268,7 +268,7 @@ version = "> v4.0.0"
 id = 206
 name = "store limit-n-remove-peer"
 description = "Store Limit 限制的主要是 operator 的消费速度，{n} 指 store id，这里对所有 store limit 都有同样的限制。"
-variation = "schedule.store-limit"
+variation = "PdConfig.schedule.store-limit"
 execute_rule = """
 rule "store limit-n-remove-peer"
 begin
@@ -288,7 +288,7 @@ version = "> v4.0.0"
 id = 208
 name = "replica-schedule-limit-b"
 description = "用来控制 replica 相关 operator 的产生速度（涉及到下线、补副本的操作都与该参数有关）。"
-variation = "schedule.replica-schedule-limit,schedule.region-schedule-limit"
+variation = "PdConfig.schedule.replica-schedule-limit,PdConfig.schedule.region-schedule-limit"
 execute_rule = """
 rule "replica-schedule-limit-b"
 begin
@@ -309,7 +309,7 @@ version = "> v4.0.0"
 id = 209
 name = "max-days"
 description = "日志保留的最长天数。"
-variation = "log.file.max-days"
+variation = "PdConfig.log.file.max-days"
 execute_rule = """
 rule "max-days"
 begin
@@ -329,7 +329,7 @@ version = "> v4.0.0"
 id = 210
 name = "max-backups"
 description = "日志文件保留的最大个数。"
-variation = "log.file.max-backups"
+variation = "PdConfig.log.file.max-backups"
 execute_rule = """
 rule "max-backups"
 begin
@@ -349,7 +349,7 @@ version = "> v4.0.0"
 id = 211
 name = "log-level"
 description = "Log 级别。默认：\"info\" 我们能选择 debug, info, warn, error 或者 fatal。"
-variation = "log.level"
+variation = "PdConfig.log.level"
 execute_rule = """
 rule "log-level"
 begin
@@ -426,5 +426,3 @@ name_struct = "performance.dashboard"
 expect_res = ""   #
 warn_level = "info"
 version = "> v4.0.0"
-
-
