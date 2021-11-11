@@ -21,7 +21,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	_ "github.com/go-sql-driver/mysql" //test
+	_ "github.com/go-sql-driver/mysql" // import for sql
 	"github.com/joho/sqltocsv"
 	"github.com/joomcode/errorx"
 	perrs "github.com/pingcap/errors"
@@ -132,6 +132,11 @@ func (c *SchemaCollectOptions) Collect(_ *Manager, topo *spec.Specification) err
 				}
 				if db == nil {
 					return fmt.Errorf("cannot connect to any TiDB instant")
+				}
+
+				_, err = db.Exec("USE information_schema;")
+				if err != nil {
+					return err
 				}
 
 				var errs []string
