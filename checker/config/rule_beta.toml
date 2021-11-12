@@ -392,15 +392,19 @@ check_type = "performance"
 execute_rule = """
 rule "poor_effective_index"
 begin
-    maxExecutionInfo = dashboard.ExecutionPlanInfoList[0]
-    minExecutionInfo = dashboard.ExecutionPlanInfoList[1]
-    if !isNil(maxExecutionInfo) 
-        && !isNil(minExecutionInfo) 
-        && maxExecutionInfo.AvgProcessTime > 50 * minExecutionInfo.AvgProcessTime 
-        && maxExecutionInfo.MaxLastTime > minExecutionInfo.MaxLastTime {
-        return false
+    count := 0
+    forRange digest := dashboard.ExecutionPlanInfoList {
+        ei = dashboard.ExecutionPlanInfoList[digest]
+        maxExecutionInfo = dashboard.ExecutionPlanInfoList[0]
+        minExecutionInfo = dashboard.ExecutionPlanInfoList[1]
+        if !isNil(maxExecutionInfo) 
+            && !isNil(minExecutionInfo) 
+            && maxExecutionInfo.AvgProcessTime > 50 * minExecutionInfo.AvgProcessTime 
+            && maxExecutionInfo.MaxLastTime > minExecutionInfo.MaxLastTime {
+            count = count + 1
+        }
     }
-    return true
+    return count
 end
 """
 name_struct = "performance.dashboard"
