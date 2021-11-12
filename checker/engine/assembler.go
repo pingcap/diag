@@ -21,7 +21,6 @@ import (
 
 type Wrapper struct {
 	SourceData     *proto.SourceDataV2
-	CheckType      int // 1, 1<<1
 	Render         *render.ResultWrapper
 	RuleResult     map[string]proto.PrintTemplate
 	RuleSet        map[string]*proto.Rule
@@ -40,9 +39,6 @@ func NewWrapper(sd *proto.SourceDataV2, rs map[string]*proto.Rule) *Wrapper {
 
 func (w *Wrapper) Start() error {
 	for _, rule := range w.RuleSet {
-		if rule.CheckType&w.CheckType == 0 {
-			continue
-		}
 		dataSet, err := w.GetDataSet(rule.NameStruct, w.SourceData)
 		if err != nil {
 			return fmt.Errorf("Get DataSet Faield, %s", err)
@@ -85,9 +81,9 @@ func (w *Wrapper) PackageResult(hd *proto.HandleData, resultset map[string]inter
 			rulePrinter.CollectResult(hd, res)
 		} else {
 			switch rule.CheckType {
-			case 1: // to move a global check type define
+			case proto.ConfigType: // to move a global check type define
 				rulePrinter = proto.NewConfPrintTemplate(rule) // todo@toto add new func
-			case 1 << 1:
+			case proto.PerformanceType:
 				rulePrinter = proto.NewSqlPerformancePrintTemplate(rule) // todo@toto add new func
 			}
 		}
@@ -132,11 +128,4 @@ func (w *Wrapper) GetDataSet(namestruct string, sd *proto.SourceDataV2) ([]*prot
 		return []*proto.HandleData{handleData}, nil
 	}
 	return nil, fmt.Errorf("no such namestruct: %s", namestruct)
-}
-
-func (w *Wrapper) FilterRule(ruleType int) bool {
-	if w.CheckType&ruleType == 0 {
-		return false
-	}
-	return true
 }
