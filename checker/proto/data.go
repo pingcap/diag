@@ -210,7 +210,7 @@ type SqlPerformanceInfo struct {
 
 func NewSqlPerformancePrintTemplate(rule *Rule) *SqlPerformancePrintTemplate {
 	return &SqlPerformancePrintTemplate{
-		Rule: rule,
+		Rule: rule, // add
 		InfoList: &SqlPerformanceInfo{
 			Info: "Please check the collect csv file for specific information",
 		},
