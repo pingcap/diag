@@ -209,7 +209,7 @@ func (c *SqlPerformancePrintTemplate) CollectResult(hd *HandleData, retValue int
 		} else {
 			c.InfoList.NumDigest = fmt.Sprintf("%d Digest trigger cordon", data.OldVersionProcesskey.Count)
 		}
-	case "TombStoneStatistics":
+	case "scan_key_skip":
 		c.InfoList.NumDigest = fmt.Sprintf("%d Digest trigger cordon", data.TombStoneStatistics.Count)
 	}
 	return nil
