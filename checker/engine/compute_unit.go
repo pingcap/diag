@@ -90,3 +90,4 @@ func (u *ComputeUnit) MockEmptyResult() map[string]interface{} {
 	}
 	return emptyRes
 }
+
