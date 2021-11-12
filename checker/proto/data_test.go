@@ -39,6 +39,8 @@ func TestVersionRange_IsTarget(t *testing.T) {
 		{Target: "v5.0.1", VRange: VersionRange("<v5.1.1"), Expected: true},
 		{Target: "v5.0.1", VRange: VersionRange("<v5.0.1"), Expected: false},
 		{Target: "v5.0.1", VRange: VersionRange(">v5.1.1"), Expected: false},
+		{Target: "v5.1.0", VRange: VersionRange("v5.0.0||v5.0.1||v5.1.0||v5.1.1||v5.1.2"), Expected: true},
+		{Target: "v5.2.0", VRange: VersionRange("v5.0.0||v5.0.1||v5.1.0||v5.1.1||v5.1.2"), Expected: false},
 	}
 	for _, tc := range tt {
 		t.Run("", func(t *testing.T) {
@@ -174,6 +176,10 @@ func TestTidbConfigData_GetValueByTagPath(t *testing.T) {
 		{
 			TagPath: "log.file.max-days",
 			Expect:  reflect.ValueOf(10),
+		},
+		{
+			TagPath: "binlog.enable",
+			Expect: reflect.ValueOf(false),
 		},
 	}
 	for _, tc := range tt {

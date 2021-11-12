@@ -14,6 +14,7 @@
 package sourcedata
 
 import (
+	"context"
 	"encoding/csv"
 	"encoding/json"
 	"io"
@@ -30,6 +31,7 @@ import (
 	"github.com/pingcap/log"
 	"github.com/pingcap/tiup/pkg/cluster/spec"
 	"github.com/sirupsen/logrus"
+	"go.uber.org/zap"
 	"gopkg.in/yaml.v3"
 )
 
@@ -128,7 +130,7 @@ func (f *FileFetcher) FetchData(rules *config.RuleSpec) (*proto.SourceDataV2, pr
 		// filter on check flag
 		switch item.NameStruct {
 		case proto.PdComponentName, proto.TikvComponentName, proto.TidbComponentName, proto.TiflashComponentName:
-			return f.checkFlag.checkPerformance(), nil
+			return f.checkFlag.checkConfig(), nil
 		case proto.PerformanceDashboardComponentName:
 			return f.checkFlag.checkPerformance(), nil
 		default:
@@ -145,39 +147,17 @@ func (f *FileFetcher) FetchData(rules *config.RuleSpec) (*proto.SourceDataV2, pr
 		ClusterInfo: clusterJSON,
 		NodesData:   make(map[string][]proto.Config),
 		TidbVersion: meta.Version,
+		DashboardData: &proto.DashboardData{},
 	}
+	ctx := context.Background()
 	// decode config.json for related config component
 	if f.checkFlag.checkConfig() {
-		if err := f.loadRealTimeConfig(sourceData, meta, rSet); err != nil {
+		if err := f.loadRealTimeConfig(ctx, sourceData, meta, rSet); err != nil {
 			return nil, nil, err
 		}
 	}
 	// decode sql performance data
 	if f.checkFlag.checkPerformance() {
-		{
-			reader, err := os.Open(f.genInfoSchemaCSVPath("avg_process_time_by_plan.csv"))
-			if err != nil {
-				return nil, nil, err
-			}
-			defer reader.Close()
-			data, err := f.loadSlowPlanData(reader)
-			if err != nil {
-				return nil, nil, err
-			}
-			sourceData.DashboardData.ExecutionPlanInfoList = data
-		}
-		{
-			reader, err := os.Open(f.genInfoSchemaCSVPath("key_old_version_plan.csv"))
-			if err != nil {
-				return nil, nil, err
-			}
-			defer reader.Close()
-			data, err := f.loadDigest(reader)
-			if err != nil {
-				return nil, nil, err
-			}
-			sourceData.DashboardData.OldVersionProcesskey.Count = len(data)
-		}
 		{
 			reader, err := os.Open(f.genInfoSchemaCSVPath("mysql.tidb.csv"))
 			if err != nil {
@@ -194,24 +174,56 @@ func (f *FileFetcher) FetchData(rules *config.RuleSpec) (*proto.SourceDataV2, pr
 			}
 			sourceData.DashboardData.OldVersionProcesskey.GcLifeTime = int(gcLifeTime.Nanoseconds() / 1e9)
 		}
-		{
-			reader, err := os.Open(f.genInfoSchemaCSVPath("skip_toomany_keys_plan.csv"))
-			if err != nil {
-				return nil, nil, err
-			}
-			defer reader.Close()
-			data, err := f.loadDigest(reader)
-			if err != nil {
-				return nil, nil, err
-			}
-			sourceData.DashboardData.TombStoneStatistics.Count = len(data)
+
+		if err := f.loadSlowLog(ctx, sourceData, meta); err != nil {
+			return nil, nil, err
 		}
+
+		//{
+		//	reader, err := os.Open(f.genInfoSchemaCSVPath("avg_process_time_by_plan.csv"))
+		//	if err != nil {
+		//		return nil, nil, err
+		//	}
+		//	defer reader.Close()
+		//	data, err := f.loadSlowPlanData(reader)
+		//	if err != nil {
+		//		return nil, nil, err
+		//	}
+		//	sourceData.DashboardData.ExecutionPlanInfoList = data
+		//}
+		//{
+		//	reader, err := os.Open(f.genInfoSchemaCSVPath("key_old_version_plan.csv"))
+		//	if err != nil {
+		//		return nil, nil, err
+		//	}
+		//	defer reader.Close()
+		//	data, err := f.loadDigest(reader)
+		//	if err != nil {
+		//		return nil, nil, err
+		//	}
+		//	sourceData.DashboardData.OldVersionProcesskeyCount.DataList = data
+		//	sourceData.DashboardData.OldVersionProcesskeyCount.Count = len(data)
+		//}
+		//{
+		//	reader, err := os.Open(f.genInfoSchemaCSVPath("skip_toomany_keys_plan.csv"))
+		//	if err != nil {
+		//		return nil, nil, err
+		//	}
+		//	defer reader.Close()
+		//	data, err := f.loadDigest(reader)
+		//	if err != nil {
+		//		return nil, nil, err
+		//	}
+		//	sourceData.DashboardData.TombStoneStatistics.DataList = data
+		//	sourceData.DashboardData.TombStoneStatistics.Count = len(data)
+		//}
 	}
 
 	return sourceData, rSet, nil
 }
 
-func (f *FileFetcher) loadRealTimeConfig(sourceData *proto.SourceDataV2, meta *spec.ClusterMeta, rSet proto.RuleSet) error {
+// sourceData will be updated
+func (f *FileFetcher) loadRealTimeConfig(ctx context.Context, sourceData *proto.SourceDataV2, meta *spec.ClusterMeta, rSet proto.RuleSet) error {
 	for name := range rSet {
 		switch name {
 		case proto.PdComponentName:
@@ -269,6 +281,76 @@ func (f *FileFetcher) loadRealTimeConfig(sourceData *proto.SourceDataV2, meta *s
 			}
 		default:
 		}
+	}
+	return nil
+}
+
+
+// todo sourceData will be updated
+func (f *FileFetcher) loadSlowLog(ctx context.Context, sourceData *proto.SourceDataV2, meta *spec.ClusterMeta) (err error) {
+	header := []string{"Time", "Digest", "Plan_digest", "Process_time", "Process_keys", "Rocksdb_delete_skipped_count", "Total_keys"}
+	idxLookUp := NewIdxLookup(header)
+	avgProcessTimePlanAcc := avgProcessTimePlanAccumulator{
+		idxLookUp: idxLookUp,
+		data:      make(map[string]map[string]*execTimeInfo),
+	}
+	scanOldVersionPlanAcc := scanOldVersionPlanAccumulator{
+		idxLookUp: idxLookUp,
+		data:      make(map[string]map[string]struct{}),
+	}
+	skipDeletedCntPlanAcc := skipDeletedCntPlanAccumulator{
+		idxLookUp: idxLookUp,
+		data:      make(map[string]map[string]struct{}),
+	}
+	closers:= make([]io.Closer, 0)
+	for _, spec := range meta.Topology.TiDBServers {
+		slowLogPath := path.Join(f.dataDirPath, spec.Host, spec.DeployDir, "log", "tidb_slow_query.log")
+		// todo
+		retriever, err := NewSlowQueryRetriever(5, time.Local, header, slowLogPath, WithTimeRanges(time.Now().AddDate(0,0,-7), time.Now()) )
+		if err != nil {
+			return err
+		}
+		// todo, how to close
+		closers = append(closers, retriever)
+		data, err := retriever.retrieve(ctx)
+		if err != nil {
+			log.Warn("retrieve slow log failed", zap.Error(err))
+			continue
+		}
+		for _, row := range data {
+			if err := avgProcessTimePlanAcc.feed(row); err != nil {
+				log.Warn("feed row to accumulator failed", zap.Error(err))
+			}
+			if err := scanOldVersionPlanAcc.feed(row); err != nil {
+				log.Warn("feed row to accumulator failed", zap.Error(err))
+			}
+			if err := skipDeletedCntPlanAcc.feed(row); err != nil {
+				log.Warn("feed row to accumulator failed", zap.Error(err))
+			}
+		}
+	}
+	for _, c := range closers {
+		c.Close()
+	}
+	sourceData.DashboardData.ExecutionPlanInfoList, err = avgProcessTimePlanAcc.build()
+	if err != nil {
+		return err
+	}
+	{
+		digestPair, err := scanOldVersionPlanAcc.build()
+		if err != nil {
+			return err
+		}
+		sourceData.DashboardData.OldVersionProcesskey.Count = len(digestPair)
+
+	}
+	{
+		digestPair, err := skipDeletedCntPlanAcc.build()
+		if err != nil {
+			return err
+		}
+		sourceData.DashboardData.TombStoneStatistics.Count = len(digestPair)
+
 	}
 	return nil
 }
