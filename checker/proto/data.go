@@ -74,8 +74,21 @@ type RuleResult struct {
 }
 
 type HandleData struct {
-	UqiTag string
-	Data   []Data
+	UqiTag  string
+	Data    []Data
+	IsValid bool
+}
+
+func (hd *HandleData) CheckValid() {
+	for _, data := range hd.Data {
+		if data == nil {
+			hd.IsValid = false
+		}
+		if conf, ok := data.(Config); ok && conf.CheckNil() {
+			hd.IsValid = false
+		}
+	}
+	hd.IsValid = true
 }
 
 type PrintTemplate interface {
@@ -104,7 +117,22 @@ func (c *ConfPrintTemplate) CollectResult(hd *HandleData, retValue interface{}) 
 	// rule valpath
 	// find data val, host ip component warnlevel ......
 	// fmt print and into instance checkinfo
-	checkPass, _ := retValue.(bool)
+	if hd == nil {
+		return fmt.Errorf("handle data is nil")
+	}
+	if !hd.IsValid {
+		confInfo := &ConfInfo{
+			UniTag:      hd.UqiTag,
+			Val:         "",
+			CheckResult: "nodata",
+		}
+		c.InfoList = append(c.InfoList, confInfo)
+		return nil
+	}
+	checkPass, ok := retValue.(bool)
+	if !ok {
+		return fmt.Errorf("retValue can't change to bool")
+	}
 	checkResult := ""
 	if checkPass {
 		checkResult = "OK"
@@ -112,6 +140,7 @@ func (c *ConfPrintTemplate) CollectResult(hd *HandleData, retValue interface{}) 
 		checkResult = c.Rule.WarnLevel
 	}
 	valstr := c.GetValStr(hd)
+
 	confInfo := &ConfInfo{
 		UniTag:      hd.UqiTag,
 		Val:         valstr,
@@ -181,6 +210,7 @@ type SqlPerformanceInfo struct {
 
 func NewSqlPerformancePrintTemplate(rule *Rule) *SqlPerformancePrintTemplate {
 	return &SqlPerformancePrintTemplate{
+		Rule: rule,
 		InfoList: &SqlPerformanceInfo{
 			Info: "Please check the collect csv file for specific information",
 		},
@@ -188,6 +218,13 @@ func NewSqlPerformancePrintTemplate(rule *Rule) *SqlPerformancePrintTemplate {
 }
 
 func (c *SqlPerformancePrintTemplate) CollectResult(hd *HandleData, retValue interface{}) error {
+	if hd == nil {
+		return fmt.Errorf("handle data is nil")
+	}
+	if !hd.IsValid {
+		c.InfoList.NumDigest = "no collector data"
+		return nil
+	}
 	data, ok := hd.Data[0].(*DashboardData)
 	if !ok {
 		log.Errorf("convert into dashboarddata failed, ", data.ActingName())

@@ -35,6 +35,9 @@ func NewComputeUnit(hd *proto.HandleData) *ComputeUnit {
 }
 
 func (u *ComputeUnit) Compute() (map[string]interface{}, error) {
+	if !u.HandleData.IsValid {
+		return u.MockEmptyResult(), nil
+	}
 	dataContext := genginecontext.NewDataContext()
 	u.Register(dataContext)
 	ruleBuilder := genginebuilder.NewRuleBuilder(dataContext)
@@ -78,4 +81,12 @@ func (u *ComputeUnit) RuleSplicing() string {
 
 func (u *ComputeUnit) GetDataSet() *proto.HandleData {
 	return u.HandleData
+}
+
+func (u *ComputeUnit) MockEmptyResult() map[string]interface{} {
+	emptyRes := make(map[string]interface{})
+	for _, rule := range u.Rules {
+		emptyRes[rule.Name] = nil
+	}
+	return emptyRes
 }

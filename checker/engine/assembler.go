@@ -41,7 +41,7 @@ func (w *Wrapper) Start() error {
 	for _, rule := range w.RuleSet {
 		dataSet, err := w.GetDataSet(rule.NameStruct, w.SourceData)
 		if err != nil {
-			return fmt.Errorf("Get DataSet Faield, %s", err)
+			return fmt.Errorf("get DataSet Faield, %s", err.Error())
 		}
 		for _, data := range dataSet {
 			if cu, ok := w.computeUnitSet[data.UqiTag]; ok {
@@ -75,11 +75,13 @@ func (w *Wrapper) Exec() error {
 
 func (w *Wrapper) PackageResult(hd *proto.HandleData, resultset map[string]interface{}) error {
 	for rulename, res := range resultset {
-		rule, _ := w.RuleSet[rulename]
+		rule, isExisted := w.RuleSet[rulename]
+		if !isExisted {
+			log.Error("no such rule")
+			return fmt.Errorf("no such rule %s", rulename)
+		}
 		rulePrinter, ok := w.RuleResult[rulename]
-		if ok {
-			rulePrinter.CollectResult(hd, res)
-		} else {
+		if !ok {
 			switch rule.CheckType {
 			case proto.ConfigType: // to move a global check type define
 				rulePrinter = proto.NewConfPrintTemplate(rule) // todo@toto add new func
@@ -89,7 +91,7 @@ func (w *Wrapper) PackageResult(hd *proto.HandleData, resultset map[string]inter
 		}
 		if err := rulePrinter.CollectResult(hd, res); err != nil {
 			log.Error("collectResult failed")
-			return fmt.Errorf("collectResult failed: ", err.Error())
+			return fmt.Errorf("collectResult failed: %s", err.Error())
 		}
 		w.RuleResult[rulename] = rulePrinter
 	}
@@ -116,6 +118,7 @@ func (w *Wrapper) GetDataSet(namestruct string, sd *proto.SourceDataV2) ([]*prot
 				UqiTag: uqiTag,
 				Data:   []proto.Data{conf},
 			}
+			handledata.CheckValid()
 			dataset = append(dataset, handledata)
 		}
 		return dataset, nil
@@ -125,6 +128,7 @@ func (w *Wrapper) GetDataSet(namestruct string, sd *proto.SourceDataV2) ([]*prot
 			UqiTag: namestruct,
 			Data:   []proto.Data{sqlPerformance},
 		}
+		handleData.CheckValid()
 		return []*proto.HandleData{handleData}, nil
 	}
 	return nil, fmt.Errorf("no such namestruct: %s", namestruct)
