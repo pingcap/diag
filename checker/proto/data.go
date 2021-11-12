@@ -139,7 +139,6 @@ func (c *ConfPrintTemplate) CollectResult(hd *HandleData, retValue interface{}) 
 		checkResult = c.Rule.WarnLevel
 	}
 	valstr := c.GetValStr(hd)
-
 	confInfo := &ConfInfo{
 		UniTag:      hd.UqiTag,
 		Val:         valstr,
@@ -269,7 +268,6 @@ type NodeData struct {
 	Configs    []Config
 	DeviceData DeviceData
 }
-
 type Config interface {
 	GetComponent() string
 	GetPort() int

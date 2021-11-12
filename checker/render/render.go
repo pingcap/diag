@@ -76,7 +76,6 @@ func (w *ResultWrapper) Output(checkresult map[string]proto.PrintTemplate) error
 		writer.WriteString(fmt.Sprintln("- Check Result: "))
 		printer.Print(writer)
 		writer.WriteString("\n")
-
 	}
 	return nil
 }
