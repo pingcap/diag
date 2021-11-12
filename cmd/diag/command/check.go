@@ -15,7 +15,6 @@ package command
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/pingcap/diag/checker/config"
 	"github.com/pingcap/diag/checker/engine"
@@ -85,18 +84,6 @@ func newCheckCmd() *cobra.Command {
 			// - Variation: <String> // e.g. tidb.file.max_days
 
 			// fetch unique num +1
-
-			fmt.Printf("%s %s\n", data.ClusterInfo.ClusterName, data.ClusterInfo.BeginTime)
-			fmt.Println("# Cluster Information")
-			fmt.Println("ClusterId: ", data.ClusterInfo.ClusterID)
-			fmt.Println("ClusterName: ", data.ClusterInfo.ClusterName)
-			fmt.Println("ClusterVersoin: ", data.TidbVersion)
-			fmt.Print("\n")
-
-			fmt.Println("# Sample Information")
-			fmt.Println("Sample ID: ", data.ClusterInfo.Session)
-			fmt.Println("Sample Content: ", data.ClusterInfo.Collectors)
-			fmt.Print("\n")
 
 			errG.Go(func() error {
 				return wrapper.Start()

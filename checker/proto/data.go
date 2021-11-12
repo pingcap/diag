@@ -15,7 +15,7 @@ package proto
 
 import (
 	"fmt"
-	"os"
+	"io"
 	"reflect"
 	"strings"
 
@@ -79,7 +79,7 @@ type HandleData struct {
 type PrintTemplate interface {
 	// TemplateName() string
 	CollectResult(*HandleData, interface{}) error
-	Print()
+	Print(io.Writer)
 }
 
 type ConfPrintTemplate struct {
@@ -159,8 +159,8 @@ func (c *ConfPrintTemplate) SplitComponentAndPath(varaition string) map[string][
 	return componentVal
 }
 
-func (c *ConfPrintTemplate) Print() {
-	printer := tableprinter.New(os.Stdout)
+func (c *ConfPrintTemplate) Print(out io.Writer) {
+	printer := tableprinter.New(out)
 	for _, rr := range c.InfoList {
 		row, nums := tableprinter.StructParser.ParseRow(reflect.ValueOf(rr))
 		printer.RenderRow(row, nums)
@@ -213,8 +213,8 @@ func (c *SqlPerformancePrintTemplate) CollectResult(hd *HandleData, retValue int
 	return nil
 }
 
-func (c *SqlPerformancePrintTemplate) Print() {
-	printer := tableprinter.New(os.Stdout)
+func (c *SqlPerformancePrintTemplate) Print(out io.Writer) {
+	printer := tableprinter.New(out)
 	row, nums := tableprinter.StructParser.ParseRow(reflect.ValueOf(c.InfoList))
 	printer.RenderRow(row, nums)
 }
