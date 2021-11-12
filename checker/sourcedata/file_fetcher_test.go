@@ -41,21 +41,22 @@ func TestFileFetcher_loadSlowPlanData(t *testing.T) {
 	}
 }
 
-func TestFileFetcher_loadCount(t *testing.T) {
-	input := `count
-100
-`
+func TestFileFetcher_loadDigest(t *testing.T) {
+	input := `Digest,Plan_Digest
+20fbc1588c39df832b2b51f17a125e1a528bdb828d45925b5000eb68375b2b58,53f7fc047d5abad21f32720e02428492b434819bd6a7b937b746b4868df30495
+eaf0fbdeb196f9967b2ebeaee2e03de824ca1cde78aa386dc3fe2c1a3bccff18,1075995a5eff7d924e2f1f1fc59d564762d70df43e88b5f0c2642418cb8b89ef
+eaf0fbdeb196f9967b2ebeaee2e03de824ca1cde78aa386dc3fe2c1a3bccff18,0d53fbed643f0585f6b3a621143ba57a553fd280364cc619dc7dc13050bc8739`
 	reader := bytes.NewBufferString(input)
 	ff, err := NewFileFetcher("")
 	if err != nil {
 		t.Error(err)
 	}
 
-	res, err := ff.loadCount(reader)
+	res, err := ff.loadDigest(reader)
 	if err != nil {
 		t.Error(err)
 	}
-	if res != 100 {
+	if len(res) != 3 {
 		t.Error("result is not expected")
 	}
 }

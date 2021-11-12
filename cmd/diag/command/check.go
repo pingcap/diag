@@ -89,7 +89,7 @@ func newCheckCmd() *cobra.Command {
 				return wrapper.Start()
 			})
 			if err := errG.Wait(); err != nil {
-				log.Error("check meet error: %+v", zap.Error(err))
+				log.Error("check meet error", zap.Error(err))
 				return err
 			}
 			return nil

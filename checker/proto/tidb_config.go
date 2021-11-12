@@ -136,16 +136,24 @@ type TidbConfig struct {
 	ServerVersion       string        `json:"server-version"`
 	Log                 TidbLogConfig `json:"log"`
 	Security            struct {
-		SkipGrantTable              bool        `json:"skip-grant-table"`
-		SslCa                       string      `json:"ssl-ca"`
-		SslCert                     string      `json:"ssl-cert"`
-		SslKey                      string      `json:"ssl-key"`
-		RequireSecureTransport      bool        `json:"require-secure-transport"`
-		ClusterSslCa                string      `json:"cluster-ssl-ca"`
-		ClusterSslCert              string      `json:"cluster-ssl-cert"`
-		ClusterSslKey               string      `json:"cluster-ssl-key"`
-		ClusterVerifyCn             interface{} `json:"cluster-verify-cn"`
-		SpilledFileEncryptionMethod string      `json:"spilled-file-encryption-method"`
+		SkipGrantTable         bool     `toml:"skip-grant-table" json:"skip-grant-table"`
+		SSLCA                  string   `toml:"ssl-ca" json:"ssl-ca"`
+		SSLCert                string   `toml:"ssl-cert" json:"ssl-cert"`
+		SSLKey                 string   `toml:"ssl-key" json:"ssl-key"`
+		RequireSecureTransport bool     `toml:"require-secure-transport" json:"require-secure-transport"`
+		ClusterSSLCA           string   `toml:"cluster-ssl-ca" json:"cluster-ssl-ca"`
+		ClusterSSLCert         string   `toml:"cluster-ssl-cert" json:"cluster-ssl-cert"`
+		ClusterSSLKey          string   `toml:"cluster-ssl-key" json:"cluster-ssl-key"`
+		ClusterVerifyCN        []string `toml:"cluster-verify-cn" json:"cluster-verify-cn"`
+		// If set to "plaintext", the spilled files will not be encrypted.
+		SpilledFileEncryptionMethod string `toml:"spilled-file-encryption-method" json:"spilled-file-encryption-method"`
+		// EnableSEM prevents SUPER users from having full access.
+		EnableSEM bool `toml:"enable-sem" json:"enable-sem"`
+		// Allow automatic TLS certificate generation
+		AutoTLS         bool   `toml:"auto-tls" json:"auto-tls"`
+		MinTLSVersion   string `toml:"tls-version" json:"tls-version"`
+		RSAKeySize      int    `toml:"rsa-key-size" json:"rsa-key-size"`
+		SecureBootstrap bool   `toml:"secure-bootstrap" json:"secure-bootstrap"`
 	} `json:"security"`
 	Status struct {
 		StatusHost      string `json:"status-host"`
@@ -156,28 +164,32 @@ type TidbConfig struct {
 		RecordDbQPS     bool   `json:"record-db-qps"`
 	} `json:"status"`
 	Performance struct {
-		MaxProcs              int     `json:"max-procs"`
-		MaxMemory             int     `json:"max-memory"`
-		ServerMemoryQuota     int     `json:"server-memory-quota"`
-		MemoryUsageAlarmRatio float64 `json:"memory-usage-alarm-ratio"`
-		StatsLease            string  `json:"stats-lease"`
-		StmtCountLimit        int     `json:"stmt-count-limit"`
-		FeedbackProbability   int     `json:"feedback-probability"`
-		QueryFeedbackLimit    int     `json:"query-feedback-limit"`
-		PseudoEstimateRatio   float64 `json:"pseudo-estimate-ratio"`
-		ForcePriority         string  `json:"force-priority"`
-		BindInfoLease         string  `json:"bind-info-lease"`
-		TxnEntrySizeLimit     int     `json:"txn-entry-size-limit"`
-		TxnTotalSizeLimit     int     `json:"txn-total-size-limit"`
-		TCPKeepAlive          bool    `json:"tcp-keep-alive"`
-		CrossJoin             bool    `json:"cross-join"`
-		RunAutoAnalyze        bool    `json:"run-auto-analyze"`
-		AggPushDownJoin       bool    `json:"agg-push-down-join"`
-		CommitterConcurrency  int     `json:"committer-concurrency"`
-		MaxTxnTTL             int     `json:"max-txn-ttl"`
-		MemProfileInterval    string  `json:"mem-profile-interval"`
-		IndexUsageSyncLease   string  `json:"index-usage-sync-lease"`
-		Gogc                  int     `json:"gogc"`
+		MaxProcs uint `toml:"max-procs" json:"max-procs"`
+		// Deprecated: use ServerMemoryQuota instead
+		MaxMemory             uint64  `toml:"max-memory" json:"max-memory"`
+		ServerMemoryQuota     uint64  `toml:"server-memory-quota" json:"server-memory-quota"`
+		MemoryUsageAlarmRatio float64 `toml:"memory-usage-alarm-ratio" json:"memory-usage-alarm-ratio"`
+		StatsLease            string  `toml:"stats-lease" json:"stats-lease"`
+		StmtCountLimit        uint    `toml:"stmt-count-limit" json:"stmt-count-limit"`
+		FeedbackProbability   float64 `toml:"feedback-probability" json:"feedback-probability"`
+		QueryFeedbackLimit    uint    `toml:"query-feedback-limit" json:"query-feedback-limit"`
+		PseudoEstimateRatio   float64 `toml:"pseudo-estimate-ratio" json:"pseudo-estimate-ratio"`
+		ForcePriority         string  `toml:"force-priority" json:"force-priority"`
+		BindInfoLease         string  `toml:"bind-info-lease" json:"bind-info-lease"`
+		TxnEntrySizeLimit     uint64  `toml:"txn-entry-size-limit" json:"txn-entry-size-limit"`
+		TxnTotalSizeLimit     uint64  `toml:"txn-total-size-limit" json:"txn-total-size-limit"`
+		TCPKeepAlive          bool    `toml:"tcp-keep-alive" json:"tcp-keep-alive"`
+		TCPNoDelay            bool    `toml:"tcp-no-delay" json:"tcp-no-delay"`
+		CrossJoin             bool    `toml:"cross-join" json:"cross-join"`
+		RunAutoAnalyze        bool    `toml:"run-auto-analyze" json:"run-auto-analyze"`
+		DistinctAggPushDown   bool    `toml:"distinct-agg-push-down" json:"distinct-agg-push-down"`
+		CommitterConcurrency  int     `toml:"committer-concurrency" json:"committer-concurrency"`
+		MaxTxnTTL             uint64  `toml:"max-txn-ttl" json:"max-txn-ttl"`
+		MemProfileInterval    string  `toml:"mem-profile-interval" json:"mem-profile-interval"`
+		IndexUsageSyncLease   string  `toml:"index-usage-sync-lease" json:"index-usage-sync-lease"`
+		PlanReplayerGCLease   string  `toml:"plan-replayer-gc-lease" json:"plan-replayer-gc-lease"`
+		GOGC                  int     `toml:"gogc" json:"gogc"`
+		EnforceMPP            bool    `toml:"enforce-mpp" json:"enforce-mpp"`
 	} `json:"performance"`
 	PreparedPlanCache struct {
 		Enabled          bool    `json:"enabled"`
@@ -246,8 +258,13 @@ type TidbConfig struct {
 		Load string `json:"load"`
 	} `json:"plugin"`
 	PessimisticTxn struct {
-		MaxRetryCount int `json:"max-retry-count"`
-	} `json:"pessimistic-txn"`
+		// The max count of retry for a single statement in a pessimistic transaction.
+		MaxRetryCount uint `toml:"max-retry-count" json:"max-retry-count"`
+		// The max count of deadlock events that will be recorded in the information_schema.deadlocks table.
+		DeadlockHistoryCapacity uint `toml:"deadlock-history-capacity" json:"deadlock-history-capacity"`
+		// Whether retryable deadlocks (in-statement deadlocks) are collected to the information_schema.deadlocks table.
+		DeadlockHistoryCollectRetryable bool `toml:"deadlock-history-collect-retryable" json:"deadlock-history-collect-retryable"`
+	} `toml:"pessimistic-txn" json:"pessimistic-txn"`
 	CheckMb4ValueInUtf8          bool `json:"check-mb4-value-in-utf8"`
 	MaxIndexLength               int  `json:"max-index-length"`
 	IndexLimit                   int  `json:"index-limit"`
