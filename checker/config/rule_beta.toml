@@ -392,15 +392,19 @@ check_type = "performance"
 execute_rule = """
 rule "poor_effective_index"
 begin
-    maxExecutionInfo = dashboard.ExecutionPlanInfoList[0]
-    minExecutionInfo = dashboard.ExecutionPlanInfoList[1]
-    if !isNil(maxExecutionInfo) 
-        && !isNil(minExecutionInfo) 
-        && maxExecutionInfo.AvgProcessTime > 50 * minExecutionInfo.AvgProcessTime 
-        && maxExecutionInfo.MaxLastTime > minExecutionInfo.MaxLastTime {
-        return false
+    count := 0
+    forRange digest := dashboard.ExecutionPlanInfoList {
+        ei = dashboard.ExecutionPlanInfoList[digest]
+        maxExecutionInfo = dashboard.ExecutionPlanInfoList[0]
+        minExecutionInfo = dashboard.ExecutionPlanInfoList[1]
+        if !isNil(maxExecutionInfo) 
+            && !isNil(minExecutionInfo) 
+            && maxExecutionInfo.AvgProcessTime > 50 * minExecutionInfo.AvgProcessTime 
+            && maxExecutionInfo.MaxLastTime > minExecutionInfo.MaxLastTime {
+            count = count + 1
+        }
     }
-    return true
+    return count
 end
 """
 name_struct = "performance.dashboard"
@@ -415,7 +419,7 @@ description = ""
 variation = "total_key,process_key"
 check_type = "performance"
 execute_rule = """
-rule ""
+rule "old_version_count"
 begin
     if dashboard.OldVersionProcesskeyCount.Count > 0 && dashboard.OldVersionProcesskeyCount.GcLifeTime > 10 * 60 {
         return false
@@ -435,7 +439,7 @@ description = ""
 variation = "rocksdb_delete_skipped_count,process_keys"
 check_type = "performance"
 execute_rule = """
-rule "key_skip"
+rule "scan_key_skip"
 begin
     if dashboard.TombStoneStatistics.Count > 0 {
         return false

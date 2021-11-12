@@ -31,6 +31,8 @@ const (
 	TikvComponentName                 = "TikvConfig"
 	TiflashComponentName              = "TiflashConfig"
 	PerformanceDashboardComponentName = "performance.dashboard"
+	ConfigType                        = "Config"
+	PerformanceType                   = "performance"
 )
 
 type SourceDataV2 struct {
@@ -207,7 +209,7 @@ func (c *SqlPerformancePrintTemplate) CollectResult(hd *HandleData, retValue int
 		} else {
 			c.InfoList.NumDigest = fmt.Sprintf("%d Digest trigger cordon", data.OldVersionProcesskey.Count)
 		}
-	case "TombStoneStatistics":
+	case "scan_key_skip":
 		c.InfoList.NumDigest = fmt.Sprintf("%d Digest trigger cordon", data.TombStoneStatistics.Count)
 	}
 	return nil
@@ -250,7 +252,7 @@ type Rule struct {
 	Description  string `yaml:"description" toml:"description"`
 	ExecuteRule  string `yaml:"execute_rule" toml:"execute_rule"`
 	NameStruct   string `yaml:"name_struct" toml:"name_struct"` // datatype.component
-	CheckType    int    `yaml:"check_type" toml:"check_type"`
+	CheckType    string `yaml:"check_type" toml:"check_type"`
 	ExpectRes    string `yaml:"expect_res" toml:"expect_res"`
 	WarnLevel    string `yaml:"warn_level" toml:"warn_level"`
 	Variation    string `yaml:"variation" toml:"variation"` // e.g. tidb.file.max_days,
