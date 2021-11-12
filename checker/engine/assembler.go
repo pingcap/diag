@@ -32,7 +32,7 @@ func NewWrapper(sd *proto.SourceDataV2, rs map[string]*proto.Rule) *Wrapper {
 	return &Wrapper{
 		SourceData:     sd,
 		RuleSet:        rs,
-		Render:         render.NewResultWrapper(rs),
+		Render:         render.NewResultWrapper(rs, sd),
 		RuleResult:     make(map[string]proto.PrintTemplate),
 		computeUnitSet: make(map[string]*ComputeUnit),
 	}

@@ -29,9 +29,10 @@ type ResultWrapper struct {
 	Data    *proto.SourceDataV2
 }
 
-func NewResultWrapper(rs map[string]*proto.Rule) *ResultWrapper {
+func NewResultWrapper(rs map[string]*proto.Rule, data *proto.SourceDataV2) *ResultWrapper {
 	return &ResultWrapper{
 		RuleSet: rs,
+		Data:    data,
 	}
 }
 
@@ -120,7 +121,7 @@ func (w *CheckerWriter) Write(p []byte) (nn int, err error) {
 	if err != nil {
 		return 0, err
 	}
-	nn, err = w.termWriter.Write(p)
+	_, err = w.termWriter.Write(p)
 	if err != nil {
 		return 0, err
 	}
