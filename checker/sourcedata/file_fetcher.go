@@ -16,6 +16,13 @@ package sourcedata
 import (
 	"encoding/csv"
 	"encoding/json"
+	"io"
+	"os"
+	"path"
+	"strconv"
+	"strings"
+	"time"
+
 	"github.com/pingcap/diag/checker/config"
 	"github.com/pingcap/diag/checker/proto"
 	"github.com/pingcap/diag/collector"
@@ -24,12 +31,6 @@ import (
 	"github.com/pingcap/tiup/pkg/cluster/spec"
 	"github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v3"
-	"io"
-	"os"
-	"path"
-	"strconv"
-	"strings"
-	"time"
 )
 
 type Fetcher interface {
@@ -175,7 +176,7 @@ func (f *FileFetcher) FetchData(rules *config.RuleSpec) (*proto.SourceDataV2, pr
 			if err != nil {
 				return nil, nil, err
 			}
-			sourceData.DashboardData.OldVersionProcesskeyCount.Count = cnt
+			sourceData.DashboardData.OldVersionProcesskey.Count = cnt
 		}
 		{
 			reader, err := os.Open(f.genInfoSchemaCSVPath("mysql.tidb.csv"))
@@ -191,7 +192,7 @@ func (f *FileFetcher) FetchData(rules *config.RuleSpec) (*proto.SourceDataV2, pr
 			if err != nil {
 				return nil, nil, err
 			}
-			sourceData.DashboardData.OldVersionProcesskeyCount.GcLifeTime = int(gcLifeTime.Nanoseconds() / 1e9)
+			sourceData.DashboardData.OldVersionProcesskey.GcLifeTime = int(gcLifeTime.Nanoseconds() / 1e9)
 		}
 		{
 			reader, err := os.Open(f.genInfoSchemaCSVPath("skip_toomany_keys_count.csv"))
