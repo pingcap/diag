@@ -15,6 +15,7 @@ package config
 
 import (
 	_ "embed"
+
 	"github.com/BurntSushi/toml"
 	"github.com/pingcap/diag/checker/proto"
 )
@@ -42,11 +43,8 @@ func (rs *RuleSpec) FilterOnVersion(ver string) (proto.RuleSet, error) {
 			continue
 		}
 		// set match rule to rSet
-		name := rs.Rule[idx].NameStruct
-		if _, ok := rSet[name]; !ok {
-			rSet[name] = make([]*proto.Rule, 0)
-		}
-		rSet[name] = append(rSet[name], &rs.Rule[idx].Rule)
+		rulename := rs.Rule[idx].Rule.Name
+		rSet[rulename] = &rs.Rule[idx].Rule
 	}
 	return rSet, nil
 }
@@ -64,11 +62,8 @@ func (rs *RuleSpec) FilterOn(filter FilterFunc) (proto.RuleSet, error) {
 			continue
 		}
 		// set match rule to rSet
-		name := rs.Rule[idx].NameStruct
-		if _, ok := rSet[name]; !ok {
-			rSet[name] = make([]*proto.Rule, 0)
-		}
-		rSet[name] = append(rSet[name], &rs.Rule[idx].Rule)
+		rulename := rs.Rule[idx].Rule.Name
+		rSet[rulename] = &rs.Rule[idx].Rule
 	}
 	return rSet, nil
 }

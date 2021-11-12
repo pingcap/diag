@@ -14,9 +14,10 @@
 package proto
 
 import (
-	"github.com/pingcap/diag/pkg/utils"
 	"reflect"
 	"strings"
+
+	"github.com/pingcap/diag/pkg/utils"
 )
 
 type TiflashConfig struct {
@@ -671,6 +672,10 @@ func (cfg *TiflashConfigData) GetComponent() string {
 
 func (cfg *TiflashConfigData) GetPort() int {
 	return cfg.Port
+}
+
+func (cfg *TiflashConfigData) ActingName() string {
+	return "config"
 }
 
 func NewTiflashConfigData() *TiflashConfigData {

@@ -320,6 +320,10 @@ func (cfg *TidbConfigData) CheckNil() bool {
 	return cfg.TidbConfig == nil
 }
 
+func (cfg *TidbConfigData) ActingName() string {
+	return "config"
+}
+
 func NewTidbConfigData() *TidbConfigData {
 	return &TidbConfigData{TidbConfig: &TidbConfig{
 		Log: TidbLogConfig{
