@@ -102,15 +102,15 @@ func logInRange(fname string, fi fs.FileInfo, start, end time.Time) (bool, error
 	}
 
 	ht := parseLine(head)
-	if ht == nil {
-		return false, fmt.Errorf("the first line is not a valid log line")
+	if ht != nil && ht.After(end) {
+		return false, nil
 	}
 
-	if ht.Before(end) && fi.ModTime().After(start) {
-		return true, nil
+	if fi.ModTime().Before(start) {
+		return false, nil
 	}
 
-	return false, nil
+	return true, nil
 }
 
 func parseLine(line []byte) *time.Time {
