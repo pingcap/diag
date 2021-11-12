@@ -56,6 +56,7 @@ type Data interface {
 	ActingName() string
 }
 
+
 type OutputMetaData struct {
 	ClusterName string
 	TidbVersion string
@@ -139,6 +140,7 @@ func (c *ConfPrintTemplate) CollectResult(hd *HandleData, retValue interface{}) 
 		checkResult = c.Rule.WarnLevel
 	}
 	valstr := c.GetValStr(hd)
+
 	confInfo := &ConfInfo{
 		UniTag:      hd.UqiTag,
 		Val:         valstr,
