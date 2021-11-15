@@ -39,6 +39,14 @@ const (
 	CollectTypeSchema  = "info_schema"
 )
 
+var CollectAllSet set.StringSet = set.NewStringSet( // collect all types by default
+	CollectTypeSystem,
+	CollectTypeMonitor,
+	CollectTypeLog,
+	CollectTypeConfig,
+	CollectTypeSchema,
+)
+
 // Collector is the configuration defining an collecting job
 type Collector interface {
 	Prepare(*Manager, *spec.Specification) (map[string][]CollectStat, error)

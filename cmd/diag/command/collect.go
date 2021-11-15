@@ -26,6 +26,7 @@ import (
 )
 
 func newCollectCmd() *cobra.Command {
+	var collectAll bool
 	opt := collector.BaseOptions{
 		SSH: &tui.SSHConnectionProps{
 			IdentityFile: path.Join(utils.UserHome(), ".ssh", "id_rsa"),
@@ -54,7 +55,9 @@ func newCollectCmd() *cobra.Command {
 				opt.SSH.IdentityFile = ""
 			}
 
-			if len(inc) > 0 {
+			if collectAll {
+				cOpt.Include = collector.CollectAllSet
+			} else if len(inc) > 0 {
 				cOpt.Include = set.NewStringSet(inc...)
 			}
 			if len(ext) > 0 {
@@ -69,6 +72,7 @@ func newCollectCmd() *cobra.Command {
 	cmd.Flags().StringSliceVarP(&gOpt.Nodes, "node", "N", nil, "Only collect data from specified nodes")
 	cmd.Flags().StringVarP(&opt.ScrapeBegin, "from", "f", time.Now().Add(time.Hour*-2).Format(time.RFC3339), "start timepoint when collecting timeseries data")
 	cmd.Flags().StringVarP(&opt.ScrapeEnd, "to", "t", time.Now().Format(time.RFC3339), "stop timepoint when collecting timeseries data")
+	cmd.Flags().BoolVar(&collectAll, "all", false, "Collect all data")
 	cmd.Flags().StringSliceVar(&inc, "include", cOpt.Include.Slice(), "types of data to collect")
 	cmd.Flags().StringSliceVar(&ext, "exclude", cOpt.Exclude.Slice(), "types of data not to collect")
 	cmd.Flags().StringSliceVar(&cOpt.MetricsFilter, "metricsfilter", nil, "prefix of metrics to collect")
