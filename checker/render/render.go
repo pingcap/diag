@@ -44,7 +44,7 @@ func (w *ResultWrapper) Output(checkresult map[string]proto.PrintTemplate) error
 	sec := now.Unix()
 	writer, err := NewCheckerWriter(fmt.Sprintf("checker-%s-%d.txt", w.Data.ClusterInfo.Session, sec))
 	if err != nil {
-		log.Errorf("create file failed, ", err.Error())
+		log.Errorf("create file failed, %+v", err.Error())
 	}
 	defer func() {
 		writer.Flush()
@@ -65,7 +65,7 @@ func (w *ResultWrapper) Output(checkresult map[string]proto.PrintTemplate) error
 	for rulename, printer := range checkresult {
 		rule, ok := w.RuleSet[rulename]
 		if !ok {
-			log.Errorf("unknown rule name for output ", rulename)
+			log.Errorf("unknown rule name for output %+v", rulename)
 			continue
 		}
 		writer.WriteString("# Configuration Check Result\n")
@@ -100,7 +100,7 @@ func (w *CheckerWriter) Flush() error {
 func NewCheckerWriter(filename string) (*CheckerWriter, error) {
 	f, err := os.Create(filename) //
 	if err != nil {
-		log.Errorf("create file failed, ", err.Error())
+		log.Errorf("create file failed, %+v", err.Error())
 		return nil, err
 	}
 	termwriter := bufio.NewWriter(f)
