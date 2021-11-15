@@ -131,7 +131,7 @@ func (c *SchemaCollectOptions) Collect(_ *Manager, topo *spec.Specification) err
 					}
 				}
 				if db == nil {
-					return fmt.Errorf("cannot connect to any TiDB instant")
+					return fmt.Errorf("cannot connect to any TiDB instance")
 				}
 
 				_, err = db.Exec("USE information_schema;")
