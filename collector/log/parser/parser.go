@@ -17,9 +17,9 @@ type Parser interface {
 func List() []Parser {
 	return []Parser{
 		&UnifiedLogParser{},
+		&SlowQueryParser{},
 		&TiFlashErrLogParser{},
 		&PDLogV2Parser{},
 		&TiKVLogV2Parser{},
-		&SlowQueryParser{},
 	}
 }
