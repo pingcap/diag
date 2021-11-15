@@ -7,6 +7,7 @@ import (
 	"github.com/pingcap/diag/checker/proto"
 	"github.com/pingcap/diag/checker/render"
 	"github.com/pingcap/log"
+	"go.uber.org/zap"
 )
 
 // unique rulename
@@ -87,6 +88,9 @@ func (w *Wrapper) PackageResult(hd *proto.HandleData, resultset map[string]inter
 				rulePrinter = proto.NewConfPrintTemplate(rule) // todo@toto add new func
 			case proto.PerformanceType:
 				rulePrinter = proto.NewSqlPerformancePrintTemplate(rule) // todo@toto add new func
+			default:
+				log.Error("can't handle such type rule: ", zap.String("checktype", rule.CheckType))
+				return fmt.Errorf("can't handle %s type rule: ", rule.CheckType)
 			}
 		}
 		if err := rulePrinter.CollectResult(hd, res); err != nil {

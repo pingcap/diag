@@ -31,7 +31,7 @@ const (
 	TikvComponentName                 = "TikvConfig"
 	TiflashComponentName              = "TiflashConfig"
 	PerformanceDashboardComponentName = "performance.dashboard"
-	ConfigType                        = "Config"
+	ConfigType                        = "config"
 	PerformanceType                   = "performance"
 )
 
@@ -193,7 +193,7 @@ func (c *ConfPrintTemplate) SplitComponentAndPath(varaition string) map[string][
 func (c *ConfPrintTemplate) Print(out io.Writer) {
 	printer := tableprinter.New(out)
 	for _, rr := range c.InfoList {
-		row, nums := tableprinter.StructParser.ParseRow(reflect.ValueOf(rr))
+		row, nums := tableprinter.StructParser.ParseRow(reflect.ValueOf(*rr))
 		printer.RenderRow(row, nums)
 	}
 }
