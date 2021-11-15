@@ -69,7 +69,10 @@ func (w *Wrapper) Exec() error {
 			log.Error(err.Error())
 			return err
 		}
-		w.PackageResult(hd, result)
+		if err := w.PackageResult(hd, result); err != nil {
+			log.Error(fmt.Sprintf("package result failed, %s", err.Error()))
+			return err
+		}
 	}
 	return nil
 }

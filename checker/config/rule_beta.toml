@@ -385,12 +385,12 @@ version = "> v4.0.0"
 
 [[rule]]
 id = 300
-name = "poor_effective_index"
+name = "poor_effective_plan"
 description = "执行计划选择了错误的索引"
 variation = "plan_process_time"
 check_type = "performance"
 execute_rule = """
-rule "poor_effective_index"
+rule "poor_effective_plan"
 begin
     count := 0
     forRange digest := dashboard.ExecutionPlanInfoList {
@@ -421,7 +421,7 @@ check_type = "performance"
 execute_rule = """
 rule "old_version_count"
 begin
-    if dashboard.OldVersionProcesskeyCount.Count > 0 && dashboard.OldVersionProcesskeyCount.GcLifeTime > 10 * 60 {
+    if dashboard.OldVersionProcesskey.Count > 0 && dashboard.OldVersionProcesskey.GcLifeTime > 10 * 60 {
         return false
     }
     return true

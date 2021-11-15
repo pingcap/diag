@@ -55,7 +55,6 @@ func (w *ResultWrapper) Output(checkresult map[string]proto.PrintTemplate) error
 	writer.WriteString("# Cluster Information")
 	writer.WriteString(fmt.Sprintln("ClusterId: ", w.Data.ClusterInfo.ClusterID))
 	writer.WriteString(fmt.Sprintln("ClusterName: ", w.Data.ClusterInfo.ClusterName))
-	writer.WriteString(fmt.Sprintln("ClusterName: ", w.Data.ClusterInfo.ClusterName))
 	writer.WriteString(fmt.Sprintln("ClusterVersoin: ", w.Data.TidbVersion))
 	writer.WriteString("\n")
 
@@ -69,13 +68,14 @@ func (w *ResultWrapper) Output(checkresult map[string]proto.PrintTemplate) error
 			log.Errorf("unknown rule name for output ", rulename)
 			continue
 		}
-		writer.WriteString("# Configuration Check Result")
+		writer.WriteString("# Configuration Check Result\n")
 		writer.WriteString(fmt.Sprintln("- RuleName: ", rulename))
 		writer.WriteString(fmt.Sprintln("- RuleID: ", rule.ID))
 		writer.WriteString(fmt.Sprintln("- Variation: ", rule.Variation))
 		writer.WriteString(fmt.Sprintln("- Alerting Rule: ", rule.AlertingRule))
 		writer.WriteString(fmt.Sprintln("- Check Result: "))
 		printer.Print(writer)
+		writer.WriteString("\n")
 
 	}
 	return nil
