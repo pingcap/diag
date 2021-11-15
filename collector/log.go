@@ -21,6 +21,7 @@ import (
 
 	"github.com/joomcode/errorx"
 	jsoniter "github.com/json-iterator/go"
+	"github.com/pingcap/diag/pkg/models"
 	"github.com/pingcap/diag/scraper"
 	perrs "github.com/pingcap/errors"
 	"github.com/pingcap/tiup/pkg/cluster/ctxt"
@@ -71,7 +72,12 @@ func (c *LogCollectOptions) SetDir(dir string) {
 }
 
 // Prepare implements the Collector interface
-func (c *LogCollectOptions) Prepare(m *Manager, topo *spec.Specification) (map[string][]CollectStat, error) {
+func (c *LogCollectOptions) Prepare(m *Manager, cls *models.TiDBCluster) (map[string][]CollectStat, error) {
+	if m.mode != CollectModeTiUP {
+		return nil, nil
+	}
+
+	topo := cls.Attributes[CollectModeTiUP].(*spec.Specification)
 	var (
 		dryRunTasks   []*task.StepDisplay
 		downloadTasks []*task.StepDisplay
@@ -106,7 +112,7 @@ func (c *LogCollectOptions) Prepare(m *Manager, topo *spec.Specification) (map[s
 			archKey := fmt.Sprintf("%s-%s", inst.OS(), inst.Arch())
 			if _, found := uniqueArchList[archKey]; !found {
 				uniqueArchList[archKey] = struct{}{}
-				t0 := task.NewBuilder().
+				t0 := task.NewBuilder(m.DisplayMode).
 					Download(
 						componentDiagCollector,
 						inst.OS(),
@@ -178,7 +184,7 @@ func (c *LogCollectOptions) Prepare(m *Manager, topo *spec.Specification) (map[s
 		dryRunTasks = append(dryRunTasks, t1)
 	}
 
-	t := task.NewBuilder().
+	t := task.NewBuilder(m.DisplayMode).
 		ParallelStep("+ Download necessary tools", false, downloadTasks...).
 		ParallelStep("+ Collect host information", false, dryRunTasks...).
 		Build()
@@ -196,7 +202,12 @@ func (c *LogCollectOptions) Prepare(m *Manager, topo *spec.Specification) (map[s
 }
 
 // Collect implements the Collector interface
-func (c *LogCollectOptions) Collect(m *Manager, topo *spec.Specification) error {
+func (c *LogCollectOptions) Collect(m *Manager, cls *models.TiDBCluster) error {
+	if m.mode != CollectModeTiUP {
+		return nil
+	}
+
+	topo := cls.Attributes[CollectModeTiUP].(*spec.Specification)
 	var (
 		collectTasks []*task.StepDisplay
 		cleanTasks   []*task.StepDisplay
@@ -259,7 +270,7 @@ func (c *LogCollectOptions) Collect(m *Manager, topo *spec.Specification) error 
 		}
 	}
 
-	t := task.NewBuilder().
+	t := task.NewBuilder(m.DisplayMode).
 		ParallelStep("+ Scrap files on nodes", false, collectTasks...).
 		ParallelStep("+ Cleanup temp files", false, cleanTasks...).
 		Build()

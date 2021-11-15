@@ -306,7 +306,6 @@ func calcTimeDiffInternal(t1 CoreTime, year, month, day, hour, minute, second, m
 	return
 }
 
-
 // calcDaynr calculates days since 0000-00-00.
 func calcDaynr(year, month, day int) int {
 	if year == 0 && month == 0 {

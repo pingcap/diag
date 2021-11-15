@@ -39,7 +39,7 @@ import (
 // to an influxdb instance.
 func LoadMetrics(ctx context.Context, dataDir string, opt *RebuildOptions) error {
 	// read cluster name
-	body, err := os.ReadFile(path.Join(dataDir, fileNameClusterJSON))
+	body, err := os.ReadFile(path.Join(dataDir, FileNameClusterJSON))
 	if err != nil {
 		return err
 	}

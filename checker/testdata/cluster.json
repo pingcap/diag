@@ -1,0 +1,138 @@
+{
+  "cluster_name": "m31",
+  "cluster_id": 7026979526203810949,
+  "deploy_type": "tidb-operator",
+  "session": "fL6bF88y5Rt",
+  "begin_time": "-4h",
+  "end_time": "2021-11-10T08:45:51Z",
+  "collectors": [
+    "monitor",
+    "config"
+  ],
+  "topology": {
+    "version": "v5.2.2",
+    "namespace": "diag",
+    "pd": [
+      {
+        "host": "10.42.0.3",
+        "port": 2379,
+        "status_port": 2379,
+        "attributes": {
+          "id": "6231800536615119152",
+          "client_url": "http://m31-pd-0.m31-pd-peer.diag.svc:2379",
+          "image": "pingcap/pd:v5.2.2",
+          "pod": "m31-pd-0",
+          "health": true
+        }
+      },
+      {
+        "host": "10.32.0.3",
+        "port": 2379,
+        "status_port": 2379,
+        "attributes": {
+          "health": true,
+          "id": "1599843491603777835",
+          "client_url": "http://m31-pd-1.m31-pd-peer.diag.svc:2379",
+          "image": "pingcap/pd:v5.2.2",
+          "pod": "m31-pd-1"
+        }
+      },
+      {
+        "host": "10.34.0.0",
+        "port": 2379,
+        "status_port": 2379,
+        "attributes": {
+          "client_url": "http://m31-pd-2.m31-pd-peer.diag.svc:2379",
+          "image": "pingcap/pd:v5.2.2",
+          "pod": "m31-pd-2",
+          "health": true,
+          "id": "12560588131650445528"
+        }
+      }
+    ],
+    "tikv": [
+      {
+        "host": "10.32.0.4",
+        "port": 20160,
+        "status_port": 20180,
+        "attributes": {
+          "pod": "m31-tikv-0",
+          "state": "Up",
+          "id": "1",
+          "leader_count": 1,
+          "image": "pingcap/tikv:v5.2.2"
+        }
+      },
+      {
+        "host": "10.35.0.1",
+        "port": 20160,
+        "status_port": 20180,
+        "attributes": {
+          "state": "Up",
+          "id": "4",
+          "leader_count": 0,
+          "image": "pingcap/tikv:v5.2.2",
+          "pod": "m31-tikv-1"
+        }
+      },
+      {
+        "host": "10.41.0.3",
+        "port": 20160,
+        "status_port": 20180,
+        "attributes": {
+          "state": "Up",
+          "id": "6",
+          "leader_count": 0,
+          "image": "pingcap/tikv:v5.2.2",
+          "pod": "m31-tikv-2"
+        }
+      }
+    ],
+    "tidb": [
+      {
+        "host": "10.45.0.3",
+        "port": 4000,
+        "status_port": 10080,
+        "attributes": {
+          "health": true,
+          "image": "pingcap/tidb:v5.2.2",
+          "pod": "m31-tidb-0"
+        }
+      },
+      {
+        "host": "10.34.0.1",
+        "port": 4000,
+        "status_port": 10080,
+        "attributes": {
+          "health": true,
+          "image": "pingcap/tidb:v5.2.2",
+          "pod": "m31-tidb-1"
+        }
+      }
+    ],
+    "tiflash": [
+      {
+        "host": "10.42.0.4",
+        "port": 3930,
+        "status_port": 20292,
+        "attributes": {
+          "state": "Up",
+          "id": "5",
+          "leader_count": 0,
+          "image": "pingcap/tiflash:v5.2.2",
+          "pod": "m31-tiflash-0"
+        }
+      }
+    ],
+    "monitors": [
+      {
+        "host": "10.97.154.119",
+        "port": 9090,
+        "status_port": 0,
+        "attributes": {
+          "service": "m31-prometheus"
+        }
+      }
+    ]
+  }
+}

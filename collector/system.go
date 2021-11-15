@@ -21,6 +21,7 @@ import (
 
 	"github.com/joomcode/errorx"
 	jsoniter "github.com/json-iterator/go"
+	"github.com/pingcap/diag/pkg/models"
 	perrs "github.com/pingcap/errors"
 	"github.com/pingcap/tidb-insight/collector/insight"
 	"github.com/pingcap/tiup/pkg/cluster/ctxt"
@@ -64,12 +65,17 @@ func (c *SystemCollectOptions) SetDir(dir string) {
 }
 
 // Prepare implements the Collector interface
-func (c *SystemCollectOptions) Prepare(_ *Manager, _ *spec.Specification) (map[string][]CollectStat, error) {
+func (c *SystemCollectOptions) Prepare(_ *Manager, _ *models.TiDBCluster) (map[string][]CollectStat, error) {
 	return nil, nil
 }
 
 // Collect implements the Collector interface
-func (c *SystemCollectOptions) Collect(m *Manager, topo *spec.Specification) error {
+func (c *SystemCollectOptions) Collect(m *Manager, cls *models.TiDBCluster) error {
+	if m.mode != CollectModeTiUP {
+		return nil
+	}
+
+	topo := cls.Attributes[CollectModeTiUP].(*spec.Specification)
 	var (
 		collectInsightTasks []*task.StepDisplay
 		checkSysTasks       []*task.StepDisplay
@@ -96,7 +102,7 @@ func (c *SystemCollectOptions) Collect(m *Manager, topo *spec.Specification) err
 			archKey := fmt.Sprintf("%s-%s", inst.OS(), inst.Arch())
 			if _, found := uniqueArchList[archKey]; !found {
 				uniqueArchList[archKey] = struct{}{}
-				t0 := task.NewBuilder().
+				t0 := task.NewBuilder(m.DisplayMode).
 					Download(
 						spec.ComponentCheckCollector,
 						inst.OS(),
@@ -145,7 +151,7 @@ func (c *SystemCollectOptions) Collect(m *Manager, topo *spec.Specification) err
 				collectInsightTasks = append(collectInsightTasks, t1)
 
 				// build checking tasks
-				t2 := task.NewBuilder().
+				t2 := task.NewBuilder(m.DisplayMode).
 					// check for listening ports
 					Shell(
 						inst.GetHost(),
@@ -176,7 +182,7 @@ func (c *SystemCollectOptions) Collect(m *Manager, topo *spec.Specification) err
 		}
 	}
 
-	t := task.NewBuilder().
+	t := task.NewBuilder(m.DisplayMode).
 		ParallelStep("+ Download necessary tools", false, downloadTasks...).
 		ParallelStep("+ Collect host information", false, collectInsightTasks...).
 		ParallelStep("+ Collect system information", false, checkSysTasks...).

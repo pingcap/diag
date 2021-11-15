@@ -12,14 +12,14 @@ type accumulator interface {
 }
 
 type execTimeInfo struct {
-	cnt int
+	cnt                    int
 	totalProcessTimeSecond float64
-	lastOccurUnix int64
+	lastOccurUnix          int64
 }
 
 func (info *execTimeInfo) update(cnt int, pTime float64, occurUnix int64) {
-	info.cnt =+ cnt
-	info.totalProcessTimeSecond =+ pTime
+	info.cnt = +cnt
+	info.totalProcessTimeSecond = +pTime
 	if occurUnix > info.lastOccurUnix {
 		info.lastOccurUnix = occurUnix
 	}
@@ -34,16 +34,16 @@ func (info *execTimeInfo) getAvgProcessTime() float64 {
 
 type avgProcessTimePlanAccumulator struct {
 	idxLookUp map[string]int
-	data map[string]map[string]*execTimeInfo
+	data      map[string]map[string]*execTimeInfo
 }
 
 func (acc *avgProcessTimePlanAccumulator) updateExecTimeInfo(digest string, pDigest string, pTime float64, occurUnix int64) {
 	if _, ok := acc.data[digest]; !ok {
 		acc.data[digest] = map[string]*execTimeInfo{
-			pDigest: &execTimeInfo{
-				cnt:                     1,
+			pDigest: {
+				cnt:                    1,
 				totalProcessTimeSecond: pTime,
-				lastOccurUnix:           occurUnix,
+				lastOccurUnix:          occurUnix,
 			},
 		}
 		return
@@ -59,13 +59,12 @@ func (acc *avgProcessTimePlanAccumulator) updateExecTimeInfo(digest string, pDig
 	acc.data[digest][pDigest].update(1, pTime, occurUnix)
 }
 
-
 func (acc *avgProcessTimePlanAccumulator) feed(row []string) error {
 	if len(acc.idxLookUp) < len(row) {
 		return errors.New("invalid slow log row")
 	}
 	processKeys, err := strconv.Atoi(row[acc.idxLookUp["Process_keys"]])
-	if err != nil && len(row[acc.idxLookUp["Process_keys"]]) >0 {
+	if err != nil && len(row[acc.idxLookUp["Process_keys"]]) > 0 {
 		return err
 	}
 	if processKeys <= 1000000 {
@@ -82,7 +81,7 @@ func (acc *avgProcessTimePlanAccumulator) feed(row []string) error {
 		return err
 	}
 	occurUnix := occurTime.Unix()
-	acc.updateExecTimeInfo(digest,planDigest,processTime, occurUnix)
+	acc.updateExecTimeInfo(digest, planDigest, processTime, occurUnix)
 	return nil
 }
 
@@ -121,7 +120,7 @@ func (acc *avgProcessTimePlanAccumulator) build() (map[string][2]proto.Execution
 
 type scanOldVersionPlanAccumulator struct {
 	idxLookUp map[string]int
-	data map[string]map[string]struct{}
+	data      map[string]map[string]struct{}
 }
 
 func (acc *scanOldVersionPlanAccumulator) feed(row []string) error {
@@ -129,14 +128,14 @@ func (acc *scanOldVersionPlanAccumulator) feed(row []string) error {
 		return errors.New("invalid slow log row")
 	}
 	processKeys, err := strconv.Atoi(row[acc.idxLookUp["Process_keys"]])
-	if err != nil && len(row[acc.idxLookUp["Process_keys"]]) >0 {
+	if err != nil && len(row[acc.idxLookUp["Process_keys"]]) > 0 {
 		return err
 	}
 	if processKeys <= 10000 {
 		return nil
 	}
 	totalKeys, err := strconv.Atoi(row[acc.idxLookUp["Total_keys"]])
-	if err != nil && len(row[acc.idxLookUp["Total_keys"]]) > 0{
+	if err != nil && len(row[acc.idxLookUp["Total_keys"]]) > 0 {
 		return err
 	}
 	if totalKeys < 2*processKeys {
@@ -148,7 +147,7 @@ func (acc *scanOldVersionPlanAccumulator) feed(row []string) error {
 		acc.data[digest] = map[string]struct{}{
 			planDigest: {},
 		}
-	}else {
+	} else {
 		acc.data[digest][planDigest] = struct{}{}
 	}
 	return nil
@@ -157,19 +156,19 @@ func (acc *scanOldVersionPlanAccumulator) feed(row []string) error {
 func (acc *scanOldVersionPlanAccumulator) build() ([]proto.DigestPair, error) {
 	result := make([]proto.DigestPair, 0)
 	for digest, sql := range acc.data {
-		for pDigest, _ := range sql {
+		for pDigest := range sql {
 			result = append(result, proto.DigestPair{
 				Digest:     digest,
 				PlanDigest: pDigest,
 			})
 		}
 	}
-	return  result, nil
+	return result, nil
 }
 
 type skipDeletedCntPlanAccumulator struct {
 	idxLookUp map[string]int
-	data map[string]map[string]struct{}
+	data      map[string]map[string]struct{}
 }
 
 func (acc *skipDeletedCntPlanAccumulator) feed(row []string) error {
@@ -177,14 +176,14 @@ func (acc *skipDeletedCntPlanAccumulator) feed(row []string) error {
 		return errors.New("invalid slow log row")
 	}
 	processKeys, err := strconv.Atoi(row[acc.idxLookUp["Process_keys"]])
-	if err != nil && len(row[acc.idxLookUp["Process_keys"]]) >0 {
+	if err != nil && len(row[acc.idxLookUp["Process_keys"]]) > 0 {
 		return err
 	}
 	if processKeys <= 10000 {
 		return nil
 	}
 	deleteSkippedCnt, err := strconv.Atoi(row[acc.idxLookUp["Rocksdb_delete_skipped_count"]])
-	if err != nil && len(row[acc.idxLookUp["Rocksdb_delete_skipped_count"]]) >0 {
+	if err != nil && len(row[acc.idxLookUp["Rocksdb_delete_skipped_count"]]) > 0 {
 		return err
 	}
 	delta := deleteSkippedCnt - processKeys
@@ -200,7 +199,7 @@ func (acc *skipDeletedCntPlanAccumulator) feed(row []string) error {
 		acc.data[digest] = map[string]struct{}{
 			planDigest: {},
 		}
-	}else {
+	} else {
 		acc.data[digest][planDigest] = struct{}{}
 	}
 	return nil
@@ -209,14 +208,14 @@ func (acc *skipDeletedCntPlanAccumulator) feed(row []string) error {
 func (acc *skipDeletedCntPlanAccumulator) build() ([]proto.DigestPair, error) {
 	result := make([]proto.DigestPair, 0)
 	for digest, sql := range acc.data {
-		for pDigest, _ := range sql {
+		for pDigest := range sql {
 			result = append(result, proto.DigestPair{
 				Digest:     digest,
 				PlanDigest: pDigest,
 			})
 		}
 	}
-	return  result, nil
+	return result, nil
 }
 
 func NewIdxLookup(header []string) map[string]int {

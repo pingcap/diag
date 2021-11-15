@@ -1,4 +1,4 @@
-// Copyright 2020 PingCAP, Inc.
+// Copyright 2021 PingCAP, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -79,7 +79,10 @@ func newCollectCmd() *cobra.Command {
 					cOpt.MetricsFilter = append(cOpt.MetricsFilter, s.Text())
 				}
 			}
-			return cm.CollectClusterInfo(&opt, &cOpt, &gOpt)
+
+			cOpt.Mode = collector.CollectModeTiUP
+			cm.DisplayMode = gOpt.DisplayMode
+			return cm.CollectClusterInfo(&opt, &cOpt, &gOpt, nil, nil)
 		},
 	}
 

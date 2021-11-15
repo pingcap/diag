@@ -1,6 +1,5 @@
 package types
 
-
 // MySQL type information.
 const (
 	TypeUnspecified byte = 0

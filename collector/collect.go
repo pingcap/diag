@@ -21,13 +21,15 @@ import (
 	"time"
 
 	"github.com/fatih/color"
+	pingcapv1alpha1 "github.com/pingcap/diag/k8s/apis/pingcap/v1alpha1"
+	"github.com/pingcap/diag/pkg/models"
 	"github.com/pingcap/diag/pkg/utils"
-	perrs "github.com/pingcap/errors"
 	"github.com/pingcap/tiup/pkg/cluster/executor"
 	operator "github.com/pingcap/tiup/pkg/cluster/operation"
-	"github.com/pingcap/tiup/pkg/cluster/spec"
 	"github.com/pingcap/tiup/pkg/set"
 	"github.com/pingcap/tiup/pkg/tui"
+	"k8s.io/client-go/dynamic"
+	"k8s.io/client-go/kubernetes"
 )
 
 // types of data to collect
@@ -37,6 +39,9 @@ const (
 	CollectTypeLog     = "log"
 	CollectTypeConfig  = "config"
 	CollectTypeSchema  = "info_schema"
+	CollectModeTiUP    = "tiup-cluster"  // collect from a tiup-cluster deployed cluster
+	CollectModeK8s     = "tidb-operator" // collect from a tidb-operator deployed cluster
+
 )
 
 var CollectAllSet set.StringSet = set.NewStringSet( // collect all types by default
@@ -49,8 +54,8 @@ var CollectAllSet set.StringSet = set.NewStringSet( // collect all types by defa
 
 // Collector is the configuration defining an collecting job
 type Collector interface {
-	Prepare(*Manager, *spec.Specification) (map[string][]CollectStat, error)
-	Collect(*Manager, *spec.Specification) error
+	Prepare(*Manager, *models.TiDBCluster) (map[string][]CollectStat, error)
+	Collect(*Manager, *models.TiDBCluster) error
 	GetBaseOptions() *BaseOptions
 	SetBaseOptions(*BaseOptions)
 	Desc() string // a brief self description
@@ -68,6 +73,7 @@ type BaseOptions struct {
 
 // CollectOptions contains the options defining which type of data to collect
 type CollectOptions struct {
+	Mode            string // the cluster is deployed with what type of tool
 	Include         set.StringSet
 	Exclude         set.StringSet
 	MetricsFilter   []string
@@ -89,24 +95,29 @@ func (m *Manager) CollectClusterInfo(
 	opt *BaseOptions,
 	cOpt *CollectOptions,
 	gOpt *operator.Options,
+	kubeCli *kubernetes.Clientset,
+	dynCli dynamic.Interface,
 ) error {
-	var topo spec.Specification
+	m.mode = cOpt.Mode
 
-	exist, err := m.specManager.Exist(opt.Cluster)
+	var cls *models.TiDBCluster
+	var tc *pingcapv1alpha1.TidbCluster
+	var tm *pingcapv1alpha1.TidbMonitor
+	var err error
+	switch cOpt.Mode {
+	case CollectModeTiUP:
+		cls, err = buildTopoForTiUPCluster(m, opt)
+	case CollectModeK8s:
+		cls, tc, tm, err = buildTopoForK8sCluster(m, opt, kubeCli, dynCli)
+	default:
+		return fmt.Errorf("unknown collect mode '%s'", cOpt.Mode)
+	}
 	if err != nil {
 		return err
 	}
-	if !exist {
-		return perrs.Errorf("cluster %s does not exist", opt.Cluster)
+	if cls == nil || len(cls.Components()) < 1 {
+		return fmt.Errorf("no valid cluster topology parsed, can not collect anything")
 	}
-
-	metadata, err := spec.ClusterMetadata(opt.Cluster)
-	if err != nil {
-		return err
-	}
-	opt.User = metadata.User
-	opt.SSH.IdentityFile = m.specManager.Path(opt.Cluster, "ssh", "id_rsa")
-	topo = *metadata.Topology
 
 	// parse time range
 	end, err := utils.ParseTime(opt.ScrapeEnd)
@@ -144,15 +155,28 @@ func (m *Manager) CollectClusterInfo(
 	}
 
 	// build collector list
-	collectors := []Collector{
-		&MetaCollectOptions{ // cluster metadata, always collected
+	collectors := make([]Collector, 0)
+
+	switch m.mode {
+	case CollectModeTiUP:
+		collectors = append(collectors, &MetaCollectOptions{ // cluster metadata, always collected
 			BaseOptions: opt,
 			opt:         gOpt,
 			session:     m.session,
 			collectors:  collectorSet,
 			resultDir:   resultDir,
 			filePath:    m.specManager.Path(opt.Cluster, "meta.yaml"),
-		},
+		})
+	case CollectModeK8s:
+		collectors = append(collectors, &MetaCollectOptions{ // cluster metadata, always collected
+			BaseOptions: opt,
+			opt:         gOpt,
+			session:     m.session,
+			collectors:  collectorSet,
+			resultDir:   resultDir,
+			tc:          tc,
+			tm:          tm,
+		})
 	}
 
 	// collect data from monitoring system
@@ -175,9 +199,9 @@ func (m *Manager) CollectClusterInfo(
 	}
 
 	// populate SSH credentials if needed
-	if canCollect(cOpt, CollectTypeSystem) ||
+	if m.mode == CollectModeTiUP && (canCollect(cOpt, CollectTypeSystem) ||
 		canCollect(cOpt, CollectTypeLog) ||
-		canCollect(cOpt, CollectTypeConfig) {
+		canCollect(cOpt, CollectTypeConfig)) {
 		// collect data from remote servers
 		var sshConnProps *tui.SSHConnectionProps = &tui.SSHConnectionProps{}
 		if gOpt.SSHType != executor.SSHTypeNone {
@@ -244,7 +268,7 @@ func (m *Manager) CollectClusterInfo(
 	stats := make([]map[string][]CollectStat, 0)
 	for _, c := range collectors {
 		fmt.Printf("Collecting %s...\n", c.Desc())
-		stat, err := c.Prepare(m, &topo)
+		stat, err := c.Prepare(m, cls)
 		if err != nil {
 			if cOpt.ExitOnError {
 				return err
@@ -267,9 +291,12 @@ func (m *Manager) CollectClusterInfo(
 	)
 
 	// confirm before really collect
-	if err := confirmStats(stats, resultDir); err != nil {
-		return err
+	if m.mode == CollectModeTiUP {
+		if err := confirmStats(stats, resultDir); err != nil {
+			return err
+		}
 	}
+
 	err = os.MkdirAll(resultDir, 0755)
 	if err != nil {
 		return err
@@ -279,7 +306,7 @@ func (m *Manager) CollectClusterInfo(
 	collectErrs := make(map[string]error)
 	for _, c := range collectors {
 		fmt.Printf("Collecting %s...\n", c.Desc())
-		if err := c.Collect(m, &topo); err != nil {
+		if err := c.Collect(m, cls); err != nil {
 			if cOpt.ExitOnError {
 				return err
 			}

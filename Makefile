@@ -1,7 +1,7 @@
 PROJECT=diag
 
 
-.PHONY: all collector scraper fmt vet lint check build default
+.PHONY: all collector scraper k8s fmt vet lint check build default
 
 default: all
 
@@ -25,12 +25,16 @@ GOARCH  := $(if $(GOARCH),$(GOARCH),$(shell go env GOARCH))
 GOENV   := GO111MODULE=on CGO_ENABLED=0 GOOS=$(GOOS) GOARCH=$(GOARCH)
 GO      := $(GOENV) go
 GOBUILD := $(GO) build $(BUILD_FLAGS)
-GOTEST    := CGO_ENABLED=0 $(GO) test -p 4
+GOTEST  := CGO_ENABLED=0 $(GO) test -p 4
 
-PACKAGE_LIST  := go list ./...| grep -vE "cmd" | grep -vE "test"
-PACKAGES  := $$($(PACKAGE_LIST))
+DOCKER_REGISTRY ?= localhost:5000
+DOCKER_REPO     ?= ${DOCKER_REGISTRY}/pingcap
+IMAGE_TAG       ?= latest
+
+PACKAGE_LIST        := go list ./...| grep -vE "cmd" | grep -vE "test"
+PACKAGES            := $$($(PACKAGE_LIST))
 PACKAGE_DIRECTORIES := $(PACKAGE_LIST) | sed 's|github.com/pingcap/$(PROJECT)/||'
-FILES     := $$(find $$($(PACKAGE_DIRECTORIES)) -name "*.go")
+FILES               := $$(find $$($(PACKAGE_DIRECTORIES)) -name "*.go")
 
 FAILPOINT_ENABLE  := $$(find $$PWD/ -type d | grep -vE "(\.git|tools)" | xargs tools/bin/failpoint-ctl enable)
 FAILPOINT_DISABLE := $$(find $$PWD/ -type d | grep -vE "(\.git|tools)" | xargs tools/bin/failpoint-ctl disable)
@@ -56,6 +60,12 @@ diag:
 
 scraper:
 	$(GOBUILD) $(RACE_FLAG) -ldflags '$(LDFLAGS) $(CHECK_FLAG)' -o bin/scraper cmd/scraper/*.go
+
+k8s:
+	$(GOBUILD) $(RACE_FLAG) -ldflags '$(LDFLAGS) $(CHECK_FLAG)' -o k8s/images/diag/bin/k8s-pod cmd/k8s/*.go
+
+images: k8s
+	docker build --tag "${DOCKER_REPO}/diag:${IMAGE_TAG}" -f k8s/images/diag/Dockerfile k8s/images/diag
 
 test:
 	$(GO) test ./...
@@ -83,7 +93,7 @@ vet:
 lint: tests/bin/revive
 	@echo "linting"
 	./tests/check/check-lint.sh
-	@tests/bin/revive -formatter friendly -config tests/check/revive.toml $(FILES)
+	@tests/bin/revive -formatter friendly -exclude ./k8s/apis/... -config tests/check/revive.toml $(FILES)
 
 tests/bin/revive: tests/check/go.mod
 	cd tests/check; \

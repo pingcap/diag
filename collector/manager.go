@@ -1,4 +1,4 @@
-// Copyright 2020 PingCAP, Inc.
+// Copyright 2021 PingCAP, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -32,6 +32,8 @@ type Manager struct {
 	specManager *spec.SpecManager
 	bindVersion spec.BindVersion
 	session     string // an unique ID of the collection
+	mode        string // tiup-cluster or tidb-operator
+	DisplayMode string // display format
 }
 
 // NewManager create a Manager.
@@ -44,6 +46,17 @@ func NewManager(sysName string, specManager *spec.SpecManager, bindVersion spec.
 		specManager: specManager,
 		bindVersion: bindVersion,
 		session:     tid,
+	}
+}
+
+// NewManager creates a Manager without initialing specManager
+func NewEmptyManager(sysName string) *Manager {
+	currTime := time.Now()
+	tid := base52.Encode(currTime.UnixNano() + rand.Int63n(1000))
+
+	return &Manager{
+		sysName: sysName,
+		session: tid,
 	}
 }
 
@@ -75,7 +88,7 @@ func (m *Manager) sshTaskBuilder(name string, topo spec.Topology, user string, o
 		}
 	}
 
-	return task.NewBuilder().
+	return task.NewBuilder(m.DisplayMode).
 		SSHKeySet(
 			m.specManager.Path(name, "ssh", "id_rsa"),
 			m.specManager.Path(name, "ssh", "id_rsa.pub"),

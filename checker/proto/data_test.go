@@ -179,7 +179,7 @@ func TestTidbConfigData_GetValueByTagPath(t *testing.T) {
 		},
 		{
 			TagPath: "binlog.enable",
-			Expect: reflect.ValueOf(false),
+			Expect:  reflect.ValueOf(false),
 		},
 	}
 	for _, tc := range tt {

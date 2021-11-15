@@ -90,7 +90,7 @@ func (w *Wrapper) PackageResult(hd *proto.HandleData, resultset map[string]inter
 			case proto.ConfigType: // to move a global check type define
 				rulePrinter = proto.NewConfPrintTemplate(rule) // todo@toto add new func
 			case proto.PerformanceType:
-				rulePrinter = proto.NewSqlPerformancePrintTemplate(rule) // todo@toto add new func
+				rulePrinter = proto.NewSQLPerformancePrintTemplate(rule) // todo@toto add new func
 			default:
 				log.Error("can't handle such type rule: ", zap.String("checktype", rule.CheckType))
 				return fmt.Errorf("can't handle %s type rule: ", rule.CheckType)

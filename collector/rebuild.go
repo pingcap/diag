@@ -1,4 +1,4 @@
-// Copyright 2020 PingCAP, Inc.
+// Copyright 2021 PingCAP, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -72,7 +72,7 @@ func RunLocal(dumpDir string, opt *RebuildOptions) error {
 	fmt.Println("Start bootstrapping a monitoring system on localhost and rebuilding the dashboards.")
 
 	// read clsuter name
-	body, err := os.ReadFile(path.Join(dumpDir, fileNameClusterJSON))
+	body, err := os.ReadFile(path.Join(dumpDir, FileNameClusterJSON))
 	if err != nil {
 		return err
 	}
