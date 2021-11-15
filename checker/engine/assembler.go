@@ -28,11 +28,11 @@ type Wrapper struct {
 	computeUnitSet map[string]*ComputeUnit
 }
 
-func NewWrapper(sd *proto.SourceDataV2, rs map[string]*proto.Rule) *Wrapper {
+func NewWrapper(sd *proto.SourceDataV2, rs map[string]*proto.Rule, rd *render.ResultWrapper) *Wrapper {
 	return &Wrapper{
 		SourceData:     sd,
 		RuleSet:        rs,
-		Render:         render.NewResultWrapper(rs, sd),
+		Render:         rd,
 		RuleResult:     make(map[string]proto.PrintTemplate),
 		computeUnitSet: make(map[string]*ComputeUnit),
 	}
@@ -40,7 +40,7 @@ func NewWrapper(sd *proto.SourceDataV2, rs map[string]*proto.Rule) *Wrapper {
 
 func (w *Wrapper) Start() error {
 	for _, rule := range w.RuleSet {
-		dataSet, err := w.GetDataSet(rule.NameStruct, w.SourceData)
+		dataSet, err := w.GetDataSet(rule.NameStruct)
 		if err != nil {
 			return fmt.Errorf("get DataSet Faield, %s", err.Error())
 		}
@@ -105,15 +105,14 @@ func (w *Wrapper) PackageResult(hd *proto.HandleData, resultset map[string]inter
 	return nil
 }
 
-func (w *Wrapper) GetDataSet(namestruct string, sd *proto.SourceDataV2) ([]*proto.HandleData, error) {
-	// repackage data
+func (w *Wrapper) GetDataSet(namestruct string) ([]*proto.HandleData, error) {
 	match, err := regexp.MatchString("(.*)Config", namestruct)
 	if err != nil {
 		log.Error("regexp failed")
 		return nil, err
 	}
 	if match {
-		configData, ok := sd.NodesData[namestruct]
+		configData, ok := w.SourceData.NodesData[namestruct]
 		if !ok {
 			return nil, fmt.Errorf("no such namestruct: %s", namestruct)
 		}
@@ -130,7 +129,7 @@ func (w *Wrapper) GetDataSet(namestruct string, sd *proto.SourceDataV2) ([]*prot
 		}
 		return dataset, nil
 	} else if namestruct == "performance.dashboard" {
-		sqlPerformance := sd.DashboardData
+		sqlPerformance := w.SourceData.DashboardData
 		handleData := &proto.HandleData{
 			UqiTag: namestruct,
 			Data:   []proto.Data{sqlPerformance},

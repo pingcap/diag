@@ -17,7 +17,6 @@ import (
 	"bufio"
 	"fmt"
 	"os"
-	"time"
 
 	"github.com/pingcap/diag/checker/proto"
 	"github.com/pingcap/tiup/pkg/logger/log"
@@ -25,14 +24,18 @@ import (
 
 // bytes.buffer flush into checker_sampleid_timestamp.txt
 type ResultWrapper struct {
-	RuleSet map[string]*proto.Rule
-	Data    *proto.SourceDataV2
+	RuleSet   map[string]*proto.Rule
+	Data      *proto.SourceDataV2
+	storePath string
+	include   string
 }
 
-func NewResultWrapper(rs map[string]*proto.Rule, data *proto.SourceDataV2) *ResultWrapper {
+func NewResultWrapper(data *proto.SourceDataV2, rs map[string]*proto.Rule, sp string, inc string) *ResultWrapper {
 	return &ResultWrapper{
-		RuleSet: rs,
-		Data:    data,
+		RuleSet:   rs,
+		Data:      data,
+		storePath: sp,
+		include:   inc,
 	}
 }
 
@@ -40,11 +43,10 @@ func NewResultWrapper(rs map[string]*proto.Rule, data *proto.SourceDataV2) *Resu
 func (w *ResultWrapper) Output(checkresult map[string]proto.PrintTemplate) error {
 	// todo@toto find rule check result
 	// print OutputMetaData
-	now := time.Now()
-	sec := now.Unix()
-	writer, err := NewCheckerWriter(fmt.Sprintf("checker-%s-%d.txt", w.Data.ClusterInfo.Session, sec))
+	writer, err := NewCheckerWriter(fmt.Sprintf("%s/report", w.storePath), fmt.Sprintf("%s-%s.txt", "checker", w.include))
 	if err != nil {
 		log.Errorf("create file failed, ", err.Error())
+		return err
 	}
 	defer func() {
 		writer.Flush()
@@ -96,8 +98,12 @@ func (w *CheckerWriter) Flush() error {
 	return nil
 }
 
-func NewCheckerWriter(filename string) (*CheckerWriter, error) {
-	f, err := os.Create(filename) //
+func NewCheckerWriter(path string, filename string) (*CheckerWriter, error) {
+	if err := os.MkdirAll(path, 0777); err != nil {
+		log.Errorf("create path failed, ", err.Error())
+		return nil, err
+	}
+	f, err := os.Create(fmt.Sprintf("%s/%s", path, filename))
 	if err != nil {
 		log.Errorf("create file failed, ", err.Error())
 		return nil, err
