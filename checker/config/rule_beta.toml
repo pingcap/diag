@@ -1,11 +1,11 @@
 [[rule]]
 id = 7
-name = "log-level"
+name = "tikv-log-level"
 description = "日志等级。可选值：\"trace\"，\"debug\"，\"info\"，\"warning\"，\"error\"，\"critical\"。默认值：\"info\""
 variation =  "TikvConfig.log-level"
 check_type = "config"
 execute_rule = """
-rule "log-level" "log level of tikv"  salience 6
+rule "tikv-log-level" "log level of tikv"  salience 6
 begin
     if ToString(config.GetValueByTagPath("log-level")) == "debug" || ToString(config.GetValueByTagPath("log-level")) == "trace" {
         return false
@@ -43,12 +43,12 @@ version = "v5.0.1"
 
 [[rule]]
 id = 100
-name = "max-days"
+name = "tidb-max-days"
 description = "日志保留的最长天数"
 variation =  "TidbConfig.log.file.max-days"
 check_type = "config"
 execute_rule = """
-rule "max-days"
+rule "tidb-max-days"
 begin
     if ToInt(config.GetValueByTagPath("log.file.max-days")) < 1 {
         return false
@@ -64,12 +64,12 @@ version = ""
 
 [[rule]]
 id = 101
-name = "max-backups"
+name = "tidb-max-backups"
 description = "日志文件保留的最大个数"
 variation = "TidbConfig.log.file.max-backups"
 check_type = "config"
 execute_rule = """
-rule "max-backups"
+rule "tidb-max-backups"
 begin
     if ToInt(config.GetValueByTagPath("log.file.max-backups")) < 1 {
         return false
@@ -85,12 +85,12 @@ version = ""
 
 [[rule]]
 id = 102
-name = "log-level"
+name = "tidb-log-level"
 description = "日志等级。可选值：\"trace\"，\"debug\"，\"info\"，\"warning\"，\"error\"，\"critical\"。默认值：\"info\""
 variation = "TidbConfig.log.level"
 check_type = "config"
 execute_rule = """
-rule "log-level"
+rule "tidb-log-level"
 begin
     if ToString(config.GetValueByTagPath("log.level")) == "debug" {
         return false
@@ -106,12 +106,12 @@ version = ""
 
 [[rule]]
 id = 103
-name = "enable-stream"
+name = "tidb-enable-streaming"
 description = "3.0.20, 4.0.9, 5.2.0 已废弃"
 variation = "TidbConfig.enable-streaming"
 check_type = "config"
 execute_rule = """
-rule "enable-stream"
+rule "tidb-enable-streaming"
 begin
     if ToBool(config.GetValueByTagPath("enable-streaming")) == true {
         return false
@@ -127,12 +127,12 @@ version = ""
 
 [[rule]]
 id = 200
-name = "max-snapshot-count"
+name = "pdconfig-max-snapshot-count"
 description = "控制单个 store 最多同时接收或发送的 snapshot 数量，调度受制于这个配置来防止抢占正常业务的资源。"
 variation = "PdConfig.schedule.max-snapshot-count"
 check_type = "config"
 execute_rule = """
-rule "max-snapshot-count"
+rule "pdconfig-max-snapshot-count"
 begin
     if ToInt(config.GetValueByTagPath("schedule.max-snapshot-count")) <= 0 {
         return false
@@ -148,12 +148,12 @@ version = "> v4.0.0"
 
 [[rule]]
 id = 201
-name = "max-pending-peer-count"
+name = "pdconfig-max-pending-peer-count"
 description = "控制单个 store 的 pending peer 上限，调度受制于这个配置来防止在部分节点产生大量日志落后的 Region。"
 variation = "PdConfig.schedule.max-pending-peer-count"
 check_type = "config"
 execute_rule = """
-rule "max-pending-peer-count"
+rule "pdconfig-max-pending-peer-count"
 begin
     if ToInt(config.GetValueByTagPath("schedule.max-pending-peer-count")) <= 0 {
         return false
@@ -169,12 +169,12 @@ version = "> v4.0.0"
 
 [[rule]]
 id = 202
-name = "leader-schedule-limit"
+name = "pdconfig-leader-schedule-limit"
 description = "同时进行 leader 调度的任务个数。"
 variation = "PdConfig.schedule.leader-schedule-limit"
 check_type = "config"
 execute_rule = """
-rule "leader-schedule-limit"
+rule "pdconfig-leader-schedule-limit"
 begin
     if ToInt(config.GetValueByTagPath("schedule.leader-schedule-limit")) <= 0 {
         return false
@@ -190,12 +190,12 @@ version = "> v4.0.0"
 
 [[rule]]
 id = 203
-name = "replica-schedule-limit-a"
+name = "pdconfig-replica-schedule-limit-a"
 description = "同时进行 replica 调度的任务个数。"
 variation =  "PdConfig.schedule.replica-schedule-limit,schedule.replica-schedule-limit"
 check_type = "config"
 execute_rule = """
-rule "replica-schedule-limit-a"
+rule "pdconfig-replica-schedule-limit-a"
 begin
     if ToInt(config.GetValueByTagPath("schedule.replica-schedule-limit")) <= 0
        || ToInt(config.GetValueByTagPath("schedule.replica-schedule-limit")) > 64 {
@@ -212,12 +212,12 @@ version = "> v4.0.0"
 
 [[rule]]
 id = 204
-name = "merge-schedule-limit"
+name = "pdconfig-merge-schedule-limit"
 description = "同时进行的 Region Merge 调度的任务，设置为 0 则关闭 Region Merge。"
 variation = "PdConfig.schedule.merge-schedule-limit"
 check_type = "config"
 execute_rule = """
-rule "merge-schedule-limit"
+rule "pdconfig-merge-schedule-limit"
 begin
     if ToInt(config.GetValueByTagPath("schedule.merge-schedule-limit")) <= 0
        || ToInt(config.GetValueByTagPath("schedule.merge-schedule-limit")) > 16 {
@@ -234,12 +234,12 @@ version = "> v4.0.0"
 
 [[rule]]
 id = 205
-name = "hot-region-schedule-limit"
+name = "pdconfig-hot-region-schedule-limit"
 description = "控制同时进行的 hot Region 任务。该配置项独立于 Region 调度。"
 variation = "PdConfig.schedule.hot-region-schedule-limit"
 check_type = "config"
 execute_rule = """
-rule "hot-region-schedule-limit"
+rule "pdconfig-hot-region-schedule-limit"
 begin
     if ToInt(config.GetValueByTagPath("schedule.hot-region-schedule-limit")) <= 0
        || ToInt(config.GetValueByTagPath("schedule.hot-region-schedule-limit")) > 8 {
@@ -258,12 +258,12 @@ version = "> v4.0.0"
 
 [[rule]]
 id = 206
-name = "store limit-n-add-peer"
+name = "pdconfig-store limit-n-add-peer"
 description = "Store Limit 限制的主要是 operator 的消费速度，{n} 指 store id，这里对所有 store limit 都有同样的限制。"
 variation = "PdConfig.schedule.store-limit"
 check_type = "config"
 execute_rule = """
-rule "store limit-n-add-peer"
+rule "pdconfig-store limit-n-add-peer"
 begin
     if ElemInRange(FlatMap(config.GetValueByTagPath("schedule.store-limit"),"add-peer"),0, 100) {
         return true
@@ -279,12 +279,12 @@ version = "> v4.0.0"
 
 [[rule]]
 id = 206
-name = "store limit-n-remove-peer"
+name = "pdconfig-store limit-n-remove-peer"
 description = "Store Limit 限制的主要是 operator 的消费速度，{n} 指 store id，这里对所有 store limit 都有同样的限制。"
 variation = "PdConfig.schedule.store-limit"
 check_type = "config"
 execute_rule = """
-rule "store limit-n-remove-peer"
+rule "pdconfig-store limit-n-remove-peer"
 begin
     if ElemInRange(FlatMap(config.GetValueByTagPath("schedule.store-limit"),"remove-peer"),0, 100) {
         return true
@@ -300,12 +300,12 @@ version = "> v4.0.0"
 
 [[rule]]
 id = 208
-name = "replica-schedule-limit-b"
+name = "pdconfig-replica-schedule-limit-b"
 description = "用来控制 replica 相关 operator 的产生速度（涉及到下线、补副本的操作都与该参数有关）。"
 variation = "PdConfig.schedule.replica-schedule-limit,PdConfig.schedule.region-schedule-limit"
 check_type = "config"
 execute_rule = """
-rule "replica-schedule-limit-b"
+rule "pdconfig-replica-schedule-limit-b"
 begin
     if ToInt(config.GetValueByTagPath("schedule.replica-schedule-limit"))
         > ToInt(config.GetValueByTagPath("schedule.region-schedule-limit")) {
@@ -322,12 +322,12 @@ version = "> v4.0.0"
 
 [[rule]]
 id = 209
-name = "max-days"
+name = "pdconfig-max-days"
 description = "日志保留的最长天数。"
 variation = "PdConfig.log.file.max-days"
 check_type = "config"
 execute_rule = """
-rule "max-days"
+rule "pdconfig-max-days"
 begin
     if ToInt(config.GetValueByTagPath("log.file.max-days")) <= 0 {
         return false
@@ -343,12 +343,12 @@ version = "> v4.0.0"
 
 [[rule]]
 id = 210
-name = "max-backups"
+name = "pdconfig-max-backups"
 description = "日志文件保留的最大个数。"
 variation = "PdConfig.log.file.max-backups"
 check_type = "config"
 execute_rule = """
-rule "max-backups"
+rule "pdconfig-max-backups"
 begin
     if ToInt(config.GetValueByTagPath("log.file.max-backups")) <= 0 {
         return false
@@ -364,12 +364,12 @@ version = "> v4.0.0"
 
 [[rule]]
 id = 211
-name = "log-level"
+name = "pdconfig-log-level"
 description = "Log 级别。默认：\"info\" 我们能选择 debug, info, warn, error 或者 fatal。"
 variation = "PdConfig.log.level"
 check_type = "config"
 execute_rule = """
-rule "log-level"
+rule "pdconfig-log-level"
 begin
     if ToString(config.GetValueByTagPath("log.level")) == "debug" {
         return false
