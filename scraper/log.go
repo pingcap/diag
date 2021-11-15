@@ -15,9 +15,7 @@ package scraper
 
 import (
 	"bufio"
-	"errors"
 	"fmt"
-	"io"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -69,10 +67,6 @@ func (s *LogScraper) Scrap(result *Sample) error {
 			if fi.IsDir() {
 				continue
 			}
-			// modify time is earlier than scrap start
-			if fi.ModTime().Before(s.Start) {
-				continue
-			}
 			// check log content to filter by scrap time range
 			in, err := logInRange(fp, fi, s.Start, s.End)
 			if err != nil {
@@ -107,57 +101,16 @@ func logInRange(fname string, fi fs.FileInfo, start, end time.Time) (bool, error
 		return false, err
 	}
 
-	// return if the first line is later than scrap end
 	ht := parseLine(head)
 	if ht == nil {
 		return false, fmt.Errorf("the first line is not a valid log line")
 	}
-	if ht.After(end) {
-		return false, nil
+
+	if ht.Before(end) && fi.ModTime().After(start) {
+		return true, nil
 	}
 
-	// read the last line of log file
-	tail := make([]byte, seekLimit)
-	fsize := fi.Size()
-
-	// Seek backwards for a line
-	var cursor int64
-	for cursor = 0; cursor > -seekLimit; cursor-- {
-		// stop if reached the file begining
-		if cursor == -fsize {
-			break
-		}
-
-		// seek one byte backward
-		f.Seek(cursor, io.SeekEnd)
-		buf := make([]byte, 1)
-		_, err := f.Read(buf)
-		// ignore EOF, we are reading backwards
-		if err != nil && !errors.Is(err, io.EOF) {
-			return false, err
-		}
-
-		// stop if reached a line breaker
-		// we set a 3 bytes threshold to avoid reading empty line at the end
-		if cursor < -3 && (buf[0] == 10 || buf[0] == 13) {
-			break
-		}
-
-		// populate the line from end to begin
-		tail[seekLimit+cursor-1] = buf[0]
-	}
-	tail = tail[seekLimit+cursor:] // cut
-
-	// return if the last line is before scrap start
-	tt := parseLine(tail)
-	if tt == nil {
-		return false, fmt.Errorf("the last line is not a valid log line")
-	}
-	if tt.Before(start) {
-		return false, nil
-	}
-
-	return true, nil
+	return false, nil
 }
 
 func parseLine(line []byte) *time.Time {
