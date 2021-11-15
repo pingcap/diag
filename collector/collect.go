@@ -222,7 +222,9 @@ func (m *Manager) CollectClusterInfo(
 	}
 
 	if canCollect(cOpt, CollectTypeSchema) {
-		user := tui.PromptForPassword("please enter database username:")
+		var user string
+		fmt.Print("please enter database username:")
+		fmt.Scanln(&user)
 		password := tui.PromptForPassword("please enter database password:")
 		collectors = append(collectors,
 			&SchemaCollectOptions{
