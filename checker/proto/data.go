@@ -102,9 +102,9 @@ type ConfPrintTemplate struct {
 	InfoList []*ConfInfo
 }
 type ConfInfo struct {
-	UniTag      string
-	Val         string
-	CheckResult string
+	UniTag      string `header:"UniTag"`
+	Val         string `header:"val"`
+	CheckResult string `header:"CheckResult"`
 }
 
 func NewConfPrintTemplate(rule *Rule) *ConfPrintTemplate {
@@ -193,7 +193,7 @@ func (c *ConfPrintTemplate) SplitComponentAndPath(varaition string) map[string][
 func (c *ConfPrintTemplate) Print(out io.Writer) {
 	printer := tableprinter.New(out)
 	for _, rr := range c.InfoList {
-		row, nums := tableprinter.StructParser.ParseRow(reflect.ValueOf(*rr))
+		row, nums := tableprinter.StructParser.ParseRow(reflect.ValueOf(rr).Elem())
 		printer.RenderRow(row, nums)
 	}
 }
@@ -204,8 +204,8 @@ type SqlPerformancePrintTemplate struct {
 }
 
 type SqlPerformanceInfo struct {
-	NumDigest string
-	Info      string
+	NumDigest string `header:"NumDigest"`
+	Info      string `header:"Info"`
 }
 
 func NewSqlPerformancePrintTemplate(rule *Rule) *SqlPerformancePrintTemplate {
@@ -230,10 +230,10 @@ func (c *SqlPerformancePrintTemplate) CollectResult(hd *HandleData, retValue int
 		log.Errorf("convert into dashboarddata failed, ", data.ActingName())
 	}
 	switch c.Rule.Name {
-	case "poor_execution_plan":
-		checkResult, ok := retValue.(int)
+	case "poor_effective_plan":
+		checkResult, ok := retValue.(int64)
 		if !ok {
-			return fmt.Errorf("retValue to int failed, %v", retValue)
+			return fmt.Errorf("retValue to int failed, %v", reflect.TypeOf(retValue))
 		}
 		c.InfoList.NumDigest = fmt.Sprintf("%d Digest trigger cordon", checkResult)
 	case "old_version_count":
@@ -253,8 +253,9 @@ func (c *SqlPerformancePrintTemplate) CollectResult(hd *HandleData, retValue int
 }
 
 func (c *SqlPerformancePrintTemplate) Print(out io.Writer) {
+	log.Debugf("info list %v", c.InfoList)
 	printer := tableprinter.New(out)
-	row, nums := tableprinter.StructParser.ParseRow(reflect.ValueOf(*(c.InfoList)))
+	row, nums := tableprinter.StructParser.ParseRow(reflect.ValueOf(c.InfoList).Elem())
 	printer.RenderRow(row, nums)
 }
 
