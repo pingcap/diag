@@ -414,6 +414,7 @@ func (f *FileFetcher) loadSlowPlanData(reader io.Reader) (data map[string][2]pro
 			}
 		}
 	}
+	data = make(map[string][2]proto.ExecutionPlanInfo)
 	for digest, plan := range execPlan {
 		data[digest] = *plan
 	}

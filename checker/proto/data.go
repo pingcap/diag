@@ -156,7 +156,7 @@ func (c *ConfPrintTemplate) GetValStr(hd *HandleData) string {
 	for _, data := range hd.Data {
 		conf, ok := data.(Config)
 		if !ok {
-			log.Errorf("can't convert into config type", data.ActingName())
+			log.Errorf("can't convert into config type, %+v", data.ActingName())
 			continue
 		}
 		valpaths := componentVal[conf.GetComponent()]
@@ -227,7 +227,7 @@ func (c *SqlPerformancePrintTemplate) CollectResult(hd *HandleData, retValue int
 	}
 	data, ok := hd.Data[0].(*DashboardData)
 	if !ok {
-		log.Errorf("convert into dashboarddata failed, ", data.ActingName())
+		log.Errorf("convert into dashboarddata failed, %+v", data.ActingName())
 	}
 	switch c.Rule.Name {
 	case "poor_effective_plan":
