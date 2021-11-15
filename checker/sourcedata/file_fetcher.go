@@ -206,7 +206,7 @@ func (f *FileFetcher) FetchData(rules *config.RuleSpec) (*proto.SourceDataV2, pr
 }
 
 // sourceData will be updated
-func (f *FileFetcher) loadRealTimeConfig(ctx context.Context, sourceData *proto.SourceDataV2, meta *models.TiDBCluster, rSet proto.RuleSet) error {
+func (f *FileFetcher) loadRealTimeConfig(_ context.Context, sourceData *proto.SourceDataV2, meta *models.TiDBCluster, rSet proto.RuleSet) error {
 	nameStructs := rSet.GetNameStructs()
 	for name := range nameStructs {
 		switch name {

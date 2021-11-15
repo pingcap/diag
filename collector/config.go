@@ -110,7 +110,7 @@ func (c *ConfigCollectOptions) prepareForTiUP(m *Manager, topo *models.TiDBClust
 		archKey := fmt.Sprintf("%s-%s", os, arch)
 		if _, found := uniqueArchList[archKey]; !found {
 			uniqueArchList[archKey] = struct{}{}
-			t0 := task.NewBuilder().
+			t0 := task.NewBuilder(m.DisplayMode).
 				Download(
 					componentDiagCollector,
 					os,
@@ -181,7 +181,7 @@ func (c *ConfigCollectOptions) prepareForTiUP(m *Manager, topo *models.TiDBClust
 		dryRunTasks = append(dryRunTasks, t1)
 	}
 
-	t := task.NewBuilder().
+	t := task.NewBuilder(m.DisplayMode).
 		ParallelStep("+ Download necessary tools", false, downloadTasks...).
 		ParallelStep("+ Collect host information", false, dryRunTasks...).
 		Build()
@@ -272,12 +272,12 @@ func (c *ConfigCollectOptions) collectForTiUP(m *Manager, topo *models.TiDBClust
 
 		// query realtime configs for each instance if supported
 		// TODO: support TLS enabled clusters
-		if t3 := buildRealtimeConfigCollectingTasks(ctx, inst, c.resultDir, nil); t3 != nil {
+		if t3 := buildRealtimeConfigCollectingTasks(ctx, m.DisplayMode, inst, c.resultDir, nil); t3 != nil {
 			queryTasks = append(queryTasks, t3)
 		}
 	}
 
-	t := task.NewBuilder().
+	t := task.NewBuilder(m.DisplayMode).
 		ParallelStep("+ Scrap files on nodes", false, collectTasks...).
 		ParallelStep("+ Cleanup temp files", false, cleanTasks...).
 		ParallelStep("+ Query realtime configs", false, queryTasks...).
@@ -295,7 +295,7 @@ func (c *ConfigCollectOptions) collectForTiUP(m *Manager, topo *models.TiDBClust
 }
 
 // collectForK8s implements config collecting for tidb-operator deployed clusters
-func (c *ConfigCollectOptions) collectForK8s(_ *Manager, topo *models.TiDBCluster) error {
+func (c *ConfigCollectOptions) collectForK8s(m *Manager, topo *models.TiDBCluster) error {
 	var (
 		queryTasks []*task.StepDisplay
 	)
@@ -319,12 +319,12 @@ func (c *ConfigCollectOptions) collectForK8s(_ *Manager, topo *models.TiDBCluste
 
 		// query realtime configs for each instance if supported
 		// TODO: support TLS enabled clusters
-		if t3 := buildRealtimeConfigCollectingTasks(ctx, inst, c.resultDir, nil); t3 != nil {
+		if t3 := buildRealtimeConfigCollectingTasks(ctx, m.DisplayMode, inst, c.resultDir, nil); t3 != nil {
 			queryTasks = append(queryTasks, t3)
 		}
 	}
 
-	t := task.NewBuilder().
+	t := task.NewBuilder(m.DisplayMode).
 		ParallelStep("+ Query realtime configs", false, queryTasks...).
 		Build()
 
@@ -344,7 +344,7 @@ type rtConfig struct {
 	url      string
 }
 
-func buildRealtimeConfigCollectingTasks(_ context.Context, inst models.Component, resultDir string, tlsCfg *tls.Config) *task.StepDisplay {
+func buildRealtimeConfigCollectingTasks(_ context.Context, displayMode string, inst models.Component, resultDir string, tlsCfg *tls.Config) *task.StepDisplay {
 	var configs []rtConfig
 	scheme := "http"
 
@@ -373,7 +373,7 @@ func buildRealtimeConfigCollectingTasks(_ context.Context, inst models.Component
 		host = pod
 	}
 
-	t := task.NewBuilder().
+	t := task.NewBuilder(displayMode).
 		Func(
 			fmt.Sprintf("querying %s:%d", host, inst.MainPort()),
 			func(ctx context.Context) error {

@@ -1,6 +1,5 @@
 package types
 
-
 const (
 	// UnspecifiedFsp is the unspecified fractional seconds part.
 	UnspecifiedFsp = int8(-1)

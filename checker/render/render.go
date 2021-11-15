@@ -91,10 +91,7 @@ func (w *CheckerWriter) Flush() error {
 	if err := w.fileWriter.Flush(); err != nil {
 		return err
 	}
-	if err := w.termWriter.Flush(); err != nil {
-		return err
-	}
-	return nil
+	return w.termWriter.Flush()
 }
 
 func NewCheckerWriter(filename string) (*CheckerWriter, error) {

@@ -102,7 +102,7 @@ func (c *SystemCollectOptions) Collect(m *Manager, cls *models.TiDBCluster) erro
 			archKey := fmt.Sprintf("%s-%s", inst.OS(), inst.Arch())
 			if _, found := uniqueArchList[archKey]; !found {
 				uniqueArchList[archKey] = struct{}{}
-				t0 := task.NewBuilder().
+				t0 := task.NewBuilder(m.DisplayMode).
 					Download(
 						spec.ComponentCheckCollector,
 						inst.OS(),
@@ -151,7 +151,7 @@ func (c *SystemCollectOptions) Collect(m *Manager, cls *models.TiDBCluster) erro
 				collectInsightTasks = append(collectInsightTasks, t1)
 
 				// build checking tasks
-				t2 := task.NewBuilder().
+				t2 := task.NewBuilder(m.DisplayMode).
 					// check for listening ports
 					Shell(
 						inst.GetHost(),
@@ -182,7 +182,7 @@ func (c *SystemCollectOptions) Collect(m *Manager, cls *models.TiDBCluster) erro
 		}
 	}
 
-	t := task.NewBuilder().
+	t := task.NewBuilder(m.DisplayMode).
 		ParallelStep("+ Download necessary tools", false, downloadTasks...).
 		ParallelStep("+ Collect host information", false, collectInsightTasks...).
 		ParallelStep("+ Collect system information", false, checkSysTasks...).

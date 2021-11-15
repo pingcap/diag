@@ -112,7 +112,7 @@ func (c *LogCollectOptions) Prepare(m *Manager, cls *models.TiDBCluster) (map[st
 			archKey := fmt.Sprintf("%s-%s", inst.OS(), inst.Arch())
 			if _, found := uniqueArchList[archKey]; !found {
 				uniqueArchList[archKey] = struct{}{}
-				t0 := task.NewBuilder().
+				t0 := task.NewBuilder(m.DisplayMode).
 					Download(
 						componentDiagCollector,
 						inst.OS(),
@@ -184,7 +184,7 @@ func (c *LogCollectOptions) Prepare(m *Manager, cls *models.TiDBCluster) (map[st
 		dryRunTasks = append(dryRunTasks, t1)
 	}
 
-	t := task.NewBuilder().
+	t := task.NewBuilder(m.DisplayMode).
 		ParallelStep("+ Download necessary tools", false, downloadTasks...).
 		ParallelStep("+ Collect host information", false, dryRunTasks...).
 		Build()
@@ -270,7 +270,7 @@ func (c *LogCollectOptions) Collect(m *Manager, cls *models.TiDBCluster) error {
 		}
 	}
 
-	t := task.NewBuilder().
+	t := task.NewBuilder(m.DisplayMode).
 		ParallelStep("+ Scrap files on nodes", false, collectTasks...).
 		ParallelStep("+ Cleanup temp files", false, cleanTasks...).
 		Build()

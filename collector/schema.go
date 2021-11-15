@@ -104,7 +104,7 @@ func (c *SchemaCollectOptions) Prepare(_ *Manager, _ *models.TiDBCluster) (map[s
 }
 
 // Collect implements the Collector interface
-func (c *SchemaCollectOptions) Collect(_ *Manager, topo *models.TiDBCluster) error {
+func (c *SchemaCollectOptions) Collect(m *Manager, topo *models.TiDBCluster) error {
 	err := os.Mkdir(filepath.Join(c.resultDir, "info_infoSchema"), 0755)
 	if err != nil {
 		return err
@@ -113,7 +113,7 @@ func (c *SchemaCollectOptions) Collect(_ *Manager, topo *models.TiDBCluster) err
 
 	tidbInstants := topo.TiDB
 
-	t := task.NewBuilder().
+	t := task.NewBuilder(m.DisplayMode).
 		Func(
 			"collect info infoSchema",
 			func(ctx context.Context) error {

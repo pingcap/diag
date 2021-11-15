@@ -18,11 +18,6 @@ import (
 	"bufio"
 	"context"
 	"fmt"
-	"github.com/pingcap/diag/pkg/types"
-	"github.com/pingcap/diag/pkg/utils/hack"
-	"github.com/pingcap/errors"
-	"github.com/pingcap/log"
-	"go.uber.org/zap"
 	"io"
 	"math"
 	"os"
@@ -34,6 +29,12 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"github.com/pingcap/diag/pkg/types"
+	"github.com/pingcap/diag/pkg/utils/hack"
+	"github.com/pingcap/errors"
+	"github.com/pingcap/log"
+	"go.uber.org/zap"
 )
 
 // ParseSlowLogBatchSize is the batch size of slow-log lines for a worker to parse, exported for testing.
@@ -68,11 +69,11 @@ type slowQueryRetriever struct {
 	taskList chan slowLogTask
 	stats    *slowQueryRuntimeStats
 
-	desc bool
+	desc             bool
 	filterTimeRanges bool
-	timeRanges []slowLogTimeRange
-	singleFile bool
-	slowQueryFile string
+	timeRanges       []slowLogTimeRange
+	singleFile       bool
+	slowQueryFile    string
 }
 
 type slowLogTimeRange struct {
@@ -85,7 +86,7 @@ type SlowQueryRetrieverOpt func(retriever *slowQueryRetriever) error
 func WithTimeRanges(start, end time.Time) SlowQueryRetrieverOpt {
 	tr := slowLogTimeRange{
 		StartTime: start,
-		EndTime: end,
+		EndTime:   end,
 	}
 
 	return func(retriever *slowQueryRetriever) error {
@@ -94,7 +95,7 @@ func WithTimeRanges(start, end time.Time) SlowQueryRetrieverOpt {
 			retriever.timeRanges = []slowLogTimeRange{
 				tr,
 			}
-		}else {
+		} else {
 			retriever.timeRanges = append(retriever.timeRanges, tr)
 		}
 		return nil
@@ -103,11 +104,11 @@ func WithTimeRanges(start, end time.Time) SlowQueryRetrieverOpt {
 
 func NewSlowQueryRetriever(concurrency int, location *time.Location, cols []string, slowLogPath string, opts ...SlowQueryRetrieverOpt) (*slowQueryRetriever, error) {
 	retriever := &slowQueryRetriever{
-		concurrency:           concurrency,
-		timeZone:              location,
-		outputCols:            cols,
-		singleFile:            false,
-		slowQueryFile:         slowLogPath,
+		concurrency:   concurrency,
+		timeZone:      location,
+		outputCols:    cols,
+		singleFile:    false,
+		slowQueryFile: slowLogPath,
 	}
 	for _, opt := range opts {
 		if err := opt(retriever); err != nil {
@@ -128,7 +129,7 @@ func (e *slowQueryRetriever) retrieve(ctx context.Context) ([][]string, error) {
 	return e.dataForSlowLog(ctx)
 }
 
-func (e *slowQueryRetriever) initialize(ctx context.Context, ) error {
+func (e *slowQueryRetriever) initialize(ctx context.Context) error {
 	var err error
 	// initialize column value factories.
 	e.columnValueFactoryMap = make(map[string]slowQueryColumnValueFactory, len(e.outputCols))
@@ -166,7 +167,7 @@ func (e *slowQueryRetriever) initialize(ctx context.Context, ) error {
 
 func (e *slowQueryRetriever) initializeAsyncParsing(ctx context.Context) {
 	e.taskList = make(chan slowLogTask, 1)
-	go e.parseDataForSlowLog(ctx,)
+	go e.parseDataForSlowLog(ctx)
 }
 
 func (e *slowQueryRetriever) parseDataForSlowLog(ctx context.Context) {
@@ -842,7 +843,6 @@ func getColumnValueFactoryByName(colName string, columnIdx int) (slowQueryColumn
 			return true, nil
 		}, nil
 	}
-	return nil, nil
 }
 
 func getOneLine(reader *bufio.Reader) ([]byte, error) {

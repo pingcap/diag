@@ -33,6 +33,7 @@ type Manager struct {
 	bindVersion spec.BindVersion
 	session     string // an unique ID of the collection
 	mode        string // tiup-cluster or tidb-operator
+	DisplayMode string // display format
 }
 
 // NewManager create a Manager.
@@ -87,7 +88,7 @@ func (m *Manager) sshTaskBuilder(name string, topo spec.Topology, user string, o
 		}
 	}
 
-	return task.NewBuilder().
+	return task.NewBuilder(m.DisplayMode).
 		SSHKeySet(
 			m.specManager.Path(name, "ssh", "id_rsa"),
 			m.specManager.Path(name, "ssh", "id_rsa.pub"),

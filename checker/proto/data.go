@@ -170,7 +170,7 @@ func (c *ConfPrintTemplate) GetValStr(hd *HandleData) string {
 	return strings.Join(valmap, ",")
 }
 
-func (c *ConfPrintTemplate) SplitComponentAndPath(varaition string) map[string][]string {
+func (c *ConfPrintTemplate) SplitComponentAndPath(_ string) map[string][]string {
 	valpaths := strings.Split(c.Rule.Variation, ",")
 	componentVal := make(map[string][]string)
 	for _, valpath := range valpaths {
@@ -198,26 +198,26 @@ func (c *ConfPrintTemplate) Print(out io.Writer) {
 	}
 }
 
-type SqlPerformancePrintTemplate struct {
+type SQLPerformancePrintTemplate struct {
 	Rule     *Rule
-	InfoList *SqlPerformanceInfo
+	InfoList *SQLPerformanceInfo
 }
 
-type SqlPerformanceInfo struct {
+type SQLPerformanceInfo struct {
 	NumDigest string `header:"NumDigest"`
 	Info      string `header:"Info"`
 }
 
-func NewSqlPerformancePrintTemplate(rule *Rule) *SqlPerformancePrintTemplate {
-	return &SqlPerformancePrintTemplate{
+func NewSQLPerformancePrintTemplate(rule *Rule) *SQLPerformancePrintTemplate {
+	return &SQLPerformancePrintTemplate{
 		Rule: rule, // add
-		InfoList: &SqlPerformanceInfo{
+		InfoList: &SQLPerformanceInfo{
 			Info: "Please check the collect csv file for specific information",
 		},
 	}
 }
 
-func (c *SqlPerformancePrintTemplate) CollectResult(hd *HandleData, retValue interface{}) error {
+func (c *SQLPerformancePrintTemplate) CollectResult(hd *HandleData, retValue interface{}) error {
 	if hd == nil {
 		return fmt.Errorf("handle data is nil")
 	}
@@ -252,7 +252,7 @@ func (c *SqlPerformancePrintTemplate) CollectResult(hd *HandleData, retValue int
 	return nil
 }
 
-func (c *SqlPerformancePrintTemplate) Print(out io.Writer) {
+func (c *SQLPerformancePrintTemplate) Print(out io.Writer) {
 	log.Debugf("info list %v", c.InfoList)
 	printer := tableprinter.New(out)
 	row, nums := tableprinter.StructParser.ParseRow(reflect.ValueOf(c.InfoList).Elem())

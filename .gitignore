@@ -1,122 +1,31 @@
-# api server
+vendor/
 bin/
+*.tar
+*.gz
+*.xz
 
-# Byte-compiled / optimized / DLL files
-__pycache__/
-*.py[cod]
-*$py.class
-
-# C extensions
+# ---> Go
+# Binaries for programs and plugins
+*.exe
+*.exe~
+*.dll
 *.so
+*.dylib
 
-# git compute
-.github/
+# Test binary, build with `go test -c`
+*.test
 
-# Distribution / packaging
-.Python
-build/
-develop-eggs/
-dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
-*.egg-info/
-.installed.cfg
-*.egg
-MANIFEST
+# Output of the go coverage tool, specifically when used with LiteIDE
+/cover.*
+/cover/
 
-# PyInstaller
-#  Usually these files are written by a python script from a template
-#  before PyInstaller builds the exe, so as to inject date/other infos into it.
-*.manifest
+# Output of the go coverage tool, specifically when used with LiteIDE
+*.out
 
-# Installer logs
-pip-log.txt
-pip-delete-this-directory.txt
-
-# Unit test / coverage reports
-htmlcov/
-.tox/
-.coverage
-.coverage.*
-.cache
-nosetests.xml
-coverage.xml
-*.cover
-.hypothesis/
-.pytest_cache/
-
-# Translations
-*.mo
-*.pot
-
-# Django stuff:
-*.log
-local_settings.py
-db.sqlite3
-
-# Flask stuff:
-.webassets-cache
-
-# Scrapy stuff:
-.scrapy
-
-# Sphinx documentation
-docs/_build/
-
-# PyBuilder
-target/
-
-# Jupyter Notebook
-.ipynb_checkpoints
-
-# pyenv
-.python-version
-
-# celery beat schedule file
-celerybeat-schedule
-
-# SageMath parsed files
-*.sage.py
-
-# Environments
-.env
-.venv
-env/
-venv/
-ENV/
-env.bak/
-venv.bak/
-
-# Spyder project settings
-.spyderproject
-.spyproject
-
-# Rope project settings
-.ropeproject
-
-# mkdocs documentation
-/site
-
-# mypy
-.mypy_cache/
-
-# dist for web
-web-dist/*
-# generated configuration
-conf/*
-# generated in install phase
-# **/*.service
-
-.idea/
-
-# sqlite for testing
-**/sqlite.db*
-
-vendor/*
+/.idea/
+/.vscode/
+/package/
+/logs
+docker/secret/
+*__failpoint_binding__.go
+*__failpoint_stash__
