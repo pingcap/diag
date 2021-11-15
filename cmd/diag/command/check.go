@@ -15,9 +15,11 @@ package command
 
 import (
 	"context"
+	"strings"
 
 	"github.com/pingcap/diag/checker/config"
 	"github.com/pingcap/diag/checker/engine"
+	"github.com/pingcap/diag/checker/render"
 	"github.com/pingcap/diag/checker/sourcedata"
 	"github.com/pingcap/log"
 	"github.com/spf13/cobra"
@@ -62,7 +64,9 @@ func newCheckCmd() *cobra.Command {
 				log.Error(err.Error())
 				return err
 			}
-			wrapper := engine.NewWrapper(data, ruleSet)
+			include := strings.Join(inc, "-")
+			render := render.NewResultWrapper(data, ruleSet, datapath, include)
+			wrapper := engine.NewWrapper(data, ruleSet, render)
 			// checkline.Init()
 			// pipe := checkline.GetResultChan()
 			// screenRender := render.NewScreenRender(pipe)
