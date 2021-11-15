@@ -19,6 +19,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/pingcap/diag/collector/log/parser"
@@ -67,6 +68,13 @@ func (s *LogScraper) Scrap(result *Sample) error {
 			if fi.IsDir() {
 				continue
 			}
+
+			// collect stderr log despite time range
+			if strings.Contains(fi.Name(), "stderr") {
+				result.Log[fp] = fi.Size()
+				continue
+			}
+
 			// check log content to filter by scrap time range
 			in, err := logInRange(fp, fi, s.Start, s.End)
 			if err != nil {
@@ -102,11 +110,11 @@ func logInRange(fname string, fi fs.FileInfo, start, end time.Time) (bool, error
 	}
 
 	ht := parseLine(head)
-	if ht != nil && ht.After(end) {
-		return false, nil
+	if ht == nil {
+		return false, fmt.Errorf("the first line is not a valid log line")
 	}
 
-	if fi.ModTime().Before(start) {
+	if ht.After(end) || fi.ModTime().Before(start) {
 		return false, nil
 	}
 
