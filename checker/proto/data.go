@@ -31,7 +31,7 @@ const (
 	TikvComponentName                 = "TikvConfig"
 	TiflashComponentName              = "TiflashConfig"
 	PerformanceDashboardComponentName = "performance.dashboard"
-	ConfigType                        = "Config"
+	ConfigType                        = "config"
 	PerformanceType                   = "performance"
 )
 
@@ -55,7 +55,6 @@ func (sd *SourceDataV2) AppendConfig(cfg Config, component string) {
 type Data interface {
 	ActingName() string
 }
-
 
 type OutputMetaData struct {
 	ClusterID   string
@@ -194,7 +193,7 @@ func (c *ConfPrintTemplate) SplitComponentAndPath(varaition string) map[string][
 func (c *ConfPrintTemplate) Print(out io.Writer) {
 	printer := tableprinter.New(out)
 	for _, rr := range c.InfoList {
-		row, nums := tableprinter.StructParser.ParseRow(reflect.ValueOf(rr))
+		row, nums := tableprinter.StructParser.ParseRow(reflect.ValueOf(*rr))
 		printer.RenderRow(row, nums)
 	}
 }
@@ -255,7 +254,7 @@ func (c *SqlPerformancePrintTemplate) CollectResult(hd *HandleData, retValue int
 
 func (c *SqlPerformancePrintTemplate) Print(out io.Writer) {
 	printer := tableprinter.New(out)
-	row, nums := tableprinter.StructParser.ParseRow(reflect.ValueOf(c.InfoList))
+	row, nums := tableprinter.StructParser.ParseRow(reflect.ValueOf(*(c.InfoList)))
 	printer.RenderRow(row, nums)
 }
 
