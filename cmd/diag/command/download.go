@@ -95,13 +95,13 @@ func newDownloadCommand() *cobra.Command {
 }
 
 func parseURL(opt *downloadOptions, url string) error {
-	findex := strings.LastIndex(url, "/")
+	findex := strings.LastIndex(url, "=")
 	if findex < 0 {
 		return errors.New("invalid url")
 	}
 	opt.fileUUID = url[findex+1:]
 
-	eindex := strings.Index(url, "/api")
+	eindex := strings.Index(url, "/diag")
 	if eindex < 0 {
 		return errors.New("invalid url")
 	}
