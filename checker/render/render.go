@@ -42,7 +42,7 @@ func (w *ResultWrapper) Output(checkresult map[string]proto.PrintTemplate) error
 	// print OutputMetaData
 	now := time.Now()
 	sec := now.Unix()
-	writer, err := NewCheckerWriter(fmt.Sprintf("checker-%s-%d", w.Data.ClusterInfo.Session, sec))
+	writer, err := NewCheckerWriter(fmt.Sprintf("checker-%s-%d.txt", w.Data.ClusterInfo.Session, sec))
 	if err != nil {
 		log.Errorf("create file failed, ", err.Error())
 	}
