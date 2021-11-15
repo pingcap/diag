@@ -166,7 +166,7 @@ func (e *slowQueryRetriever) initialize(ctx context.Context, ) error {
 
 func (e *slowQueryRetriever) initializeAsyncParsing(ctx context.Context) {
 	e.taskList = make(chan slowLogTask, 1)
-	go e.parseDataForSlowLog(ctx,)
+	go e.parseDataForSlowLog(ctx)
 }
 
 func (e *slowQueryRetriever) parseDataForSlowLog(ctx context.Context) {
@@ -817,7 +817,7 @@ func getColumnValueFactoryByName(colName string, columnIdx int) (slowQueryColumn
 				t = t.In(tz)
 				timeValue = types.NewTime(types.FromGoTime(t), 12, types.MaxFsp)
 			}
-			row[columnIdx] = value
+			row[columnIdx] = t.Format("2006-01-02 15:04:05.999999")
 			return true, nil
 		}, nil
 	case SlowLogBackoffDetail:

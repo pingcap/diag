@@ -55,7 +55,7 @@ func (w *ResultWrapper) Output(checkresult map[string]proto.PrintTemplate) error
 	writer.WriteString("# Cluster Information")
 	writer.WriteString(fmt.Sprintln("ClusterId: ", w.Data.ClusterInfo.ClusterID))
 	writer.WriteString(fmt.Sprintln("ClusterName: ", w.Data.ClusterInfo.ClusterName))
-	writer.WriteString(fmt.Sprintln("ClusterVersoin: ", w.Data.TidbVersion))
+	writer.WriteString(fmt.Sprintln("ClusterVersion: ", w.Data.TidbVersion))
 	writer.WriteString("\n")
 
 	writer.WriteString("# Sample Information")

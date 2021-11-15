@@ -226,7 +226,7 @@ func (c *SqlPerformancePrintTemplate) CollectResult(hd *HandleData, retValue int
 	}
 	data, ok := hd.Data[0].(*DashboardData)
 	if !ok {
-		log.Errorf("convert into dashboarddata failed, ", data.ActingName())
+		log.Errorf("convert into dashboard data failed, ", data.ActingName())
 	}
 	switch c.Rule.Name {
 	case "poor_effective_plan":

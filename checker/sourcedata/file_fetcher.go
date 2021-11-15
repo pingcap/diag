@@ -144,9 +144,9 @@ func (f *FileFetcher) FetchData(rules *config.RuleSpec) (*proto.SourceDataV2, pr
 		return nil, nil, err
 	}
 	sourceData := &proto.SourceDataV2{
-		ClusterInfo: clusterJSON,
-		NodesData:   make(map[string][]proto.Config),
-		TidbVersion: meta.Version,
+		ClusterInfo:   clusterJSON,
+		NodesData:     make(map[string][]proto.Config),
+		TidbVersion:   meta.Version,
 		DashboardData: &proto.DashboardData{},
 	}
 	ctx := context.Background()
@@ -287,28 +287,55 @@ func (f *FileFetcher) loadRealTimeConfig(ctx context.Context, sourceData *proto.
 	return nil
 }
 
-
 // todo sourceData will be updated
 func (f *FileFetcher) loadSlowLog(ctx context.Context, sourceData *proto.SourceDataV2, meta *spec.ClusterMeta) (err error) {
 	header := []string{"Time", "Digest", "Plan_digest", "Process_time", "Process_keys", "Rocksdb_delete_skipped_count", "Total_keys"}
 	idxLookUp := NewIdxLookup(header)
-	avgProcessTimePlanAcc := avgProcessTimePlanAccumulator{
-		idxLookUp: idxLookUp,
-		data:      make(map[string]map[string]*execTimeInfo),
+	avgProcessTimePlanAcc, err := NewAvgProcessTimePlanAccumulator(idxLookUp)
+	if err != nil {
+		return err
 	}
-	scanOldVersionPlanAcc := scanOldVersionPlanAccumulator{
-		idxLookUp: idxLookUp,
-		data:      make(map[string]map[string]struct{}),
+	if err := os.MkdirAll(path.Join(f.dataDirPath, "report"), 0755); err != nil {
+		return err
 	}
-	skipDeletedCntPlanAcc := skipDeletedCntPlanAccumulator{
-		idxLookUp: idxLookUp,
-		data:      make(map[string]map[string]struct{}),
+	{
+		csvFile, err := os.Create( path.Join(f.dataDirPath, "report","poor_effective_plan.csv"))
+		if err != nil {
+			return err
+		}
+		defer csvFile.Close()
+		avgProcessTimePlanAcc.setCSVWriter(csvFile)
 	}
-	closers:= make([]io.Closer, 0)
+
+	scanOldVersionPlanAcc, err := NewScanOldVersionPlanAccumulator(idxLookUp)
+	if err != nil {
+		return err
+	}
+	{
+		csvFile, err := os.Create(path.Join(f.dataDirPath,"report","old_version_count.csv"))
+		if err != nil {
+			return err
+		}
+		defer csvFile.Close()
+		scanOldVersionPlanAcc.setCSVWriter(csvFile)
+	}
+	skipDeletedCntPlanAcc, err := NewSkipDeletedCntPlanAccumulator(idxLookUp)
+	if err != nil {
+		return err
+	}
+	{
+		csvFile, err := os.Create(path.Join(f.dataDirPath, "report","scan_key_skip.csv"))
+		if err != nil {
+			return err
+		}
+		defer csvFile.Close()
+		skipDeletedCntPlanAcc.setCSVWriter(csvFile)
+	}
+	closers := make([]io.Closer, 0)
 	for _, spec := range meta.Topology.TiDBServers {
 		slowLogPath := path.Join(f.dataDirPath, spec.Host, spec.DeployDir, "log", "tidb_slow_query.log")
 		// todo
-		retriever, err := NewSlowQueryRetriever(5, time.Local, header, slowLogPath, WithTimeRanges(time.Now().AddDate(0,0,-7), time.Now()) )
+		retriever, err := NewSlowQueryRetriever(5, time.Local, header, slowLogPath, WithTimeRanges(time.Now().AddDate(0, 0, -7), time.Now()))
 		if err != nil {
 			return err
 		}
@@ -436,7 +463,7 @@ func (f *FileFetcher) loadDigest(reader io.Reader) ([]proto.DigestPair, error) {
 	for idx, col := range header {
 		idxLookUp[strings.ToLower(col)] = idx
 	}
-	data := make([]proto.DigestPair,0)
+	data := make([]proto.DigestPair, 0)
 	for {
 		record, err := csvReader.Read()
 		if err == io.EOF {
