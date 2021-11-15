@@ -56,7 +56,6 @@ type Data interface {
 	ActingName() string
 }
 
-
 type OutputMetaData struct {
 	ClusterID   string
 	ClusterName string
