@@ -158,6 +158,7 @@ func (f *FileFetcher) FetchData(rules *config.RuleSpec) (*proto.SourceDataV2, pr
 	}
 	// decode sql performance data
 	if f.checkFlag.checkPerformance() {
+		// TODO: check if there is any performance rule before load slow log
 		{
 			reader, err := os.Open(f.genInfoSchemaCSVPath("mysql.tidb.csv"))
 			if err != nil {
@@ -224,7 +225,8 @@ func (f *FileFetcher) FetchData(rules *config.RuleSpec) (*proto.SourceDataV2, pr
 
 // sourceData will be updated
 func (f *FileFetcher) loadRealTimeConfig(ctx context.Context, sourceData *proto.SourceDataV2, meta *spec.ClusterMeta, rSet proto.RuleSet) error {
-	for name := range rSet {
+	nameStructs := rSet.GetNameStructs()
+	for name := range nameStructs {
 		switch name {
 		case proto.PdComponentName:
 			for _, spec := range meta.Topology.PDServers {

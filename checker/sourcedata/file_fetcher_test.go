@@ -3,6 +3,7 @@ package sourcedata
 import (
 	"bytes"
 	"fmt"
+	"github.com/pingcap/diag/checker/config"
 	"github.com/pingcap/diag/checker/proto"
 	"os"
 	"testing"
@@ -93,5 +94,27 @@ tikv_gc_mode,distribute
 	}
 	if res["tikv_gc_life_time"] != "10m0s" {
 		t.Error("result is not expected")
+	}
+}
+
+func TestFileFetcher_FetchData(t *testing.T) {
+	fetch, err := NewFileFetcher("/Users/shenjun/Workspace/diag-data/diag-fKWJKJcwHGP", WithCheckFlag(ConfigFlag))
+	if err != nil {
+		t.Error(err)
+	}
+	ruleSpec, err := config.LoadBetaRuleSpec()
+	if err != nil {
+		t.Error()
+	}
+
+	data, rSet, err := fetch.FetchData(ruleSpec)
+	if err != nil {
+		t.Error(err)
+	}
+	if len(data.NodesData) == 0 {
+		t.Error("fetch empty NodeData")
+	}
+	if len(rSet) == 0 {
+		t.Error("fetch empty rule set")
 	}
 }

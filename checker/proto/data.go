@@ -302,7 +302,16 @@ type Rule struct {
 	Suggestion   string `yaml:"suggestion" toml:"suggestion"`
 }
 
-type RuleSet map[string]*Rule // e.g {"Config": {"TidbConfigData": {&Rule{}, &Rule{}}}, "Dashboard": {}}
+type RuleSet map[string]*Rule //  TODO e.g {"Config": {"TidbConfigData": {&Rule{}, &Rule{}}}, "Dashboard": {}}
+
+func (rs RuleSet) GetNameStructs() map[string]struct{} {
+	result := make(map[string]struct{})
+
+	for _, rule := range rs {
+		result[rule.NameStruct] = struct{}{}
+	}
+	return result
+}
 
 type VersionRange string
 
