@@ -14,6 +14,8 @@
 package command
 
 import (
+	"bufio"
+	"os"
 	"path"
 	"time"
 
@@ -26,6 +28,7 @@ import (
 )
 
 func newCollectCmd() *cobra.Command {
+	var metricsConf string
 	opt := collector.BaseOptions{
 		SSH: &tui.SSHConnectionProps{
 			IdentityFile: path.Join(utils.UserHome(), ".ssh", "id_rsa"),
@@ -61,6 +64,18 @@ func newCollectCmd() *cobra.Command {
 				cOpt.Exclude = set.NewStringSet(ext...)
 			}
 			opt.Cluster = args[0]
+
+			if metricsConf != "" {
+				f, err := os.Open(metricsConf)
+				if err != nil {
+					return err
+				}
+				defer f.Close()
+				s := bufio.NewScanner(f)
+				for s.Scan() {
+					cOpt.MetricsFilter = append(cOpt.MetricsFilter, s.Text())
+				}
+			}
 			return cm.CollectClusterInfo(&opt, &cOpt, &gOpt)
 		},
 	}
@@ -72,6 +87,7 @@ func newCollectCmd() *cobra.Command {
 	cmd.Flags().StringSliceVar(&inc, "include", cOpt.Include.Slice(), "types of data to collect")
 	cmd.Flags().StringSliceVar(&ext, "exclude", cOpt.Exclude.Slice(), "types of data not to collect")
 	cmd.Flags().StringSliceVar(&cOpt.MetricsFilter, "metricsfilter", nil, "prefix of metrics to collect")
+	cmd.Flags().StringVar(&metricsConf, "metricsconfig", "", "config file of metricsfilter")
 	cmd.Flags().StringVarP(&cOpt.Dir, "output", "o", "", "output directory of collected data")
 	cmd.Flags().IntVarP(&cOpt.Limit, "limit", "l", 10000, "Limits the used bandwidth, specified in Kbit/s")
 	cmd.Flags().Uint64Var(&gOpt.APITimeout, "api-timeout", 10, "Timeout in seconds when querying PD APIs.")
