@@ -30,7 +30,6 @@ import (
 	"github.com/pingcap/diag/pkg/models"
 	"github.com/pingcap/errors"
 	"github.com/pingcap/log"
-	"github.com/pingcap/tiup/pkg/cluster/spec"
 	"github.com/sirupsen/logrus"
 	"go.uber.org/zap"
 )
@@ -294,17 +293,45 @@ func (f *FileFetcher) loadRealTimeConfig(_ context.Context, sourceData *proto.So
 func (f *FileFetcher) loadSlowLog(ctx context.Context, sourceData *proto.SourceDataV2, meta *models.TiDBCluster) (err error) {
 	header := []string{"Time", "Digest", "Plan_digest", "Process_time", "Process_keys", "Rocksdb_delete_skipped_count", "Total_keys"}
 	idxLookUp := NewIdxLookup(header)
-	avgProcessTimePlanAcc := avgProcessTimePlanAccumulator{
-		idxLookUp: idxLookUp,
-		data:      make(map[string]map[string]*execTimeInfo),
+	avgProcessTimePlanAcc, err := NewAvgProcessTimePlanAccumulator(idxLookUp)
+	if err != nil {
+		return err
 	}
-	scanOldVersionPlanAcc := scanOldVersionPlanAccumulator{
-		idxLookUp: idxLookUp,
-		data:      make(map[string]map[string]struct{}),
+	if err := os.MkdirAll(path.Join(f.dataDirPath, "report"), 0755); err != nil {
+		return err
 	}
-	skipDeletedCntPlanAcc := skipDeletedCntPlanAccumulator{
-		idxLookUp: idxLookUp,
-		data:      make(map[string]map[string]struct{}),
+	{
+		csvFile, err := os.Create( path.Join(f.dataDirPath, "report","poor_effective_plan.csv"))
+		if err != nil {
+			return err
+		}
+		defer csvFile.Close()
+		avgProcessTimePlanAcc.setCSVWriter(csvFile)
+	}
+
+	scanOldVersionPlanAcc, err := NewScanOldVersionPlanAccumulator(idxLookUp)
+	if err != nil {
+		return err
+	}
+	{
+		csvFile, err := os.Create(path.Join(f.dataDirPath,"report","old_version_count.csv"))
+		if err != nil {
+			return err
+		}
+		defer csvFile.Close()
+		scanOldVersionPlanAcc.setCSVWriter(csvFile)
+	}
+	skipDeletedCntPlanAcc, err := NewSkipDeletedCntPlanAccumulator(idxLookUp)
+	if err != nil {
+		return err
+	}
+	{
+		csvFile, err := os.Create(path.Join(f.dataDirPath, "report","scan_key_skip.csv"))
+		if err != nil {
+			return err
+		}
+		defer csvFile.Close()
+		skipDeletedCntPlanAcc.setCSVWriter(csvFile)
 	}
 	closers := make([]io.Closer, 0)
 	for _, spec := range meta.TiDB {
@@ -497,19 +524,3 @@ func (f *FileFetcher) genInfoSchemaCSVPath(fileName string) string {
 	return path.Join(f.dataDirPath, collector.DirNameInfoSchema, fileName)
 }
 
-func (f *FileFetcher) GetComponent(meta *spec.ClusterMeta) []string {
-	components := make([]string, 0)
-	if len(meta.Topology.PDServers) != 0 {
-		components = append(components, proto.PdComponentName)
-	}
-	if len(meta.Topology.TiDBServers) != 0 {
-		components = append(components, proto.TidbComponentName)
-	}
-	if len(meta.Topology.TiKVServers) != 0 {
-		components = append(components, proto.TikvComponentName)
-	}
-	if len(meta.Topology.TiFlashServers) != 0 {
-		components = append(components, proto.TiflashComponentName)
-	}
-	return components
-}

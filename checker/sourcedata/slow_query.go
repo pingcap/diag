@@ -818,7 +818,7 @@ func getColumnValueFactoryByName(colName string, columnIdx int) (slowQueryColumn
 				t = t.In(tz)
 				timeValue = types.NewTime(types.FromGoTime(t), 12, types.MaxFsp)
 			}
-			row[columnIdx] = value
+			row[columnIdx] = t.Format("2006-01-02 15:04:05.999999")
 			return true, nil
 		}, nil
 	case SlowLogBackoffDetail:
