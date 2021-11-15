@@ -15,6 +15,7 @@ package config
 
 import (
 	_ "embed"
+
 	"github.com/BurntSushi/toml"
 	"github.com/pingcap/diag/checker/proto"
 )
@@ -22,11 +23,13 @@ import (
 //go:embed rule_beta.toml
 var betaRuleStr string
 
+type RuleItem struct {
+	proto.Rule `yaml:",inline"`
+	Version    proto.VersionRange `yaml:"version" toml:"version"`
+}
+
 type RuleSpec struct {
-	Rule []struct {
-		proto.Rule `yaml:",inline"`
-		Version    proto.VersionRange `yaml:"version" toml:"version"`
-	} `yaml:"rule" toml:"rule"`
+	Rule []RuleItem `yaml:"rule" toml:"rule"`
 }
 
 func (rs *RuleSpec) FilterOnVersion(ver string) (proto.RuleSet, error) {
@@ -40,20 +43,33 @@ func (rs *RuleSpec) FilterOnVersion(ver string) (proto.RuleSet, error) {
 			continue
 		}
 		// set match rule to rSet
-		name := rs.Rule[idx].NameStruct
-		if _, ok := rSet[name]; !ok {
-			rSet[name] = make([]*proto.Rule, 0)
+		rulename := rs.Rule[idx].Rule.Name
+		rSet[rulename] = &rs.Rule[idx].Rule
+	}
+	return rSet, nil
+}
+
+type FilterFunc func(item RuleItem) (bool, error)
+
+func (rs *RuleSpec) FilterOn(filter FilterFunc) (proto.RuleSet, error) {
+	rSet := proto.RuleSet{}
+	for idx := range rs.Rule {
+		ok, err := filter(rs.Rule[idx])
+		if err != nil {
+			return nil, err
 		}
-		rSet[name] = append(rSet[name], &rs.Rule[idx].Rule)
+		if !ok {
+			continue
+		}
+		// set match rule to rSet
+		rulename := rs.Rule[idx].Rule.Name
+		rSet[rulename] = &rs.Rule[idx].Rule
 	}
 	return rSet, nil
 }
 
 func LoadBetaRuleSpec() (*RuleSpec, error) {
-	ruleSpec := &RuleSpec{Rule: []struct {
-		proto.Rule `yaml:",inline"`
-		Version    proto.VersionRange `yaml:"version" toml:"version"`
-	}{}}
+	ruleSpec := &RuleSpec{Rule: []RuleItem{}}
 	if _, err := toml.Decode(betaRuleStr, ruleSpec); err != nil {
 		return nil, err
 	}

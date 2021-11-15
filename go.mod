@@ -9,8 +9,10 @@ require (
 	github.com/bilibili/gengine v1.5.7
 	github.com/fatih/color v1.13.0
 	github.com/fatih/structs v1.1.0
+	github.com/go-sql-driver/mysql v1.6.0
 	github.com/google/uuid v1.3.0
 	github.com/influxdata/influxdb v1.9.4
+	github.com/joho/sqltocsv v0.0.0-20210428211105-a6d6801d59df
 	github.com/joomcode/errorx v1.0.3
 	github.com/json-iterator/go v1.1.12
 	github.com/kataras/tablewriter v0.0.0-20180708051242-e063d29b7c23 // indirect

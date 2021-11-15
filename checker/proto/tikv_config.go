@@ -511,6 +511,10 @@ func (cfg *TikvConfigData) CheckNil() bool {
 	return cfg.TikvConfig == nil
 }
 
+func (cfg *TikvConfigData) ActingName() string {
+	return "config"
+}
+
 func NewTikvConfigData() *TikvConfigData {
 	return &TikvConfigData{
 		TikvConfig: &TikvConfig{
