@@ -36,6 +36,15 @@ const (
 	CollectTypeMonitor = "monitor"
 	CollectTypeLog     = "log"
 	CollectTypeConfig  = "config"
+	CollectTypeSchema  = "info_schema"
+)
+
+var CollectAllSet set.StringSet = set.NewStringSet( // collect all types by default
+	CollectTypeSystem,
+	CollectTypeMonitor,
+	CollectTypeLog,
+	CollectTypeConfig,
+	CollectTypeSchema,
 )
 
 // Collector is the configuration defining an collecting job
@@ -207,6 +216,23 @@ func (m *Manager) CollectClusterInfo(
 				BaseOptions: opt,
 				opt:         gOpt,
 				limit:       cOpt.Limit,
+				resultDir:   resultDir,
+				fileStats:   make(map[string][]CollectStat),
+			})
+	}
+
+	if canCollect(cOpt, CollectTypeSchema) {
+		var user string
+		fmt.Print("please enter database username:")
+		fmt.Scanln(&user)
+		password := tui.PromptForPassword("please enter database password:")
+		collectors = append(collectors,
+			&SchemaCollectOptions{
+
+				BaseOptions: opt,
+				opt:         gOpt,
+				dbuser:      user,
+				dbpasswd:    password,
 				resultDir:   resultDir,
 				fileStats:   make(map[string][]CollectStat),
 			})
