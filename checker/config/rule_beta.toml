@@ -254,6 +254,28 @@ expect_res = ""   #
 warn_level = "info"
 version = "> v4.0.0"
 
+[[rule]]
+id = 2332  
+name = "pdconfig-test--sdfsdf"
+description = "控制同时进行的 hot Region 任务。该配置项独立于 Region 调度。"
+variation = "PdConfig.schedule.hot-region-schedule-limit"
+check_type = "config"
+execute_rule = """
+rule "pdconfig-hot-region-schedule-limit"
+begin
+    if ToInt(PdConfig.GetValueByTagPath("schedule.hot-region-schedule-limit")) <= 0
+       || ToInt(TidbConfig.GetValueByTagPath("log.file.max-days")) > 8 {
+        return false
+    } else {
+        return true
+    }
+end
+"""
+name_struct = "PdConfig,TidbConfig"
+expect_res = ""   #
+warn_level = "info"
+version = "> v4.0.0"
+
 # todo add store limit rule
 
 [[rule]]
