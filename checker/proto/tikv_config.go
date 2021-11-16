@@ -14,6 +14,7 @@
 package proto
 
 import (
+	"github.com/pingcap/tiup/pkg/cluster/spec"
 	"reflect"
 	"strings"
 
@@ -479,11 +480,17 @@ type TikvConfigData struct {
 	Host  string
 }
 
-func (cfg *TikvConfigData) LoadClusterMeta(meta *models.TiDBCluster) {
+func (cfg *TikvConfigData) LoadClusterMeta(tidbCluster *models.TiDBCluster, clusterMeta *spec.ClusterMeta) {
+	cnt := 0
+	if tidbCluster != nil{
+		cnt = len(tidbCluster.TiFlash)
+	}else if clusterMeta != nil {
+		cnt = len(clusterMeta.Topology.TiFlashServers)
+	}
 	if cfg.Extra == nil {
-		cfg.Extra = &TikvExtraData{TiFlashCnt: len(meta.TiFlash)}
+		cfg.Extra = &TikvExtraData{TiFlashCnt:cnt}
 	} else {
-		cfg.Extra.TiFlashCnt = len(meta.TiFlash)
+		cfg.Extra.TiFlashCnt = cnt
 	}
 }
 

@@ -330,7 +330,10 @@ func (rs RuleSet) GetNameStructs() map[string]struct{} {
 	result := make(map[string]struct{})
 
 	for _, rule := range rs {
-		result[rule.NameStruct] = struct{}{}
+		names := strings.Split(rule.NameStruct,",")
+		for _, name := range names {
+			result[name] = struct{}{}
+		}
 	}
 	return result
 }

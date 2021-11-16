@@ -45,7 +45,7 @@ func (w *ResultWrapper) Output(checkresult map[string]proto.PrintTemplate) error
 	// print OutputMetaData
 	writer, err := NewCheckerWriter(fmt.Sprintf("%s/report", w.storePath), fmt.Sprintf("%s-%s.txt", "checker", w.include))
 	if err != nil {
-		log.Errorf("create file failed, ", err.Error())
+		log.Errorf("create file failed %+v", err.Error())
 		return err
 	}
 	defer func() {
@@ -75,10 +75,14 @@ func (w *ResultWrapper) Output(checkresult map[string]proto.PrintTemplate) error
 		writer.WriteString(fmt.Sprintln("- RuleID: ", rule.ID))
 		writer.WriteString(fmt.Sprintln("- Variation: ", rule.Variation))
 		writer.WriteString(fmt.Sprintln("- Alerting Rule: ", rule.AlertingRule))
+		if len(rule.ExpectRes) > 0 {
+			writer.WriteString(fmt.Sprintln("- Suggestion: ", rule.ExpectRes))
+		}
 		writer.WriteString(fmt.Sprintln("- Check Result: "))
 		printer.Print(writer)
 		writer.WriteString("\n")
 	}
+	writer.WriteString(fmt.Sprintf("Result report is saved at %s/report", w.storePath))
 	return nil
 }
 
@@ -97,7 +101,7 @@ func (w *CheckerWriter) Flush() error {
 
 func NewCheckerWriter(path string, filename string) (*CheckerWriter, error) {
 	if err := os.MkdirAll(path, 0777); err != nil {
-		log.Errorf("create path failed, ", err.Error())
+		log.Errorf("create path failed, %+v", err.Error())
 		return nil, err
 	}
 	f, err := os.Create(fmt.Sprintf("%s/%s", path, filename))

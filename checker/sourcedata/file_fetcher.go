@@ -16,6 +16,8 @@ package sourcedata
 import (
 	"context"
 	"encoding/csv"
+	"github.com/pingcap/tiup/pkg/cluster/spec"
+	"gopkg.in/yaml.v3"
 	"io"
 	"os"
 	"path"
@@ -57,6 +59,9 @@ func (cf CheckFlag) checkPerformance() bool {
 type FileFetcher struct {
 	dataDirPath string // dataDirPath point to a folder
 	checkFlag   CheckFlag
+	// set during processing
+	clusterMeta *spec.ClusterMeta
+	clusterJSON *collector.ClusterJSON
 }
 
 type FileFetcherOpt func(ff *FileFetcher) error
@@ -86,54 +91,53 @@ func NewFileFetcher(dataDirPath string, opts ...FileFetcherOpt) (*FileFetcher, e
 // FetchData retrieve config data from file path, and filter rules by component version
 // dataPath is the path to the top folder which contain the data collected by diag collect.
 func (f *FileFetcher) FetchData(rules *config.RuleSpec) (*proto.SourceDataV2, proto.RuleSet, error) {
-	clusterJSON := &collector.ClusterJSON{}
 
-	// decode cluster.json
-	bs, err := os.ReadFile(f.genClusterJSONPath())
+	if err := f.loadClusterMetaData(); err != nil {
+		return nil, nil, err
+	}
+	clusterVersion, err := f.getClusterVersion()
 	if err != nil {
 		return nil, nil, err
 	}
-	if err := jsoniter.Unmarshal(bs, clusterJSON); err != nil {
-		log.Error(err.Error())
-		return nil, nil, err
-	}
+
 	filterFunc := func(item config.RuleItem) (bool, error) {
 		// filter on version
-		ok, err := item.Version.Contain(clusterJSON.Topology.Version)
+		ok, err := item.Version.Contain(clusterVersion)
 		if err != nil {
 			return false, err
 		} else if !ok {
 			return false, nil
 		}
-
-		// filter on check flag
-		switch item.NameStruct {
-		case proto.PdComponentName, proto.TikvComponentName, proto.TidbComponentName, proto.TiflashComponentName:
-			return f.checkFlag.checkConfig(), nil
-		case proto.PerformanceDashboardComponentName:
-			return f.checkFlag.checkPerformance(), nil
-		default:
-			return false, nil
+		names := strings.Split(item.NameStruct, ",")
+		// filter on name struct and check flags
+		for _, name := range names {
+			switch name {
+			case proto.PdComponentName, proto.TikvComponentName, proto.TidbComponentName, proto.TiflashComponentName:
+				return f.checkFlag.checkConfig(), nil
+			case proto.PerformanceDashboardComponentName:
+				return f.checkFlag.checkPerformance(), nil
+			default:
+				return false, nil
+			}
 		}
+		return false, nil
 	}
 	// rSet contain all rules match the cluster version
 	rSet, err := rules.FilterOn(filterFunc)
-
-	meta := clusterJSON.Topology
 	if err != nil {
 		log.Error(err.Error())
 		return nil, nil, err
 	}
 	sourceData := &proto.SourceDataV2{
-		ClusterInfo:   clusterJSON,
+		ClusterInfo:   f.clusterJSON,
 		NodesData:     make(map[string][]proto.Config),
-		TidbVersion:   meta.Version,
+		TidbVersion:   clusterVersion,
 		DashboardData: &proto.DashboardData{},
 	}
 	ctx := context.Background()
 	// decode config.json for related config component
 	if f.checkFlag.checkConfig() {
-		if err := f.loadRealTimeConfig(ctx, sourceData, meta, rSet); err != nil {
+		if err := f.loadRealTimeConfig(ctx, sourceData, rSet); err != nil {
 			return nil, nil, err
 		}
 	}
@@ -157,7 +161,7 @@ func (f *FileFetcher) FetchData(rules *config.RuleSpec) (*proto.SourceDataV2, pr
 			sourceData.DashboardData.OldVersionProcesskey.GcLifeTime = int(gcLifeTime.Nanoseconds() / 1e9)
 		}
 
-		if err := f.loadSlowLog(ctx, sourceData, meta); err != nil {
+		if err := f.loadSlowLog(ctx, sourceData); err != nil {
 			return nil, nil, err
 		}
 
@@ -205,12 +209,12 @@ func (f *FileFetcher) FetchData(rules *config.RuleSpec) (*proto.SourceDataV2, pr
 }
 
 // sourceData will be updated
-func (f *FileFetcher) loadRealTimeConfig(_ context.Context, sourceData *proto.SourceDataV2, meta *models.TiDBCluster, rSet proto.RuleSet) error {
+func (f *FileFetcher) loadRealTimeConfig(_ context.Context, sourceData *proto.SourceDataV2, rSet proto.RuleSet) error {
 	nameStructs := rSet.GetNameStructs()
 	for name := range nameStructs {
 		switch name {
 		case proto.PdComponentName:
-			for _, spec := range meta.PD {
+			for _, spec := range f.getComponents(proto.PdComponentName) {
 				// todo add no data
 				host := spec.Host()
 				if pod, ok := spec.Attributes()["pod"].(string); ok {
@@ -235,7 +239,7 @@ func (f *FileFetcher) loadRealTimeConfig(_ context.Context, sourceData *proto.So
 				sourceData.AppendConfig(cfg, proto.PdComponentName)
 			}
 		case proto.TikvComponentName:
-			for _, spec := range meta.TiKV {
+			for _, spec := range f.getComponents(proto.TikvComponentName) {
 				host := spec.Host()
 				if pod, ok := spec.Attributes()["pod"].(string); ok {
 					host = pod
@@ -253,14 +257,14 @@ func (f *FileFetcher) loadRealTimeConfig(_ context.Context, sourceData *proto.So
 						logrus.Error(err)
 						return err
 					}
-					cfg.LoadClusterMeta(meta)
+					cfg.LoadClusterMeta(f.clusterJSON.Topology, f.clusterMeta)
 				}
 				cfg.Host = spec.Host()
 				cfg.Port = spec.MainPort()
 				sourceData.AppendConfig(cfg, proto.TikvComponentName)
 			}
 		case proto.TidbComponentName:
-			for _, spec := range meta.TiDB {
+			for _, spec := range f.getComponents(proto.TidbComponentName) {
 				host := spec.Host()
 				if pod, ok := spec.Attributes()["pod"].(string); ok {
 					host = pod
@@ -290,7 +294,7 @@ func (f *FileFetcher) loadRealTimeConfig(_ context.Context, sourceData *proto.So
 }
 
 // todo sourceData will be updated
-func (f *FileFetcher) loadSlowLog(ctx context.Context, sourceData *proto.SourceDataV2, meta *models.TiDBCluster) (err error) {
+func (f *FileFetcher) loadSlowLog(ctx context.Context, sourceData *proto.SourceDataV2) (err error) {
 	header := []string{"Time", "Digest", "Plan_digest", "Process_time", "Process_keys", "Rocksdb_delete_skipped_count", "Total_keys"}
 	idxLookUp := NewIdxLookup(header)
 	avgProcessTimePlanAcc, err := NewAvgProcessTimePlanAccumulator(idxLookUp)
@@ -334,7 +338,7 @@ func (f *FileFetcher) loadSlowLog(ctx context.Context, sourceData *proto.SourceD
 		skipDeletedCntPlanAcc.setCSVWriter(csvFile)
 	}
 	closers := make([]io.Closer, 0)
-	for _, spec := range meta.TiDB {
+	for _, spec := range f.getComponents(proto.TidbComponentName) {
 		slowLogPath := path.Join(f.dataDirPath, spec.Host(), "log", "tidb_slow_query.log")
 		if deployDir, ok := spec.Attributes()["deploy_dir"]; ok {
 			slowLogPath = path.Join(f.dataDirPath, spec.Host(), deployDir.(string), "log", "tidb_slow_query.log")
@@ -421,7 +425,7 @@ func (f *FileFetcher) loadSlowPlanData(reader io.Reader) (data map[string][2]pro
 		if err != nil {
 			return nil, err
 		}
-		lastTime, err := time.Parse("2006-01-02 15:04:05", record[idxLookUp["last_time"]])
+		lastTime, err := time.Parse("2006-01-02 15:04:05.999999", record[idxLookUp["last_time"]])
 		if err != nil {
 			return nil, err
 		}
@@ -516,11 +520,118 @@ func (f *FileFetcher) loadSysVariables(reader io.Reader) (map[string]string, err
 	return data, nil
 }
 
+func (f *FileFetcher) genMetaConfigPath() string {
+	return path.Join(f.dataDirPath, collector.FileNameTiUPClusterMeta)
+}
+
 func (f *FileFetcher) genClusterJSONPath() string {
 	return path.Join(f.dataDirPath, collector.FileNameClusterJSON)
 }
 
 func (f *FileFetcher) genInfoSchemaCSVPath(fileName string) string {
 	return path.Join(f.dataDirPath, collector.DirNameInfoSchema, fileName)
+}
+
+func (f *FileFetcher) loadClusterMetaData() error {
+	clusterJSON := &collector.ClusterJSON{}
+
+	bs, err := os.ReadFile(f.genClusterJSONPath())
+	if err != nil {
+		return err
+	}
+	if err := jsoniter.Unmarshal(bs, clusterJSON); err != nil {
+		return err
+	}
+	f.clusterJSON = clusterJSON
+	if clusterJSON.Topology == nil {
+		clusterMeta := &spec.ClusterMeta{}
+		bs, err := os.ReadFile(f.genMetaConfigPath())
+		if err != nil {
+			return err
+		}
+		if err := yaml.Unmarshal(bs, clusterMeta); err != nil {
+			return err
+		}
+		f.clusterMeta = clusterMeta
+	}
+	return nil
+}
+
+func (f *FileFetcher) getClusterVersion() (string,error) {
+	if f.clusterJSON == nil {
+		return "", errors.New("cluster json is nil")
+	}
+	if f.clusterJSON.Topology == nil {
+		if f.clusterMeta == nil {
+			return "", errors.New("cluster meta is nil")
+		}
+		return f.clusterMeta.Version, nil
+	}
+	return f.clusterJSON.Topology.Version, nil
+}
+
+func (f *FileFetcher) getComponents(name string) []models.Component {
+	components := make([]models.Component, 0)
+	switch name {
+	case proto.PdComponentName:
+		if f.clusterJSON.Topology != nil {
+			for _, pdSpec := range f.clusterJSON.Topology.PD {
+				components = append(components, pdSpec)
+			}
+			return components
+		}
+		for _, pdSpec := range f.clusterMeta.Topology.PDServers {
+			compSpec := models.ComponentSpec{
+				Host:       pdSpec.Host,
+				Port:       pdSpec.ClientPort,
+				StatusPort: pdSpec.PeerPort,
+				SSHPort:    pdSpec.SSHPort,
+				Attributes: map[string]interface{}{
+					"deploy_dir": pdSpec.DeployDir,
+				}}
+			components = append(components, &models.PDSpec{ComponentSpec: compSpec})
+		}
+		return components
+	case proto.TikvComponentName:
+		if f.clusterJSON.Topology != nil {
+			for _, tikvSpec := range f.clusterJSON.Topology.TiKV {
+				components = append(components, tikvSpec)
+			}
+			return components
+		}
+		for _, tikvSpec := range f.clusterMeta.Topology.TiKVServers {
+			compSpec := models.ComponentSpec{
+				Host:       tikvSpec.Host,
+				Port:       tikvSpec.Port,
+				StatusPort: tikvSpec.StatusPort,
+				SSHPort:    tikvSpec.SSHPort,
+				Attributes: map[string]interface{}{
+					"deploy_dir": tikvSpec.DeployDir,
+				}}
+			components = append(components, &models.PDSpec{ComponentSpec: compSpec})
+		}
+		return components
+	case proto.TidbComponentName:
+		if f.clusterJSON.Topology != nil {
+			for _, tidbSpec := range f.clusterJSON.Topology.TiDB {
+				components = append(components, tidbSpec)
+			}
+			return components
+		}
+		for _, tidbSpec := range f.clusterMeta.Topology.TiDBServers {
+			compSpec := models.ComponentSpec{
+				Host:       tidbSpec.Host,
+				Port:       tidbSpec.Port,
+				StatusPort: tidbSpec.StatusPort,
+				SSHPort:    tidbSpec.SSHPort,
+				Attributes: map[string]interface{}{
+					"deploy_dir": tidbSpec.DeployDir,
+				}}
+			components = append(components, &models.PDSpec{ComponentSpec: compSpec})
+		}
+		return components
+	default:
+	}
+	return nil
 }
 
