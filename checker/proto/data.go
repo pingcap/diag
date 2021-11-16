@@ -78,16 +78,19 @@ type HandleData struct {
 	IsValid bool
 }
 
-func (hd *HandleData) checkValid() {
+func (hd *HandleData) checkValid() bool {
+	if len(hd.Data) == 0 {
+		return false
+	}
 	for _, data := range hd.Data {
 		if data == nil {
-			hd.IsValid = false
+			return false
 		}
 		if conf, ok := data.(Config); ok && conf.CheckNil() {
-			hd.IsValid = false
+			return false
 		}
 	}
-	hd.IsValid = true
+	return true
 }
 
 func NewHandleData(ds []Data) *HandleData {
@@ -105,7 +108,7 @@ func NewHandleData(ds []Data) *HandleData {
 		}
 	}
 	hd.UqiTag = strings.Join(htags, "-")
-	hd.checkValid()
+	hd.IsValid = hd.checkValid()
 	return hd
 }
 
