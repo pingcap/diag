@@ -105,7 +105,7 @@ func (c *SchemaCollectOptions) Prepare(_ *Manager, _ *models.TiDBCluster) (map[s
 
 // Collect implements the Collector interface
 func (c *SchemaCollectOptions) Collect(m *Manager, topo *models.TiDBCluster) error {
-	err := os.Mkdir(filepath.Join(c.resultDir, "info_infoSchema"), 0755)
+	err := os.Mkdir(filepath.Join(c.resultDir, "info_schema"), 0755)
 	if err != nil {
 		return err
 	}
@@ -115,7 +115,7 @@ func (c *SchemaCollectOptions) Collect(m *Manager, topo *models.TiDBCluster) err
 
 	t := task.NewBuilder(m.DisplayMode).
 		Func(
-			"collect info infoSchema",
+			"collect info_schema",
 			func(ctx context.Context) error {
 				var db *sql.DB
 				for _, inst := range tidbInstants {
@@ -134,7 +134,7 @@ func (c *SchemaCollectOptions) Collect(m *Manager, topo *models.TiDBCluster) err
 					return fmt.Errorf("cannot connect to any TiDB instance")
 				}
 
-				_, err = db.Exec("USE information_infoSchema;")
+				_, err = db.Exec("USE information_schema;")
 				if err != nil {
 					return err
 				}
@@ -146,7 +146,7 @@ func (c *SchemaCollectOptions) Collect(m *Manager, topo *models.TiDBCluster) err
 						errs = append(errs, err.Error())
 						continue
 					}
-					err = sqltocsv.WriteFile(filepath.Join(c.resultDir, "info_infoSchema", s.filename), rows)
+					err = sqltocsv.WriteFile(filepath.Join(c.resultDir, "info_schema", s.filename), rows)
 					if err != nil {
 						return err
 					}
