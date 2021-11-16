@@ -16,6 +16,7 @@ package sourcedata
 import (
 	"context"
 	"encoding/csv"
+	"fmt"
 	"github.com/pingcap/tiup/pkg/cluster/spec"
 	"gopkg.in/yaml.v3"
 	"io"
@@ -388,7 +389,6 @@ func (f *FileFetcher) loadSlowLog(ctx context.Context, sourceData *proto.SourceD
 			return err
 		}
 		sourceData.DashboardData.OldVersionProcesskey.Count = len(digestPair)
-
 	}
 	{
 		digestPair, err := skipDeletedCntPlanAcc.build()
@@ -565,6 +565,7 @@ func (f *FileFetcher) loadClusterMetaData() error {
 	return nil
 }
 
+// use tidb image version for tidb on k8s, version in Topology may be `latest`
 func (f *FileFetcher) getClusterVersion() (string,error) {
 	if f.clusterJSON == nil {
 		return "", errors.New("cluster json is nil")
@@ -575,7 +576,23 @@ func (f *FileFetcher) getClusterVersion() (string,error) {
 		}
 		return f.clusterMeta.Version, nil
 	}
-	return f.clusterJSON.Topology.Version, nil
+	// use tidb image version
+	if len(f.clusterJSON.Topology.TiDB) == 0 {
+		return "", errors.New("can not infer tidb version")
+	}
+	imageURL, ok := f.clusterJSON.Topology.TiDB[0].Attributes()["image"].(string)
+	if !ok {
+		return "", errors.New("can not infer tidb version")
+	}
+	imageTag := strings.Split(imageURL, ":")
+	if len(imageTag) != 2 {
+		return "", errors.New("can not infer tidb version")
+	}
+	mainVersion := strings.Split(imageTag[1], "-")[0]
+	if strings.HasPrefix(mainVersion, "v") {
+		mainVersion = fmt.Sprintf("v%s", mainVersion)
+	}
+	return mainVersion, nil
 }
 
 func (f *FileFetcher) getComponents(name string) []models.Component {

@@ -82,7 +82,7 @@ func (w *ResultWrapper) Output(checkresult map[string]proto.PrintTemplate) error
 		printer.Print(writer)
 		writer.WriteString("\n")
 	}
-	writer.WriteString(fmt.Sprintf("Result report is saved at %s/report", w.storePath))
+	writer.WriteString(fmt.Sprintf("Result report is saved at %s/report\n", w.storePath))
 	return nil
 }
 
