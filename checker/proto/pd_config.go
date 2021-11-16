@@ -322,7 +322,7 @@ func (cfg *PdConfigData) GetComponent() string {
 }
 
 func (cfg *PdConfigData) ActingName() string {
-	return "config"
+	return cfg.GetComponent()
 }
 
 func (cfg *PdConfigData) CheckNil() bool {

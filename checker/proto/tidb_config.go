@@ -338,7 +338,7 @@ func (cfg *TidbConfigData) CheckNil() bool {
 }
 
 func (cfg *TidbConfigData) ActingName() string {
-	return "config"
+	return cfg.GetComponent()
 }
 
 func NewTidbConfigData() *TidbConfigData {

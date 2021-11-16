@@ -7,7 +7,7 @@ check_type = "config"
 execute_rule = """
 rule "tikv-log-level" "log level of tikv"  salience 6
 begin
-    if ToString(config.GetValueByTagPath("log-level")) == "debug" || ToString(config.GetValueByTagPath("log-level")) == "trace" {
+    if ToString(TikvConfig.GetValueByTagPath("log-level")) == "debug" || ToString(TikvConfig.GetValueByTagPath("log-level")) == "trace" {
         return false
     } else {
         return true
@@ -29,7 +29,7 @@ check_type = "config"
 execute_rule = """
 rule "gc.enable-compaction-filter"
 begin
-    if ToBool(config.GetValueByTagPath("gc.enable-compaction-filter")) == true && config.Extra.TiFlashCnt > 0 {
+    if ToBool(TikvConfig.GetValueByTagPath("gc.enable-compaction-filter")) == true && TikvConfig.Extra.TiFlashCnt > 0 {
         return false
     } else {
         return true
@@ -50,7 +50,7 @@ check_type = "config"
 execute_rule = """
 rule "tidb-max-days"
 begin
-    if ToInt(config.GetValueByTagPath("log.file.max-days")) < 1 {
+    if ToInt(TidbConfig.GetValueByTagPath("log.file.max-days")) < 1 {
         return false
     } else {
         return true
@@ -71,7 +71,7 @@ check_type = "config"
 execute_rule = """
 rule "tidb-max-backups"
 begin
-    if ToInt(config.GetValueByTagPath("log.file.max-backups")) < 1 {
+    if ToInt(TidbConfig.GetValueByTagPath("log.file.max-backups")) < 1 {
         return false
     } else {
         return true
@@ -92,7 +92,7 @@ check_type = "config"
 execute_rule = """
 rule "tidb-log-level"
 begin
-    if ToString(config.GetValueByTagPath("log.level")) == "debug" {
+    if ToString(TidbConfig.GetValueByTagPath("log.level")) == "debug" {
         return false
     } else {
         return true
@@ -113,7 +113,7 @@ check_type = "config"
 execute_rule = """
 rule "tidb-enable-streaming"
 begin
-    if ToBool(config.GetValueByTagPath("enable-streaming")) == true {
+    if ToBool(TidbConfig.GetValueByTagPath("enable-streaming")) == true {
         return false
     } else {
         return true
@@ -134,7 +134,7 @@ check_type = "config"
 execute_rule = """
 rule "pdconfig-max-snapshot-count"
 begin
-    if ToInt(config.GetValueByTagPath("schedule.max-snapshot-count")) <= 0 {
+    if ToInt(PdConfig.GetValueByTagPath("schedule.max-snapshot-count")) <= 0 {
         return false
     } else {
         return true
@@ -155,7 +155,7 @@ check_type = "config"
 execute_rule = """
 rule "pdconfig-max-pending-peer-count"
 begin
-    if ToInt(config.GetValueByTagPath("schedule.max-pending-peer-count")) <= 0 {
+    if ToInt(PdConfig.GetValueByTagPath("schedule.max-pending-peer-count")) <= 0 {
         return false
     } else {
         return true
@@ -176,7 +176,7 @@ check_type = "config"
 execute_rule = """
 rule "pdconfig-leader-schedule-limit"
 begin
-    if ToInt(config.GetValueByTagPath("schedule.leader-schedule-limit")) <= 0 {
+    if ToInt(PdConfig.GetValueByTagPath("schedule.leader-schedule-limit")) <= 0 {
         return false
     } else {
         return true
@@ -197,8 +197,8 @@ check_type = "config"
 execute_rule = """
 rule "pdconfig-replica-schedule-limit-a"
 begin
-    if ToInt(config.GetValueByTagPath("schedule.replica-schedule-limit")) <= 0
-       || ToInt(config.GetValueByTagPath("schedule.replica-schedule-limit")) > 64 {
+    if ToInt(PdConfig.GetValueByTagPath("schedule.replica-schedule-limit")) <= 0
+       || ToInt(PdConfig.GetValueByTagPath("schedule.replica-schedule-limit")) > 64 {
         return false
     } else {
         return true
@@ -219,8 +219,8 @@ check_type = "config"
 execute_rule = """
 rule "pdconfig-merge-schedule-limit"
 begin
-    if ToInt(config.GetValueByTagPath("schedule.merge-schedule-limit")) <= 0
-       || ToInt(config.GetValueByTagPath("schedule.merge-schedule-limit")) > 16 {
+    if ToInt(PdConfig.GetValueByTagPath("schedule.merge-schedule-limit")) <= 0
+       || ToInt(PdConfig.GetValueByTagPath("schedule.merge-schedule-limit")) > 16 {
         return false
     } else {
         return true
@@ -241,8 +241,8 @@ check_type = "config"
 execute_rule = """
 rule "pdconfig-hot-region-schedule-limit"
 begin
-    if ToInt(config.GetValueByTagPath("schedule.hot-region-schedule-limit")) <= 0
-       || ToInt(config.GetValueByTagPath("schedule.hot-region-schedule-limit")) > 8 {
+    if ToInt(PdConfig.GetValueByTagPath("schedule.hot-region-schedule-limit")) <= 0
+       || ToInt(PdConfig.GetValueByTagPath("schedule.hot-region-schedule-limit")) > 8 {
         return false
     } else {
         return true
@@ -265,7 +265,7 @@ check_type = "config"
 execute_rule = """
 rule "pdconfig-store limit-n-add-peer"
 begin
-    if ElemInRange(FlatMap(config.GetValueByTagPath("schedule.store-limit"),"add-peer"),0, 100) {
+    if ElemInRange(FlatMap(PdConfig.GetValueByTagPath("schedule.store-limit"),"add-peer"),0, 100) {
         return true
     }else {
         return false
@@ -286,7 +286,7 @@ check_type = "config"
 execute_rule = """
 rule "pdconfig-store limit-n-remove-peer"
 begin
-    if ElemInRange(FlatMap(config.GetValueByTagPath("schedule.store-limit"),"remove-peer"),0, 100) {
+    if ElemInRange(FlatMap(PdConfig.GetValueByTagPath("schedule.store-limit"),"remove-peer"),0, 100) {
         return true
     }else {
         return false
@@ -307,8 +307,8 @@ check_type = "config"
 execute_rule = """
 rule "pdconfig-replica-schedule-limit-b"
 begin
-    if ToInt(config.GetValueByTagPath("schedule.replica-schedule-limit"))
-        > ToInt(config.GetValueByTagPath("schedule.region-schedule-limit")) {
+    if ToInt(PdConfig.GetValueByTagPath("schedule.replica-schedule-limit"))
+        > ToInt(PdConfig.GetValueByTagPath("schedule.region-schedule-limit")) {
         return false
     } else {
         return true
@@ -329,7 +329,7 @@ check_type = "config"
 execute_rule = """
 rule "pdconfig-max-days"
 begin
-    if ToInt(config.GetValueByTagPath("log.file.max-days")) <= 0 {
+    if ToInt(PdConfig.GetValueByTagPath("log.file.max-days")) <= 0 {
         return false
     } else {
         return true
@@ -350,7 +350,7 @@ check_type = "config"
 execute_rule = """
 rule "pdconfig-max-backups"
 begin
-    if ToInt(config.GetValueByTagPath("log.file.max-backups")) <= 0 {
+    if ToInt(PdConfig.GetValueByTagPath("log.file.max-backups")) <= 0 {
         return false
     } else {
         return true
@@ -371,7 +371,7 @@ check_type = "config"
 execute_rule = """
 rule "pdconfig-log-level"
 begin
-    if ToString(config.GetValueByTagPath("log.level")) == "debug" {
+    if ToString(PdConfig.GetValueByTagPath("log.level")) == "debug" {
         return false
     } else {
         return true
