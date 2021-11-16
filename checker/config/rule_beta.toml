@@ -39,7 +39,7 @@ end
 name_struct = "TikvConfig"
 expect_res = ""   #
 warn_level = "warning"
-version = "v5.0.1"
+version = "v5.0.0||v5.0.1"
 
 [[rule]]
 id = 100
@@ -192,7 +192,7 @@ version = "> v4.0.0"
 id = 203
 name = "pdconfig-replica-schedule-limit-a"
 description = "同时进行 replica 调度的任务个数。"
-variation =  "PdConfig.schedule.replica-schedule-limit,PdConfig.schedule.replica-schedule-limit"
+variation =  "PdConfig.schedule.replica-schedule-limit"
 check_type = "config"
 execute_rule = """
 rule "pdconfig-replica-schedule-limit-a"

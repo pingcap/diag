@@ -17,6 +17,7 @@ import (
 	"context"
 	"encoding/csv"
 	"fmt"
+	"github.com/Masterminds/semver"
 	"github.com/pingcap/tiup/pkg/cluster/spec"
 	"gopkg.in/yaml.v3"
 	"io"
@@ -63,6 +64,7 @@ type FileFetcher struct {
 	// set during processing
 	clusterMeta *spec.ClusterMeta
 	clusterJSON *collector.ClusterJSON
+	outDirPath string
 }
 
 type FileFetcherOpt func(ff *FileFetcher) error
@@ -72,6 +74,16 @@ func WithCheckFlag(flags ...CheckFlag) FileFetcherOpt {
 		for _, flag := range flags {
 			ff.checkFlag |= flag
 		}
+		return nil
+	}
+}
+
+func WithOutputDir(outDir string) FileFetcherOpt {
+	return func(ff *FileFetcher) error {
+		if err := os.MkdirAll(outDir, 0755); err != nil {
+			return err
+		}
+		ff.outDirPath = outDir
 		return nil
 	}
 }
@@ -92,7 +104,6 @@ func NewFileFetcher(dataDirPath string, opts ...FileFetcherOpt) (*FileFetcher, e
 // FetchData retrieve config data from file path, and filter rules by component version
 // dataPath is the path to the top folder which contain the data collected by diag collect.
 func (f *FileFetcher) FetchData(rules *config.RuleSpec) (*proto.SourceDataV2, proto.RuleSet, error) {
-
 	if err := f.loadClusterMetaData(); err != nil {
 		return nil, nil, err
 	}
@@ -161,49 +172,9 @@ func (f *FileFetcher) FetchData(rules *config.RuleSpec) (*proto.SourceDataV2, pr
 			}
 			sourceData.DashboardData.OldVersionProcesskey.GcLifeTime = int(gcLifeTime.Nanoseconds() / 1e9)
 		}
-
 		if err := f.loadSlowLog(ctx, sourceData); err != nil {
 			return nil, nil, err
 		}
-
-		//{
-		//	reader, err := os.Open(f.genInfoSchemaCSVPath("avg_process_time_by_plan.csv"))
-		//	if err != nil {
-		//		return nil, nil, err
-		//	}
-		//	defer reader.Close()
-		//	data, err := f.loadSlowPlanData(reader)
-		//	if err != nil {
-		//		return nil, nil, err
-		//	}
-		//	sourceData.DashboardData.ExecutionPlanInfoList = data
-		//}
-		//{
-		//	reader, err := os.Open(f.genInfoSchemaCSVPath("key_old_version_plan.csv"))
-		//	if err != nil {
-		//		return nil, nil, err
-		//	}
-		//	defer reader.Close()
-		//	data, err := f.loadDigest(reader)
-		//	if err != nil {
-		//		return nil, nil, err
-		//	}
-		//	sourceData.DashboardData.OldVersionProcesskeyCount.DataList = data
-		//	sourceData.DashboardData.OldVersionProcesskeyCount.Count = len(data)
-		//}
-		//{
-		//	reader, err := os.Open(f.genInfoSchemaCSVPath("skip_toomany_keys_plan.csv"))
-		//	if err != nil {
-		//		return nil, nil, err
-		//	}
-		//	defer reader.Close()
-		//	data, err := f.loadDigest(reader)
-		//	if err != nil {
-		//		return nil, nil, err
-		//	}
-		//	sourceData.DashboardData.TombStoneStatistics.DataList = data
-		//	sourceData.DashboardData.TombStoneStatistics.Count = len(data)
-		//}
 	}
 
 	return sourceData, rSet, nil
@@ -301,12 +272,8 @@ func (f *FileFetcher) loadSlowLog(ctx context.Context, sourceData *proto.SourceD
 	avgProcessTimePlanAcc, err := NewAvgProcessTimePlanAccumulator(idxLookUp)
 	if err != nil {
 		return err
-	}
-	if err := os.MkdirAll(path.Join(f.dataDirPath, "report"), 0755); err != nil {
-		return err
-	}
-	{
-		csvFile, err := os.Create( path.Join(f.dataDirPath, "report","poor_effective_plan.csv"))
+	}else if len(f.outDirPath) >0 {
+		csvFile, err := os.Create( path.Join(f.outDirPath,"poor_effective_plan.csv"))
 		if err != nil {
 			return err
 		}
@@ -317,21 +284,20 @@ func (f *FileFetcher) loadSlowLog(ctx context.Context, sourceData *proto.SourceD
 	scanOldVersionPlanAcc, err := NewScanOldVersionPlanAccumulator(idxLookUp)
 	if err != nil {
 		return err
-	}
-	{
-		csvFile, err := os.Create(path.Join(f.dataDirPath,"report","old_version_count.csv"))
+	}else if len(f.outDirPath) >0 {
+		csvFile, err := os.Create(path.Join(f.outDirPath,"old_version_count.csv"))
 		if err != nil {
 			return err
 		}
 		defer csvFile.Close()
 		scanOldVersionPlanAcc.setCSVWriter(csvFile)
 	}
+
 	skipDeletedCntPlanAcc, err := NewSkipDeletedCntPlanAccumulator(idxLookUp)
 	if err != nil {
 		return err
-	}
-	{
-		csvFile, err := os.Create(path.Join(f.dataDirPath, "report","scan_key_skip.csv"))
+	}else if len(f.outDirPath) >0 {
+		csvFile, err := os.Create(path.Join(f.outDirPath,"scan_key_skip.csv"))
 		if err != nil {
 			return err
 		}
@@ -575,6 +541,10 @@ func (f *FileFetcher) getClusterVersion() (string,error) {
 			return "", errors.New("cluster meta is nil")
 		}
 		return f.clusterMeta.Version, nil
+	}
+	// use Topology.Version first
+	if _, err := semver.NewVersion(f.clusterJSON.Topology.Version); err == nil {
+		return f.clusterJSON.Topology.Version, nil
 	}
 	// use tidb image version
 	if len(f.clusterJSON.Topology.TiDB) == 0 {

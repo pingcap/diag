@@ -17,6 +17,7 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"path"
 
 	"github.com/pingcap/diag/checker/proto"
 	"github.com/pingcap/tiup/pkg/logger/log"
@@ -43,7 +44,7 @@ func NewResultWrapper(data *proto.SourceDataV2, rs map[string]*proto.Rule, sp st
 func (w *ResultWrapper) Output(checkresult map[string]proto.PrintTemplate) error {
 	// todo@toto find rule check result
 	// print OutputMetaData
-	writer, err := NewCheckerWriter(fmt.Sprintf("%s/report", w.storePath), fmt.Sprintf("%s-%s.txt", "checker", w.include))
+	writer, err := NewCheckerWriter(w.storePath, fmt.Sprintf("%s-%s.txt", "checker", w.include))
 	if err != nil {
 		log.Errorf("create file failed %+v", err.Error())
 		return err
@@ -76,13 +77,13 @@ func (w *ResultWrapper) Output(checkresult map[string]proto.PrintTemplate) error
 		writer.WriteString(fmt.Sprintln("- Variation: ", rule.Variation))
 		writer.WriteString(fmt.Sprintln("- Alerting Rule: ", rule.AlertingRule))
 		if len(rule.ExpectRes) > 0 {
-			writer.WriteString(fmt.Sprintln("- Suggestion: ", rule.ExpectRes))
+			writer.WriteString(fmt.Sprintln("- For more information, please visit: ", rule.ExpectRes))
 		}
 		writer.WriteString(fmt.Sprintln("- Check Result: "))
 		printer.Print(writer)
 		writer.WriteString("\n")
 	}
-	writer.WriteString(fmt.Sprintf("Result report is saved at %s/report\n", w.storePath))
+	writer.WriteString(fmt.Sprintf("Result report is saved at %s\n", w.storePath))
 	return nil
 }
 
@@ -99,12 +100,12 @@ func (w *CheckerWriter) Flush() error {
 	return w.termWriter.Flush()
 }
 
-func NewCheckerWriter(path string, filename string) (*CheckerWriter, error) {
-	if err := os.MkdirAll(path, 0777); err != nil {
+func NewCheckerWriter(dirPath string, filename string) (*CheckerWriter, error) {
+	if err := os.MkdirAll(dirPath, 0777); err != nil {
 		log.Errorf("create path failed, %+v", err.Error())
 		return nil, err
 	}
-	f, err := os.Create(fmt.Sprintf("%s/%s", path, filename))
+	f, err := os.Create(path.Join(dirPath, filename))
 	if err != nil {
 		log.Errorf("create file failed, %+v", err.Error())
 		return nil, err
