@@ -116,7 +116,7 @@ type MonitorSpec struct {
 }
 
 // Type implements Component interface
-func (s *MonitorSpec) Type() ComponentType { return ComponentTypePD }
+func (s *MonitorSpec) Type() ComponentType { return ComponentTypeMonitor }
 
 // Host implements Component interface
 func (s *MonitorSpec) Host() string { return s.ComponentSpec.Host }
@@ -178,7 +178,7 @@ type TiKVSpec struct {
 }
 
 // Type implements Component interface
-func (s *TiKVSpec) Type() ComponentType { return ComponentTypePD }
+func (s *TiKVSpec) Type() ComponentType { return ComponentTypeTiKV }
 
 // Host implements Component interface
 func (s *TiKVSpec) Host() string { return s.ComponentSpec.Host }
@@ -209,7 +209,7 @@ type TiDBSpec struct {
 }
 
 // Type implements Component interface
-func (s *TiDBSpec) Type() ComponentType { return ComponentTypePD }
+func (s *TiDBSpec) Type() ComponentType { return ComponentTypeTiDB }
 
 // Host implements Component interface
 func (s *TiDBSpec) Host() string { return s.ComponentSpec.Host }
@@ -240,7 +240,7 @@ type TiFlashSpec struct {
 }
 
 // Type implements Component interface
-func (s *TiFlashSpec) Type() ComponentType { return ComponentTypePD }
+func (s *TiFlashSpec) Type() ComponentType { return ComponentTypeTiFlash }
 
 // Host implements Component interface
 func (s *TiFlashSpec) Host() string { return s.ComponentSpec.Host }
@@ -271,7 +271,7 @@ type PumpSpec struct {
 }
 
 // Type implements Component interface
-func (s *PumpSpec) Type() ComponentType { return ComponentTypePD }
+func (s *PumpSpec) Type() ComponentType { return ComponentTypePump }
 
 // Host implements Component interface
 func (s *PumpSpec) Host() string { return s.ComponentSpec.Host }
@@ -302,7 +302,7 @@ type DrainerSpec struct {
 }
 
 // Type implements Component interface
-func (s *DrainerSpec) Type() ComponentType { return ComponentTypePD }
+func (s *DrainerSpec) Type() ComponentType { return ComponentTypeDrainer }
 
 // Host implements Component interface
 func (s *DrainerSpec) Host() string { return s.ComponentSpec.Host }
@@ -333,7 +333,7 @@ type TiCDCSpec struct {
 }
 
 // Type implements Component interface
-func (s *TiCDCSpec) Type() ComponentType { return ComponentTypePD }
+func (s *TiCDCSpec) Type() ComponentType { return ComponentTypeTiCDC }
 
 // Host implements Component interface
 func (s *TiCDCSpec) Host() string { return s.ComponentSpec.Host }
@@ -365,7 +365,7 @@ type TiSparkCSpec struct {
 }
 
 // Type implements Component interface
-func (s *TiSparkCSpec) Type() ComponentType { return ComponentTypePD }
+func (s *TiSparkCSpec) Type() ComponentType { return ComponentTypeTiSpark }
 
 // Host implements Component interface
 func (s *TiSparkCSpec) Host() string { return s.ComponentSpec.Host }
