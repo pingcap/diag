@@ -512,7 +512,7 @@ func (cfg *TikvConfigData) CheckNil() bool {
 }
 
 func (cfg *TikvConfigData) ActingName() string {
-	return "config"
+	return cfg.GetComponent()
 }
 
 func NewTikvConfigData() *TikvConfigData {

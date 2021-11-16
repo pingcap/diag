@@ -3,6 +3,7 @@ package engine
 import (
 	"fmt"
 	"regexp"
+	"strings"
 
 	"github.com/pingcap/diag/checker/proto"
 	"github.com/pingcap/diag/checker/render"
@@ -105,7 +106,57 @@ func (w *Wrapper) PackageResult(hd *proto.HandleData, resultset map[string]inter
 	return nil
 }
 
-func (w *Wrapper) GetDataSet(namestruct string) ([]*proto.HandleData, error) {
+func (w *Wrapper) GetDataSet(namestructs string) ([]*proto.HandleData, error) {
+	// repackage data
+	// todo@toto split namestruct and fetch n * n data
+	valClasses := w.SplitNamestruct(namestructs)
+	chainData := make([][]proto.Data, 0)
+	for _, valClass := range valClasses {
+		singleclassData, err := w.FindData(valClass)
+		if err != nil {
+			log.Error(fmt.Sprintf("can't find data %s", err))
+			return nil, err
+		}
+		chainData = append(chainData, singleclassData)
+
+	}
+	cd := w.CrossData(chainData)
+	return w.GenHandleData(cd), nil
+}
+
+func (w *Wrapper) CrossData(oriData [][]proto.Data) [][]proto.Data {
+	if len(oriData) <= 1 { // 1 * 2 -> 2 * 1
+		crossData := make([][]proto.Data, 0)
+		for _, d := range oriData[0] {
+			crossData = append(crossData, []proto.Data{d})
+		}
+		return crossData
+	}
+	newComs := w.CrossData(oriData[1:])
+	nCross := make([][]proto.Data, 0)
+	for _, dgroup := range oriData[0] {
+		for _, newCom := range newComs { // 1 * 2
+			nRow := append(newCom, dgroup)
+			nCross = append(nCross, nRow)
+		}
+	}
+	return nCross
+}
+
+func (w *Wrapper) GenHandleData(ds [][]proto.Data) []*proto.HandleData {
+	hds := make([]*proto.HandleData, 0)
+	for _, d := range ds {
+		hds = append(hds, proto.NewHandleData(d))
+	}
+	return hds
+}
+
+func (w *Wrapper) SplitNamestruct(namestructs string) []string {
+	ns := strings.Split(namestructs, ",")
+	return ns
+}
+
+func (w *Wrapper) FindData(namestruct string) ([]proto.Data, error) {
 	match, err := regexp.MatchString("(.*)Config", namestruct)
 	if err != nil {
 		log.Error("regexp failed")
@@ -116,26 +167,14 @@ func (w *Wrapper) GetDataSet(namestruct string) ([]*proto.HandleData, error) {
 		if !ok {
 			return nil, fmt.Errorf("no such namestruct: %s", namestruct)
 		}
-		// todo@toto slice
-		dataset := make([]*proto.HandleData, 0)
-		for _, conf := range configData {
-			uqiTag := fmt.Sprintf("%s_%s:%d", conf.GetComponent(), conf.GetHost(), conf.GetPort())
-			handledata := &proto.HandleData{
-				UqiTag: uqiTag,
-				Data:   []proto.Data{conf},
-			}
-			handledata.CheckValid()
-			dataset = append(dataset, handledata)
+		reData := make([]proto.Data, 0)
+		for _, d := range configData {
+			reData = append(reData, d)
 		}
-		return dataset, nil
+		return reData, nil
 	} else if namestruct == "performance.dashboard" {
 		sqlPerformance := w.SourceData.DashboardData
-		handleData := &proto.HandleData{
-			UqiTag: namestruct,
-			Data:   []proto.Data{sqlPerformance},
-		}
-		handleData.CheckValid()
-		return []*proto.HandleData{handleData}, nil
+		return []proto.Data{sqlPerformance}, nil
 	}
 	return nil, fmt.Errorf("no such namestruct: %s", namestruct)
 }

@@ -78,7 +78,7 @@ type HandleData struct {
 	IsValid bool
 }
 
-func (hd *HandleData) CheckValid() {
+func (hd *HandleData) checkValid() {
 	for _, data := range hd.Data {
 		if data == nil {
 			hd.IsValid = false
@@ -88,6 +88,25 @@ func (hd *HandleData) CheckValid() {
 		}
 	}
 	hd.IsValid = true
+}
+
+func NewHandleData(ds []Data) *HandleData {
+	if len(ds) < 1 {
+		return &HandleData{UqiTag: "nodata", IsValid: false}
+	}
+	hd := &HandleData{UqiTag: "", Data: ds}
+	htags := make([]string, 0)
+	for _, d := range ds {
+		conf, ok := d.(Config)
+		if ok {
+			htags = append(htags, fmt.Sprintf("%s_%s:%d", conf.GetComponent(), conf.GetHost(), conf.GetPort()))
+		} else {
+			htags = append(htags, d.ActingName())
+		}
+	}
+	hd.UqiTag = strings.Join(htags, "-")
+	hd.checkValid()
+	return hd
 }
 
 type PrintTemplate interface {
