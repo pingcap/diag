@@ -338,6 +338,7 @@ func (f *FileFetcher) loadSlowLog(ctx context.Context, sourceData *proto.SourceD
 		skipDeletedCntPlanAcc.setCSVWriter(csvFile)
 	}
 	closers := make([]io.Closer, 0)
+	var cnt int64
 	for _, spec := range f.getComponents(proto.TidbComponentName) {
 		slowLogPath := path.Join(f.dataDirPath, spec.Host(), "log", "tidb_slow_query.log")
 		if deployDir, ok := spec.Attributes()["deploy_dir"]; ok {
@@ -350,20 +351,27 @@ func (f *FileFetcher) loadSlowLog(ctx context.Context, sourceData *proto.SourceD
 		}
 		// todo, how to close
 		closers = append(closers, retriever)
-		data, err := retriever.retrieve(ctx)
-		if err != nil {
-			log.Warn("retrieve slow log failed", zap.Error(err))
-			continue
-		}
-		for _, row := range data {
-			if err := avgProcessTimePlanAcc.feed(row); err != nil {
-				log.Warn("feed row to accumulator failed", zap.Error(err))
+		for true {
+			rows, err := retriever.retrieve(ctx)
+			if err != nil {
+				log.Warn("retrieve slow log failed", zap.Error(err))
+				continue
 			}
-			if err := scanOldVersionPlanAcc.feed(row); err != nil {
-				log.Warn("feed row to accumulator failed", zap.Error(err))
+			// if return rows are empty, this file reaches end.
+			if len(rows) == 0 {
+				break
 			}
-			if err := skipDeletedCntPlanAcc.feed(row); err != nil {
-				log.Warn("feed row to accumulator failed", zap.Error(err))
+			cnt += int64(len(rows))
+			for _, row := range rows {
+				if err := avgProcessTimePlanAcc.feed(row); err != nil {
+					log.Warn("feed row to accumulator failed", zap.Error(err))
+				}
+				if err := scanOldVersionPlanAcc.feed(row); err != nil {
+					log.Warn("feed row to accumulator failed", zap.Error(err))
+				}
+				if err := skipDeletedCntPlanAcc.feed(row); err != nil {
+					log.Warn("feed row to accumulator failed", zap.Error(err))
+				}
 			}
 		}
 	}
@@ -388,8 +396,8 @@ func (f *FileFetcher) loadSlowLog(ctx context.Context, sourceData *proto.SourceD
 			return err
 		}
 		sourceData.DashboardData.TombStoneStatistics.Count = len(digestPair)
-
 	}
+	log.Debug("read all slow log", zap.Int64("row cnt", cnt))
 	return nil
 }
 

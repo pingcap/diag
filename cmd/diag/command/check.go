@@ -30,10 +30,17 @@ import (
 func newCheckCmd() *cobra.Command {
 	var datapath = ""
 	var inc = []string{"config"}
+	var logLevel = ""
 	cmd := &cobra.Command{
 		Use:   "check",
 		Short: "Check config collected from a TiDB cluster",
 		RunE: func(cmd *cobra.Command, args []string) error {
+			if logLevel != "info" {
+				l := zap.NewAtomicLevel()
+				if l.UnmarshalText([]byte(logLevel)) == nil {
+					log.SetLevel(l.Level())
+				}
+			}
 			log.Debug("start checker")
 			// TODO: integrate fetcher
 
@@ -101,6 +108,7 @@ func newCheckCmd() *cobra.Command {
 	}
 
 	cmd.Flags().StringVar(&datapath, "datapath", "./data", "path to collected data")
+	cmd.Flags().StringVar(&logLevel, "loglevel", "info", "log level, supported value is debug, info")
 	cmd.Flags().StringSliceVar(&inc, "include", inc, "types of data to check, supported value is config, performance")
 	return cmd
 }
