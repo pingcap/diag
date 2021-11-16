@@ -351,6 +351,7 @@ func buildRealtimeConfigCollectingTasks(_ context.Context, displayMode string, i
 	switch inst.Type() {
 	case models.ComponentTypePD:
 		configs = append(configs, rtConfig{"config.json", inst.ConfigURL()})
+		configs = append(configs, rtConfig{"store.json", fmt.Sprintf("%s:%d/pd/api/v1/stores", inst.Host(), inst.StatusPort())})
 		configs = append(configs, rtConfig{"placement-rule.json", fmt.Sprintf("%s:%d/pd/api/v1/config/placement-rule", inst.Host(), inst.StatusPort())})
 	case models.ComponentTypeTiKV:
 		configs = append(configs, rtConfig{"config.json", inst.ConfigURL()})
