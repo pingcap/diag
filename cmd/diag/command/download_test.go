@@ -1,8 +1,9 @@
 package command
 
 import (
-	"github.com/onsi/gomega"
 	"testing"
+
+	"github.com/onsi/gomega"
 )
 
 func Test_ParseURL(t *testing.T) {
@@ -18,7 +19,7 @@ func Test_ParseURL(t *testing.T) {
 	err = parseURL(opt, " ")
 	g.Expect(err).To(gomega.MatchError("invalid url"))
 
-	err = parseURL(opt, "https://clinic.com/api/files/uuid")
+	err = parseURL(opt, "https://clinic.com/diag/files?uuid=uuid")
 	g.Expect(err).To(gomega.Succeed())
 
 	g.Expect(opt.endpoint).To(gomega.Equal("https://clinic.com"))
