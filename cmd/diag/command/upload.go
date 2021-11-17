@@ -33,6 +33,7 @@ type preCreateResponse struct {
 type uploadOptions struct {
 	filePath string
 	alias    string
+	issue    string
 	clientOptions
 }
 
@@ -65,6 +66,7 @@ func newUploadCommand() *cobra.Command {
 
 	cmd.Flags().StringVarP(&opt.alias, "alias", "", "", "the alias of upload file.")
 	cmd.Flags().StringVarP(&opt.endpoint, "endpoint", "", "", "the clinic service endpoint.")
+	cmd.Flags().StringVarP(&opt.issue, "issue", "", "", "related jira oncall issue, example: ONCALL-1131")
 	cmd.MarkFlagRequired("endpoint")
 
 	return cmd
@@ -107,6 +109,7 @@ func preCreate(uuid string, fileLen int64, originalName string, opt *uploadOptio
 	q.Add("uuid", uuid)
 	q.Add("fileLen", fmt.Sprintf("%d", fileLen))
 	q.Add("alias", opt.alias)
+	q.Add("issue", opt.issue)
 	q.Add("orignalName", originalName)
 	req.URL.RawQuery = q.Encode()
 
