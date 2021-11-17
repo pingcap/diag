@@ -167,6 +167,7 @@ func UploadFile(presp *preCreateResponse, fileSize int64, flush FlushUploadFile,
 	}
 	defer reader.Close()
 
+	fmt.Println("")
 	waitGroup := sync.WaitGroup{}
 	for i := int64(presp.Partseq); i < int64(totalBlock); i++ {
 		eachSize := presp.BlockBytes
@@ -186,14 +187,14 @@ func UploadFile(presp *preCreateResponse, fileSize int64, flush FlushUploadFile,
 			waitGroup.Add(1)
 			go func(serial int64) {
 				defer waitGroup.Done()
-				fmt.Printf(">>>>>>>>>")
+				fmt.Printf(">")
 
 				if err = uploadPart(serial, s); err != nil {
 					fmt.Fprintf(os.Stderr, "cat: upload file failed: %s\n", err.Error())
 					os.Exit(1)
 				}
 
-				fmt.Printf(">>>>>>>>>")
+				fmt.Printf(">")
 			}(i + 1)
 		}
 	}
