@@ -128,14 +128,16 @@ func (m *Manager) CollectClusterInfo(
 	var start time.Time
 	if offset, err := strconv.Atoi(opt.ScrapeBegin); err == nil && offset < 0 {
 		start = end.Add(time.Hour * time.Duration(offset))
-		// update time string in setting to ensure all collectors work properly
-		opt.ScrapeBegin = start.Format(time.RFC3339)
 	} else {
 		start, err = utils.ParseTime(opt.ScrapeBegin)
 		if err != nil {
 			return err
 		}
 	}
+
+	// update time strings in setting to ensure all collectors work properly
+	opt.ScrapeBegin = start.Format(time.RFC3339)
+	opt.ScrapeEnd = end.Format(time.RFC3339)
 
 	resultDir, err := m.getOutputDir(cOpt.Dir)
 	if err != nil {
