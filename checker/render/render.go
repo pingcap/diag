@@ -88,7 +88,7 @@ func (w *ResultWrapper) Output(checkresult map[string]proto.PrintTemplate) error
 	for ruleType, rules := range typeRules {
 		if ruleType == "config" {
 			writer.WriteString("### Configuration\n")
-		} else if ruleType == "performance.dashboard" {
+		} else if ruleType == "performance" {
 			writer.WriteString("### SQL Performance\n")
 		}
 		for _, rule := range rules {
