@@ -38,17 +38,20 @@ const (
 	CollectTypeMonitor = "monitor"
 	CollectTypeLog     = "log"
 	CollectTypeConfig  = "config"
-	CollectTypeSchema  = "info_schema"
+	CollectTypeSchema  = "db_vars"
 	CollectModeTiUP    = "tiup-cluster"  // collect from a tiup-cluster deployed cluster
 	CollectModeK8s     = "tidb-operator" // collect from a tidb-operator deployed cluster
 
 )
 
-var CollectAllSet set.StringSet = set.NewStringSet( // collect all types by default
+var CollectDefaultSet = set.NewStringSet(
 	CollectTypeSystem,
 	CollectTypeMonitor,
 	CollectTypeLog,
 	CollectTypeConfig,
+)
+
+var CollectAdditionSet = set.NewStringSet(
 	CollectTypeSchema,
 )
 
