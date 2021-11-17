@@ -111,7 +111,6 @@ func (f *FileFetcher) FetchData(rules *config.RuleSpec) (*proto.SourceDataV2, pr
 	if err != nil {
 		return nil, nil, err
 	}
-
 	filterFunc := func(item config.RuleItem) (bool, error) {
 		// filter on version
 		ok, err := item.Version.Contain(clusterVersion)
@@ -559,7 +558,7 @@ func (f *FileFetcher) getClusterVersion() (string,error) {
 		return "", errors.New("can not infer tidb version")
 	}
 	mainVersion := strings.Split(imageTag[1], "-")[0]
-	if strings.HasPrefix(mainVersion, "v") {
+	if !strings.HasPrefix(mainVersion, "v") {
 		mainVersion = fmt.Sprintf("v%s", mainVersion)
 	}
 	return mainVersion, nil
