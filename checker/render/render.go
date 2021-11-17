@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"os"
 	"path"
+	"sort"
 
 	"github.com/pingcap/diag/checker/proto"
 	"github.com/pingcap/tiup/pkg/logger/log"
@@ -50,6 +51,11 @@ func (w *ResultWrapper) GroupByType() map[string][]*proto.Rule {
 			ruleslice = []*proto.Rule{rule}
 		}
 		ruleMapping[rule.CheckType] = ruleslice
+	}
+	for _, rs := range ruleMapping {
+		sort.Slice(rs, func(i, j int) bool {
+			return rs[i].ID < rs[j].ID
+		})
 	}
 	return ruleMapping
 }
