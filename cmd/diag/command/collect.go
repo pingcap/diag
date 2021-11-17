@@ -76,7 +76,9 @@ func newCollectCmd() *cobra.Command {
 				defer f.Close()
 				s := bufio.NewScanner(f)
 				for s.Scan() {
-					cOpt.MetricsFilter = append(cOpt.MetricsFilter, s.Text())
+					if len(s.Text()) > 0 {
+						cOpt.MetricsFilter = append(cOpt.MetricsFilter, s.Text())
+					}
 				}
 			}
 
