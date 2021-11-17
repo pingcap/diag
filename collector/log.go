@@ -44,6 +44,7 @@ type LogCollectOptions struct {
 	limit     int               // scp rate limit
 	resultDir string
 	fileStats map[string][]CollectStat
+	compress  bool
 }
 
 // Desc implements the Collector interface
@@ -251,6 +252,7 @@ func (c *LogCollectOptions) Collect(m *Manager, cls *models.TiDBCluster) error {
 							inst.GetHost(),
 							true,
 							c.limit,
+							c.compress,
 						)
 					collectTasks = append(
 						collectTasks,

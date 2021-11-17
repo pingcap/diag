@@ -80,7 +80,7 @@ type CollectOptions struct {
 	Dir             string // target directory to store collected data
 	Limit           int    // rate limit of SCP
 	CompressMetrics bool   // compress of files during collecting
-	CompressLogs    bool   // compress of files during collecting
+	CompressScp     bool   // compress of files during collecting
 	ExitOnError     bool   // break the process and exit when an error occurs
 }
 
@@ -230,6 +230,7 @@ func (m *Manager) CollectClusterInfo(
 				limit:       cOpt.Limit,
 				resultDir:   resultDir,
 				fileStats:   make(map[string][]CollectStat),
+				compress:    cOpt.CompressScp,
 			})
 	}
 
@@ -242,6 +243,7 @@ func (m *Manager) CollectClusterInfo(
 				limit:       cOpt.Limit,
 				resultDir:   resultDir,
 				fileStats:   make(map[string][]CollectStat),
+				compress:    cOpt.CompressScp,
 			})
 	}
 
