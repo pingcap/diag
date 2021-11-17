@@ -494,7 +494,7 @@ func (f *FileFetcher) genClusterJSONPath() string {
 }
 
 func (f *FileFetcher) genInfoSchemaCSVPath(fileName string) string {
-	return path.Join(f.dataDirPath, collector.DirNameInfoSchema, fileName)
+	return path.Join(f.dataDirPath, collector.DirNameSchema, fileName)
 }
 
 func (f *FileFetcher) GetComponent(meta *spec.ClusterMeta) []string {

@@ -41,35 +41,15 @@ type SchemaCollectOptions struct {
 	fileStats map[string][]CollectStat
 }
 
-type infoSchema struct {
+type schemaStruct struct {
 	filename string
 	sql      string
 }
 
-var infoSchemas []infoSchema = []infoSchema{
-	{
-		"avg_process_time_by_plan.csv", `
-SELECT a.Digest, a.Plan_Digest, a.avg_process_time, a.last_time FROM
-(
-SELECT Digest, Plan_Digest, AVG(Process_time) as avg_process_time, MAX('Time') as last_time FROM slow_query where Time BETWEEN DATE_SUB(CURRENT_TIMESTAMP(6), INTERVAL 7 DAY) AND CURRENT_TIMESTAMP(6) AND Process_keys>1000000 GROUP BY Digest,Plan_Digest
-) a join
-(
-SELECT Digest, COUNT(distinct(Plan_Digest)) as plan_count FROM slow_query where Time BETWEEN DATE_SUB(CURRENT_TIMESTAMP(6), INTERVAL 7 DAY) AND CURRENT_TIMESTAMP(6) AND Process_keys>1000000 GROUP BY Digest having plan_count > 1
-) b on a.Digest = b.Digest;`,
-	},
-	{
-		"key_old_version_plan.csv", `
-select distinct Digest, Plan_Digest
-FROM slow_query 
-WHERE process_keys > 10000 AND total_keys = 2 * process_keys and time > DATE_SUB(CURDATE(), INTERVAL 7 DAY)`,
-	},
+var collectedSchemas = []schemaStruct{
 	{
 		"mysql.tidb.csv", `
 select VARIABLE_NAME, VARIABLE_VALUE from mysql.tidb;`,
-	},
-	{
-		"skip_toomany_keys_plan.csv", `
-SELECT distinct Digest, Plan_Digest FROM slow_query WHERE ABS(Rocksdb_delete_skipped_count-Process_keys) <= 1000 AND Process_keys > 10000 AND Time > DATE_SUB(CURRENT_TIMESTAMP(6), INTERVAL 7 DAY);`,
 	},
 }
 
@@ -105,7 +85,7 @@ func (c *SchemaCollectOptions) Prepare(_ *Manager, _ *models.TiDBCluster) (map[s
 
 // Collect implements the Collector interface
 func (c *SchemaCollectOptions) Collect(m *Manager, topo *models.TiDBCluster) error {
-	err := os.Mkdir(filepath.Join(c.resultDir, "info_schema"), 0755)
+	err := os.Mkdir(filepath.Join(c.resultDir, DirNameSchema), 0755)
 	if err != nil {
 		return err
 	}
@@ -115,7 +95,7 @@ func (c *SchemaCollectOptions) Collect(m *Manager, topo *models.TiDBCluster) err
 
 	t := task.NewBuilder(m.DisplayMode).
 		Func(
-			"collect info_schema",
+			"collect db_vars",
 			func(ctx context.Context) error {
 				var db *sql.DB
 				for _, inst := range tidbInstants {
@@ -134,19 +114,14 @@ func (c *SchemaCollectOptions) Collect(m *Manager, topo *models.TiDBCluster) err
 					return fmt.Errorf("cannot connect to any TiDB instance")
 				}
 
-				_, err = db.Exec("USE information_schema;")
-				if err != nil {
-					return err
-				}
-
 				var errs []string
-				for _, s := range infoSchemas {
+				for _, s := range collectedSchemas {
 					rows, err := db.Query(s.sql)
 					if err != nil {
 						errs = append(errs, err.Error())
 						continue
 					}
-					err = sqltocsv.WriteFile(filepath.Join(c.resultDir, "info_schema", s.filename), rows)
+					err = sqltocsv.WriteFile(filepath.Join(c.resultDir, DirNameSchema, s.filename), rows)
 					if err != nil {
 						return err
 					}
@@ -157,7 +132,7 @@ func (c *SchemaCollectOptions) Collect(m *Manager, topo *models.TiDBCluster) err
 				return nil
 			},
 		).
-		BuildAsStep("  - Querying infoSchema")
+		BuildAsStep("  - Querying db_vars")
 
 	if err := t.Execute(ctx); err != nil {
 		if errorx.Cast(err) != nil {

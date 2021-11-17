@@ -36,7 +36,7 @@ const (
 	FileNameTiUPClusterMeta   = "meta.yaml"        // tiup-cluster topology
 	FileNameK8sClusterCRD     = "tidbcluster.json" // tidb-operator crd
 	FileNameK8sClusterMonitor = "tidbmonitor.json" // tidb-operator crd
-	DirNameInfoSchema         = "info_schema"
+	DirNameSchema             = "db_vars"
 )
 
 // MetaCollectOptions is the options collecting cluster meta

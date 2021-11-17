@@ -15,8 +15,10 @@ package command
 
 import (
 	"bufio"
+	"fmt"
 	"os"
 	"path"
+	"strings"
 	"time"
 
 	"github.com/pingcap/diag/collector"
@@ -36,13 +38,8 @@ func newCollectCmd() *cobra.Command {
 		},
 	}
 	cOpt := collector.CollectOptions{
-		Include: set.NewStringSet( // collect all types by default
-			collector.CollectTypeSystem,
-			collector.CollectTypeMonitor,
-			collector.CollectTypeLog,
-			collector.CollectTypeConfig,
-		),
-		Exclude: set.NewStringSet(),
+			Include: collector.CollectDefaultSet,
+			Exclude: set.NewStringSet(),
 	}
 	inc := make([]string, 0)
 	ext := make([]string, 0)
@@ -59,7 +56,7 @@ func newCollectCmd() *cobra.Command {
 			}
 
 			if collectAll {
-				cOpt.Include = collector.CollectAllSet
+				cOpt.Include.Join(collector.CollectAdditionSet)
 			} else if len(inc) > 0 {
 				cOpt.Include = set.NewStringSet(inc...)
 			}
@@ -91,8 +88,8 @@ func newCollectCmd() *cobra.Command {
 	cmd.Flags().StringVarP(&opt.ScrapeBegin, "from", "f", time.Now().Add(time.Hour*-2).Format(time.RFC3339), "start timepoint when collecting timeseries data")
 	cmd.Flags().StringVarP(&opt.ScrapeEnd, "to", "t", time.Now().Format(time.RFC3339), "stop timepoint when collecting timeseries data")
 	cmd.Flags().BoolVar(&collectAll, "all", false, "Collect all data")
-	cmd.Flags().StringSliceVar(&inc, "include", cOpt.Include.Slice(), "types of data to collect")
-	cmd.Flags().StringSliceVar(&ext, "exclude", cOpt.Exclude.Slice(), "types of data not to collect")
+	cmd.Flags().StringSliceVar(&inc, "include", nil, fmt.Sprintf("types of data to collect: default[%s] non-default[%s]", strings.Join(collector.CollectDefaultSet.Slice(), ","), strings.Join(collector.CollectAdditionSet.Slice(), ",")))
+	cmd.Flags().StringSliceVar(&ext, "exclude", nil, "types of data not to collect")
 	cmd.Flags().StringSliceVar(&cOpt.MetricsFilter, "metricsfilter", nil, "prefix of metrics to collect")
 	cmd.Flags().StringVar(&metricsConf, "metricsconfig", "", "config file of metricsfilter")
 	cmd.Flags().StringVarP(&cOpt.Dir, "output", "o", "", "output directory of collected data")
