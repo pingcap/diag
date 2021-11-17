@@ -107,7 +107,9 @@ func (w *ResultWrapper) Output(checkresult map[string]proto.PrintTemplate) error
 			writer.WriteString(fmt.Sprintln("#### Rule Name: ", rule.Name))
 			writer.WriteString(fmt.Sprintln("- RuleID: ", rule.ID))
 			writer.WriteString(fmt.Sprintln("- Variation: ", rule.Variation))
-			writer.WriteString(fmt.Sprintln("- Alerting Rule: ", rule.AlertingRule))
+			if len(rule.AlertingRule) > 0 {
+				writer.WriteString(fmt.Sprintln("- Alerting Rule: ", rule.AlertingRule))
+			}
 			if len(rule.ExpectRes) > 0 {
 				writer.WriteString(fmt.Sprintln("- For more information, please visit: ", rule.ExpectRes))
 			}
