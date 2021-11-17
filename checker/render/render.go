@@ -72,6 +72,7 @@ func (w *ResultWrapper) Output(checkresult map[string]proto.PrintTemplate) error
 	defer func() {
 		writer.Flush()
 		writer.Close()
+		fmt.Printf("Result report is saved at %s\n", w.storePath)
 	}()
 	writer.WriteString("# Check Result Report\n")
 	writer.WriteString(fmt.Sprintf("%s %s\n\n", w.Data.ClusterInfo.ClusterName, w.Data.ClusterInfo.BeginTime))
@@ -115,7 +116,6 @@ func (w *ResultWrapper) Output(checkresult map[string]proto.PrintTemplate) error
 			writer.WriteString("\n")
 		}
 	}
-	writer.WriteString(fmt.Sprintf("Result report is saved at %s\n", w.storePath))
 	return nil
 }
 
