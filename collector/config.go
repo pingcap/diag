@@ -40,6 +40,7 @@ type ConfigCollectOptions struct {
 	limit     int               // scp rate limit
 	resultDir string
 	fileStats map[string][]CollectStat
+	compress  bool
 }
 
 // Desc implements the Collector interface
@@ -253,6 +254,7 @@ func (c *ConfigCollectOptions) collectForTiUP(m *Manager, topo *models.TiDBClust
 						inst.Host(),
 						true,
 						c.limit,
+						c.compress,
 					)
 				collectTasks = append(
 					collectTasks,

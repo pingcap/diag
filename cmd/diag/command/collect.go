@@ -99,7 +99,7 @@ func newCollectCmd() *cobra.Command {
 	cmd.Flags().IntVarP(&cOpt.Limit, "limit", "l", 10000, "Limits the used bandwidth, specified in Kbit/s")
 	cmd.Flags().Uint64Var(&gOpt.APITimeout, "api-timeout", 10, "Timeout in seconds when querying PD APIs.")
 	cmd.Flags().BoolVar(&cOpt.CompressMetrics, "compress-metrics", true, "Compress collected metrics data.")
-	//cmd.Flags().BoolVar(&cOpt.CompressLogs, "compress-logs", false, "Compress collected log files.")
+	cmd.Flags().BoolVar(&cOpt.CompressScp, "compress-scp", true, "Compress when transfer config and logs.")
 	cmd.Flags().BoolVar(&cOpt.ExitOnError, "exit-on-error", false, "Stop collecting and exit if an error occurs.")
 
 	return cmd
