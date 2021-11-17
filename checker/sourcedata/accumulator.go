@@ -2,8 +2,11 @@ package sourcedata
 
 import (
 	"encoding/csv"
+	"fmt"
 	"github.com/pingcap/diag/checker/proto"
 	"github.com/pingcap/errors"
+	"github.com/pingcap/log"
+	"go.uber.org/zap"
 	"io"
 	"math"
 	"strconv"
@@ -20,9 +23,13 @@ type execTimeInfo struct {
 	lastOccurUnix          int64
 }
 
+func (info *execTimeInfo) state() string {
+	return fmt.Sprintf("cnt %+v, totalProcessTimeSecond %+v, lastOccurUnix %+v", info.cnt, info.totalProcessTimeSecond, info.lastOccurUnix)
+}
+
 func (info *execTimeInfo) update(cnt int, pTime float64, occurUnix int64) {
-	info.cnt = +cnt
-	info.totalProcessTimeSecond = +pTime
+	info.cnt =+ cnt
+	info.totalProcessTimeSecond =+ pTime
 	if occurUnix > info.lastOccurUnix {
 		info.lastOccurUnix = occurUnix
 	}
@@ -39,6 +46,7 @@ type avgProcessTimePlanAccumulator struct {
 	idxLookUp map[string]int
 	data      map[string]map[string]*execTimeInfo
 	csvWriter *csv.Writer
+	filterOutCnt int64
 }
 
 func (acc *avgProcessTimePlanAccumulator) setCSVWriter(w io.Writer) {
@@ -101,6 +109,7 @@ func (acc *avgProcessTimePlanAccumulator) feed(row []string) error {
 		return err
 	}
 	if processKeys <= 1000000 {
+		acc.filterOutCnt++
 		return nil
 	}
 	digest := row[acc.idxLookUp["Digest"]]
@@ -171,10 +180,22 @@ func (acc *avgProcessTimePlanAccumulator) build() (map[string][2]proto.Execution
 	return result, nil
 }
 
+func (acc *avgProcessTimePlanAccumulator) debugState() {
+	log.Debug("avgProcessTimePlanAccumulator", zap.Any("filterOutCnt", acc.filterOutCnt))
+	for sqlDigest, planDigest := range acc.data {
+		for pDigest, info := range planDigest {
+			log.Debug("avgProcessTimePlanAccumulator", zap.String("digest", sqlDigest),
+				zap.String("planDigest", pDigest),
+				zap.String("execInfo", info.state()))
+		}
+	}
+}
+
 type scanOldVersionPlanAccumulator struct {
 	idxLookUp map[string]int
 	data      map[string]map[string]struct{}
 	csvWriter *csv.Writer
+	filterOutCnt int64
 }
 
 // header must contain Process_keys, Process_time, Time
@@ -210,6 +231,7 @@ func (acc *scanOldVersionPlanAccumulator) feed(row []string) error {
 		return err
 	}
 	if processKeys <= 10000 {
+		acc.filterOutCnt++
 		return nil
 	}
 	totalKeys, err := strconv.Atoi(row[acc.idxLookUp["Total_keys"]])
@@ -217,6 +239,7 @@ func (acc *scanOldVersionPlanAccumulator) feed(row []string) error {
 		return err
 	}
 	if totalKeys < 2*processKeys {
+		acc.filterOutCnt++
 		return nil
 	}
 	digest := row[acc.idxLookUp["Digest"]]
@@ -258,10 +281,21 @@ func (acc *scanOldVersionPlanAccumulator) build() ([]proto.DigestPair, error) {
 	return result, nil
 }
 
+func (acc *scanOldVersionPlanAccumulator) debugState() {
+	log.Debug("scanOldVersionPlanAccumulator", zap.Any("filterOutCnt", acc.filterOutCnt))
+	for sqlDigest, plans := range acc.data {
+		for pDigest, _ := range plans {
+			log.Debug("scanOldVersionPlanAccumulator", zap.String("digest", sqlDigest),
+				zap.String("planDigest", pDigest))
+		}
+	}
+}
+
 type skipDeletedCntPlanAccumulator struct {
 	idxLookUp map[string]int
 	data      map[string]map[string]struct{}
 	csvWriter *csv.Writer
+	filterOutCnt int64
 }
 
 func NewSkipDeletedCntPlanAccumulator(header map[string]int) (*skipDeletedCntPlanAccumulator, error) {
@@ -296,6 +330,7 @@ func (acc *skipDeletedCntPlanAccumulator) feed(row []string) error {
 		return err
 	}
 	if processKeys <= 10000 {
+		acc.filterOutCnt++
 		return nil
 	}
 	deleteSkippedCnt, err := strconv.Atoi(row[acc.idxLookUp["Rocksdb_delete_skipped_count"]])
@@ -307,6 +342,7 @@ func (acc *skipDeletedCntPlanAccumulator) feed(row []string) error {
 		delta = -delta
 	}
 	if delta > 1000 {
+		acc.filterOutCnt++
 		return nil
 	}
 	digest := row[acc.idxLookUp["Digest"]]
@@ -346,6 +382,16 @@ func (acc *skipDeletedCntPlanAccumulator) build() ([]proto.DigestPair, error) {
 		}
 	}
 	return result, nil
+}
+
+func (acc *skipDeletedCntPlanAccumulator) debugState() {
+	log.Debug("skipDeletedCntPlanAccumulator", zap.Any("filterOutCnt", acc.filterOutCnt))
+	for sqlDigest, plans := range acc.data {
+		for pDigest, _ := range plans {
+			log.Debug("skipDeletedCntPlanAccumulator", zap.String("digest", sqlDigest),
+				zap.String("planDigest", pDigest))
+		}
+	}
 }
 
 func NewIdxLookup(header []string) map[string]int {

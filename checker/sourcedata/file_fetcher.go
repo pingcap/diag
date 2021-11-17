@@ -344,6 +344,9 @@ func (f *FileFetcher) loadSlowLog(ctx context.Context, sourceData *proto.SourceD
 	for _, c := range closers {
 		c.Close()
 	}
+	avgProcessTimePlanAcc.debugState()
+	scanOldVersionPlanAcc.debugState()
+	skipDeletedCntPlanAcc.debugState()
 	sourceData.DashboardData.ExecutionPlanInfoList, err = avgProcessTimePlanAcc.build()
 	if err != nil {
 		return err
