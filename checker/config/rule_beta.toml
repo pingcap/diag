@@ -7,7 +7,7 @@ check_type = "config"
 execute_rule = """
 rule "tikv-log-level" "log level of tikv"  salience 6
 begin
-    if ToString(config.GetValueByTagPath("log-level")) == "debug" || ToString(config.GetValueByTagPath("log-level")) == "trace" {
+    if ToString(TikvConfig.GetValueByTagPath("log-level")) == "debug" || ToString(TikvConfig.GetValueByTagPath("log-level")) == "trace" {
         return false
     } else {
         return true
@@ -29,7 +29,7 @@ check_type = "config"
 execute_rule = """
 rule "gc.enable-compaction-filter"
 begin
-    if ToBool(config.GetValueByTagPath("gc.enable-compaction-filter")) == true && config.Extra.TiFlashCnt > 0 {
+    if ToBool(TikvConfig.GetValueByTagPath("gc.enable-compaction-filter")) == true && TikvConfig.Extra.TiFlashCnt > 0 {
         return false
     } else {
         return true
@@ -39,7 +39,7 @@ end
 name_struct = "TikvConfig"
 expect_res = ""   #
 warn_level = "warning"
-version = "v5.0.1"
+version = "v5.0.0||v5.0.1"
 
 [[rule]]
 id = 100
@@ -50,7 +50,7 @@ check_type = "config"
 execute_rule = """
 rule "tidb-max-days"
 begin
-    if ToInt(config.GetValueByTagPath("log.file.max-days")) < 1 {
+    if ToInt(TidbConfig.GetValueByTagPath("log.file.max-days")) < 1 {
         return false
     } else {
         return true
@@ -71,7 +71,7 @@ check_type = "config"
 execute_rule = """
 rule "tidb-max-backups"
 begin
-    if ToInt(config.GetValueByTagPath("log.file.max-backups")) < 1 {
+    if ToInt(TidbConfig.GetValueByTagPath("log.file.max-backups")) < 1 {
         return false
     } else {
         return true
@@ -92,7 +92,7 @@ check_type = "config"
 execute_rule = """
 rule "tidb-log-level"
 begin
-    if ToString(config.GetValueByTagPath("log.level")) == "debug" {
+    if ToString(TidbConfig.GetValueByTagPath("log.level")) == "debug" {
         return false
     } else {
         return true
@@ -113,7 +113,7 @@ check_type = "config"
 execute_rule = """
 rule "tidb-enable-streaming"
 begin
-    if ToBool(config.GetValueByTagPath("enable-streaming")) == true {
+    if ToBool(TidbConfig.GetValueByTagPath("enable-streaming")) == true {
         return false
     } else {
         return true
@@ -134,7 +134,7 @@ check_type = "config"
 execute_rule = """
 rule "pdconfig-max-snapshot-count"
 begin
-    if ToInt(config.GetValueByTagPath("schedule.max-snapshot-count")) <= 0 {
+    if ToInt(PdConfig.GetValueByTagPath("schedule.max-snapshot-count")) <= 0 {
         return false
     } else {
         return true
@@ -155,7 +155,7 @@ check_type = "config"
 execute_rule = """
 rule "pdconfig-max-pending-peer-count"
 begin
-    if ToInt(config.GetValueByTagPath("schedule.max-pending-peer-count")) <= 0 {
+    if ToInt(PdConfig.GetValueByTagPath("schedule.max-pending-peer-count")) <= 0 {
         return false
     } else {
         return true
@@ -176,7 +176,7 @@ check_type = "config"
 execute_rule = """
 rule "pdconfig-leader-schedule-limit"
 begin
-    if ToInt(config.GetValueByTagPath("schedule.leader-schedule-limit")) <= 0 {
+    if ToInt(PdConfig.GetValueByTagPath("schedule.leader-schedule-limit")) <= 0 {
         return false
     } else {
         return true
@@ -192,13 +192,13 @@ version = "> v4.0.0"
 id = 203
 name = "pdconfig-replica-schedule-limit-a"
 description = "同时进行 replica 调度的任务个数。"
-variation =  "PdConfig.schedule.replica-schedule-limit,schedule.replica-schedule-limit"
+variation =  "PdConfig.schedule.replica-schedule-limit"
 check_type = "config"
 execute_rule = """
 rule "pdconfig-replica-schedule-limit-a"
 begin
-    if ToInt(config.GetValueByTagPath("schedule.replica-schedule-limit")) <= 0
-       || ToInt(config.GetValueByTagPath("schedule.replica-schedule-limit")) > 64 {
+    if ToInt(PdConfig.GetValueByTagPath("schedule.replica-schedule-limit")) <= 0
+       || ToInt(PdConfig.GetValueByTagPath("schedule.replica-schedule-limit")) > 64 {
         return false
     } else {
         return true
@@ -219,8 +219,8 @@ check_type = "config"
 execute_rule = """
 rule "pdconfig-merge-schedule-limit"
 begin
-    if ToInt(config.GetValueByTagPath("schedule.merge-schedule-limit")) <= 0
-       || ToInt(config.GetValueByTagPath("schedule.merge-schedule-limit")) > 16 {
+    if ToInt(PdConfig.GetValueByTagPath("schedule.merge-schedule-limit")) <= 0
+       || ToInt(PdConfig.GetValueByTagPath("schedule.merge-schedule-limit")) > 16 {
         return false
     } else {
         return true
@@ -241,8 +241,8 @@ check_type = "config"
 execute_rule = """
 rule "pdconfig-hot-region-schedule-limit"
 begin
-    if ToInt(config.GetValueByTagPath("schedule.hot-region-schedule-limit")) <= 0
-       || ToInt(config.GetValueByTagPath("schedule.hot-region-schedule-limit")) > 8 {
+    if ToInt(PdConfig.GetValueByTagPath("schedule.hot-region-schedule-limit")) <= 0
+       || ToInt(PdConfig.GetValueByTagPath("schedule.hot-region-schedule-limit")) > 8 {
         return false
     } else {
         return true
@@ -265,7 +265,7 @@ check_type = "config"
 execute_rule = """
 rule "pdconfig-store limit-n-add-peer"
 begin
-    if ElemInRange(FlatMap(config.GetValueByTagPath("schedule.store-limit"),"add-peer"),0, 100) {
+    if ElemInRange(FlatMap(PdConfig.GetValueByTagPath("schedule.store-limit"),"add-peer"),0, 100) {
         return true
     }else {
         return false
@@ -286,7 +286,7 @@ check_type = "config"
 execute_rule = """
 rule "pdconfig-store limit-n-remove-peer"
 begin
-    if ElemInRange(FlatMap(config.GetValueByTagPath("schedule.store-limit"),"remove-peer"),0, 100) {
+    if ElemInRange(FlatMap(PdConfig.GetValueByTagPath("schedule.store-limit"),"remove-peer"),0, 100) {
         return true
     }else {
         return false
@@ -307,8 +307,8 @@ check_type = "config"
 execute_rule = """
 rule "pdconfig-replica-schedule-limit-b"
 begin
-    if ToInt(config.GetValueByTagPath("schedule.replica-schedule-limit"))
-        > ToInt(config.GetValueByTagPath("schedule.region-schedule-limit")) {
+    if ToInt(PdConfig.GetValueByTagPath("schedule.replica-schedule-limit"))
+        > ToInt(PdConfig.GetValueByTagPath("schedule.region-schedule-limit")) {
         return false
     } else {
         return true
@@ -329,7 +329,7 @@ check_type = "config"
 execute_rule = """
 rule "pdconfig-max-days"
 begin
-    if ToInt(config.GetValueByTagPath("log.file.max-days")) <= 0 {
+    if ToInt(PdConfig.GetValueByTagPath("log.file.max-days")) <= 0 {
         return false
     } else {
         return true
@@ -350,7 +350,7 @@ check_type = "config"
 execute_rule = """
 rule "pdconfig-max-backups"
 begin
-    if ToInt(config.GetValueByTagPath("log.file.max-backups")) <= 0 {
+    if ToInt(PdConfig.GetValueByTagPath("log.file.max-backups")) <= 0 {
         return false
     } else {
         return true
@@ -371,7 +371,7 @@ check_type = "config"
 execute_rule = """
 rule "pdconfig-log-level"
 begin
-    if ToString(config.GetValueByTagPath("log.level")) == "debug" {
+    if ToString(PdConfig.GetValueByTagPath("log.level")) == "debug" {
         return false
     } else {
         return true
@@ -397,9 +397,9 @@ begin
         ei = dashboard.ExecutionPlanInfoList[digest]
         maxExecutionInfo = dashboard.ExecutionPlanInfoList[0]
         minExecutionInfo = dashboard.ExecutionPlanInfoList[1]
-        if !isNil(maxExecutionInfo) 
-            && !isNil(minExecutionInfo) 
-            && maxExecutionInfo.AvgProcessTime > 50 * minExecutionInfo.AvgProcessTime 
+        if !isNil(maxExecutionInfo)
+            && !isNil(minExecutionInfo)
+            && maxExecutionInfo.AvgProcessTime > 50 * minExecutionInfo.AvgProcessTime
             && maxExecutionInfo.MaxLastTime > minExecutionInfo.MaxLastTime {
             count = count + 1
         }
@@ -443,7 +443,7 @@ rule "scan_key_skip"
 begin
     if dashboard.TombStoneStatistics.Count > 0 {
         return false
-    } 
+    }
     return true
 end
 """
@@ -451,3 +451,150 @@ name_struct = "performance.dashboard"
 expect_res = ""   #
 warn_level = "info"
 version = "> v4.0.0"
+
+[[rule]]
+id = 104
+name = "new_collations_enabled_on_first_bootstrap"
+description = "用于开启新的 collation 支持。"
+variation =  "TidbConfig.new_collations_enabled_on_first_bootstrap"
+execute_rule = """
+rule "new_collations_enabled_on_first_bootstrap"
+begin
+    if ToBool(TidbConfig.GetValueByTagPath("new_collations_enabled_on_first_bootstrap")) == true {
+        return false
+    } else {
+        return true
+    }
+end
+"""
+name_struct = "TidbConfig"
+check_type = "config"
+expect_res = ""   #
+warn_level = "warning"
+version = ""
+
+[[rule]]
+id = 105
+name = "feedback-probability"
+description = "TiDB 对查询收集统计信息反馈的概率,此功能默认关闭，暂不建议开启。如果开启此功能，对于每一个查询，TiDB 会以 feedback-probability 的概率收集查询的反馈，用于更新统计信息。"
+variation =  "TidbConfig.performance.feedback-probability"
+execute_rule = """
+rule "feedback-probability"
+begin
+    if ToInt(TidbConfig.GetValueByTagPath("performance.feedback-probability")) != 0 {
+        return false
+    } else {
+        return true
+    }
+end
+"""
+name_struct = "TidbConfig"
+check_type = "config"
+expect_res = "https://kb.pingcap.com/shared/v1/YtEKeySXI7-X14dKsMe1SZfq1F79w0lL3qlyZlVyZeGFh4pOYJkmS1hCzHtrfs9_MN39bCLf_GDiJQRHBPGWAKo_Kj_CPu3NPJG1yik2DIg"   #
+warn_level = "warning"
+version = ""
+
+[[rule]]
+id = 212
+name = "flow-round-by-digit"
+description = "PD 会对流量信息的末尾数字进行四舍五入处理，减少 Region 流量信息变化引起的统计信息更新。"
+variation =  "PdConfig.pd-server.flow-round-by-digit"
+execute_rule = """
+rule "flow-round-by-digit"
+begin
+    if ToInt(PdConfig.GetValueByTagPath("pd-server.flow-round-by-digit")) == 127 {
+        return false
+    } else {
+        return true
+    }
+end
+"""
+name_struct = "PdConfig"
+check_type = "config"
+expect_res = ""   #
+warn_level = "info"
+version = ">= v5.1.0"
+
+[[rule]]
+id = 213
+name = "trace-region-flow"
+description = "在5.1版本开始该配置被 flow-round-by-digit 替换。"
+variation =  "PdConfig.pd-server.trace-region-flow"
+execute_rule = """
+rule "trace-region-flow"
+begin
+    if ToBool(PdConfig.GetValueByTagPath("pd-server.trace-region-flow")) == false {
+        return false
+    } else {
+        return true
+    }
+end
+"""
+name_struct = "PdConfig"
+check_type = "config"
+expect_res = ""   #
+warn_level = "info"
+version = ">= v4.0.0,<= v4.0.15"
+
+[[rule]]
+id = 214
+name = "strictly-match-label"
+description = "打开强制 TiKV Label 和 PD 的 location-labels 是否匹配的检查。"
+variation =  "PdConfig.replication.strictly-match-label"
+execute_rule = """
+rule "strictly-match-label"
+begin
+    if ToBool(PdConfig.GetValueByTagPath("replication.strictly-match-label")) == true {
+        return false
+    } else {
+        return true
+    }
+end
+"""
+name_struct = "PdConfig"
+check_type = "config"
+expect_res = ""   #
+warn_level = "warning"
+version = ""
+
+[[rule]]
+id = 215
+name = "max-replicas"
+description = "打开强制 TiKV Label 和 PD 的 location-labels 是否匹配的检查。"
+variation =  "PdConfig.replication.max-replicas"
+execute_rule = """
+rule "max-replicas"
+begin
+    if ToInt(PdConfig.GetValueByTagPath("replication.max-replicas")) < 3 {
+        return false
+    } else {
+        return true
+    }
+end
+"""
+name_struct = "PdConfig"
+check_type = "config"
+expect_res = ""   #
+warn_level = "warning"
+version = ""
+
+#[[rule]]
+#id = 2333
+#name = "tidb-max-backups"
+#description = "日志文件保留的最大个数"
+#variation = "TidbConfig.log.file.max-backups,TikvConfig.log-level"
+#check_type = "config"
+#execute_rule = """
+#rule "tidb-max-backups"
+#begin
+#    if ToInt(TidbConfig.GetValueByTagPath("log.file.max-backups")) < 1 && ToString(TikvConfig.GetValueByTagPath("log-level")) == "debug" {
+#        return false
+#    } else {
+#        return true
+#    }
+#end
+#"""
+#name_struct = "TidbConfig,TikvConfig"
+#expect_res = ""   #
+#warn_level = "warning"
+#version = ""

@@ -15,9 +15,14 @@ package command
 
 import (
 	"context"
+	"fmt"
+	"path"
+	"strings"
+	"time"
 
 	"github.com/pingcap/diag/checker/config"
 	"github.com/pingcap/diag/checker/engine"
+	"github.com/pingcap/diag/checker/render"
 	"github.com/pingcap/diag/checker/sourcedata"
 	"github.com/pingcap/log"
 	"github.com/spf13/cobra"
@@ -28,10 +33,18 @@ import (
 func newCheckCmd() *cobra.Command {
 	var datapath = ""
 	var inc = []string{"config"}
+	var logLevel = ""
+	var outpath = ""
 	cmd := &cobra.Command{
 		Use:   "check",
 		Short: "Check config collected from a TiDB cluster",
 		RunE: func(cmd *cobra.Command, args []string) error {
+			if logLevel != "info" {
+				l := zap.NewAtomicLevel()
+				if l.UnmarshalText([]byte(logLevel)) == nil {
+					log.SetLevel(l.Level())
+				}
+			}
 			log.Debug("start checker")
 			// TODO: integrate fetcher
 
@@ -47,7 +60,12 @@ func newCheckCmd() *cobra.Command {
 					checkFlag |= sourcedata.PerformanceFlag
 				}
 			}
-			fetch, err := sourcedata.NewFileFetcher(datapath, sourcedata.WithCheckFlag(checkFlag))
+			if len(outpath) == 0 {
+				outpath = path.Join(datapath, fmt.Sprintf("report-%s", time.Now().Format("060102150405")))
+			}
+			fetch, err := sourcedata.NewFileFetcher(datapath,
+				sourcedata.WithCheckFlag(checkFlag),
+				sourcedata.WithOutputDir(outpath))
 			if err != nil {
 				log.Error(err.Error())
 				return err
@@ -62,7 +80,9 @@ func newCheckCmd() *cobra.Command {
 				log.Error(err.Error())
 				return err
 			}
-			wrapper := engine.NewWrapper(data, ruleSet)
+			include := strings.Join(inc, "-")
+			render := render.NewResultWrapper(data, ruleSet, outpath, include)
+			wrapper := engine.NewWrapper(data, ruleSet, render)
 			// checkline.Init()
 			// pipe := checkline.GetResultChan()
 			// screenRender := render.NewScreenRender(pipe)
@@ -97,6 +117,8 @@ func newCheckCmd() *cobra.Command {
 	}
 
 	cmd.Flags().StringVar(&datapath, "datapath", "./data", "path to collected data")
+	cmd.Flags().StringVar(&logLevel, "loglevel", "info", "log level, supported value is debug, info")
+	cmd.Flags().StringVarP(&outpath, "output", "o", "","dir to save check report. report will be saved in datapath if not set")
 	cmd.Flags().StringSliceVar(&inc, "include", inc, "types of data to check, supported value is config, performance")
 	return cmd
 }

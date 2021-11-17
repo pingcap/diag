@@ -139,13 +139,13 @@ func VisitByTagPath(node reflect.Value, tags []string, idx int) reflect.Value {
 		}
 		if isLast {
 			for i := 0; i < valueType.NumField(); i++ {
-				if valueType.Field(i).Tag.Get("json") == tags[idx] && value.Field(i).CanInterface() {
+				if jsonTagMatch(valueType.Field(i).Tag.Get("json"),tags[idx]) && value.Field(i).CanInterface() {
 					return value.Field(i)
 				}
 			}
 		} else {
 			for i := 0; i < valueType.NumField(); i++ {
-				if valueType.Field(i).Tag.Get("json") == tags[idx] {
+				if jsonTagMatch(valueType.Field(i).Tag.Get("json"),tags[idx]) {
 					return VisitByTagPath(value.Field(i), tags, idx+1)
 				}
 			}
@@ -211,4 +211,20 @@ func parseIdx(s string) (int, error) {
 	}
 	idxStr := strings.TrimPrefix(s, "@")
 	return strconv.Atoi(idxStr)
+}
+
+func jsonTagMatch(tag string, target string) bool {
+	if tag == target {
+		return true
+	}
+	if strings.TrimSuffix(tag, ",string") == target {
+		return true
+	}
+	if strings.TrimSuffix(tag, ",omitempty") == target {
+		return true
+	}
+	if strings.TrimSuffix(tag, ",string,omitempty") == target {
+		return true
+	}
+	return false
 }

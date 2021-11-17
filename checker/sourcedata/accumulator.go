@@ -1,8 +1,14 @@
 package sourcedata
 
 import (
+	"encoding/csv"
+	"fmt"
 	"github.com/pingcap/diag/checker/proto"
 	"github.com/pingcap/errors"
+	"github.com/pingcap/log"
+	"go.uber.org/zap"
+	"io"
+	"math"
 	"strconv"
 	"time"
 )
@@ -17,9 +23,13 @@ type execTimeInfo struct {
 	lastOccurUnix          int64
 }
 
+func (info *execTimeInfo) state() string {
+	return fmt.Sprintf("cnt %+v, totalProcessTimeSecond %+v, lastOccurUnix %+v", info.cnt, info.totalProcessTimeSecond, info.lastOccurUnix)
+}
+
 func (info *execTimeInfo) update(cnt int, pTime float64, occurUnix int64) {
-	info.cnt = +cnt
-	info.totalProcessTimeSecond = +pTime
+	info.cnt =+ cnt
+	info.totalProcessTimeSecond =+ pTime
 	if occurUnix > info.lastOccurUnix {
 		info.lastOccurUnix = occurUnix
 	}
@@ -35,12 +45,43 @@ func (info *execTimeInfo) getAvgProcessTime() float64 {
 type avgProcessTimePlanAccumulator struct {
 	idxLookUp map[string]int
 	data      map[string]map[string]*execTimeInfo
+	csvWriter *csv.Writer
+	filterOutCnt int64
+}
+
+func (acc *avgProcessTimePlanAccumulator) setCSVWriter(w io.Writer) {
+	acc.csvWriter = csv.NewWriter(w)
+}
+
+// header must contain required fileds
+func NewAvgProcessTimePlanAccumulator(idxLookUp map[string]int) (*avgProcessTimePlanAccumulator, error) {
+	if _, ok := idxLookUp["Process_keys"]; !ok {
+		return nil, errors.New("idxLookUp must contain Process_keys")
+	}
+	if _, ok := idxLookUp["Process_time"]; !ok {
+		return nil, errors.New("idxLookUp must contain Process_time")
+	}
+	if _, ok := idxLookUp["Time"]; !ok {
+		return nil, errors.New("idxLookUp must contain Time")
+	}
+
+	if _, ok := idxLookUp["Digest"]; !ok {
+		return nil, errors.New("idxLookUp must contain Digest")
+	}
+
+	if _, ok := idxLookUp["Plan_digest"]; !ok {
+		return nil, errors.New("idxLookUp must contain Plan_digest")
+	}
+	return &avgProcessTimePlanAccumulator{
+		idxLookUp: idxLookUp,
+		data:      make(map[string]map[string]*execTimeInfo),
+	}, nil
 }
 
 func (acc *avgProcessTimePlanAccumulator) updateExecTimeInfo(digest string, pDigest string, pTime float64, occurUnix int64) {
 	if _, ok := acc.data[digest]; !ok {
 		acc.data[digest] = map[string]*execTimeInfo{
-			pDigest: {
+			pDigest: &execTimeInfo{
 				cnt:                    1,
 				totalProcessTimeSecond: pTime,
 				lastOccurUnix:          occurUnix,
@@ -60,7 +101,7 @@ func (acc *avgProcessTimePlanAccumulator) updateExecTimeInfo(digest string, pDig
 }
 
 func (acc *avgProcessTimePlanAccumulator) feed(row []string) error {
-	if len(acc.idxLookUp) < len(row) {
+	if len(acc.idxLookUp) > len(row) {
 		return errors.New("invalid slow log row")
 	}
 	processKeys, err := strconv.Atoi(row[acc.idxLookUp["Process_keys"]])
@@ -68,6 +109,7 @@ func (acc *avgProcessTimePlanAccumulator) feed(row []string) error {
 		return err
 	}
 	if processKeys <= 1000000 {
+		acc.filterOutCnt++
 		return nil
 	}
 	digest := row[acc.idxLookUp["Digest"]]
@@ -76,7 +118,7 @@ func (acc *avgProcessTimePlanAccumulator) feed(row []string) error {
 	if err != nil && len(row[acc.idxLookUp["Process_time"]]) > 0 {
 		return err
 	}
-	occurTime, err := time.Parse("2006-01-02 15:04:05", row[acc.idxLookUp["Time"]])
+	occurTime, err := time.Parse("2006-01-02 15:04:05.999999", row[acc.idxLookUp["Time"]])
 	if err != nil {
 		return err
 	}
@@ -93,9 +135,10 @@ func (acc *avgProcessTimePlanAccumulator) build() (map[string][2]proto.Execution
 		}
 		var maxExePlanInfo proto.ExecutionPlanInfo
 		var minExecPlanInfo proto.ExecutionPlanInfo
+		minExecPlanInfo.AvgProcessTime = math.MaxInt64
 		for pDigest, plan := range sql {
+			avgProcessTime := int64(plan.getAvgProcessTime())
 			{
-				avgProcessTime := int64(plan.getAvgProcessTime())
 				if avgProcessTime > maxExePlanInfo.AvgProcessTime {
 					maxExePlanInfo.AvgProcessTime = avgProcessTime
 					maxExePlanInfo.PlanDigest = pDigest
@@ -103,7 +146,6 @@ func (acc *avgProcessTimePlanAccumulator) build() (map[string][2]proto.Execution
 				}
 			}
 			{
-				avgProcessTime := int64(plan.getAvgProcessTime())
 				if avgProcessTime < minExecPlanInfo.AvgProcessTime {
 					minExecPlanInfo.AvgProcessTime = avgProcessTime
 					minExecPlanInfo.PlanDigest = pDigest
@@ -115,16 +157,73 @@ func (acc *avgProcessTimePlanAccumulator) build() (map[string][2]proto.Execution
 			minExecPlanInfo, maxExePlanInfo,
 		}
 	}
+	if acc.csvWriter != nil {
+		defer acc.csvWriter.Flush()
+		if err := acc.csvWriter.Write([]string{"Digest", "Plan_digest","avg_process_time", "last_time"}); err != nil {
+			return nil, err
+		}
+		for digest, planDigest := range result {
+			{
+				row := []string{digest, planDigest[0].PlanDigest, strconv.FormatInt(planDigest[0].AvgProcessTime, 10), strconv.FormatInt(planDigest[0].MaxLastTime, 10)}
+				if err := acc.csvWriter.Write(row); err != nil {
+					return nil, err
+				}
+			}
+			{
+				row := []string{digest, planDigest[1].PlanDigest, strconv.FormatInt(planDigest[1].AvgProcessTime, 10), strconv.FormatInt(planDigest[1].MaxLastTime, 10)}
+				if err := acc.csvWriter.Write(row); err != nil {
+					return nil, err
+				}
+			}
+		}
+	}
 	return result, nil
+}
+
+func (acc *avgProcessTimePlanAccumulator) debugState() {
+	log.Debug("avgProcessTimePlanAccumulator", zap.Any("filterOutCnt", acc.filterOutCnt))
+	for sqlDigest, planDigest := range acc.data {
+		for pDigest, info := range planDigest {
+			log.Debug("avgProcessTimePlanAccumulator", zap.String("digest", sqlDigest),
+				zap.String("planDigest", pDigest),
+				zap.String("execInfo", info.state()))
+		}
+	}
 }
 
 type scanOldVersionPlanAccumulator struct {
 	idxLookUp map[string]int
 	data      map[string]map[string]struct{}
+	csvWriter *csv.Writer
+	filterOutCnt int64
+}
+
+// header must contain Process_keys, Process_time, Time
+func NewScanOldVersionPlanAccumulator(idxLookUp map[string]int) (*scanOldVersionPlanAccumulator, error) {
+	if _, ok := idxLookUp["Process_keys"]; !ok {
+		return nil, errors.New("idxLookUp must contain Process_keys")
+	}
+	if _, ok := idxLookUp["Total_keys"]; !ok {
+		return nil, errors.New("idxLookUp must contain Total_keys")
+	}
+	if _, ok := idxLookUp["Digest"]; !ok {
+		return nil, errors.New("idxLookUp must contain Digest")
+	}
+	if _, ok := idxLookUp["Plan_digest"]; !ok {
+		return nil, errors.New("idxLookUp must contain Plan_digest")
+	}
+	return &scanOldVersionPlanAccumulator{
+		idxLookUp: idxLookUp,
+		data:      make(map[string]map[string]struct{}),
+	}, nil
+}
+
+func (acc *scanOldVersionPlanAccumulator) setCSVWriter(w io.Writer) {
+	acc.csvWriter = csv.NewWriter(w)
 }
 
 func (acc *scanOldVersionPlanAccumulator) feed(row []string) error {
-	if len(acc.idxLookUp) < len(row) {
+	if len(acc.idxLookUp) > len(row) {
 		return errors.New("invalid slow log row")
 	}
 	processKeys, err := strconv.Atoi(row[acc.idxLookUp["Process_keys"]])
@@ -132,6 +231,7 @@ func (acc *scanOldVersionPlanAccumulator) feed(row []string) error {
 		return err
 	}
 	if processKeys <= 10000 {
+		acc.filterOutCnt++
 		return nil
 	}
 	totalKeys, err := strconv.Atoi(row[acc.idxLookUp["Total_keys"]])
@@ -139,6 +239,7 @@ func (acc *scanOldVersionPlanAccumulator) feed(row []string) error {
 		return err
 	}
 	if totalKeys < 2*processKeys {
+		acc.filterOutCnt++
 		return nil
 	}
 	digest := row[acc.idxLookUp["Digest"]]
@@ -163,16 +264,65 @@ func (acc *scanOldVersionPlanAccumulator) build() ([]proto.DigestPair, error) {
 			})
 		}
 	}
+	if acc.csvWriter != nil {
+		defer acc.csvWriter.Flush()
+		if err := acc.csvWriter.Write([]string{"Digest", "Plan_digest"}); err != nil {
+			return nil, err
+		}
+		for _, sqlInfo := range result {
+			{
+				row := []string{sqlInfo.Digest, sqlInfo.PlanDigest}
+				if err := acc.csvWriter.Write(row); err != nil {
+					return nil, err
+				}
+			}
+		}
+	}
 	return result, nil
+}
+
+func (acc *scanOldVersionPlanAccumulator) debugState() {
+	log.Debug("scanOldVersionPlanAccumulator", zap.Any("filterOutCnt", acc.filterOutCnt))
+	for sqlDigest, plans := range acc.data {
+		for pDigest, _ := range plans {
+			log.Debug("scanOldVersionPlanAccumulator", zap.String("digest", sqlDigest),
+				zap.String("planDigest", pDigest))
+		}
+	}
 }
 
 type skipDeletedCntPlanAccumulator struct {
 	idxLookUp map[string]int
 	data      map[string]map[string]struct{}
+	csvWriter *csv.Writer
+	filterOutCnt int64
+}
+
+func NewSkipDeletedCntPlanAccumulator(header map[string]int) (*skipDeletedCntPlanAccumulator, error) {
+	if _, ok := header["Process_keys"]; !ok {
+		return nil, errors.New("header must contain Process_keys")
+	}
+	if _, ok := header["Rocksdb_delete_skipped_count"]; !ok {
+		return nil, errors.New("header must contain Rocksdb_delete_skipped_count")
+	}
+	if _, ok := header["Digest"]; !ok {
+		return nil, errors.New("header must contain Digest")
+	}
+	if _, ok := header["Plan_digest"]; !ok {
+		return nil, errors.New("header must contain Plan_digest")
+	}
+	return &skipDeletedCntPlanAccumulator{
+		idxLookUp: header,
+		data:      make(map[string]map[string]struct{}),
+	}, nil
+}
+
+func (acc *skipDeletedCntPlanAccumulator) setCSVWriter(w io.Writer) {
+	acc.csvWriter = csv.NewWriter(w)
 }
 
 func (acc *skipDeletedCntPlanAccumulator) feed(row []string) error {
-	if len(acc.idxLookUp) < len(row) {
+	if len(acc.idxLookUp) > len(row) {
 		return errors.New("invalid slow log row")
 	}
 	processKeys, err := strconv.Atoi(row[acc.idxLookUp["Process_keys"]])
@@ -180,6 +330,7 @@ func (acc *skipDeletedCntPlanAccumulator) feed(row []string) error {
 		return err
 	}
 	if processKeys <= 10000 {
+		acc.filterOutCnt++
 		return nil
 	}
 	deleteSkippedCnt, err := strconv.Atoi(row[acc.idxLookUp["Rocksdb_delete_skipped_count"]])
@@ -191,6 +342,7 @@ func (acc *skipDeletedCntPlanAccumulator) feed(row []string) error {
 		delta = -delta
 	}
 	if delta > 1000 {
+		acc.filterOutCnt++
 		return nil
 	}
 	digest := row[acc.idxLookUp["Digest"]]
@@ -215,7 +367,31 @@ func (acc *skipDeletedCntPlanAccumulator) build() ([]proto.DigestPair, error) {
 			})
 		}
 	}
+	if acc.csvWriter != nil {
+		defer acc.csvWriter.Flush()
+		if err := acc.csvWriter.Write([]string{"Digest", "Plan_digest"}); err != nil {
+			return nil, err
+		}
+		for _, sqlInfo := range result {
+			{
+				row := []string{sqlInfo.Digest, sqlInfo.PlanDigest}
+				if err := acc.csvWriter.Write(row); err != nil {
+					return nil, err
+				}
+			}
+		}
+	}
 	return result, nil
+}
+
+func (acc *skipDeletedCntPlanAccumulator) debugState() {
+	log.Debug("skipDeletedCntPlanAccumulator", zap.Any("filterOutCnt", acc.filterOutCnt))
+	for sqlDigest, plans := range acc.data {
+		for pDigest, _ := range plans {
+			log.Debug("skipDeletedCntPlanAccumulator", zap.String("digest", sqlDigest),
+				zap.String("planDigest", pDigest))
+		}
+	}
 }
 
 func NewIdxLookup(header []string) map[string]int {

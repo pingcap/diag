@@ -57,7 +57,6 @@ type Data interface {
 }
 
 type OutputMetaData struct {
-	ClusterID   string
 	ClusterName string
 	TidbVersion string
 	ActionID    string
@@ -79,16 +78,38 @@ type HandleData struct {
 	IsValid bool
 }
 
-func (hd *HandleData) CheckValid() {
+func (hd *HandleData) checkValid() bool {
+	if len(hd.Data) == 0 {
+		return false
+	}
 	for _, data := range hd.Data {
 		if data == nil {
-			hd.IsValid = false
+			return false
 		}
 		if conf, ok := data.(Config); ok && conf.CheckNil() {
-			hd.IsValid = false
+			return false
 		}
 	}
-	hd.IsValid = true
+	return true
+}
+
+func NewHandleData(ds []Data) *HandleData {
+	if len(ds) < 1 {
+		return &HandleData{UqiTag: "nodata", IsValid: false}
+	}
+	hd := &HandleData{UqiTag: "", Data: ds}
+	htags := make([]string, 0)
+	for _, d := range ds {
+		conf, ok := d.(Config)
+		if ok {
+			htags = append(htags, fmt.Sprintf("%s_%s:%d", conf.GetComponent(), conf.GetHost(), conf.GetPort()))
+		} else {
+			htags = append(htags, d.ActingName())
+		}
+	}
+	hd.UqiTag = strings.Join(htags, "-")
+	hd.IsValid = hd.checkValid()
+	return hd
 }
 
 type PrintTemplate interface {
@@ -227,7 +248,7 @@ func (c *SQLPerformancePrintTemplate) CollectResult(hd *HandleData, retValue int
 	}
 	data, ok := hd.Data[0].(*DashboardData)
 	if !ok {
-		log.Errorf("convert into dashboarddata failed, %+v", data.ActingName())
+		log.Errorf("convert into dashboard data failed, %+v", data.ActingName())
 	}
 	switch c.Rule.Name {
 	case "poor_effective_plan":
@@ -309,7 +330,10 @@ func (rs RuleSet) GetNameStructs() map[string]struct{} {
 	result := make(map[string]struct{})
 
 	for _, rule := range rs {
-		result[rule.NameStruct] = struct{}{}
+		names := strings.Split(rule.NameStruct,",")
+		for _, name := range names {
+			result[name] = struct{}{}
+		}
 	}
 	return result
 }

@@ -17,7 +17,8 @@ import (
 	"bufio"
 	"fmt"
 	"os"
-	"time"
+	"path"
+	"sort"
 
 	"github.com/pingcap/diag/checker/proto"
 	"github.com/pingcap/tiup/pkg/logger/log"
@@ -25,58 +26,97 @@ import (
 
 // bytes.buffer flush into checker_sampleid_timestamp.txt
 type ResultWrapper struct {
-	RuleSet map[string]*proto.Rule
-	Data    *proto.SourceDataV2
+	RuleSet   map[string]*proto.Rule
+	Data      *proto.SourceDataV2
+	storePath string
+	include   string
 }
 
-func NewResultWrapper(rs map[string]*proto.Rule, data *proto.SourceDataV2) *ResultWrapper {
+func NewResultWrapper(data *proto.SourceDataV2, rs map[string]*proto.Rule, sp string, inc string) *ResultWrapper {
 	return &ResultWrapper{
-		RuleSet: rs,
-		Data:    data,
+		RuleSet:   rs,
+		Data:      data,
+		storePath: sp,
+		include:   inc,
 	}
+}
+
+func (w *ResultWrapper) GroupByType() map[string][]*proto.Rule {
+	ruleMapping := make(map[string][]*proto.Rule)
+	for _, rule := range w.RuleSet {
+		ruleslice, ok := ruleMapping[rule.CheckType]
+		if ok {
+			ruleslice = append(ruleslice, rule)
+		} else {
+			ruleslice = []*proto.Rule{rule}
+		}
+		ruleMapping[rule.CheckType] = ruleslice
+	}
+	for _, rs := range ruleMapping {
+		sort.Slice(rs, func(i, j int) bool {
+			return rs[i].ID < rs[j].ID
+		})
+	}
+	return ruleMapping
 }
 
 // data variable name, data variable value.
 func (w *ResultWrapper) Output(checkresult map[string]proto.PrintTemplate) error {
 	// todo@toto find rule check result
 	// print OutputMetaData
-	now := time.Now()
-	sec := now.Unix()
-	writer, err := NewCheckerWriter(fmt.Sprintf("checker-%s-%d.txt", w.Data.ClusterInfo.Session, sec))
+	writer, err := NewCheckerWriter(w.storePath, fmt.Sprintf("%s-%s.txt", "checker", w.include))
 	if err != nil {
-		log.Errorf("create file failed, %+v", err.Error())
+		log.Errorf("create file failed %+v", err.Error())
+		return err
 	}
 	defer func() {
 		writer.Flush()
 		writer.Close()
+		fmt.Printf("Result report is saved at %s\n", w.storePath)
 	}()
+	writer.WriteString("# Check Result Report\n")
+	writer.WriteString(fmt.Sprintf("%s %s\n\n", w.Data.ClusterInfo.ClusterName, w.Data.ClusterInfo.BeginTime))
 
-	writer.WriteString(fmt.Sprintf("%s %s\n", w.Data.ClusterInfo.ClusterName, w.Data.ClusterInfo.BeginTime))
-	writer.WriteString("# Cluster Information")
-	writer.WriteString(fmt.Sprintln("ClusterId: ", w.Data.ClusterInfo.ClusterID))
-	writer.WriteString(fmt.Sprintln("ClusterName: ", w.Data.ClusterInfo.ClusterName))
-	writer.WriteString(fmt.Sprintln("ClusterVersoin: ", w.Data.TidbVersion))
+	writer.WriteString("## 1. Cluster Information\n")
+	writer.WriteString(fmt.Sprintln("- Cluster ID: ", w.Data.ClusterInfo.ClusterID))
+	writer.WriteString(fmt.Sprintln("- Cluster Name: ", w.Data.ClusterInfo.ClusterName))
+	writer.WriteString(fmt.Sprintln("- Cluster Version: ", w.Data.TidbVersion))
 	writer.WriteString("\n")
 
-	writer.WriteString("# Sample Information")
-	writer.WriteString(fmt.Sprintln("Sample ID: ", w.Data.ClusterInfo.Session))
-	writer.WriteString(fmt.Sprintln("Sample Content: ", w.Data.ClusterInfo.Collectors))
+	writer.WriteString("## 2. Sample Information\n")
+	writer.WriteString(fmt.Sprintln("- Sample ID: ", w.Data.ClusterInfo.Session))
+	writer.WriteString(fmt.Sprintln("- Sampling Date: ", w.Data.ClusterInfo.BeginTime))
+	writer.WriteString(fmt.Sprintln("- Sample Content:: ", w.Data.ClusterInfo.Collectors))
 	writer.WriteString("\n")
-	for rulename, printer := range checkresult {
-		rule, ok := w.RuleSet[rulename]
-		if !ok {
-			log.Errorf("unknown rule name for output %+v", rulename)
-			continue
+
+	writer.WriteString("## 3. Check Result\n")
+
+	typeRules := w.GroupByType()
+	for ruleType, rules := range typeRules {
+		if ruleType == "config" {
+			writer.WriteString("### Configuration\n")
+		} else if ruleType == "performance" {
+			writer.WriteString("### SQL Performance\n")
 		}
-		writer.WriteString("# Configuration Check Result\n")
-		writer.WriteString(fmt.Sprintln("- RuleName: ", rulename))
-		writer.WriteString(fmt.Sprintln("- RuleID: ", rule.ID))
-		writer.WriteString(fmt.Sprintln("- Variation: ", rule.Variation))
-		writer.WriteString(fmt.Sprintln("- Alerting Rule: ", rule.AlertingRule))
-		writer.WriteString(fmt.Sprintln("- Check Result: "))
-		printer.Print(writer)
-		writer.WriteString("\n")
-
+		for _, rule := range rules {
+			printer, ok := checkresult[rule.Name]
+			if !ok {
+				log.Errorf("No such rule result")
+				continue
+			}
+			writer.WriteString(fmt.Sprintln("#### Rule Name: ", rule.Name))
+			writer.WriteString(fmt.Sprintln("- RuleID: ", rule.ID))
+			writer.WriteString(fmt.Sprintln("- Variation: ", rule.Variation))
+			if len(rule.AlertingRule) > 0 {
+				writer.WriteString(fmt.Sprintln("- Alerting Rule: ", rule.AlertingRule))
+			}
+			if len(rule.ExpectRes) > 0 {
+				writer.WriteString(fmt.Sprintln("- For more information, please visit: ", rule.ExpectRes))
+			}
+			writer.WriteString(fmt.Sprintln("- Check Result: "))
+			printer.Print(writer)
+			writer.WriteString("\n")
+		}
 	}
 	return nil
 }
@@ -94,8 +134,12 @@ func (w *CheckerWriter) Flush() error {
 	return w.termWriter.Flush()
 }
 
-func NewCheckerWriter(filename string) (*CheckerWriter, error) {
-	f, err := os.Create(filename) //
+func NewCheckerWriter(dirPath string, filename string) (*CheckerWriter, error) {
+	if err := os.MkdirAll(dirPath, 0777); err != nil {
+		log.Errorf("create path failed, %+v", err.Error())
+		return nil, err
+	}
+	f, err := os.Create(path.Join(dirPath, filename))
 	if err != nil {
 		log.Errorf("create file failed, %+v", err.Error())
 		return nil, err
