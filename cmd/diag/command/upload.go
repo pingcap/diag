@@ -109,7 +109,6 @@ func preCreate(uuid string, fileLen int64, originalName string, opt *uploadOptio
 	q.Add("uuid", uuid)
 	q.Add("fileLen", fmt.Sprintf("%d", fileLen))
 	q.Add("alias", opt.alias)
-	q.Add("issue", opt.issue)
 	q.Add("orignalName", originalName)
 	req.URL.RawQuery = q.Encode()
 
@@ -220,6 +219,7 @@ func UploadComplete(fileUUID string, opt *uploadOptions) error {
 
 	q := req.URL.Query()
 	q.Add("uuid", fileUUID)
+	q.Add("issue", opt.issue)
 	req.URL.RawQuery = q.Encode()
 
 	appendClinicHeader(req)
