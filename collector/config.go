@@ -238,30 +238,32 @@ func (c *ConfigCollectOptions) collectForTiUP(m *Manager, topo *models.TiDBClust
 		}
 
 		// ops that applies to each host
-		if _, found := uniqueHosts[inst.Host()]; !found {
-			uniqueHosts[inst.Host()] = inst.SSHPort()
-			t1, err := m.sshTaskBuilder(c.GetBaseOptions().Cluster, rawTopo, c.GetBaseOptions().User, *c.opt)
-			if err != nil {
-				return err
-			}
-			for _, f := range c.fileStats[inst.Host()] {
-				// build checking tasks
-				t1 = t1.
-					// check for listening ports
-					CopyFile(
-						f.Target,
-						filepath.Join(c.resultDir, inst.Host(), f.Target),
-						inst.Host(),
-						true,
-						c.limit,
-						c.compress,
-					)
-				collectTasks = append(
-					collectTasks,
-					t1.BuildAsStep(fmt.Sprintf("  - Downloading config files from node %s", inst.Host())),
-				)
-			}
+		if _, found := uniqueHosts[inst.Host()]; found {
+			continue
 		}
+		uniqueHosts[inst.Host()] = inst.SSHPort()
+
+		t1, err := m.sshTaskBuilder(c.GetBaseOptions().Cluster, rawTopo, c.GetBaseOptions().User, *c.opt)
+		if err != nil {
+			return err
+		}
+		for _, f := range c.fileStats[inst.Host()] {
+			// build checking tasks
+			t1 = t1.
+				// check for listening ports
+				CopyFile(
+					f.Target,
+					filepath.Join(c.resultDir, inst.Host(), f.Target),
+					inst.Host(),
+					true,
+					c.limit,
+					c.compress,
+				)
+		}
+		collectTasks = append(
+			collectTasks,
+			t1.BuildAsStep(fmt.Sprintf("  - Downloading config files from node %s", inst.Host())),
+		)
 
 		b, err := m.sshTaskBuilder(c.GetBaseOptions().Cluster, rawTopo, c.GetBaseOptions().User, *c.opt)
 		if err != nil {
