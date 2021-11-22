@@ -96,7 +96,7 @@ vet:
 lint: tests/bin/revive
 	@echo "linting"
 	./tests/check/check-lint.sh
-	@tests/bin/revive -formatter friendly -exclude ./k8s/apis/... -config tests/check/revive.toml $(FILES)
+	@tests/bin/revive -formatter friendly -exclude ./k8s/apis/... -exclude ./api/types/... -config tests/check/revive.toml $(FILES)
 
 tests/bin/revive: tests/check/go.mod
 	cd tests/check; \
