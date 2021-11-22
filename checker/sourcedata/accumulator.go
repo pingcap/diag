@@ -28,8 +28,8 @@ func (info *execTimeInfo) state() string {
 }
 
 func (info *execTimeInfo) update(cnt int, pTime float64, occurUnix int64) {
-	info.cnt =+ cnt
-	info.totalProcessTimeSecond =+ pTime
+	info.cnt += cnt
+	info.totalProcessTimeSecond += pTime
 	if occurUnix > info.lastOccurUnix {
 		info.lastOccurUnix = occurUnix
 	}
@@ -43,9 +43,9 @@ func (info *execTimeInfo) getAvgProcessTime() float64 {
 }
 
 type avgProcessTimePlanAccumulator struct {
-	idxLookUp map[string]int
-	data      map[string]map[string]*execTimeInfo
-	csvWriter *csv.Writer
+	idxLookUp    map[string]int
+	data         map[string]map[string]*execTimeInfo
+	csvWriter    *csv.Writer
 	filterOutCnt int64
 }
 
@@ -81,7 +81,7 @@ func NewAvgProcessTimePlanAccumulator(idxLookUp map[string]int) (*avgProcessTime
 func (acc *avgProcessTimePlanAccumulator) updateExecTimeInfo(digest string, pDigest string, pTime float64, occurUnix int64) {
 	if _, ok := acc.data[digest]; !ok {
 		acc.data[digest] = map[string]*execTimeInfo{
-			pDigest: &execTimeInfo{
+			pDigest: {
 				cnt:                    1,
 				totalProcessTimeSecond: pTime,
 				lastOccurUnix:          occurUnix,
@@ -159,7 +159,7 @@ func (acc *avgProcessTimePlanAccumulator) build() (map[string][2]proto.Execution
 	}
 	if acc.csvWriter != nil {
 		defer acc.csvWriter.Flush()
-		if err := acc.csvWriter.Write([]string{"Digest", "Plan_digest","avg_process_time", "last_time"}); err != nil {
+		if err := acc.csvWriter.Write([]string{"Digest", "Plan_digest", "avg_process_time", "last_time"}); err != nil {
 			return nil, err
 		}
 		for digest, planDigest := range result {
@@ -192,9 +192,9 @@ func (acc *avgProcessTimePlanAccumulator) debugState() {
 }
 
 type scanOldVersionPlanAccumulator struct {
-	idxLookUp map[string]int
-	data      map[string]map[string]struct{}
-	csvWriter *csv.Writer
+	idxLookUp    map[string]int
+	data         map[string]map[string]struct{}
+	csvWriter    *csv.Writer
 	filterOutCnt int64
 }
 
@@ -284,7 +284,7 @@ func (acc *scanOldVersionPlanAccumulator) build() ([]proto.DigestPair, error) {
 func (acc *scanOldVersionPlanAccumulator) debugState() {
 	log.Debug("scanOldVersionPlanAccumulator", zap.Any("filterOutCnt", acc.filterOutCnt))
 	for sqlDigest, plans := range acc.data {
-		for pDigest, _ := range plans {
+		for pDigest := range plans {
 			log.Debug("scanOldVersionPlanAccumulator", zap.String("digest", sqlDigest),
 				zap.String("planDigest", pDigest))
 		}
@@ -292,9 +292,9 @@ func (acc *scanOldVersionPlanAccumulator) debugState() {
 }
 
 type skipDeletedCntPlanAccumulator struct {
-	idxLookUp map[string]int
-	data      map[string]map[string]struct{}
-	csvWriter *csv.Writer
+	idxLookUp    map[string]int
+	data         map[string]map[string]struct{}
+	csvWriter    *csv.Writer
 	filterOutCnt int64
 }
 
@@ -387,7 +387,7 @@ func (acc *skipDeletedCntPlanAccumulator) build() ([]proto.DigestPair, error) {
 func (acc *skipDeletedCntPlanAccumulator) debugState() {
 	log.Debug("skipDeletedCntPlanAccumulator", zap.Any("filterOutCnt", acc.filterOutCnt))
 	for sqlDigest, plans := range acc.data {
-		for pDigest, _ := range plans {
+		for pDigest := range plans {
 			log.Debug("skipDeletedCntPlanAccumulator", zap.String("digest", sqlDigest),
 				zap.String("planDigest", pDigest))
 		}

@@ -64,7 +64,7 @@ type FileFetcher struct {
 	// set during processing
 	clusterMeta *spec.ClusterMeta
 	clusterJSON *collector.ClusterJSON
-	outDirPath string
+	outDirPath  string
 }
 
 type FileFetcherOpt func(ff *FileFetcher) error
@@ -271,8 +271,8 @@ func (f *FileFetcher) loadSlowLog(ctx context.Context, sourceData *proto.SourceD
 	avgProcessTimePlanAcc, err := NewAvgProcessTimePlanAccumulator(idxLookUp)
 	if err != nil {
 		return err
-	}else if len(f.outDirPath) >0 {
-		csvFile, err := os.Create( path.Join(f.outDirPath,"poor_effective_plan.csv"))
+	} else if len(f.outDirPath) > 0 {
+		csvFile, err := os.Create(path.Join(f.outDirPath, "poor_effective_plan.csv"))
 		if err != nil {
 			return err
 		}
@@ -283,8 +283,8 @@ func (f *FileFetcher) loadSlowLog(ctx context.Context, sourceData *proto.SourceD
 	scanOldVersionPlanAcc, err := NewScanOldVersionPlanAccumulator(idxLookUp)
 	if err != nil {
 		return err
-	}else if len(f.outDirPath) >0 {
-		csvFile, err := os.Create(path.Join(f.outDirPath,"old_version_count.csv"))
+	} else if len(f.outDirPath) > 0 {
+		csvFile, err := os.Create(path.Join(f.outDirPath, "old_version_count.csv"))
 		if err != nil {
 			return err
 		}
@@ -295,8 +295,8 @@ func (f *FileFetcher) loadSlowLog(ctx context.Context, sourceData *proto.SourceD
 	skipDeletedCntPlanAcc, err := NewSkipDeletedCntPlanAccumulator(idxLookUp)
 	if err != nil {
 		return err
-	}else if len(f.outDirPath) >0 {
-		csvFile, err := os.Create(path.Join(f.outDirPath,"scan_key_skip.csv"))
+	} else if len(f.outDirPath) > 0 {
+		csvFile, err := os.Create(path.Join(f.outDirPath, "scan_key_skip.csv"))
 		if err != nil {
 			return err
 		}
@@ -534,7 +534,7 @@ func (f *FileFetcher) loadClusterMetaData() error {
 }
 
 // use tidb image version for tidb on k8s, version in Topology may be `latest`
-func (f *FileFetcher) getClusterVersion() (string,error) {
+func (f *FileFetcher) getClusterVersion() (string, error) {
 	if f.clusterJSON == nil {
 		return "", errors.New("cluster json is nil")
 	}
@@ -631,4 +631,3 @@ func (f *FileFetcher) getComponents(name string) []models.Component {
 	}
 	return nil
 }
-
