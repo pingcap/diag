@@ -38,20 +38,20 @@ func TestAvgProcessTimePlanAccumulator(t *testing.T) {
 	if sqlInfo, ok := info["a"]; !ok {
 		t.Error("wrong result")
 	} else {
-		if sqlInfo[0].PlanDigest != "a1" && sqlInfo[0].AvgProcessTime != int64(1) {
+		if sqlInfo[0].PlanDigest != "a1" || sqlInfo[0].AvgProcessTime != int64(1) {
 			t.Error("wrong result")
 		}
-		if sqlInfo[1].PlanDigest != "a3" && sqlInfo[1].AvgProcessTime != int64(3) {
+		if sqlInfo[1].PlanDigest != "a3" || sqlInfo[1].AvgProcessTime != int64(3) {
 			t.Error("wrong result")
 		}
 	}
 	if sqlInfo, ok := info["b"]; !ok {
 		t.Error("wrong result")
 	} else {
-		if sqlInfo[0].PlanDigest != "b1" && sqlInfo[0].AvgProcessTime != int64(10) {
+		if sqlInfo[0].PlanDigest != "b1" || sqlInfo[0].AvgProcessTime != int64(10) {
 			t.Error("wrong result")
 		}
-		if sqlInfo[1].PlanDigest != "b2" && sqlInfo[1].AvgProcessTime != int64(60) {
+		if sqlInfo[1].PlanDigest != "b2" || sqlInfo[1].AvgProcessTime != int64(60) {
 			t.Error("wrong result")
 		}
 	}
