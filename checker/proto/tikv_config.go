@@ -482,13 +482,13 @@ type TikvConfigData struct {
 
 func (cfg *TikvConfigData) LoadClusterMeta(tidbCluster *models.TiDBCluster, clusterMeta *spec.ClusterMeta) {
 	cnt := 0
-	if tidbCluster != nil{
+	if tidbCluster != nil {
 		cnt = len(tidbCluster.TiFlash)
-	}else if clusterMeta != nil {
+	} else if clusterMeta != nil {
 		cnt = len(clusterMeta.Topology.TiFlashServers)
 	}
 	if cfg.Extra == nil {
-		cfg.Extra = &TikvExtraData{TiFlashCnt:cnt}
+		cfg.Extra = &TikvExtraData{TiFlashCnt: cnt}
 	} else {
 		cfg.Extra.TiFlashCnt = cnt
 	}

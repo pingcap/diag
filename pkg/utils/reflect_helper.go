@@ -139,13 +139,13 @@ func VisitByTagPath(node reflect.Value, tags []string, idx int) reflect.Value {
 		}
 		if isLast {
 			for i := 0; i < valueType.NumField(); i++ {
-				if jsonTagMatch(valueType.Field(i).Tag.Get("json"),tags[idx]) && value.Field(i).CanInterface() {
+				if jsonTagMatch(valueType.Field(i).Tag.Get("json"), tags[idx]) && value.Field(i).CanInterface() {
 					return value.Field(i)
 				}
 			}
 		} else {
 			for i := 0; i < valueType.NumField(); i++ {
-				if jsonTagMatch(valueType.Field(i).Tag.Get("json"),tags[idx]) {
+				if jsonTagMatch(valueType.Field(i).Tag.Get("json"), tags[idx]) {
 					return VisitByTagPath(value.Field(i), tags, idx+1)
 				}
 			}
