@@ -237,6 +237,12 @@ func (c *ConfigCollectOptions) collectForTiUP(m *Manager, topo *models.TiDBClust
 			continue
 		}
 
+		// query realtime configs for each instance if supported
+		// TODO: support TLS enabled clusters
+		if t3 := buildRealtimeConfigCollectingTasks(ctx, m.DisplayMode, inst, c.resultDir, nil); t3 != nil {
+			queryTasks = append(queryTasks, t3)
+		}
+
 		// ops that applies to each host
 		if _, found := uniqueHosts[inst.Host()]; found {
 			continue
@@ -274,11 +280,6 @@ func (c *ConfigCollectOptions) collectForTiUP(m *Manager, topo *models.TiDBClust
 			BuildAsStep(fmt.Sprintf("  - Cleanup temp files on %s:%d", inst.Host(), inst.SSHPort()))
 		cleanTasks = append(cleanTasks, t2)
 
-		// query realtime configs for each instance if supported
-		// TODO: support TLS enabled clusters
-		if t3 := buildRealtimeConfigCollectingTasks(ctx, m.DisplayMode, inst, c.resultDir, nil); t3 != nil {
-			queryTasks = append(queryTasks, t3)
-		}
 	}
 
 	t := task.NewBuilder(m.DisplayMode).
