@@ -24,6 +24,7 @@ import (
 	jsoniter "github.com/json-iterator/go"
 	pingcapv1alpha1 "github.com/pingcap/diag/k8s/apis/pingcap/v1alpha1"
 	"github.com/pingcap/diag/pkg/models"
+	"github.com/pingcap/diag/version"
 	perrs "github.com/pingcap/errors"
 	"github.com/pingcap/tiup/pkg/cluster/api"
 	operator "github.com/pingcap/tiup/pkg/cluster/operation"
@@ -52,6 +53,7 @@ type MetaCollectOptions struct {
 }
 
 type ClusterJSON struct {
+	DiagVersion string              `json:"diag_version"`
 	ClusterName string              `json:"cluster_name"`
 	ClusterID   int64               `json:"cluster_id"`  // the id from pd
 	DeployType  string              `json:"deploy_type"` // deployment type
@@ -122,6 +124,7 @@ func (c *MetaCollectOptions) Collect(m *Manager, topo *models.TiDBCluster) error
 	}
 
 	jsonbyte, _ := jsoniter.MarshalIndent(ClusterJSON{
+		DiagVersion: version.ReleaseVersion,
 		ClusterName: b.Cluster,
 		ClusterID:   clusterID,
 		DeployType:  m.mode,
