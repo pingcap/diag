@@ -48,8 +48,12 @@ type schemaStruct struct {
 
 var collectedSchemas = []schemaStruct{
 	{
-		"mysql.tidb.csv", `
-select VARIABLE_NAME, VARIABLE_VALUE from mysql.tidb;`,
+		"mysql.tidb.csv",
+		"select VARIABLE_NAME, VARIABLE_VALUE from mysql.tidb;",
+	},
+	{
+		"global_variables.csv",
+		"select * from mysql.GLOBAL_VARIABLES;",
 	},
 }
 
