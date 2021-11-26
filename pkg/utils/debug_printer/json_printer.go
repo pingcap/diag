@@ -2,12 +2,12 @@ package debugprinter
 
 import (
 	"github.com/fatih/structs"
-	jsoniter "github.com/json-iterator/go"
+	json "github.com/json-iterator/go"
 )
 
 // panic if marshall return nil
 func FormatJSON(object interface{}) string {
-	data, err := jsoniter.MarshalIndent(object, "", "    ")
+	data, err := json.MarshalIndent(object, "", "    ")
 	if err != nil {
 		panic(err)
 	}

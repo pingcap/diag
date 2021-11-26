@@ -11,28 +11,30 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package proto
+package server
 
 import (
-	"os"
-	"testing"
+	"net/http"
+	"runtime"
 
-	json "github.com/json-iterator/go"
+	"github.com/gin-gonic/gin"
+	"github.com/pingcap/diag/api/types"
+	"github.com/pingcap/diag/version"
+	klog "k8s.io/klog"
 )
 
-func TestJsonDecodeTikvConfigData(t *testing.T) {
-	cfgData, err := os.ReadFile("../testdata/tikv.json")
-	if err != nil {
-		t.Fatal(err)
-	}
-	cfg := NewTikvConfigData()
-	if err := json.Unmarshal(cfgData, cfg); err != nil {
-		t.Fatal(err)
-	}
-	if len(cfg.LogLevel) == 0 {
-		t.Fatal("wrong json decode result")
-	}
-	if cfg.Gc.EnableCompactionFilter == false {
-		t.Fatal("wrong json decode result")
-	}
+// getVersion implements GET /version
+func getVersion(c *gin.Context) {
+	c.JSON(http.StatusOK, gin.H{
+		"version": version.String(),
+		"go":      runtime.Version(),
+	})
+}
+
+// returnErrMsg responses error message to client and log it
+func returnErrMsg(c *gin.Context, status int, msg string) {
+	klog.Errorf(msg)
+	c.JSON(status, types.ResponseMsg{
+		Message: msg,
+	})
 }

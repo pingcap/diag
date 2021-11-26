@@ -27,7 +27,7 @@ import (
 	"sync"
 	"time"
 
-	jsoniter "github.com/json-iterator/go"
+	json "github.com/json-iterator/go"
 	"github.com/klauspost/compress/zstd"
 	"github.com/pingcap/diag/pkg/models"
 	"github.com/pingcap/diag/pkg/utils"
@@ -301,7 +301,7 @@ func getMetricList(c *http.Client, prom string) ([]string, error) {
 	r := struct {
 		Metrics []string `json:"data"`
 	}{}
-	if err := jsoniter.NewDecoder(resp.Body).Decode(&r); err != nil {
+	if err := json.NewDecoder(resp.Body).Decode(&r); err != nil {
 		return []string{}, err
 	}
 	return r.Metrics, nil

@@ -17,7 +17,7 @@ import (
 	"context"
 	"os"
 
-	jsoniter "github.com/json-iterator/go"
+	json "github.com/json-iterator/go"
 	"github.com/pingcap/diag/k8s/apis/label"
 	pingcapv1alpha1 "github.com/pingcap/diag/k8s/apis/pingcap/v1alpha1"
 	"github.com/pingcap/diag/pkg/models"
@@ -67,7 +67,7 @@ func buildTopoForK8sCluster(
 		klog.Fatalf("failed to marshal tidbclusters to json: %v", err)
 	}
 	var tcs pingcapv1alpha1.TidbClusterList
-	if err := jsoniter.Unmarshal(tcData, &tcs); err != nil {
+	if err := json.Unmarshal(tcData, &tcs); err != nil {
 		klog.Fatalf("failed to unmarshal tidbclusters crd: %v", err)
 	}
 
@@ -82,7 +82,7 @@ func buildTopoForK8sCluster(
 		klog.Fatalf("failed to marshal tidbmonitors to json: %v", err)
 	}
 	var mon pingcapv1alpha1.TidbMonitorList
-	if err := jsoniter.Unmarshal(monData, &mon); err != nil {
+	if err := json.Unmarshal(monData, &mon); err != nil {
 		klog.Fatalf("failed to unmarshal tidbmonitors crd: %v", err)
 	}
 

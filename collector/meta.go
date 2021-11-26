@@ -21,7 +21,7 @@ import (
 	"strconv"
 	"time"
 
-	jsoniter "github.com/json-iterator/go"
+	json "github.com/json-iterator/go"
 	pingcapv1alpha1 "github.com/pingcap/diag/k8s/apis/pingcap/v1alpha1"
 	"github.com/pingcap/diag/pkg/models"
 	"github.com/pingcap/diag/version"
@@ -124,7 +124,7 @@ func (c *MetaCollectOptions) Collect(m *Manager, topo *models.TiDBCluster) error
 		}
 	}
 
-	jsonbyte, _ := jsoniter.MarshalIndent(ClusterJSON{
+	jsonbyte, _ := json.MarshalIndent(ClusterJSON{
 		DiagVersion: version.ShortVer(),
 		ClusterName: b.Cluster,
 		ClusterID:   clusterID,
@@ -161,7 +161,7 @@ func (c *MetaCollectOptions) Collect(m *Manager, topo *models.TiDBCluster) error
 			return err
 		}
 	case CollectModeK8s:
-		tcData, err := jsoniter.MarshalIndent(c.tc, "", "  ")
+		tcData, err := json.MarshalIndent(c.tc, "", "  ")
 		if err != nil {
 			return err
 		}
@@ -174,7 +174,7 @@ func (c *MetaCollectOptions) Collect(m *Manager, topo *models.TiDBCluster) error
 			return err
 		}
 		if c.tm != nil {
-			tmData, err := jsoniter.MarshalIndent(c.tm, "", "  ")
+			tmData, err := json.MarshalIndent(c.tm, "", "  ")
 			if err != nil {
 				return err
 			}

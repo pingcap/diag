@@ -2,7 +2,6 @@ package command
 
 import (
 	"bytes"
-	"encoding/json"
 	"fmt"
 	"io"
 	"math"
@@ -15,6 +14,7 @@ import (
 	"sync"
 	"time"
 
+	json "github.com/json-iterator/go"
 	"github.com/pingcap/errors"
 	"github.com/pingcap/log"
 	"github.com/spf13/cobra"

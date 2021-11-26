@@ -17,7 +17,7 @@ import (
 	"fmt"
 	"os"
 
-	jsoniter "github.com/json-iterator/go"
+	json "github.com/json-iterator/go"
 	"github.com/pingcap/diag/scraper"
 	"github.com/pingcap/diag/version"
 	"github.com/spf13/cobra"
@@ -43,7 +43,7 @@ func init() {
 			if err != nil {
 				return err
 			}
-			rb, err := jsoniter.MarshalIndent(result, "", "  ")
+			rb, err := json.MarshalIndent(result, "", "  ")
 			if err != nil {
 				return err
 			}

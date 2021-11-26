@@ -5,7 +5,7 @@ import (
 	"net/url"
 	"strings"
 
-	jsoniter "github.com/json-iterator/go"
+	json "github.com/json-iterator/go"
 )
 
 type String struct {
@@ -90,7 +90,7 @@ func (tv *String) Tags() map[string]string {
 // MarshalJSON implements the json.Marshaler
 func (tv String) MarshalJSON() ([]byte, error) {
 	if len(tv.Tags()) == 0 {
-		return jsoniter.Marshal(tv.GetValue())
+		return json.Marshal(tv.GetValue())
 	}
 
 	m := make(map[string]interface{}, 0)
@@ -98,5 +98,5 @@ func (tv String) MarshalJSON() ([]byte, error) {
 		m[k] = v
 	}
 	m["value"] = tv.GetValue()
-	return jsoniter.Marshal(m)
+	return json.Marshal(m)
 }

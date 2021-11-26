@@ -20,7 +20,7 @@ import (
 	"strings"
 
 	"github.com/joomcode/errorx"
-	jsoniter "github.com/json-iterator/go"
+	json "github.com/json-iterator/go"
 	"github.com/pingcap/diag/pkg/models"
 	"github.com/pingcap/diag/scraper"
 	perrs "github.com/pingcap/errors"
@@ -302,7 +302,7 @@ func parseScraperSamples(ctx context.Context, host string) (map[string][]Collect
 	}
 
 	var s scraper.Sample
-	if err := jsoniter.Unmarshal(stdout, &s); err != nil {
+	if err := json.Unmarshal(stdout, &s); err != nil {
 		// save output directly on parsing errors
 		return nil, fmt.Errorf("error parsing scraped stats: %s", stdout)
 	}

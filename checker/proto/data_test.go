@@ -14,13 +14,14 @@
 package proto
 
 import (
-	"encoding/json"
 	"fmt"
-	"github.com/BurntSushi/toml"
-	"github.com/pingcap/diag/pkg/utils"
 	"os"
 	"reflect"
 	"testing"
+
+	"github.com/BurntSushi/toml"
+	json "github.com/json-iterator/go"
+	"github.com/pingcap/diag/pkg/utils"
 )
 
 func TestVersionRange_IsTarget(t *testing.T) {

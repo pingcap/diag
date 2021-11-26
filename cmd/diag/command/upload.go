@@ -5,7 +5,6 @@ import (
 	"bytes"
 	"crypto/tls"
 	"crypto/x509"
-	"encoding/json"
 	"fmt"
 	"hash/fnv"
 	"io"
@@ -17,6 +16,7 @@ import (
 	"syscall"
 	"time"
 
+	json "github.com/json-iterator/go"
 	"github.com/pingcap/diag/version"
 	"github.com/pingcap/errors"
 	"github.com/pingcap/log"

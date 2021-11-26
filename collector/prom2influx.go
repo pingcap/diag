@@ -18,7 +18,6 @@ package collector
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"io"
 	"io/fs"
@@ -28,7 +27,7 @@ import (
 	"sync"
 
 	influx "github.com/influxdata/influxdb/client/v2"
-	jsoniter "github.com/json-iterator/go"
+	json "github.com/json-iterator/go"
 	"github.com/klauspost/compress/zstd"
 	"github.com/pingcap/diag/pkg/utils"
 	"github.com/pingcap/tiup/pkg/tui/progress"
@@ -173,7 +172,7 @@ func (opt *RebuildOptions) LoadMetrics(tl *utils.TokenLimiter) error {
 
 	// decode JSON
 	var data promDump
-	if err = jsoniter.Unmarshal(input, &data); err != nil {
+	if err = json.Unmarshal(input, &data); err != nil {
 		//fmt.Println(string(input))
 		return err
 	}

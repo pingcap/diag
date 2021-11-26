@@ -14,11 +14,11 @@
 package proto
 
 import (
-	"encoding/json"
 	"reflect"
 	"strings"
 	"time"
 
+	json "github.com/json-iterator/go"
 	"github.com/pingcap/diag/pkg/utils"
 	"github.com/pingcap/errors"
 )

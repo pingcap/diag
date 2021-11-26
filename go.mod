@@ -9,10 +9,9 @@ require (
 	github.com/bilibili/gengine v1.5.7
 	github.com/fatih/color v1.13.0
 	github.com/fatih/structs v1.1.0
-	github.com/go-openapi/errors v0.20.1
-	github.com/go-openapi/loads v0.21.0
-	github.com/go-openapi/runtime v0.21.0
-	github.com/go-openapi/spec v0.20.4
+	github.com/gin-gonic/gin v1.7.7
+	github.com/go-openapi/errors v0.20.1 // indirect
+	github.com/go-openapi/jsonreference v0.19.6 // indirect
 	github.com/go-openapi/strfmt v0.21.0
 	github.com/go-openapi/swag v0.19.15
 	github.com/go-sql-driver/mysql v1.6.0
@@ -37,12 +36,11 @@ require (
 	github.com/prometheus/prometheus v1.8.2-0.20210518124745-db7f0bcec27b
 	github.com/sirupsen/logrus v1.8.1
 	github.com/spf13/cobra v1.2.1
-	github.com/spf13/pflag v1.0.5
 	github.com/stretchr/testify v1.7.0
 	go.uber.org/zap v1.19.1
-	golang.org/x/net v0.0.0-20210805182204-aaa1db679c0d
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
 	golang.org/x/term v0.0.0-20210927222741-03fcf44c2211
+	golang.org/x/text v0.3.7 // indirect
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b
 	k8s.io/api v0.22.2
 	k8s.io/apiextensions-apiserver v0.22.2

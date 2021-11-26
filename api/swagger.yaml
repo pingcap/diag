@@ -28,6 +28,11 @@ paths:
             $ref: '#/definitions/ResponseMsg'
     post:
       operationId: collectData
+      parameters:
+        - name: body
+          in: body
+          schema:
+            $ref: '#/definitions/CollectJobRequest'
       responses:
         '202':
           description: collector started
@@ -336,6 +341,19 @@ definitions:
       size:
         type: integer
       date:
+        type: string
+        format: dateTime
+  CollectJobRequest:
+    type: object
+    properties:
+      clusterName:
+        type: string
+      namespace:
+        type: string
+      from:
+        type: string
+        format: dateTime
+      to:
         type: string
         format: dateTime
   CollectJob:

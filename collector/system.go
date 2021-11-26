@@ -20,7 +20,7 @@ import (
 	"path/filepath"
 
 	"github.com/joomcode/errorx"
-	jsoniter "github.com/json-iterator/go"
+	json "github.com/json-iterator/go"
 	"github.com/pingcap/diag/pkg/models"
 	perrs "github.com/pingcap/errors"
 	"github.com/pingcap/tidb-insight/collector/insight"
@@ -239,7 +239,7 @@ func saveInsightOutput(ctx context.Context, host, dir string) error {
 	}
 
 	var info insight.InsightInfo
-	if err := jsoniter.Unmarshal(stdout, &info); err != nil {
+	if err := json.Unmarshal(stdout, &info); err != nil {
 		// save output directly on parsing errors
 		return saveOutput(stdout, filepath.Join(dir, host, "insight.json"))
 	}
