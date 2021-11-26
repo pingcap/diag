@@ -50,3 +50,10 @@ func TestRuleSpec(t *testing.T) {
 	}
 	t.Logf("%+v", rules)
 }
+
+func TestLoadBetaRuleSpec(t *testing.T) {
+	_, err := LoadBetaRuleSpec()
+	if err != nil {
+		t.Error(err)
+	}
+}

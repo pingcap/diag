@@ -14,13 +14,26 @@
 package proto
 
 import (
+	"github.com/pingcap/tiup/pkg/cluster/api/typeutil"
 	"reflect"
 	"strings"
 
 	"github.com/pingcap/diag/pkg/utils"
-	"github.com/pingcap/tiup/pkg/cluster/api/typeutil"
 	"go.uber.org/zap"
 )
+
+// StoreLabel is the config item of LabelPropertyConfig.
+type StoreLabel struct {
+	Key   string `toml:"key" json:"key"`
+	Value string `toml:"value" json:"value"`
+}
+
+// RejectLeader is the label property type that suggests a store should not
+// have any region leaders.
+const RejectLeader = "reject-leader"
+
+// LabelPropertyConfig is the config section to set properties to store labels.
+type LabelPropertyConfig map[string][]StoreLabel
 
 // StoreLimitConfig is a config about scheduling rate limit of different types for a store.
 type StoreLimitConfig struct {
@@ -43,17 +56,17 @@ type ScheduleConfig struct {
 	MaxMergeRegionSize uint64 `toml:"max-merge-region-size" json:"max-merge-region-size"`
 	MaxMergeRegionKeys uint64 `toml:"max-merge-region-keys" json:"max-merge-region-keys"`
 	// SplitMergeInterval is the minimum interval time to permit merge after split.
-	SplitMergeInterval typeutil.Duration `toml:"split-merge-interval" json:"split-merge-interval"`
+	SplitMergeInterval string `toml:"split-merge-interval" json:"split-merge-interval"`
 	// EnableOneWayMerge is the option to enable one way merge. This means a Region can only be merged into the next region of it.
 	EnableOneWayMerge bool `toml:"enable-one-way-merge" json:"enable-one-way-merge,string"`
 	// EnableCrossTableMerge is the option to enable cross table merge. This means two Regions can be merged with different table IDs.
 	// This option only works when key type is "table".
 	EnableCrossTableMerge bool `toml:"enable-cross-table-merge" json:"enable-cross-table-merge,string"`
 	// PatrolRegionInterval is the interval for scanning region during patrol.
-	PatrolRegionInterval typeutil.Duration `toml:"patrol-region-interval" json:"patrol-region-interval"`
+	PatrolRegionInterval string `toml:"patrol-region-interval" json:"patrol-region-interval"`
 	// MaxStoreDownTime is the max duration after which
 	// a store will be considered to be down if it hasn't reported heartbeats.
-	MaxStoreDownTime typeutil.Duration `toml:"max-store-down-time" json:"max-store-down-time"`
+	MaxStoreDownTime string `toml:"max-store-down-time" json:"max-store-down-time"`
 	// LeaderScheduleLimit is the max coexist leader schedules.
 	LeaderScheduleLimit uint64 `toml:"leader-schedule-limit" json:"leader-schedule-limit"`
 	// LeaderSchedulePolicy is the option to balance leader, there are some policies supported: ["count", "size"], default: "count"
@@ -187,7 +200,7 @@ type PDServerConfig struct {
 	// UseRegionStorage enables the independent region storage.
 	UseRegionStorage bool `toml:"use-region-storage" json:"use-region-storage,string"`
 	// MaxResetTSGap is the max gap to reset the TSO.
-	MaxResetTSGap typeutil.Duration `toml:"max-gap-reset-ts" json:"max-gap-reset-ts"`
+	MaxResetTSGap string `toml:"max-gap-reset-ts" json:"max-gap-reset-ts"`
 	// KeyType is option to specify the type of keys.
 	// There are some types supported: ["table", "raw", "txn"], default: "table"
 	KeyType string `toml:"key-type" json:"key-type"`
@@ -243,18 +256,17 @@ type PdConfig struct {
 		Address  string `toml:"address" json:"address"`
 		Interval string `toml:"interval" json:"interval"`
 	} `toml:"metric" json:"metric"`
-	Schedule       ScheduleConfig    `toml:"schedule" json:"schedule"`
-	Replication    ReplicationConfig `toml:"replication" json:"replication"`
-	PdServer       PDServerConfig    `toml:"pd-server" json:"pd-server"`
-	ClusterVersion string            `toml:"cluster-version" json:"cluster-version"`
-	Labels         struct {
-	} `toml:"labels" json:"labels"`
-	QuotaBackendBytes         string `toml:"quota-backend-bytes" json:"quota-backend-bytes"`
-	AutoCompactionMode        string `toml:"auto-compaction-mode" json:"auto-compaction-mode"`
-	AutoCompactionRetentionV2 string `toml:"auto-compaction-retention-v2" json:"auto-compaction-retention-v2"`
-	TickInterval              string `toml:"TickInterval" json:"TickInterval"`
-	ElectionInterval          string `toml:"ElectionInterval" json:"ElectionInterval"`
-	PreVote                   bool   `toml:"PreVote" json:"PreVote"`
+	Schedule                  ScheduleConfig    `toml:"schedule" json:"schedule"`
+	Replication               ReplicationConfig `toml:"replication" json:"replication"`
+	PdServer                  PDServerConfig    `toml:"pd-server" json:"pd-server"`
+	ClusterVersion            string            `toml:"cluster-version" json:"cluster-version"`
+	Labels                    map[string]string `toml:"labels" json:"labels"`
+	QuotaBackendBytes         string            `toml:"quota-backend-bytes" json:"quota-backend-bytes"`
+	AutoCompactionMode        string            `toml:"auto-compaction-mode" json:"auto-compaction-mode"`
+	AutoCompactionRetentionV2 string            `toml:"auto-compaction-retention-v2" json:"auto-compaction-retention-v2"`
+	TickInterval              string            `toml:"TickInterval" json:"TickInterval"`
+	ElectionInterval          string            `toml:"ElectionInterval" json:"ElectionInterval"`
+	PreVote                   bool              `toml:"PreVote" json:"PreVote"`
 	Security                  struct {
 		CacertPath    string   `toml:"cacert-path" json:"cacert-path"`
 		CertPath      string   `toml:"cert-path" json:"cert-path"`
@@ -273,12 +285,11 @@ type PdConfig struct {
 			} `toml:"master-key" json:"master-key"`
 		} `toml:"encryption" json:"encryption"`
 	} `toml:"security" json:"security"`
-	LabelProperty struct {
-	} `toml:"label-property" json:"label-property"`
-	WarningMsgs                 []string `toml:"WarningMsgs" json:"WarningMsgs"`
-	DisableStrictReconfigCheck  bool     `toml:"DisableStrictReconfigCheck" json:"DisableStrictReconfigCheck"`
-	HeartbeatStreamBindInterval string   `toml:"HeartbeatStreamBindInterval" json:"HeartbeatStreamBindInterval"`
-	LeaderPriorityCheckInterval string   `toml:"LeaderPriorityCheckInterval" json:"LeaderPriorityCheckInterval"`
+	LabelProperty               LabelPropertyConfig `toml:"label-property" json:"label-property"`
+	WarningMsgs                 []string            `toml:"WarningMsgs" json:"WarningMsgs"`
+	DisableStrictReconfigCheck  bool                `toml:"DisableStrictReconfigCheck" json:"DisableStrictReconfigCheck"`
+	HeartbeatStreamBindInterval string              `toml:"HeartbeatStreamBindInterval" json:"HeartbeatStreamBindInterval"`
+	LeaderPriorityCheckInterval string              `toml:"LeaderPriorityCheckInterval" json:"LeaderPriorityCheckInterval"`
 	Dashboard                   struct {
 		TidbCacertPath     string `toml:"tidb-cacert-path" json:"tidb-cacert-path"`
 		TidbCertPath       string `toml:"tidb-cert-path" json:"tidb-cert-path"`
@@ -331,8 +342,8 @@ func (cfg *PdConfigData) CheckNil() bool {
 
 func (cfg *PdConfigData) GetValueByTagPath(tagPath string) reflect.Value {
 	tags := strings.Split(tagPath, ".")
-	if len(tags) <= 1 {
-		return reflect.ValueOf(cfg)
+	if len(tags) == 0 {
+		return reflect.ValueOf(cfg.PdConfig)
 	}
 	value := utils.VisitByTagPath(reflect.ValueOf(cfg.PdConfig), tags, 0)
 	return value

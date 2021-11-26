@@ -37,6 +37,7 @@ type ReadPoolConfig struct {
 		MaxTasksPerWorkerNormal int    `toml:"max-tasks-per-worker-normal" json:"max-tasks-per-worker-normal"`
 		MaxTasksPerWorkerLow    int    `toml:"max-tasks-per-worker-low" json:"max-tasks-per-worker-low"`
 		StackSize               string `toml:"stack-size" json:"stack-size"`
+		UseUnifiedPool          bool   `toml:"use-unified-pool"  json:"use-unified-pool"`
 	} `toml:"storage" json:"storage"`
 	Coprocessor struct {
 		HighConcurrency         int    `toml:"high-concurrency" json:"high-concurrency"`
@@ -46,6 +47,7 @@ type ReadPoolConfig struct {
 		MaxTasksPerWorkerNormal int    `toml:"max-tasks-per-worker-normal" json:"max-tasks-per-worker-normal"`
 		MaxTasksPerWorkerLow    int    `toml:"max-tasks-per-worker-low" json:"max-tasks-per-worker-low"`
 		StackSize               string `toml:"stack-size" json:"stack-size"`
+		UseUnifiedPool          bool   `toml:"use-unified-pool"  json:"use-unified-pool"`
 	} `toml:"coprocessor" json:"coprocessor"`
 }
 
@@ -109,6 +111,7 @@ type StorageConfig struct {
 	} `toml:"flow-control" json:"flow-control"`
 	BlockCache struct {
 		Shared              bool    `toml:"shared" json:"shared"`
+		Capacity            string  `toml:"capacity" json:"capacity"`
 		NumShardBits        int     `toml:"num-shard-bits" json:"num-shard-bits"`
 		StrictCapacityLimit bool    `toml:"strict-capacity-limit" json:"strict-capacity-limit"`
 		HighPriPoolRatio    float64 `toml:"high-pri-pool-ratio" json:"high-pri-pool-ratio"`
@@ -402,6 +405,7 @@ type TikvConfig struct {
 		CertPath      string        `toml:"cert-path" json:"cert-path"`
 		KeyPath       string        `toml:"key-path" json:"key-path"`
 		CertAllowedCn []interface{} `toml:"cert-allowed-cn" json:"cert-allowed-cn"`
+		RedactInfoLog bool          `toml:"redact-info-log" json:"redact-info-log"`
 		Encryption    struct {
 			DataEncryptionMethod           string `toml:"data-encryption-method" json:"data-encryption-method"`
 			DataKeyRotationPeriod          string `toml:"data-key-rotation-period" json:"data-key-rotation-period"`

@@ -15,6 +15,7 @@ package proto
 
 import (
 	"fmt"
+	"go.uber.org/zap"
 	"io"
 	"reflect"
 	"strings"
@@ -22,7 +23,7 @@ import (
 	"github.com/Masterminds/semver"
 	"github.com/lensesio/tableprinter"
 	"github.com/pingcap/diag/collector"
-	"github.com/pingcap/tiup/pkg/logger/log"
+	"github.com/pingcap/log"
 )
 
 type ComponentName = string
@@ -164,7 +165,6 @@ func (c *ConfPrintTemplate) CollectResult(hd *HandleData, retValue interface{}) 
 		checkResult = c.Rule.WarnLevel
 	}
 	valstr := c.GetValStr(hd)
-
 	confInfo := &ConfInfo{
 		UniTag:      hd.UqiTag,
 		Val:         valstr,
@@ -180,14 +180,18 @@ func (c *ConfPrintTemplate) GetValStr(hd *HandleData) string {
 	for _, data := range hd.Data {
 		conf, ok := data.(Config)
 		if !ok {
-			log.Errorf("can't convert into config type, %+v", data.ActingName())
+			log.Error("can't convert into config type", zap.String("ActingName", data.ActingName()))
 			continue
 		}
 		valpaths := componentVal[conf.GetComponent()]
 		for _, valpath := range valpaths {
 			if len(valpath) != 0 {
 				rv := conf.GetValueByTagPath(valpath)
-				valmap = append(valmap, fmt.Sprintf("%s.%s:%v", conf.GetComponent(), valpath, rv))
+				if !rv.IsValid() {
+					valmap = append(valmap, fmt.Sprintf("%s.%s:%v", conf.GetComponent(), valpath, nil))
+				} else {
+					valmap = append(valmap, fmt.Sprintf("%s.%s:%v", conf.GetComponent(), valpath, rv))
+				}
 			}
 		}
 	}
@@ -251,7 +255,7 @@ func (c *SQLPerformancePrintTemplate) CollectResult(hd *HandleData, retValue int
 	}
 	data, ok := hd.Data[0].(*DashboardData)
 	if !ok {
-		log.Errorf("convert into dashboard data failed, %+v", data.ActingName())
+		log.Error("convert into dashboard data failed", zap.String("ActingName", data.ActingName()))
 	}
 	switch c.Rule.Name {
 	case "poor_effective_plan":
@@ -277,7 +281,6 @@ func (c *SQLPerformancePrintTemplate) CollectResult(hd *HandleData, retValue int
 }
 
 func (c *SQLPerformancePrintTemplate) Print(out io.Writer) {
-	log.Debugf("info list %v", c.InfoList)
 	printer := tableprinter.New(out)
 	row, nums := tableprinter.StructParser.ParseRow(reflect.ValueOf(c.InfoList).Elem())
 	printer.RenderRow(row, nums)

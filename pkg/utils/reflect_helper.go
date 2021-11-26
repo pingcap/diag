@@ -49,13 +49,29 @@ func ValueToBool(value reflect.Value) bool {
 	return false
 }
 
+// ValueToString return the parsed string value for other type
 func ValueToString(value reflect.Value) string {
-	if value.Kind() == reflect.String {
+	switch value.Kind() {
+	case reflect.String:
 		return value.String()
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		return strconv.FormatInt(value.Int(), 10)
+	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+		return strconv.FormatUint(value.Uint(), 10)
+	case reflect.Float32, reflect.Float64:
+		return strconv.FormatFloat(value.Float(), 'f', -1, 64)
+	case reflect.Array, reflect.Slice:
+		elems := make([]string, value.Len())
+		for i := 0; i < value.Len(); i++ {
+			elems[i] = ValueToString(value.Index(i))
+		}
+		return strings.Join(elems, ",")
 	}
-	return ""
+	return value.String()
 }
 
+// FlatMap iterate all map element with the given tagPath, return a slice contain all visited elements.
+// the given value should be a map type.
 func FlatMap(value reflect.Value, tagPath string) reflect.Value {
 	if value.Kind() != reflect.Map {
 		return reflect.ValueOf(nil)
@@ -78,6 +94,17 @@ func FlatMap(value reflect.Value, tagPath string) reflect.Value {
 		result = reflect.Append(result, VisitByTagPath(mIter.Value(), tags, 0))
 	}
 	return result
+}
+
+func Len(value reflect.Value) int {
+	if !value.IsValid() {
+		return 0
+	}
+	switch value.Kind() {
+	case reflect.Array, reflect.Slice, reflect.Map, reflect.String:
+		return value.Len()
+	}
+	return 0
 }
 
 func ElemInRange(value reflect.Value, l int64, h int64) bool {
@@ -164,11 +191,11 @@ func VisitByTagPath(node reflect.Value, tags []string, idx int) reflect.Value {
 		keyType := valueType.Key()
 		switch keyType.Kind() {
 		case reflect.String:
-			mapValue := value.MapIndex(reflect.ValueOf(tags[idx]))
+			elemValue := value.MapIndex(reflect.ValueOf(tags[idx]))
 			if isLast {
-				return mapValue
+				return elemValue
 			}
-			return VisitByTagPath(mapValue, tags, idx+1)
+			return VisitByTagPath(elemValue, tags, idx+1)
 		case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
 			k, err := strconv.Atoi(tags[idx])
 			if err != nil {
