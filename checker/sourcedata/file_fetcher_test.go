@@ -3,6 +3,9 @@ package sourcedata
 import (
 	"bytes"
 	"fmt"
+	"github.com/pingcap/diag/collector"
+	"github.com/pingcap/diag/pkg/models"
+	"github.com/pingcap/tiup/pkg/cluster/spec"
 	"os"
 	"testing"
 
@@ -101,21 +104,82 @@ tikv_gc_mode,distribute
 func TestFileFetcher_FetchData(t *testing.T) {
 	fetch, err := NewFileFetcher("../testdata", WithCheckFlag(ConfigFlag))
 	if err != nil {
-		t.Error(err)
+		t.Fatal(err)
 	}
 	ruleSpec, err := config.LoadBetaRuleSpec()
 	if err != nil {
-		t.Error()
+		t.Fatal()
 	}
 
 	data, rSet, err := fetch.FetchData(ruleSpec)
 	if err != nil {
-		t.Error(err)
+		t.Fatal(err)
 	}
 	if len(data.NodesData) == 0 {
 		t.Error("fetch empty NodeData")
 	}
 	if len(rSet) == 0 {
 		t.Error("fetch empty rule set")
+	}
+}
+
+func TestFileFetcher_checkAvailable(t *testing.T) {
+	tt := []struct {
+		clusterJSON *collector.ClusterJSON
+		clusterMeta *spec.ClusterMeta
+		available   []proto.ComponentName
+		noAvailable []proto.ComponentName
+	}{
+		{
+			clusterJSON: &collector.ClusterJSON{
+				Topology: &models.TiDBCluster{
+					PD: []*models.PDSpec{
+						{ComponentSpec: models.ComponentSpec{}},
+					},
+					TiKV: []*models.TiKVSpec{
+						{ComponentSpec: models.ComponentSpec{}},
+					},
+				}},
+			clusterMeta: nil,
+			available:   []proto.ComponentName{proto.PdComponentName, proto.TikvComponentName},
+			noAvailable: []proto.ComponentName{proto.TidbComponentName},
+		},
+		{
+			clusterJSON: &collector.ClusterJSON{
+				Topology: &models.TiDBCluster{
+					PD: []*models.PDSpec{
+						{ComponentSpec: models.ComponentSpec{}},
+					},
+					TiKV: []*models.TiKVSpec{
+						{ComponentSpec: models.ComponentSpec{}},
+					},
+					TiDB: []*models.TiDBSpec{
+						{ComponentSpec: models.ComponentSpec{}},
+					},
+				}},
+			clusterMeta: nil,
+			available:   []proto.ComponentName{proto.PdComponentName, proto.TikvComponentName, proto.TidbComponentName},
+			noAvailable: nil,
+		},
+	}
+	for _, tc := range tt {
+		t.Run("", func(t *testing.T) {
+			fetch, err := NewFileFetcher("")
+			if err != nil {
+				t.Fatal(err)
+			}
+			fetch.clusterJSON = tc.clusterJSON
+			fetch.clusterMeta = tc.clusterMeta
+			for _, name := range tc.available {
+				if !fetch.checkAvailable(name) {
+					t.Error("incorrect result")
+				}
+			}
+			for _, name := range tc.noAvailable {
+				if fetch.checkAvailable(name) {
+					t.Error("incorrect result")
+				}
+			}
+		})
 	}
 }

@@ -61,10 +61,10 @@ func (cf CheckFlag) checkPerformance() bool {
 type FileFetcher struct {
 	dataDirPath string // dataDirPath point to a folder
 	checkFlag   CheckFlag
+	outDirPath  string
 	// set during processing
 	clusterMeta *spec.ClusterMeta
 	clusterJSON *collector.ClusterJSON
-	outDirPath  string
 }
 
 type FileFetcherOpt func(ff *FileFetcher) error
@@ -124,7 +124,7 @@ func (f *FileFetcher) FetchData(rules *config.RuleSpec) (*proto.SourceDataV2, pr
 		for _, name := range names {
 			switch name {
 			case proto.PdComponentName, proto.TikvComponentName, proto.TidbComponentName, proto.TiflashComponentName:
-				return f.checkFlag.checkConfig(), nil
+				return f.checkFlag.checkConfig() && f.checkAvailable(name), nil
 			case proto.PerformanceDashboardComponentName:
 				return f.checkFlag.checkPerformance(), nil
 			default:
@@ -508,6 +508,7 @@ func (f *FileFetcher) genInfoSchemaCSVPath(fileName string) string {
 	return path.Join(f.dataDirPath, collector.DirNameSchema, fileName)
 }
 
+// loadClusterMetaData must be called before getClusterVersion and getComponents
 func (f *FileFetcher) loadClusterMetaData() error {
 	clusterJSON := &collector.ClusterJSON{}
 
@@ -567,67 +568,89 @@ func (f *FileFetcher) getClusterVersion() (string, error) {
 	return mainVersion, nil
 }
 
-func (f *FileFetcher) getComponents(name string) []models.Component {
+func (f *FileFetcher) getComponents(name proto.ComponentName) []models.Component {
 	components := make([]models.Component, 0)
-	switch name {
-	case proto.PdComponentName:
-		if f.clusterJSON.Topology != nil {
+	if f.clusterJSON != nil && f.clusterJSON.Topology != nil {
+		switch name {
+		case proto.PdComponentName:
 			for _, pdSpec := range f.clusterJSON.Topology.PD {
 				components = append(components, pdSpec)
 			}
-			return components
-		}
-		for _, pdSpec := range f.clusterMeta.Topology.PDServers {
-			compSpec := models.ComponentSpec{
-				Host:       pdSpec.Host,
-				Port:       pdSpec.ClientPort,
-				StatusPort: pdSpec.PeerPort,
-				SSHPort:    pdSpec.SSHPort,
-				Attributes: map[string]interface{}{
-					"deploy_dir": pdSpec.DeployDir,
-				}}
-			components = append(components, &models.PDSpec{ComponentSpec: compSpec})
-		}
-		return components
-	case proto.TikvComponentName:
-		if f.clusterJSON.Topology != nil {
+		case proto.TikvComponentName:
 			for _, tikvSpec := range f.clusterJSON.Topology.TiKV {
 				components = append(components, tikvSpec)
 			}
-			return components
-		}
-		for _, tikvSpec := range f.clusterMeta.Topology.TiKVServers {
-			compSpec := models.ComponentSpec{
-				Host:       tikvSpec.Host,
-				Port:       tikvSpec.Port,
-				StatusPort: tikvSpec.StatusPort,
-				SSHPort:    tikvSpec.SSHPort,
-				Attributes: map[string]interface{}{
-					"deploy_dir": tikvSpec.DeployDir,
-				}}
-			components = append(components, &models.PDSpec{ComponentSpec: compSpec})
-		}
-		return components
-	case proto.TidbComponentName:
-		if f.clusterJSON.Topology != nil {
+		case proto.TidbComponentName:
 			for _, tidbSpec := range f.clusterJSON.Topology.TiDB {
 				components = append(components, tidbSpec)
 			}
-			return components
-		}
-		for _, tidbSpec := range f.clusterMeta.Topology.TiDBServers {
-			compSpec := models.ComponentSpec{
-				Host:       tidbSpec.Host,
-				Port:       tidbSpec.Port,
-				StatusPort: tidbSpec.StatusPort,
-				SSHPort:    tidbSpec.SSHPort,
-				Attributes: map[string]interface{}{
-					"deploy_dir": tidbSpec.DeployDir,
-				}}
-			components = append(components, &models.PDSpec{ComponentSpec: compSpec})
 		}
 		return components
-	default:
+	}
+	if f.clusterMeta != nil && f.clusterMeta.Topology != nil {
+		switch name {
+		case proto.PdComponentName:
+			for _, pdSpec := range f.clusterMeta.Topology.PDServers {
+				compSpec := models.ComponentSpec{
+					Host:       pdSpec.Host,
+					Port:       pdSpec.ClientPort,
+					StatusPort: pdSpec.PeerPort,
+					SSHPort:    pdSpec.SSHPort,
+					Attributes: map[string]interface{}{
+						"deploy_dir": pdSpec.DeployDir,
+					}}
+				components = append(components, &models.PDSpec{ComponentSpec: compSpec})
+			}
+		case proto.TikvComponentName:
+			for _, tikvSpec := range f.clusterMeta.Topology.TiKVServers {
+				compSpec := models.ComponentSpec{
+					Host:       tikvSpec.Host,
+					Port:       tikvSpec.Port,
+					StatusPort: tikvSpec.StatusPort,
+					SSHPort:    tikvSpec.SSHPort,
+					Attributes: map[string]interface{}{
+						"deploy_dir": tikvSpec.DeployDir,
+					}}
+				components = append(components, &models.PDSpec{ComponentSpec: compSpec})
+			}
+		case proto.TidbComponentName:
+			for _, tidbSpec := range f.clusterMeta.Topology.TiDBServers {
+				compSpec := models.ComponentSpec{
+					Host:       tidbSpec.Host,
+					Port:       tidbSpec.Port,
+					StatusPort: tidbSpec.StatusPort,
+					SSHPort:    tidbSpec.SSHPort,
+					Attributes: map[string]interface{}{
+						"deploy_dir": tidbSpec.DeployDir,
+					}}
+				components = append(components, &models.PDSpec{ComponentSpec: compSpec})
+			}
+		}
+		return components
 	}
 	return nil
+}
+
+func (f *FileFetcher) checkAvailable(name proto.ComponentName) bool {
+	if f.clusterJSON != nil && f.clusterJSON.Topology != nil {
+		switch name {
+		case proto.PdComponentName:
+			return len(f.clusterJSON.Topology.PD) > 0
+		case proto.TikvComponentName:
+			return len(f.clusterJSON.Topology.TiKV) > 0
+		case proto.TidbComponentName:
+			return len(f.clusterJSON.Topology.TiDB) > 0
+		}
+	}
+	if f.clusterMeta != nil && f.clusterMeta.Topology != nil {
+		switch name {
+		case proto.PdComponentName:
+			return len(f.clusterMeta.Topology.PDServers) > 0
+		case proto.TikvComponentName:
+			return len(f.clusterMeta.Topology.TiKVServers) > 0
+		case proto.TidbComponentName:
+			return len(f.clusterMeta.Topology.TiDBServers) > 0
+		}
+	}
+	return false
 }
