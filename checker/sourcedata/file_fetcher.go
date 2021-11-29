@@ -43,8 +43,9 @@ type Fetcher interface {
 }
 
 const (
-	ConfigFlag CheckFlag = 1 << iota
+	ConfigFlag CheckFlag = 1 << iota // rules summarized from on-call issues.
 	PerformanceFlag
+	DefaultConfigFlag // rules check default value.
 )
 
 type CheckFlag int
@@ -55,6 +56,10 @@ func (cf CheckFlag) checkConfig() bool {
 
 func (cf CheckFlag) checkPerformance() bool {
 	return cf&PerformanceFlag > 0
+}
+
+func (cf CheckFlag) checkDefaultConfig() bool {
+	return cf&DefaultConfigFlag > 0
 }
 
 // FileFetcher load all needed data from file
@@ -119,17 +124,14 @@ func (f *FileFetcher) FetchData(rules *config.RuleSpec) (*proto.SourceDataV2, pr
 		} else if !ok {
 			return false, nil
 		}
-		names := strings.Split(item.NameStruct, ",")
-		// filter on name struct and check flags
-		for _, name := range names {
-			switch name {
-			case proto.PdComponentName, proto.TikvComponentName, proto.TidbComponentName, proto.TiflashComponentName:
-				return f.checkFlag.checkConfig() && f.checkAvailable(name), nil
-			case proto.PerformanceDashboardComponentName:
-				return f.checkFlag.checkPerformance(), nil
-			default:
-				return false, nil
-			}
+		// filter on check type
+		switch item.CheckType {
+		case proto.DefaultConfigType:
+			return f.checkFlag.checkDefaultConfig(), nil
+		case proto.PerformanceType:
+			return f.checkFlag.checkPerformance(), nil
+		case proto.ConfigType:
+			return f.checkFlag.checkConfig(), nil
 		}
 		return false, nil
 	}
@@ -147,7 +149,7 @@ func (f *FileFetcher) FetchData(rules *config.RuleSpec) (*proto.SourceDataV2, pr
 	}
 	ctx := context.Background()
 	// decode config.json for related config component
-	if f.checkFlag.checkConfig() {
+	if f.checkFlag.checkConfig() || f.checkFlag.checkDefaultConfig() {
 		if err := f.loadRealTimeConfig(ctx, sourceData, rSet); err != nil {
 			return nil, nil, err
 		}
@@ -195,8 +197,8 @@ func (f *FileFetcher) loadRealTimeConfig(_ context.Context, sourceData *proto.So
 				if deployDir, ok := spec.Attributes()["deploy_dir"].(string); ok {
 					cfgPath = path.Join(f.dataDirPath, host, deployDir, "conf", "config.json")
 				}
-				bs, err := os.ReadFile(cfgPath)
 				cfg := proto.NewPdConfigData()
+				bs, err := os.ReadFile(cfgPath)
 				if err != nil {
 					cfg.PdConfig = nil // skip error
 				} else {
@@ -219,8 +221,8 @@ func (f *FileFetcher) loadRealTimeConfig(_ context.Context, sourceData *proto.So
 				if deployDir, ok := spec.Attributes()["deploy_dir"].(string); ok {
 					cfgPath = path.Join(f.dataDirPath, host, deployDir, "conf", "config.json")
 				}
-				bs, err := os.ReadFile(cfgPath)
 				cfg := proto.NewTikvConfigData()
+				bs, err := os.ReadFile(cfgPath)
 				if err != nil {
 					cfg.TikvConfig = nil // skip error
 				} else {
@@ -244,8 +246,8 @@ func (f *FileFetcher) loadRealTimeConfig(_ context.Context, sourceData *proto.So
 				if deployDir, ok := spec.Attributes()["deploy_dir"].(string); ok {
 					cfgPath = path.Join(f.dataDirPath, host, deployDir, "conf", "config.json")
 				}
-				bs, err := os.ReadFile(cfgPath)
 				cfg := proto.NewTidbConfigData()
+				bs, err := os.ReadFile(cfgPath)
 				if err != nil {
 					cfg.TidbConfig = nil
 				} else {

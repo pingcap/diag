@@ -35,9 +35,16 @@ const (
 	TiflashComponentName              ComponentName = "TiflashConfig"
 	PerformanceDashboardComponentName ComponentName = "performance.dashboard"
 
-	ConfigType      = "config"
-	PerformanceType = "performance"
+	ConfigType        = "config"
+	PerformanceType   = "performance"
+	DefaultConfigType = "defaultConfig"
 )
+
+var CheckTypeOrder = map[string]int{
+	ConfigType:        0,
+	PerformanceType:   1,
+	DefaultConfigType: 2,
+}
 
 type SourceDataV2 struct {
 	ClusterInfo   *collector.ClusterJSON

@@ -15,11 +15,11 @@ package config
 
 import (
 	_ "embed"
-
 	"github.com/BurntSushi/toml"
 	"github.com/pingcap/diag/checker/proto"
 )
 
+// TODO load all config data at once may not the best solution.
 //go:embed rule_beta.toml
 var betaRuleStr string
 

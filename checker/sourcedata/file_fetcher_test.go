@@ -101,14 +101,42 @@ tikv_gc_mode,distribute
 	}
 }
 
-func TestFileFetcher_FetchData(t *testing.T) {
+func TestFileFetcher_FetchDataCheckConfig(t *testing.T) {
 	fetch, err := NewFileFetcher("../testdata", WithCheckFlag(ConfigFlag))
 	if err != nil {
 		t.Fatal(err)
 	}
 	ruleSpec, err := config.LoadBetaRuleSpec()
 	if err != nil {
-		t.Fatal()
+		t.Fatal(err)
+	}
+	if len(ruleSpec.Rule) == 0 {
+		t.Fatal("ruleSpec is empty")
+	}
+
+	data, rSet, err := fetch.FetchData(ruleSpec)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(data.NodesData) == 0 {
+		t.Error("fetch empty NodeData")
+	}
+	if len(rSet) == 0 {
+		t.Error("fetch empty rule set")
+	}
+}
+
+func TestFileFetcher_FetchDataCheckDefaultConfig(t *testing.T) {
+	fetch, err := NewFileFetcher("../testdata", WithCheckFlag(DefaultConfigFlag))
+	if err != nil {
+		t.Fatal(err)
+	}
+	ruleSpec, err := config.LoadBetaRuleSpec()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(ruleSpec.Rule) == 0 {
+		t.Fatal("ruleSpec is empty")
 	}
 
 	data, rSet, err := fetch.FetchData(ruleSpec)

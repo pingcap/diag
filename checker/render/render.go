@@ -41,14 +41,16 @@ func NewResultWrapper(data *proto.SourceDataV2, rs map[string]*proto.Rule, sp st
 	}
 }
 
-func (w *ResultWrapper) GroupByType() map[string][]*proto.Rule {
+func (w *ResultWrapper) GroupByType() (map[string][]*proto.Rule, []string) {
 	ruleMapping := make(map[string][]*proto.Rule)
+	keys := make([]string, 0)
 	for _, rule := range w.RuleSet {
 		ruleslice, ok := ruleMapping[rule.CheckType]
 		if ok {
 			ruleslice = append(ruleslice, rule)
 		} else {
 			ruleslice = []*proto.Rule{rule}
+			keys = append(keys, rule.CheckType)
 		}
 		ruleMapping[rule.CheckType] = ruleslice
 	}
@@ -57,7 +59,12 @@ func (w *ResultWrapper) GroupByType() map[string][]*proto.Rule {
 			return rs[i].ID < rs[j].ID
 		})
 	}
-	return ruleMapping
+	sort.Slice(keys, func(i, j int) bool {
+		left := keys[i]
+		right := keys[j]
+		return proto.CheckTypeOrder[left] < proto.CheckTypeOrder[right]
+	})
+	return ruleMapping, keys
 }
 
 // data variable name, data variable value.
@@ -91,12 +98,15 @@ func (w *ResultWrapper) Output(checkresult map[string]proto.PrintTemplate) error
 
 	writer.WriteString("## 3. Check Result\n")
 
-	typeRules := w.GroupByType()
-	for ruleType, rules := range typeRules {
-		if ruleType == "config" {
+	typeRules, keys := w.GroupByType()
+	for _, ruleType := range keys {
+		rules := typeRules[ruleType]
+		if ruleType == proto.ConfigType {
 			writer.WriteString("### Configuration\n")
-		} else if ruleType == "performance" {
+		} else if ruleType == proto.PerformanceType {
 			writer.WriteString("### SQL Performance\n")
+		} else if ruleType == proto.DefaultConfigType {
+			writer.WriteString("### Default Configuration\n")
 		}
 		for _, rule := range rules {
 			printer, ok := checkresult[rule.Name]
