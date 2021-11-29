@@ -20,7 +20,7 @@ import (
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
-	klog "k8s.io/klog"
+	"k8s.io/klog/v2"
 )
 
 // Options is the option set for diag API server
@@ -65,8 +65,6 @@ func (s *DiagAPIServer) Run() error {
 
 // newEngine initializes the gin engine
 func newEngine(ctx *context, opt *Options) *gin.Engine {
-	r := gin.New()
-
 	// set log level
 	if opt.Verbose {
 		gin.SetMode(gin.DebugMode)
@@ -74,12 +72,18 @@ func newEngine(ctx *context, opt *Options) *gin.Engine {
 		gin.SetMode(gin.ReleaseMode)
 	}
 
+	// create gin server
+	r := gin.New()
+
 	// add middleware here if needed
+	r.Use(ginLogger())
 	r.Use(ctx.middleware())
 
 	// register routes
 	// - collectors
-	//r.GET()
+	r.GET("/collectors", getJobList)
+	r.POST("/collectors", collectData)
+	r.GET("/collectors/:id", getCollectJob)
 
 	// - data
 

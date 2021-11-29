@@ -20,6 +20,9 @@ type CollectJobRequest struct {
 	// cluster name
 	ClusterName string `json:"clusterName,omitempty"`
 
+	// collectors
+	Collectors []string `json:"collectors"`
+
 	// from
 	From string `json:"from,omitempty"`
 

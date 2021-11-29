@@ -17,7 +17,7 @@ import (
 	"github.com/pingcap/diag/k8s/server"
 	"github.com/pingcap/diag/version"
 	"github.com/spf13/cobra"
-	klog "k8s.io/klog"
+	"k8s.io/klog/v2"
 )
 
 var (
@@ -27,6 +27,7 @@ var (
 
 func init() {
 	klog.InitFlags(nil)
+	defer klog.Flush()
 
 	srvOpt = &server.Options{}
 

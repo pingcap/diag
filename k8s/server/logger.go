@@ -14,27 +14,36 @@
 package server
 
 import (
-	"net/http"
-	"runtime"
+	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/pingcap/diag/api/types"
-	"github.com/pingcap/diag/version"
 	"k8s.io/klog/v2"
 )
 
-// getVersion implements GET /version
-func getVersion(c *gin.Context) {
-	c.JSON(http.StatusOK, gin.H{
-		"version": version.String(),
-		"go":      runtime.Version(),
-	})
-}
+// ginLogger creates a logger middleware for gin with klog
+func ginLogger() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		start := time.Now()
 
-// sendErrMsg responses error message to client and log it
-func sendErrMsg(c *gin.Context, status int, msg string) {
-	klog.Errorf(msg)
-	c.JSON(status, types.ResponseMsg{
-		Message: msg,
-	})
+		// necessary variables
+		path := c.Request.URL.Path
+		query := c.Request.URL.RawQuery
+
+		// process request
+		c.Next()
+
+		// handle logging
+		end := time.Now()
+		latency := end.Sub(start)
+
+		if len(c.Errors) > 0 {
+			for _, e := range c.Errors.Errors() {
+				klog.Error(e)
+			}
+		}
+		klog.Infof("request handled: %d %s %s/%s, %s, %s",
+			c.Writer.Status(), c.Request.Method, path, query,
+			c.Request.UserAgent(), latency,
+		)
+	}
 }

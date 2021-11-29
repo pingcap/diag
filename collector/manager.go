@@ -47,11 +47,8 @@ func NewManager(sysName string, specManager *spec.SpecManager) *Manager {
 	}
 }
 
-// NewManager creates a Manager without initialing specManager
-func NewEmptyManager(sysName string) *Manager {
-	currTime := time.Now()
-	tid := base52.Encode(currTime.UnixNano() + rand.Int63n(1000))
-
+// NewEmptyManager creates a Manager with specific session ID and without initialing specManager
+func NewEmptyManager(sysName, tid string) *Manager {
 	return &Manager{
 		sysName: sysName,
 		session: tid,

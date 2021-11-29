@@ -21,13 +21,14 @@ import (
 	"github.com/pingcap/diag/api/types"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/klog/v2"
 )
 
 // diagAPICtxKey is the key to store the context
 const diagAPICtxKey = "DiagAPIServerContext"
 
-// collectJobCtx holds necessary info to manage a CollectJob
-type collectJobCtx struct {
+// collectJobWorker holds necessary info to manage a CollectJob
+type collectJobWorker struct {
 	job    *types.CollectJob
 	cancel chan struct{}
 }
@@ -39,13 +40,13 @@ type context struct {
 
 	kubeCli     *kubernetes.Clientset
 	dynCli      dynamic.Interface
-	collectJobs map[string]*collectJobCtx
+	collectJobs map[string]*collectJobWorker
 }
 
 // newContext initializes an empty context object
 func newContext() *context {
 	return &context{
-		collectJobs: make(map[string]*collectJobCtx),
+		collectJobs: make(map[string]*collectJobWorker),
 	}
 }
 
@@ -75,18 +76,20 @@ func (ctx *context) withDynCli(dynCli dynamic.Interface) *context {
 }
 
 // insertCollectJob adds a CollectJob to the list
-func (ctx *context) insertCollectJob(job *types.CollectJob) *collectJobCtx {
+func (ctx *context) insertCollectJob(job *types.CollectJob) *collectJobWorker {
 	ctx.Lock()
 	defer ctx.Unlock()
 
-	return &collectJobCtx{
+	ctx.collectJobs[job.ID] = &collectJobWorker{
 		job:    job,
 		cancel: make(chan struct{}, 1),
 	}
+
+	return ctx.collectJobs[job.ID]
 }
 
 // getCollectJob reads the CollectJob list
-func (ctx *context) getCollectJob() []*types.CollectJob {
+func (ctx *context) getCollectJobs() []*types.CollectJob {
 	ctx.RLock()
 	defer ctx.RUnlock()
 
@@ -96,4 +99,28 @@ func (ctx *context) getCollectJob() []*types.CollectJob {
 	}
 
 	return result
+}
+
+// getCollectJob reads one CollectJob from list
+func (ctx *context) getCollectJob(id string) *types.CollectJob {
+	ctx.RLock()
+	defer ctx.RUnlock()
+
+	if job, found := ctx.collectJobs[id]; found {
+		return job.job
+	}
+	return nil
+}
+
+// setJobStatus updates the status of a CollectJob, ignores if the
+// job worker does not exist
+func (ctx *context) setJobStatus(id, status string) {
+	ctx.Lock()
+	defer ctx.Unlock()
+
+	if worker, found := ctx.collectJobs[id]; found {
+		worker.job.Status = status
+		return
+	}
+	klog.Warningf("job '%s' not found, skip setting its status to '%s'", id, status)
 }

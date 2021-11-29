@@ -22,9 +22,11 @@ import (
 	json "github.com/json-iterator/go"
 	"github.com/pingcap/diag/api/types"
 	"github.com/pingcap/diag/collector"
+	"github.com/pingcap/tiup/pkg/base52"
 	operator "github.com/pingcap/tiup/pkg/cluster/operation"
+	"github.com/pingcap/tiup/pkg/crypto/rand"
 	"github.com/pingcap/tiup/pkg/set"
-	klog "k8s.io/klog"
+	"k8s.io/klog/v2"
 )
 
 // collect job status
@@ -44,7 +46,7 @@ func collectData(c *gin.Context) {
 	var req types.CollectJobRequest
 	if err := json.NewDecoder(c.Request.Body).Decode(&req); err != nil {
 		msg := fmt.Sprintf("invalid request: %s", err)
-		returnErrMsg(c, http.StatusBadRequest, msg)
+		sendErrMsg(c, http.StatusBadRequest, msg)
 		return
 	}
 
@@ -63,72 +65,124 @@ func collectData(c *gin.Context) {
 		opt.ScrapeEnd = time.Now().Format(time.RFC3339)
 	}
 
+	// parsing collector list
+	collectors := req.Collectors
+	if len(req.Collectors) < 1 {
+		collectors = []string{
+			collector.CollectTypeConfig,
+			collector.CollectTypeMonitor,
+		}
+	}
+
 	ctx, ok := c.Get(diagAPICtxKey)
 	if !ok {
 		msg := "failed to read server config."
-		returnErrMsg(c, http.StatusInternalServerError, msg)
+		sendErrMsg(c, http.StatusInternalServerError, msg)
 		return
 	}
 	diagCtx, ok := ctx.(*context)
 	if !ok {
 		msg := "server config is in wrong type."
-		returnErrMsg(c, http.StatusInternalServerError, msg)
+		sendErrMsg(c, http.StatusInternalServerError, msg)
 		return
 	}
 
 	job := &types.CollectJob{
+		ID:          base52.Encode(currTime.UnixNano() + rand.Int63n(1000)),
 		Status:      collectJobStatusAccepted,
 		ClusterName: opt.Cluster,
+		Collectors:  collectors,
 		From:        opt.ScrapeBegin,
 		To:          opt.ScrapeEnd,
 		Date:        currTime.Format(time.RFC3339),
 	}
-	jobInfo := diagCtx.insertCollectJob(job)
+	worker := diagCtx.insertCollectJob(job)
 
 	// run collector
-	go runCollectors(diagCtx, &opt, jobInfo)
+	go runCollectors(diagCtx, &opt, worker)
 
-	c.JSON(http.StatusAccepted, types.CollectJob{})
+	c.JSON(http.StatusAccepted, worker.job)
 }
 
 func runCollectors(
 	ctx *context,
 	opt *collector.BaseOptions,
-	jobInfo *collectJobCtx,
+	worker *collectJobWorker,
 ) {
 	gOpt := operator.Options{Concurrency: 2}
 	cOpt := collector.CollectOptions{
-		Include: set.NewStringSet( // collect all available types by default
-			collector.CollectTypeMonitor,
-			collector.CollectTypeConfig,
-		),
+		Include: set.NewStringSet(worker.job.Collectors...),
 		Exclude: set.NewStringSet(),
 		Mode:    collector.CollectModeK8s,
 	}
-	cm := collector.NewEmptyManager("tidb")
+	cm := collector.NewEmptyManager("tidb", worker.job.ID)
 
-	done := make(chan struct{})
+	doneChan := make(chan struct{}, 1)
+	errChan := make(chan error, 1)
 	go func() {
+		ctx.setJobStatus(worker.job.ID, collectJobStatusRunning)
 		err := cm.CollectClusterInfo(opt, &cOpt, &gOpt, ctx.kubeCli, ctx.dynCli)
 		if err != nil {
-			klog.Errorf("error collecting info: %s", err)
-			ctx.Lock()
-			jobInfo.job.Status = collectJobStatusError
-			ctx.Unlock()
+			errChan <- err
+			return
 		}
-		ctx.Lock()
-		jobInfo.job.Status = collectJobStatusFinish
-		ctx.Unlock()
-		done <- struct{}{}
+		doneChan <- struct{}{}
 	}()
 
 	select {
-	case <-jobInfo.cancel:
-		klog.Infof("collect job %s cancelled.", jobInfo.job.ID)
-		ctx.Lock()
-		jobInfo.job.Status = collectJobStatusCancel
-		ctx.Unlock()
-	case <-done:
-		klog.Infof("collect job %s finished.", jobInfo.job.ID)
+	case <-worker.cancel:
+		klog.Infof("collect job %s cancelled.", worker.job.ID)
+		ctx.setJobStatus(worker.job.ID, collectJobStatusCancel)
+	case err := <-errChan:
+		klog.Errorf("collect job %s failed with error: %s", worker.job.ID, err)
+		ctx.setJobStatus(worker.job.ID, collectJobStatusError)
+	case <-doneChan:
+		klog.Infof("collect job %s finished.", worker.job.ID)
+		ctx.setJobStatus(worker.job.ID, collectJobStatusFinish)
 	}
+}
+
+// collectData implements GET /collectors
+func getJobList(c *gin.Context) {
+	ctx, ok := c.Get(diagAPICtxKey)
+	if !ok {
+		msg := "failed to read server config."
+		sendErrMsg(c, http.StatusInternalServerError, msg)
+		return
+	}
+	diagCtx, ok := ctx.(*context)
+	if !ok {
+		msg := "server config is in wrong type."
+		sendErrMsg(c, http.StatusInternalServerError, msg)
+		return
+	}
+
+	c.JSON(http.StatusOK, diagCtx.getCollectJobs())
+}
+
+// getCollectJob implements GET /collectors/{id}
+func getCollectJob(c *gin.Context) {
+	id := c.Param("id")
+
+	ctx, ok := c.Get(diagAPICtxKey)
+	if !ok {
+		msg := "failed to read server config."
+		sendErrMsg(c, http.StatusInternalServerError, msg)
+		return
+	}
+	diagCtx, ok := ctx.(*context)
+	if !ok {
+		msg := "server config is in wrong type."
+		sendErrMsg(c, http.StatusInternalServerError, msg)
+		return
+	}
+
+	job := diagCtx.getCollectJob(id)
+	if job == nil {
+		sendErrMsg(c, http.StatusNotFound,
+			fmt.Sprintf("collect job '%s' does not exist", id))
+		return
+	}
+
+	c.JSON(http.StatusOK, job)
 }

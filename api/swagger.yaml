@@ -350,6 +350,10 @@ definitions:
         type: string
       namespace:
         type: string
+      collectors:
+        type: array
+        items:
+          type: string
       from:
         type: string
         format: dateTime
