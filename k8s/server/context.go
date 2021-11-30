@@ -14,7 +14,6 @@
 package server
 
 import (
-	goctx "context"
 	"sync"
 
 	"github.com/gin-gonic/gin"
@@ -36,7 +35,6 @@ type collectJobWorker struct {
 // context stores shared data of the server
 type context struct {
 	sync.RWMutex
-	ctx goctx.Context
 
 	kubeCli     *kubernetes.Clientset
 	dynCli      dynamic.Interface
@@ -95,7 +93,8 @@ func (ctx *context) getCollectJobs() []*types.CollectJob {
 
 	result := make([]*types.CollectJob, 0)
 	for _, j := range ctx.collectJobs {
-		result = append(result, j.job)
+		job := j.job
+		result = append(result, job)
 	}
 
 	return result

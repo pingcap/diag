@@ -41,7 +41,7 @@ func ginLogger() gin.HandlerFunc {
 				klog.Error(e)
 			}
 		}
-		klog.Infof("request handled: %d %s %s/%s, %s, %s",
+		klog.Infof("request handled: %d %s %s %s, %s, %s",
 			c.Writer.Status(), c.Request.Method, path, query,
 			c.Request.UserAgent(), latency,
 		)

@@ -112,6 +112,10 @@ paths:
   /data:
     get:
       operationId: getDataList
+      parameters:
+        - name: status
+          in: query
+          type: string
       responses:
         '200':
           description: list all available data sets
@@ -119,6 +123,10 @@ paths:
             type: array
             items:
               $ref: '#/definitions/DataSet'
+        '400':
+          description: unknown status
+          schema:
+            $ref: '#/definitions/ResponseMsg'
         '500':
           description: server side error
           schema:
@@ -160,6 +168,10 @@ paths:
             $ref: '#/definitions/ResponseMsg'
         '500':
           description: server side error
+          schema:
+            $ref: '#/definitions/ResponseMsg'
+        '503':
+          description: collect job not finished
           schema:
             $ref: '#/definitions/ResponseMsg'
   /data/{id}/upload:
@@ -334,8 +346,6 @@ definitions:
     properties:
       id:
         type: string
-      clusterId:
-        type: integer
       clusterName:
         type: string
       size:
@@ -381,6 +391,8 @@ definitions:
         type: string
         format: dateTime
       status:
+        type: string
+      dir:
         type: string
   UploadTask:
     type: object

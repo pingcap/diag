@@ -86,6 +86,9 @@ func newEngine(ctx *context, opt *Options) *gin.Engine {
 	r.GET("/collectors/:id", getCollectJob)
 
 	// - data
+	r.GET("/data", getDataList)
+	r.GET("/data/:id", getDataSet)
+	r.DELETE("/data/:id", deleteDataSet)
 
 	// - misc
 	r.GET("/version", getVersion)

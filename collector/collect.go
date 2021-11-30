@@ -17,13 +17,10 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strconv"
-	"time"
 
 	"github.com/fatih/color"
 	pingcapv1alpha1 "github.com/pingcap/diag/k8s/apis/pingcap/v1alpha1"
 	"github.com/pingcap/diag/pkg/models"
-	"github.com/pingcap/diag/pkg/utils"
 	"github.com/pingcap/tiup/pkg/cluster/executor"
 	operator "github.com/pingcap/tiup/pkg/cluster/operation"
 	"github.com/pingcap/tiup/pkg/set"
@@ -101,7 +98,7 @@ func (m *Manager) CollectClusterInfo(
 	gOpt *operator.Options,
 	kubeCli *kubernetes.Clientset,
 	dynCli dynamic.Interface,
-) error {
+) (string, error) {
 	m.mode = cOpt.Mode
 
 	var cls *models.TiDBCluster
@@ -114,38 +111,26 @@ func (m *Manager) CollectClusterInfo(
 	case CollectModeK8s:
 		cls, tc, tm, err = buildTopoForK8sCluster(m, opt, kubeCli, dynCli)
 	default:
-		return fmt.Errorf("unknown collect mode '%s'", cOpt.Mode)
+		return "", fmt.Errorf("unknown collect mode '%s'", cOpt.Mode)
 	}
 	if err != nil {
-		return err
+		return "", err
 	}
 	if cls == nil {
-		return fmt.Errorf("no valid cluster topology parsed")
+		return "", fmt.Errorf("no valid cluster topology parsed")
 	}
 
-	// parse time range
-	end, err := utils.ParseTime(opt.ScrapeEnd)
+	// prepare for different deploy mode
+	var resultDir string
+	var prompt string
+	switch cOpt.Mode {
+	case CollectModeTiUP:
+		prompt, resultDir, err = m.prepareArgsForTiUPCluster(opt, cOpt)
+	case CollectModeK8s:
+		resultDir, err = m.prepareArgsForK8sCluster(opt, cOpt)
+	}
 	if err != nil {
-		return err
-	}
-	// if the begin time point is a minus integer, assume it as hour offset
-	var start time.Time
-	if offset, err := strconv.Atoi(opt.ScrapeBegin); err == nil && offset < 0 {
-		start = end.Add(time.Hour * time.Duration(offset))
-	} else {
-		start, err = utils.ParseTime(opt.ScrapeBegin)
-		if err != nil {
-			return err
-		}
-	}
-
-	// update time strings in setting to ensure all collectors work properly
-	opt.ScrapeBegin = start.Format(time.RFC3339)
-	opt.ScrapeEnd = end.Format(time.RFC3339)
-
-	resultDir, err := m.getOutputDir(cOpt.Dir)
-	if err != nil {
-		return err
+		return "", err
 	}
 
 	collectorSet := map[string]bool{
@@ -202,7 +187,7 @@ func (m *Manager) CollectClusterInfo(
 		if gOpt.SSHType != executor.SSHTypeNone {
 			var err error
 			if sshConnProps, err = tui.ReadIdentityFileOrPassword(opt.SSH.IdentityFile, opt.UsePassword); err != nil {
-				return err
+				return "", err
 			}
 		}
 		opt.SSH = sshConnProps
@@ -268,7 +253,7 @@ func (m *Manager) CollectClusterInfo(
 		stat, err := c.Prepare(m, cls)
 		if err != nil {
 			if cOpt.ExitOnError {
-				return err
+				return "", err
 			}
 			fmt.Println(color.YellowString("Error collecting %s: %s, the data might be incomplete.", c.Desc(), err))
 			prepareErrs[c.Desc()] = err
@@ -276,27 +261,17 @@ func (m *Manager) CollectClusterInfo(
 		stats = append(stats, stat)
 	}
 
-	// show time range
-	fmt.Printf(`Time range:
-  %s - %s (Local)
-  %s - %s (UTC)
-  (total %.0f seconds)
-`,
-		color.HiYellowString(start.Local().Format(time.RFC3339)), color.HiYellowString(end.Local().Format(time.RFC3339)),
-		color.HiYellowString(start.UTC().Format(time.RFC3339)), color.HiYellowString(end.UTC().Format(time.RFC3339)),
-		end.Sub(start).Seconds(),
-	)
-
 	// confirm before really collect
 	if m.mode == CollectModeTiUP {
+		fmt.Println(prompt)
 		if err := confirmStats(stats, resultDir); err != nil {
-			return err
+			return "", err
 		}
 	}
 
 	err = os.MkdirAll(resultDir, 0755)
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	// run collectors
@@ -305,7 +280,7 @@ func (m *Manager) CollectClusterInfo(
 		fmt.Printf("Collecting %s...\n", c.Desc())
 		if err := c.Collect(m, cls); err != nil {
 			if cOpt.ExitOnError {
-				return err
+				return "", err
 			}
 			fmt.Println(color.YellowString("Error collecting %s: %s, the data might be incomplete.", c.Desc(), err))
 			collectErrs[c.Desc()] = err
@@ -322,7 +297,7 @@ func (m *Manager) CollectClusterInfo(
 		}
 	}
 	fmt.Printf("Collected data are stored in %s\n", color.CyanString(resultDir))
-	return nil
+	return resultDir, nil
 }
 
 // prepare output dir of collected data

@@ -36,6 +36,7 @@ const (
 	collectJobStatusError    = "error"
 	collectJobStatusFinish   = "finished"
 	collectJobStatusCancel   = "cancelled"
+	collectJobStatusPurge    = "purged" // data set deleted
 )
 
 // collectData implements POST /collectors
@@ -121,11 +122,15 @@ func runCollectors(
 	errChan := make(chan error, 1)
 	go func() {
 		ctx.setJobStatus(worker.job.ID, collectJobStatusRunning)
-		err := cm.CollectClusterInfo(opt, &cOpt, &gOpt, ctx.kubeCli, ctx.dynCli)
+		resultDir, err := cm.CollectClusterInfo(opt, &cOpt, &gOpt, ctx.kubeCli, ctx.dynCli)
 		if err != nil {
 			errChan <- err
 			return
 		}
+		ctx.Lock()
+		defer ctx.Unlock()
+
+		worker.job.Dir = resultDir
 		doneChan <- struct{}{}
 	}()
 

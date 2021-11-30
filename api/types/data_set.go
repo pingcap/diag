@@ -17,9 +17,6 @@ import (
 // swagger:model DataSet
 type DataSet struct {
 
-	// cluster Id
-	ClusterID int64 `json:"clusterId,omitempty"`
-
 	// cluster name
 	ClusterName string `json:"clusterName,omitempty"`
 

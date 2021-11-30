@@ -26,6 +26,9 @@ type CollectJob struct {
 	// date
 	Date string `json:"date,omitempty"`
 
+	// dir
+	Dir string `json:"dir,omitempty"`
+
 	// from
 	From string `json:"from,omitempty"`
 

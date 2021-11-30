@@ -16,11 +16,14 @@ package collector
 import (
 	"context"
 	"os"
+	"strconv"
+	"time"
 
 	json "github.com/json-iterator/go"
 	"github.com/pingcap/diag/k8s/apis/label"
 	pingcapv1alpha1 "github.com/pingcap/diag/k8s/apis/pingcap/v1alpha1"
 	"github.com/pingcap/diag/pkg/models"
+	"github.com/pingcap/diag/pkg/utils"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -28,6 +31,35 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/klog"
 )
+
+// prepareArgsForK8sCluster parses arguments and create output dir for tiup-operator
+// deployed tidb clusters
+func (m *Manager) prepareArgsForK8sCluster(
+	opt *BaseOptions,
+	cOpt *CollectOptions,
+) (string, error) {
+	// parse time range
+	end, err := utils.ParseTime(opt.ScrapeEnd)
+	if err != nil {
+		return "", err
+	}
+	// if the begin time point is a minus integer, assume it as hour offset
+	var start time.Time
+	if offset, err := strconv.Atoi(opt.ScrapeBegin); err == nil && offset < 0 {
+		start = end.Add(time.Hour * time.Duration(offset))
+	} else {
+		start, err = utils.ParseTime(opt.ScrapeBegin)
+		if err != nil {
+			return "", err
+		}
+	}
+
+	// update time strings in setting to ensure all collectors work properly
+	opt.ScrapeBegin = start.Format(time.RFC3339)
+	opt.ScrapeEnd = end.Format(time.RFC3339)
+
+	return m.getOutputDir(cOpt.Dir)
+}
 
 // buildTopoForK8sCluster creates an abstract topo from tiup-cluster metadata
 func buildTopoForK8sCluster(

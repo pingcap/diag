@@ -87,7 +87,8 @@ func newCollectCmd() *cobra.Command {
 
 			cOpt.Mode = collector.CollectModeTiUP
 			cm.DisplayMode = gOpt.DisplayMode
-			return cm.CollectClusterInfo(&opt, &cOpt, &gOpt, nil, nil)
+			_, err := cm.CollectClusterInfo(&opt, &cOpt, &gOpt, nil, nil)
+			return err
 		},
 	}
 

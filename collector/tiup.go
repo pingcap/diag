@@ -16,11 +16,56 @@ package collector
 import (
 	"fmt"
 	"os"
+	"strconv"
+	"time"
 
+	"github.com/fatih/color"
 	"github.com/pingcap/diag/pkg/models"
+	"github.com/pingcap/diag/pkg/utils"
 	perrs "github.com/pingcap/errors"
 	"github.com/pingcap/tiup/pkg/cluster/spec"
 )
+
+// prepareArgsForTiUPCluster parses arguments and create output dir for tiup-cluster
+// deployed tidb clusters
+func (m *Manager) prepareArgsForTiUPCluster(
+	opt *BaseOptions,
+	cOpt *CollectOptions,
+) (string, string, error) {
+	// parse time range
+	end, err := utils.ParseTime(opt.ScrapeEnd)
+	if err != nil {
+		return "", "", err
+	}
+	// if the begin time point is a minus integer, assume it as hour offset
+	var start time.Time
+	if offset, err := strconv.Atoi(opt.ScrapeBegin); err == nil && offset < 0 {
+		start = end.Add(time.Hour * time.Duration(offset))
+	} else {
+		start, err = utils.ParseTime(opt.ScrapeBegin)
+		if err != nil {
+			return "", "", err
+		}
+	}
+
+	// update time strings in setting to ensure all collectors work properly
+	opt.ScrapeBegin = start.Format(time.RFC3339)
+	opt.ScrapeEnd = end.Format(time.RFC3339)
+
+	// show time range
+	prompt := fmt.Sprintf(`Time range:
+  %s - %s (Local)
+  %s - %s (UTC)
+  (total %.0f seconds)
+`,
+		color.HiYellowString(start.Local().Format(time.RFC3339)), color.HiYellowString(end.Local().Format(time.RFC3339)),
+		color.HiYellowString(start.UTC().Format(time.RFC3339)), color.HiYellowString(end.UTC().Format(time.RFC3339)),
+		end.Sub(start).Seconds(),
+	)
+
+	resultDir, err := m.getOutputDir(cOpt.Dir)
+	return prompt, resultDir, err
+}
 
 // buildTopoForTiUPCluster creates an abstract topo from tiup-cluster metadata
 func buildTopoForTiUPCluster(m *Manager, opt *BaseOptions) (*models.TiDBCluster, error) {
