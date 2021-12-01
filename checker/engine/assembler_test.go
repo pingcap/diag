@@ -92,7 +92,7 @@ func TestWrapper_GetDataSet(t *testing.T) {
 			},
 			args: args{
 				sd:         NewMockSourceData(),
-				namestruct: "TidbConfig",
+				namestruct: proto.TidbComponentName,
 			},
 			want: []*proto.HandleData{
 				{
@@ -138,22 +138,22 @@ func NewMockSourceData() *proto.SourceDataV2 {
 		ClusterInfo: nil,
 		TidbVersion: "v5.1",
 		NodesData: map[string][]proto.Config{
-			"PdConfig":   make([]proto.Config, 0),
-			"TidbConfig": make([]proto.Config, 0),
+			proto.PdComponentName:   make([]proto.Config, 0),
+			proto.TidbComponentName: make([]proto.Config, 0),
 		},
 	}
-	sd.NodesData["PdConfig"] = append(sd.NodesData["PdConfig"], &proto.PdConfigData{PdConfig: &proto.PdConfig{}, Port: 1234, Host: "xxx.xxx"})
-	sd.NodesData["PdConfig"] = append(sd.NodesData["PdConfig"], &proto.PdConfigData{PdConfig: &proto.PdConfig{}, Port: 45345, Host: "xxx.xxxsdsd"})
-	sd.NodesData["PdConfig"] = append(sd.NodesData["PdConfig"], &proto.PdConfigData{PdConfig: &proto.PdConfig{}, Port: 999, Host: "xxx.sdfaxx"})
-	sd.NodesData["TidbConfig"] = append(sd.NodesData["TidbConfig"], &proto.TidbConfigData{TidbConfig: &proto.TidbConfig{}, Port: 1111, Host: "xxx,xxx234"})
-	sd.NodesData["TidbConfig"] = append(sd.NodesData["TidbConfig"], &proto.TidbConfigData{TidbConfig: &proto.TidbConfig{}, Port: 2222, Host: "xxx,xxx145"})
+	sd.NodesData[proto.PdComponentName] = append(sd.NodesData[proto.PdComponentName], &proto.PdConfigData{PdConfig: &proto.PdConfig{}, Port: 1234, Host: "xxx.xxx"})
+	sd.NodesData[proto.PdComponentName] = append(sd.NodesData[proto.PdComponentName], &proto.PdConfigData{PdConfig: &proto.PdConfig{}, Port: 45345, Host: "xxx.xxxsdsd"})
+	sd.NodesData[proto.PdComponentName] = append(sd.NodesData[proto.PdComponentName], &proto.PdConfigData{PdConfig: &proto.PdConfig{}, Port: 999, Host: "xxx.sdfaxx"})
+	sd.NodesData[proto.TidbComponentName] = append(sd.NodesData[proto.TidbComponentName], &proto.TidbConfigData{TidbConfig: &proto.TidbConfig{}, Port: 1111, Host: "xxx,xxx234"})
+	sd.NodesData[proto.TidbComponentName] = append(sd.NodesData[proto.TidbComponentName], &proto.TidbConfigData{TidbConfig: &proto.TidbConfig{}, Port: 2222, Host: "xxx,xxx145"})
 	return sd
 }
 
 func TestWrapper_CrossData(t *testing.T) {
 	w := NewMockSourceData()
-	pdconf := w.NodesData["PdConfig"]
-	tidbconf := w.NodesData["TidbConfig"]
+	pdconf := w.NodesData[proto.PdComponentName]
+	tidbconf := w.NodesData[proto.TidbComponentName]
 	pdd := make([]proto.Data, 0)
 	tdd := make([]proto.Data, 0)
 	for _, d := range pdconf {

@@ -25,24 +25,27 @@ import (
 	"github.com/pingcap/tiup/pkg/logger/log"
 )
 
+type ComponentName = string
+
 const (
-	PdComponentName                   = "PdConfig"
-	TidbComponentName                 = "TidbConfig"
-	TikvComponentName                 = "TikvConfig"
-	TiflashComponentName              = "TiflashConfig"
-	PerformanceDashboardComponentName = "performance.dashboard"
-	ConfigType                        = "config"
-	PerformanceType                   = "performance"
+	PdComponentName                   ComponentName = "PdConfig"
+	TidbComponentName                 ComponentName = "TidbConfig"
+	TikvComponentName                 ComponentName = "TikvConfig"
+	TiflashComponentName              ComponentName = "TiflashConfig"
+	PerformanceDashboardComponentName ComponentName = "performance.dashboard"
+
+	ConfigType      = "config"
+	PerformanceType = "performance"
 )
 
 type SourceDataV2 struct {
 	ClusterInfo   *collector.ClusterJSON
 	TidbVersion   string
-	NodesData     map[string][]Config // {"component": {config, config, config, nil}}
+	NodesData     map[ComponentName][]Config // {"component": {config, config, config, nil}}
 	DashboardData *DashboardData
 }
 
-func (sd *SourceDataV2) AppendConfig(cfg Config, component string) {
+func (sd *SourceDataV2) AppendConfig(cfg Config, component ComponentName) {
 	if n, ok := sd.NodesData[component]; ok {
 		n = append(n, cfg)
 		sd.NodesData[component] = n
