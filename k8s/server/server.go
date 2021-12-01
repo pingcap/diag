@@ -23,6 +23,8 @@ import (
 	"k8s.io/klog/v2"
 )
 
+const apiPrefix = "api/v1"
+
 // Options is the option set for diag API server
 type Options struct {
 	Host    string
@@ -80,18 +82,20 @@ func newEngine(ctx *context, opt *Options) *gin.Engine {
 	r.Use(ctx.middleware())
 
 	// register routes
+	apis := r.Group(apiPrefix)
+	// register apis
 	// - collectors
-	r.GET("/collectors", getJobList)
-	r.POST("/collectors", collectData)
-	r.GET("/collectors/:id", getCollectJob)
+	apis.GET("/collectors", getJobList)
+	apis.POST("/collectors", collectData)
+	apis.GET("/collectors/:id", getCollectJob)
 
 	// - data
-	r.GET("/data", getDataList)
-	r.GET("/data/:id", getDataSet)
-	r.DELETE("/data/:id", deleteDataSet)
+	apis.GET("/data", getDataList)
+	apis.GET("/data/:id", getDataSet)
+	apis.DELETE("/data/:id", deleteDataSet)
 
 	// - misc
-	r.GET("/version", getVersion)
+	apis.GET("/version", getVersion)
 
 	return r
 }
