@@ -106,6 +106,16 @@ func TestJsonDecodeTidbConfigData(t *testing.T) {
 	if cfg.Log.File.MaxBackups == 0 {
 		t.Fatal("wrong json decode result")
 	}
+	// for nullable bool
+	if cfg.Log.DisableTimestamp != false {
+		t.Fatal("wrong json decode result")
+	}
+	if cfg.Log.DisableErrorStack != false {
+		t.Fatal("wrong json decode result")
+	}
+	if cfg.Log.EnableErrorStack != false {
+		t.Fatal("wrong json decode result")
+	}
 }
 
 func TestPdConfigData_GetValueByTagPath(t *testing.T) {

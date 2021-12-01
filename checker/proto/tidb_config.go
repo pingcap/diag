@@ -25,26 +25,19 @@ import (
 
 // nullableBool defaults unset bool options to unset instead of false, which enables us to know if the user has set 2
 // conflict options at the same time.
-type nullableBool struct {
-	IsValid bool
-	IsTrue  bool
-}
+type nullableBool bool
 
 var (
-	nbUnset = nullableBool{false, false}
-	nbFalse = nullableBool{true, false}
-	nbTrue  = nullableBool{true, true}
+	nbUnset = nullableBool(false)
+	nbFalse = nullableBool(false)
+	nbTrue  = nullableBool(true)
 )
-
-func (b *nullableBool) toBool() bool {
-	return b.IsValid && b.IsTrue
-}
 
 func (b nullableBool) MarshalJSON() ([]byte, error) {
 	switch b {
-	case nbTrue:
+	case true:
 		return json.Marshal(true)
-	case nbFalse:
+	case false:
 		return json.Marshal(false)
 	default:
 		return json.Marshal(nil)
@@ -69,10 +62,7 @@ func (b *nullableBool) UnmarshalText(text []byte) error {
 }
 
 func (b nullableBool) MarshalText() ([]byte, error) {
-	if !b.IsValid {
-		return []byte(""), nil
-	}
-	if b.IsTrue {
+	if b {
 		return []byte("true"), nil
 	}
 	return []byte("false"), nil
@@ -86,7 +76,7 @@ func (b *nullableBool) UnmarshalJSON(data []byte) error {
 	}
 	switch raw := v.(type) {
 	case bool:
-		*b = nullableBool{true, raw}
+		*b = nullableBool(raw)
 	default:
 		*b = nbUnset
 	}

@@ -23,8 +23,8 @@
     "level": "info",
     "format": "text",
     "disable-timestamp": null,
-    "enable-timestamp": null,
-    "disable-error-stack": null,
+    "enable-timestamp": true,
+    "disable-error-stack": false,
     "enable-error-stack": null,
     "file": {
       "filename": "/tidb-deploy/tidb/log/tidb.log",

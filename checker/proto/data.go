@@ -127,12 +127,14 @@ type PrintTemplate interface {
 	// TemplateName() string
 	CollectResult(*HandleData, interface{}) error
 	Print(io.Writer)
+	ResultAbnormal() bool
 }
 
 type ConfPrintTemplate struct {
 	Rule     *Rule
 	InfoList []*ConfInfo
 }
+
 type ConfInfo struct {
 	UniTag      string `header:"UniTag"`
 	Val         string `header:"val"`
@@ -233,9 +235,22 @@ func (c *ConfPrintTemplate) Print(out io.Writer) {
 	}
 }
 
+func (c *ConfPrintTemplate) ResultAbnormal() bool {
+	for _, info := range c.InfoList {
+		if info == nil {
+			continue
+		}
+		if strings.ToLower(info.CheckResult) != "ok" && strings.ToLower(info.CheckResult) != "nodata" {
+			return true
+		}
+	}
+	return false
+}
+
 type SQLPerformancePrintTemplate struct {
-	Rule     *Rule
-	InfoList *SQLPerformanceInfo
+	Rule              *Rule
+	InfoList          *SQLPerformanceInfo
+	AbnormalDigestCnt int
 }
 
 type SQLPerformanceInfo struct {
@@ -271,6 +286,7 @@ func (c *SQLPerformancePrintTemplate) CollectResult(hd *HandleData, retValue int
 			return fmt.Errorf("retValue to int failed, %v", reflect.TypeOf(retValue))
 		}
 		c.InfoList.NumDigest = fmt.Sprintf("%d Digest trigger cordon", checkResult)
+		c.AbnormalDigestCnt = int(checkResult)
 	case "old_version_count":
 		checkResult, ok := retValue.(bool)
 		if !ok {
@@ -280,9 +296,11 @@ func (c *SQLPerformancePrintTemplate) CollectResult(hd *HandleData, retValue int
 			c.InfoList.NumDigest = fmt.Sprintf("%d Digest trigger cordon", 0)
 		} else {
 			c.InfoList.NumDigest = fmt.Sprintf("%d Digest trigger cordon", data.OldVersionProcesskey.Count)
+			c.AbnormalDigestCnt = data.OldVersionProcesskey.Count
 		}
 	case "scan_key_skip":
 		c.InfoList.NumDigest = fmt.Sprintf("%d Digest trigger cordon", data.TombStoneStatistics.Count)
+		c.AbnormalDigestCnt = data.TombStoneStatistics.Count
 	}
 	return nil
 }
@@ -291,6 +309,10 @@ func (c *SQLPerformancePrintTemplate) Print(out io.Writer) {
 	printer := tableprinter.New(out)
 	row, nums := tableprinter.StructParser.ParseRow(reflect.ValueOf(c.InfoList).Elem())
 	printer.RenderRow(row, nums)
+}
+
+func (c *SQLPerformancePrintTemplate) ResultAbnormal() bool {
+	return c.AbnormalDigestCnt > 0
 }
 
 type Sample struct {
