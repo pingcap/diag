@@ -17,5 +17,9 @@ func PrintReleaseInfo() {
 }
 
 func String() string {
-	return fmt.Sprintf("%s @%s (%s) feat.", ReleaseVersion, GitBranch, GitHash)
+	return fmt.Sprintf("%s @%s (%s)", ReleaseVersion, GitBranch, GitHash)
+}
+
+func ShortVer() string {
+	return fmt.Sprintf("%s (%s)", ReleaseVersion, GitHash)
 }
