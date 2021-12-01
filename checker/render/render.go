@@ -72,7 +72,7 @@ func (w *ResultWrapper) Output(checkresult map[string]proto.PrintTemplate) error
 	// todo@toto find rule check result
 	// print OutputMetaData
 	defer func() {
-		fmt.Printf("Result report and log are saved at %s\n", w.storePath)
+		fmt.Printf("Result report and record are saved at %s\n", w.storePath)
 	}()
 	if err := w.OutputSummary(checkresult); err != nil {
 		return err
@@ -83,7 +83,7 @@ func (w *ResultWrapper) Output(checkresult map[string]proto.PrintTemplate) error
 func (w *ResultWrapper) OutputSummary(checkresult map[string]proto.PrintTemplate) error {
 	// todo@toto find rule check result
 	// print OutputMetaData
-	writer, err := NewCheckerWriter(w.storePath, "report-clinic.txt")
+	writer, err := NewCheckerWriter(w.storePath, "check-report.txt")
 	if err != nil {
 		log.Errorf("create file failed %+v", err.Error())
 		return err
@@ -181,7 +181,7 @@ func (w *ResultWrapper) OutputSummary(checkresult map[string]proto.PrintTemplate
 func (w *ResultWrapper) SaveDetail(checkresult map[string]proto.PrintTemplate) error {
 	// todo@toto find rule check result
 	// print OutputMetaData
-	writer, err := NewCheckerWriter(w.storePath, "log-checker.txt")
+	writer, err := NewCheckerWriter(w.storePath, "detailed-check-record.txt")
 	if err != nil {
 		log.Errorf("create file failed %+v", err.Error())
 		return err
