@@ -65,9 +65,8 @@ func newUploadCommand() *cobra.Command {
 	}
 
 	cmd.Flags().StringVarP(&opt.alias, "alias", "", "", "the alias of upload file.")
-	cmd.Flags().StringVarP(&opt.endpoint, "endpoint", "", "", "the clinic service endpoint.")
+	cmd.Flags().StringVarP(&opt.endpoint, "endpoint", "", "https://clinic.pingcap.com:4433", "the clinic service endpoint.")
 	cmd.Flags().StringVarP(&opt.issue, "issue", "", "", "related jira oncall issue, example: ONCALL-1131")
-	cmd.MarkFlagRequired("endpoint")
 
 	return cmd
 }
