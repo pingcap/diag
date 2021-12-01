@@ -12,12 +12,15 @@ import (
 
 func GetRegisterFunc() map[string]interface{} {
 	return map[string]interface{}{
-		"ToInt":       utils.ValueToInt,
-		"ToString":    utils.ValueToString,
-		"ToBool":      utils.ValueToBool,
-		"ToFloat":     utils.ValueToFloat,
-		"FlatMap":     utils.FlatMap,
-		"ElemInRange": utils.ElemInRange,
+		"ToInt":               utils.ValueToInt,
+		"ToString":            utils.ValueToString,
+		"ToBool":              utils.ValueToBool,
+		"ToFloat":             utils.ValueToFloat,
+		"FlatMap":             utils.FlatMap,
+		"ElemInRange":         utils.ElemInRange,
+		"Len":                 utils.Len,
+		"MustCmpReadableSize": utils.MustCmpReadableSize,
+		"MustCmpDuration":     utils.MustCmpDuration,
 	}
 }
 
@@ -43,17 +46,17 @@ func (u *ComputeUnit) Compute() (map[string]interface{}, error) {
 	ruleBuilder := genginebuilder.NewRuleBuilder(dataContext)
 	rulestr := u.RuleSplicing()
 	if err := ruleBuilder.BuildRuleFromString(rulestr); err != nil {
-		log.Error("build rule %+v err:%s ", zap.Any("rule", rulestr), zap.Error(err))
+		log.Error("build rule failed", zap.Any("rule", rulestr), zap.Error(err))
 		return nil, err
 	}
 	eng := engine.NewGengine()
 	if err := eng.ExecuteConcurrent(ruleBuilder); err != nil {
-		log.Error("execute rule error: %v", zap.Error(err))
+		log.Error("execute rule failed", zap.Error(err))
 		return nil, err
 	}
 	result, err := eng.GetRulesResultMap()
 	if err != nil {
-		log.Error("fetch execution result failed, ", zap.Error(err))
+		log.Error("fetch execution result failed", zap.Error(err))
 		return nil, err
 	}
 	return result, nil

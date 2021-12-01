@@ -10,7 +10,7 @@
     "config"
   ],
   "topology": {
-    "version": "v5.2.2",
+    "version": "v5.2.1",
     "namespace": "diag",
     "pd": [
       {

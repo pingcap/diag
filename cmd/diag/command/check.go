@@ -59,7 +59,11 @@ func newCheckCmd() *cobra.Command {
 				if val == "performance" {
 					checkFlag |= sourcedata.PerformanceFlag
 				}
+				if val == "default_config" {
+					checkFlag |= sourcedata.DefaultConfigFlag
+				}
 			}
+			// if output is not defined, use an auto generated one.
 			if len(outpath) == 0 {
 				outpath = path.Join(datapath, fmt.Sprintf("report-%s", time.Now().Format("060102150405")))
 			}
@@ -119,6 +123,6 @@ func newCheckCmd() *cobra.Command {
 	cmd.Flags().StringVar(&datapath, "datapath", "./data", "path to collected data")
 	cmd.Flags().StringVar(&logLevel, "loglevel", "info", "log level, supported value is debug, info")
 	cmd.Flags().StringVarP(&outpath, "output", "o", "","dir to save check report. report will be saved in datapath if not set")
-	cmd.Flags().StringSliceVar(&inc, "include", inc, "types of data to check, supported value is config, performance")
+	cmd.Flags().StringSliceVar(&inc, "include", inc, "types of data to check, supported value is config, performance, default_config")
 	return cmd
 }

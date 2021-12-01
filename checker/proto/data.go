@@ -15,6 +15,7 @@ package proto
 
 import (
 	"fmt"
+	"go.uber.org/zap"
 	"io"
 	"reflect"
 	"strings"
@@ -22,7 +23,7 @@ import (
 	"github.com/Masterminds/semver"
 	"github.com/lensesio/tableprinter"
 	"github.com/pingcap/diag/collector"
-	"github.com/pingcap/tiup/pkg/logger/log"
+	"github.com/pingcap/log"
 )
 
 type ComponentName = string
@@ -34,9 +35,16 @@ const (
 	TiflashComponentName              ComponentName = "TiflashConfig"
 	PerformanceDashboardComponentName ComponentName = "performance.dashboard"
 
-	ConfigType      = "config"
-	PerformanceType = "performance"
+	ConfigType        = "config"
+	PerformanceType   = "performance"
+	DefaultConfigType = "defaultConfig"
 )
+
+var CheckTypeOrder = map[string]int{
+	ConfigType:        0,
+	PerformanceType:   1,
+	DefaultConfigType: 2,
+}
 
 type SourceDataV2 struct {
 	ClusterInfo   *collector.ClusterJSON
@@ -119,12 +127,14 @@ type PrintTemplate interface {
 	// TemplateName() string
 	CollectResult(*HandleData, interface{}) error
 	Print(io.Writer)
+	ResultAbnormal() bool
 }
 
 type ConfPrintTemplate struct {
 	Rule     *Rule
 	InfoList []*ConfInfo
 }
+
 type ConfInfo struct {
 	UniTag      string `header:"UniTag"`
 	Val         string `header:"val"`
@@ -164,7 +174,6 @@ func (c *ConfPrintTemplate) CollectResult(hd *HandleData, retValue interface{}) 
 		checkResult = c.Rule.WarnLevel
 	}
 	valstr := c.GetValStr(hd)
-
 	confInfo := &ConfInfo{
 		UniTag:      hd.UqiTag,
 		Val:         valstr,
@@ -180,14 +189,18 @@ func (c *ConfPrintTemplate) GetValStr(hd *HandleData) string {
 	for _, data := range hd.Data {
 		conf, ok := data.(Config)
 		if !ok {
-			log.Errorf("can't convert into config type, %+v", data.ActingName())
+			log.Error("can't convert into config type", zap.String("ActingName", data.ActingName()))
 			continue
 		}
 		valpaths := componentVal[conf.GetComponent()]
 		for _, valpath := range valpaths {
 			if len(valpath) != 0 {
 				rv := conf.GetValueByTagPath(valpath)
-				valmap = append(valmap, fmt.Sprintf("%s.%s:%v", conf.GetComponent(), valpath, rv))
+				if !rv.IsValid() {
+					valmap = append(valmap, fmt.Sprintf("%s.%s:%v", conf.GetComponent(), valpath, nil))
+				} else {
+					valmap = append(valmap, fmt.Sprintf("%s.%s:%v", conf.GetComponent(), valpath, rv))
+				}
 			}
 		}
 	}
@@ -222,9 +235,22 @@ func (c *ConfPrintTemplate) Print(out io.Writer) {
 	}
 }
 
+func (c *ConfPrintTemplate) ResultAbnormal() bool {
+	for _, info := range c.InfoList {
+		if info == nil {
+			continue
+		}
+		if strings.ToLower(info.CheckResult) != "ok" && strings.ToLower(info.CheckResult) != "nodata" {
+			return true
+		}
+	}
+	return false
+}
+
 type SQLPerformancePrintTemplate struct {
-	Rule     *Rule
-	InfoList *SQLPerformanceInfo
+	Rule              *Rule
+	InfoList          *SQLPerformanceInfo
+	AbnormalDigestCnt int
 }
 
 type SQLPerformanceInfo struct {
@@ -251,7 +277,7 @@ func (c *SQLPerformancePrintTemplate) CollectResult(hd *HandleData, retValue int
 	}
 	data, ok := hd.Data[0].(*DashboardData)
 	if !ok {
-		log.Errorf("convert into dashboard data failed, %+v", data.ActingName())
+		log.Error("convert into dashboard data failed", zap.String("ActingName", data.ActingName()))
 	}
 	switch c.Rule.Name {
 	case "poor_effective_plan":
@@ -260,6 +286,7 @@ func (c *SQLPerformancePrintTemplate) CollectResult(hd *HandleData, retValue int
 			return fmt.Errorf("retValue to int failed, %v", reflect.TypeOf(retValue))
 		}
 		c.InfoList.NumDigest = fmt.Sprintf("%d Digest trigger cordon", checkResult)
+		c.AbnormalDigestCnt = int(checkResult)
 	case "old_version_count":
 		checkResult, ok := retValue.(bool)
 		if !ok {
@@ -269,18 +296,23 @@ func (c *SQLPerformancePrintTemplate) CollectResult(hd *HandleData, retValue int
 			c.InfoList.NumDigest = fmt.Sprintf("%d Digest trigger cordon", 0)
 		} else {
 			c.InfoList.NumDigest = fmt.Sprintf("%d Digest trigger cordon", data.OldVersionProcesskey.Count)
+			c.AbnormalDigestCnt = data.OldVersionProcesskey.Count
 		}
 	case "scan_key_skip":
 		c.InfoList.NumDigest = fmt.Sprintf("%d Digest trigger cordon", data.TombStoneStatistics.Count)
+		c.AbnormalDigestCnt = data.TombStoneStatistics.Count
 	}
 	return nil
 }
 
 func (c *SQLPerformancePrintTemplate) Print(out io.Writer) {
-	log.Debugf("info list %v", c.InfoList)
 	printer := tableprinter.New(out)
 	row, nums := tableprinter.StructParser.ParseRow(reflect.ValueOf(c.InfoList).Elem())
 	printer.RenderRow(row, nums)
+}
+
+func (c *SQLPerformancePrintTemplate) ResultAbnormal() bool {
+	return c.AbnormalDigestCnt > 0
 }
 
 type Sample struct {

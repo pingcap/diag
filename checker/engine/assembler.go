@@ -88,7 +88,7 @@ func (w *Wrapper) PackageResult(hd *proto.HandleData, resultset map[string]inter
 		rulePrinter, ok := w.RuleResult[rulename]
 		if !ok {
 			switch rule.CheckType {
-			case proto.ConfigType: // to move a global check type define
+			case proto.ConfigType, proto.DefaultConfigType: // to move a global check type define
 				rulePrinter = proto.NewConfPrintTemplate(rule) // todo@toto add new func
 			case proto.PerformanceType:
 				rulePrinter = proto.NewSQLPerformancePrintTemplate(rule) // todo@toto add new func
