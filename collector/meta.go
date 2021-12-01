@@ -124,7 +124,7 @@ func (c *MetaCollectOptions) Collect(m *Manager, topo *models.TiDBCluster) error
 	}
 
 	jsonbyte, _ := jsoniter.MarshalIndent(ClusterJSON{
-		DiagVersion: version.ReleaseVersion,
+		DiagVersion: version.ShortVer(),
 		ClusterName: b.Cluster,
 		ClusterID:   clusterID,
 		DeployType:  m.mode,
