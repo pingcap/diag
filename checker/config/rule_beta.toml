@@ -481,7 +481,7 @@ variation =  "TidbConfig.performance.feedback-probability"
 execute_rule = """
 rule "feedback-probability"
 begin
-    if ToInt(TidbConfig.GetValueByTagPath("performance.feedback-probability")) != 0 {
+    if ToFloat(TidbConfig.GetValueByTagPath("performance.feedback-probability")) > 0 {
         return false
     } else {
         return true
