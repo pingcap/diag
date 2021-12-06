@@ -490,7 +490,7 @@ end
 """
 name_struct = "TidbConfig"
 check_type = "config"
-expect_res = "https://kb.pingcap.com/shared/v1/YtEKeySXI7-X14dKsMe1SZfq1F79w0lL3qlyZlVyZeGFh4pOYJkmS1hCzHtrfs9_MN39bCLf_GDiJQRHBPGWAKo_Kj_CPu3NPJG1yik2DIg"   #
+expect_res = "https://s.tidb.io/wvuoe8f4"
 warn_level = "warning"
 version = ""
 
