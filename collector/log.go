@@ -78,7 +78,7 @@ func (c *LogCollectOptions) Prepare(m *Manager, cls *models.TiDBCluster) (map[st
 		return nil, nil
 	}
 
-	topo := cls.Attributes[CollectModeTiUP].(*spec.Specification)
+	topo := cls.Attributes[CollectModeTiUP].(spec.Topology)
 	var (
 		dryRunTasks   []*task.StepDisplay
 		downloadTasks []*task.StepDisplay
@@ -208,7 +208,7 @@ func (c *LogCollectOptions) Collect(m *Manager, cls *models.TiDBCluster) error {
 		return nil
 	}
 
-	topo := cls.Attributes[CollectModeTiUP].(*spec.Specification)
+	topo := cls.Attributes[CollectModeTiUP].(spec.Topology)
 	var (
 		collectTasks []*task.StepDisplay
 		cleanTasks   []*task.StepDisplay

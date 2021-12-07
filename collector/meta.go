@@ -47,7 +47,6 @@ type MetaCollectOptions struct {
 	session    string            // an unique session ID of the collection
 	collectors map[string]bool
 	resultDir  string
-	filePath   string
 	tc         *pingcapv1alpha1.TidbCluster
 	tm         *pingcapv1alpha1.TidbMonitor
 }
@@ -111,10 +110,12 @@ func (c *MetaCollectOptions) Collect(m *Manager, topo *models.TiDBCluster) error
 	default:
 		// nothing
 	}
-	if err != nil {
-		fmt.Fprint(os.Stderr, fmt.Errorf("cannot get clusterID from PD"))
-		return err
-	}
+	/*
+		if err != nil {
+			fmt.Fprint(os.Stderr, fmt.Errorf("cannot get clusterID from PD"))
+			return err
+		}
+	*/
 
 	collectors := []string{}
 	for name, enabled := range c.collectors {
@@ -147,7 +148,7 @@ func (c *MetaCollectOptions) Collect(m *Manager, topo *models.TiDBCluster) error
 	// save deployment related topology
 	switch m.mode {
 	case CollectModeTiUP:
-		yamlMeta, err := os.ReadFile(c.filePath)
+		yamlMeta, err := os.ReadFile(m.specManager.Path(b.Cluster, "meta.yaml"))
 		if err != nil {
 			return err
 		}

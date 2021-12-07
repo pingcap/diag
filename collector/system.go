@@ -75,7 +75,7 @@ func (c *SystemCollectOptions) Collect(m *Manager, cls *models.TiDBCluster) erro
 		return nil
 	}
 
-	topo := cls.Attributes[CollectModeTiUP].(*spec.Specification)
+	topo := cls.Attributes[CollectModeTiUP].(spec.Topology)
 	var (
 		collectInsightTasks []*task.StepDisplay
 		checkSysTasks       []*task.StepDisplay

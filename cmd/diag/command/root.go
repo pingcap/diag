@@ -20,11 +20,9 @@ import (
 
 	"github.com/fatih/color"
 	"github.com/joomcode/errorx"
-	"github.com/pingcap/diag/collector"
 	"github.com/pingcap/diag/version"
 	"github.com/pingcap/tiup/pkg/cluster/executor"
 	operator "github.com/pingcap/tiup/pkg/cluster/operation"
-	"github.com/pingcap/tiup/pkg/cluster/spec"
 	tiupmeta "github.com/pingcap/tiup/pkg/environment"
 	"github.com/pingcap/tiup/pkg/localdata"
 	"github.com/pingcap/tiup/pkg/logger"
@@ -40,9 +38,6 @@ var (
 	gOpt        operator.Options
 	skipConfirm bool
 )
-
-var tidbSpec *spec.SpecManager
-var cm *collector.Manager
 
 func init() {
 	logger.InitGlobalLogger()
@@ -68,12 +63,6 @@ func init() {
 			var env *tiupmeta.Environment
 			// unset component data dir to use clusters'
 			os.Unsetenv(localdata.EnvNameComponentDataDir)
-			if err = spec.Initialize("cluster"); err != nil {
-				return err
-			}
-
-			tidbSpec = spec.GetSpecManager()
-			cm = collector.NewManager("tidb", tidbSpec, spec.TiDBComponentVersion)
 
 			// Running in other OS/ARCH Should be fine we only download manifest file.
 			env, err = tiupmeta.InitEnv(repository.Options{
@@ -116,6 +105,7 @@ func init() {
 
 	rootCmd.AddCommand(
 		newCollectCmd(),
+		newCollectDMCmd(),
 		newPackageCmd(),
 		newRebuildCmd(),
 		newUploadCommand(),

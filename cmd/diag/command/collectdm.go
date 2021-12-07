@@ -22,6 +22,7 @@ import (
 	"time"
 
 	"github.com/pingcap/diag/collector"
+	dmspec "github.com/pingcap/tiup/components/dm/spec"
 	"github.com/pingcap/tiup/pkg/cluster/executor"
 	"github.com/pingcap/tiup/pkg/cluster/spec"
 	"github.com/pingcap/tiup/pkg/set"
@@ -30,7 +31,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func newCollectCmd() *cobra.Command {
+func newCollectDMCmd() *cobra.Command {
 	var collectAll bool
 	var metricsConf string
 	opt := collector.BaseOptions{
@@ -44,14 +45,14 @@ func newCollectCmd() *cobra.Command {
 	}
 	inc := make([]string, 0)
 	ext := make([]string, 0)
-	spec.Initialize("cluster")
 
-	tidbSpec := spec.GetSpecManager()
-	cm := collector.NewManager("tidb", tidbSpec)
+	spec.Initialize("dm")
 
+	dmSpec := dmspec.GetSpecManager()
+	cm := collector.NewManager("dm", dmSpec)
 	cmd := &cobra.Command{
-		Use:   "collect <cluster-name>",
-		Short: "Collect information and metrics from the cluster.",
+		Use:   "collectdm <cluster-name>",
+		Short: "Collectdm information and metrics from the dm cluster.",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if len(args) != 1 {
 				return cmd.Help()

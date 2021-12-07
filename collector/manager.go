@@ -30,21 +30,19 @@ import (
 type Manager struct {
 	sysName     string
 	specManager *spec.SpecManager
-	bindVersion spec.BindVersion
 	session     string // an unique ID of the collection
 	mode        string // tiup-cluster or tidb-operator
 	DisplayMode string // display format
 }
 
 // NewManager create a Manager.
-func NewManager(sysName string, specManager *spec.SpecManager, bindVersion spec.BindVersion) *Manager {
+func NewManager(sysName string, specManager *spec.SpecManager) *Manager {
 	currTime := time.Now()
 	tid := base52.Encode(currTime.UnixNano() + rand.Int63n(1000))
 
 	return &Manager{
 		sysName:     sysName,
 		specManager: specManager,
-		bindVersion: bindVersion,
 		session:     tid,
 	}
 }

@@ -39,8 +39,9 @@ const (
 	CollectTypeLog     = "log"
 	CollectTypeConfig  = "config"
 	CollectTypeSchema  = "db_vars"
-	CollectModeTiUP    = "tiup-cluster"  // collect from a tiup-cluster deployed cluster
-	CollectModeK8s     = "tidb-operator" // collect from a tidb-operator deployed cluster
+
+	CollectModeTiUP = "tiup-cluster"  // collect from a tiup-cluster deployed cluster
+	CollectModeK8s  = "tidb-operator" // collect from a tidb-operator deployed cluster
 
 )
 
@@ -118,9 +119,9 @@ func (m *Manager) CollectClusterInfo(
 	if err != nil {
 		return err
 	}
-	if cls == nil || len(cls.Components()) < 1 {
-		return fmt.Errorf("no valid cluster topology parsed, can not collect anything")
-	}
+	//	if cls == nil || len(cls.Components()) < 1 {
+	//		return fmt.Errorf("no valid cluster topology parsed, can not collect anything")
+	//	}
 
 	// parse time range
 	end, err := utils.ParseTime(opt.ScrapeEnd)
@@ -162,27 +163,16 @@ func (m *Manager) CollectClusterInfo(
 	// build collector list
 	collectors := make([]Collector, 0)
 
-	switch m.mode {
-	case CollectModeTiUP:
-		collectors = append(collectors, &MetaCollectOptions{ // cluster metadata, always collected
-			BaseOptions: opt,
-			opt:         gOpt,
-			session:     m.session,
-			collectors:  collectorSet,
-			resultDir:   resultDir,
-			filePath:    m.specManager.Path(opt.Cluster, "meta.yaml"),
-		})
-	case CollectModeK8s:
-		collectors = append(collectors, &MetaCollectOptions{ // cluster metadata, always collected
-			BaseOptions: opt,
-			opt:         gOpt,
-			session:     m.session,
-			collectors:  collectorSet,
-			resultDir:   resultDir,
-			tc:          tc,
-			tm:          tm,
-		})
-	}
+	// collect data from monitoring system
+	collectors = append(collectors, &MetaCollectOptions{ // cluster metadata, always collected
+		BaseOptions: opt,
+		opt:         gOpt,
+		session:     m.session,
+		collectors:  collectorSet,
+		resultDir:   resultDir,
+		tc:          tc,
+		tm:          tm,
+	})
 
 	// collect data from monitoring system
 	if canCollect(cOpt, CollectTypeMonitor) {

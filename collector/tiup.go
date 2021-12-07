@@ -24,8 +24,6 @@ import (
 
 // buildTopoForTiUPCluster creates an abstract topo from tiup-cluster metadata
 func buildTopoForTiUPCluster(m *Manager, opt *BaseOptions) (*models.TiDBCluster, error) {
-	var topo spec.Specification
-
 	exist, err := m.specManager.Exist(opt.Cluster)
 	if err != nil {
 		return nil, err
@@ -34,23 +32,29 @@ func buildTopoForTiUPCluster(m *Manager, opt *BaseOptions) (*models.TiDBCluster,
 		return nil, perrs.Errorf("cluster %s does not exist", opt.Cluster)
 	}
 
-	metadata, err := spec.ClusterMetadata(opt.Cluster)
+	metadata := m.specManager.NewMetadata()
+	err = m.specManager.Metadata(opt.Cluster, metadata)
 	if err != nil {
 		return nil, err
 	}
-	opt.User = metadata.User
+	topo := metadata.GetTopology()
+
+	if err != nil {
+		return nil, err
+	}
+	opt.User = metadata.GetBaseMeta().User
 	opt.SSH.IdentityFile = m.specManager.Path(opt.Cluster, "ssh", "id_rsa")
-	topo = *metadata.Topology
 
 	// build the abstract topology
 	cls := &models.TiDBCluster{
-		Version: metadata.Version,
+		Version: metadata.GetBaseMeta().Version,
 		Attributes: map[string]interface{}{
-			CollectModeTiUP: &topo,
-			"last_ops_ver":  metadata.OpsVer,
+			CollectModeTiUP: topo,
+			"last_ops_ver":  metadata.GetBaseMeta().OpsVer,
 		},
 	}
 	topo.IterInstance(func(ins spec.Instance) {
+
 		switch ins.ComponentName() {
 		case spec.ComponentPD:
 			if cls.PD == nil {
