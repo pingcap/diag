@@ -93,11 +93,15 @@ func (c *SchemaCollectOptions) Collect(m *Manager, topo *models.TiDBCluster) err
 	if err != nil {
 		return err
 	}
-	ctx := ctxt.New(context.Background(), c.opt.Concurrency)
+	ctx := ctxt.New(
+		context.Background(),
+		c.opt.Concurrency,
+		m.logger,
+	)
 
 	tidbInstants := topo.TiDB
 
-	t := task.NewBuilder(m.DisplayMode).
+	t := task.NewBuilder(m.logger).
 		Func(
 			"collect db_vars",
 			func(ctx context.Context) error {

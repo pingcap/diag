@@ -19,9 +19,7 @@ import (
 	json "github.com/json-iterator/go"
 	"github.com/pingcap/diag/version"
 	"github.com/pingcap/errors"
-	"github.com/pingcap/log"
 	"github.com/spf13/cobra"
-	"go.uber.org/zap"
 	"golang.org/x/term"
 )
 
@@ -248,7 +246,7 @@ func fnvHash(raw string) string {
 	hash := fnv.New64()
 	if _, err := hash.Write([]byte(raw)); err != nil {
 		// impossible path
-		log.Error("failed to write fnv hash", zap.Error(err))
+		log.Errorf("failed to write fnv hash: %s", err)
 	}
 	return fmt.Sprintf("%x", hash.Sum64())
 }
@@ -257,7 +255,7 @@ func fnvHash32(raw string) string {
 	hash := fnv.New32()
 	if _, err := hash.Write([]byte(raw)); err != nil {
 		// impossible path
-		log.Error("failed to write fnv hash", zap.Error(err))
+		log.Errorf("failed to write fnv hash: %s", err)
 	}
 	return fmt.Sprintf("%x", hash.Sum32())
 }

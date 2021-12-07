@@ -16,9 +16,7 @@ import (
 
 	json "github.com/json-iterator/go"
 	"github.com/pingcap/errors"
-	"github.com/pingcap/log"
 	"github.com/spf13/cobra"
-	"go.uber.org/zap"
 )
 
 const (
@@ -137,7 +135,7 @@ func download(opt *downloadOptions) error {
 
 	dir, err := os.Getwd()
 	if err != nil {
-		log.Info("get current directory failed, use the default directory /tmp")
+		log.Infof("get current directory failed, use the default directory /tmp")
 		dir = "/tmp"
 	}
 
@@ -166,7 +164,7 @@ func download(opt *downloadOptions) error {
 			if err != nil {
 				panic(fmt.Sprintf("download file part failed, err=%v", err))
 			}
-			log.Info("file part is done", zap.Int64("from", job.from), zap.Int64("to", job.to))
+			log.Infof("file part is done, from: %d, to: %d", job.from, job.to)
 		}(j)
 	}
 	wg.Wait()

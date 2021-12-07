@@ -25,6 +25,7 @@ import (
 	"github.com/pingcap/tiup/pkg/base52"
 	operator "github.com/pingcap/tiup/pkg/cluster/operation"
 	"github.com/pingcap/tiup/pkg/crypto/rand"
+	logprinter "github.com/pingcap/tiup/pkg/logger/printer"
 	"github.com/pingcap/tiup/pkg/set"
 	"k8s.io/klog/v2"
 )
@@ -116,7 +117,10 @@ func runCollectors(
 		Exclude: set.NewStringSet(),
 		Mode:    collector.CollectModeK8s,
 	}
-	cm := collector.NewEmptyManager("tidb", worker.job.ID)
+
+	cLogger := logprinter.NewLogger("")
+	cLogger.SetDisplayMode(logprinter.DisplayModePlain)
+	cm := collector.NewEmptyManager("tidb", worker.job.ID, cLogger)
 
 	doneChan := make(chan struct{}, 1)
 	errChan := make(chan error, 1)

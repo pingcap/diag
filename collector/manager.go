@@ -23,6 +23,7 @@ import (
 	"github.com/pingcap/tiup/pkg/cluster/spec"
 	"github.com/pingcap/tiup/pkg/cluster/task"
 	"github.com/pingcap/tiup/pkg/crypto/rand"
+	logprinter "github.com/pingcap/tiup/pkg/logger/printer"
 	"github.com/pingcap/tiup/pkg/tui"
 )
 
@@ -32,11 +33,15 @@ type Manager struct {
 	specManager *spec.SpecManager
 	session     string // an unique ID of the collection
 	mode        string // tiup-cluster or tidb-operator
-	DisplayMode string // display format
+	logger      *logprinter.Logger
 }
 
 // NewManager create a Manager.
-func NewManager(sysName string, specManager *spec.SpecManager) *Manager {
+func NewManager(
+	sysName string,
+	specManager *spec.SpecManager,
+	logger *logprinter.Logger,
+) *Manager {
 	currTime := time.Now()
 	tid := base52.Encode(currTime.UnixNano() + rand.Int63n(1000))
 
@@ -44,14 +49,16 @@ func NewManager(sysName string, specManager *spec.SpecManager) *Manager {
 		sysName:     sysName,
 		specManager: specManager,
 		session:     tid,
+		logger:      logger,
 	}
 }
 
 // NewEmptyManager creates a Manager with specific session ID and without initialing specManager
-func NewEmptyManager(sysName, tid string) *Manager {
+func NewEmptyManager(sysName, tid string, logger *logprinter.Logger) *Manager {
 	return &Manager{
 		sysName: sysName,
 		session: tid,
+		logger:  logger,
 	}
 }
 
@@ -83,7 +90,7 @@ func (m *Manager) sshTaskBuilder(name string, topo spec.Topology, user string, o
 		}
 	}
 
-	return task.NewBuilder(m.DisplayMode).
+	return task.NewBuilder(m.logger).
 		SSHKeySet(
 			m.specManager.Path(name, "ssh", "id_rsa"),
 			m.specManager.Path(name, "ssh", "id_rsa.pub"),

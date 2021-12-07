@@ -24,7 +24,6 @@ import (
 	"github.com/pingcap/diag/checker/engine"
 	"github.com/pingcap/diag/checker/render"
 	"github.com/pingcap/diag/checker/sourcedata"
-	"github.com/pingcap/log"
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"
 	"golang.org/x/sync/errgroup"
@@ -42,10 +41,10 @@ func newCheckCmd() *cobra.Command {
 			if logLevel != "info" {
 				l := zap.NewAtomicLevel()
 				if l.UnmarshalText([]byte(logLevel)) == nil {
-					log.SetLevel(l.Level())
+					zap.IncreaseLevel(l)
 				}
 			}
-			log.Debug("start checker")
+			zap.L().Debug("checker started")
 			// TODO: integrate fetcher
 
 			// todo: checker action id
@@ -71,17 +70,17 @@ func newCheckCmd() *cobra.Command {
 				sourcedata.WithCheckFlag(checkFlag),
 				sourcedata.WithOutputDir(outpath))
 			if err != nil {
-				log.Error(err.Error())
+				log.Errorf("error fetching source data: %s", err)
 				return err
 			}
 			ruleSpec, err := config.LoadBetaRuleSpec()
 			if err != nil {
-				log.Error(err.Error())
+				log.Errorf("error loading rule specs: %s", err)
 				return err
 			}
 			data, ruleSet, err := fetch.FetchData(ruleSpec)
 			if err != nil {
-				log.Error(err.Error())
+				log.Errorf("error fetching data: %s", err)
 				return err
 			}
 			include := strings.Join(inc, "-")
@@ -113,7 +112,7 @@ func newCheckCmd() *cobra.Command {
 				return wrapper.Start()
 			})
 			if err := errG.Wait(); err != nil {
-				log.Error("check meet error", zap.Error(err))
+				log.Errorf("check meet error: %s", err)
 				return err
 			}
 			return nil
@@ -122,7 +121,7 @@ func newCheckCmd() *cobra.Command {
 
 	cmd.Flags().StringVar(&datapath, "datapath", "./data", "path to collected data")
 	cmd.Flags().StringVar(&logLevel, "loglevel", "info", "log level, supported value is debug, info")
-	cmd.Flags().StringVarP(&outpath, "output", "o", "","dir to save check report. report will be saved in datapath if not set")
+	cmd.Flags().StringVarP(&outpath, "output", "o", "", "dir to save check report. report will be saved in datapath if not set")
 	cmd.Flags().StringSliceVar(&inc, "include", inc, "types of data to check, supported value is config, performance, default_config")
 	return cmd
 }

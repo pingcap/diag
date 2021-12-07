@@ -21,7 +21,7 @@ import (
 	"sort"
 
 	"github.com/pingcap/diag/checker/proto"
-	"github.com/pingcap/tiup/pkg/logger/log"
+	logprinter "github.com/pingcap/tiup/pkg/logger/printer"
 )
 
 // bytes.buffer flush into checker_sampleid_timestamp.txt
@@ -85,7 +85,7 @@ func (w *ResultWrapper) OutputSummary(checkresult map[string]proto.PrintTemplate
 	// print OutputMetaData
 	writer, err := NewCheckerWriter(w.storePath, "check-report.txt")
 	if err != nil {
-		log.Errorf("create file failed %+v", err.Error())
+		logprinter.Errorf("create file failed %+v", err.Error())
 		return err
 	}
 	defer func() {
@@ -115,7 +115,7 @@ func (w *ResultWrapper) OutputSummary(checkresult map[string]proto.PrintTemplate
 		for _, rule := range rules {
 			printer, ok := checkresult[rule.Name]
 			if !ok {
-				log.Errorf("No such rule result")
+				logprinter.Errorf("No such rule result")
 				continue
 			}
 			if !printer.ResultAbnormal() {
@@ -153,7 +153,7 @@ func (w *ResultWrapper) OutputSummary(checkresult map[string]proto.PrintTemplate
 		for _, rule := range rules {
 			printer, ok := checkresult[rule.Name]
 			if !ok {
-				log.Errorf("No such rule result")
+				logprinter.Errorf("No such rule result")
 				continue
 			}
 			if !printer.ResultAbnormal() {
@@ -183,7 +183,7 @@ func (w *ResultWrapper) SaveDetail(checkresult map[string]proto.PrintTemplate) e
 	// print OutputMetaData
 	writer, err := NewCheckerWriter(w.storePath, "detailed-check-record.txt")
 	if err != nil {
-		log.Errorf("create file failed %+v", err.Error())
+		logprinter.Errorf("create file failed %+v", err.Error())
 		return err
 	}
 	defer func() {
@@ -205,7 +205,7 @@ func (w *ResultWrapper) SaveDetail(checkresult map[string]proto.PrintTemplate) e
 		for _, rule := range rules {
 			printer, ok := checkresult[rule.Name]
 			if !ok {
-				log.Errorf("No such rule result")
+				logprinter.Errorf("No such rule result")
 				continue
 			}
 			writer.SaveString(fmt.Sprintln("#### Rule Name: ", rule.Name))
@@ -240,12 +240,12 @@ func (w *CheckerWriter) Flush() error {
 
 func NewCheckerWriter(dirPath string, filename string) (*CheckerWriter, error) {
 	if err := os.MkdirAll(dirPath, 0777); err != nil {
-		log.Errorf("create path failed, %+v", err.Error())
+		logprinter.Errorf("create path failed, %+v", err.Error())
 		return nil, err
 	}
 	f, err := os.Create(path.Join(dirPath, filename))
 	if err != nil {
-		log.Errorf("create file failed, %+v", err.Error())
+		logprinter.Errorf("create file failed, %+v", err.Error())
 		return nil, err
 	}
 	termwriter := bufio.NewWriter(f)

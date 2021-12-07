@@ -28,7 +28,7 @@ import (
 	operator "github.com/pingcap/tiup/pkg/cluster/operation"
 	"github.com/pingcap/tiup/pkg/cluster/spec"
 	"github.com/pingcap/tiup/pkg/cluster/task"
-	"github.com/pingcap/tiup/pkg/logger/log"
+	logprinter "github.com/pingcap/tiup/pkg/logger/printer"
 	"github.com/pingcap/tiup/pkg/set"
 )
 
@@ -113,7 +113,7 @@ func (c *LogCollectOptions) Prepare(m *Manager, cls *models.TiDBCluster) (map[st
 			archKey := fmt.Sprintf("%s-%s", inst.OS(), inst.Arch())
 			if _, found := uniqueArchList[archKey]; !found {
 				uniqueArchList[archKey] = struct{}{}
-				t0 := task.NewBuilder(m.DisplayMode).
+				t0 := task.NewBuilder(m.logger).
 					Download(
 						componentDiagCollector,
 						inst.OS(),
@@ -185,12 +185,16 @@ func (c *LogCollectOptions) Prepare(m *Manager, cls *models.TiDBCluster) (map[st
 		dryRunTasks = append(dryRunTasks, t1)
 	}
 
-	t := task.NewBuilder(m.DisplayMode).
+	t := task.NewBuilder(m.logger).
 		ParallelStep("+ Download necessary tools", false, downloadTasks...).
 		ParallelStep("+ Collect host information", false, dryRunTasks...).
 		Build()
 
-	ctx := ctxt.New(context.Background(), c.opt.Concurrency)
+	ctx := ctxt.New(
+		context.Background(),
+		c.opt.Concurrency,
+		m.logger,
+	)
 	if err := t.Execute(ctx); err != nil {
 		if errorx.Cast(err) != nil {
 			// FIXME: Map possible task errors and give suggestions.
@@ -274,12 +278,16 @@ func (c *LogCollectOptions) Collect(m *Manager, cls *models.TiDBCluster) error {
 		}
 	}
 
-	t := task.NewBuilder(m.DisplayMode).
+	t := task.NewBuilder(m.logger).
 		ParallelStep("+ Scrap files on nodes", false, collectTasks...).
 		ParallelStep("+ Cleanup temp files", false, cleanTasks...).
 		Build()
 
-	ctx := ctxt.New(context.Background(), c.opt.Concurrency)
+	ctx := ctxt.New(
+		context.Background(),
+		c.opt.Concurrency,
+		m.logger,
+	)
 	if err := t.Execute(ctx); err != nil {
 		if errorx.Cast(err) != nil {
 			// FIXME: Map possible task errors and give suggestions.
@@ -292,9 +300,10 @@ func (c *LogCollectOptions) Collect(m *Manager, cls *models.TiDBCluster) error {
 }
 
 func parseScraperSamples(ctx context.Context, host string) (map[string][]CollectStat, error) {
+	logger := ctx.Value(logprinter.ContextKeyLogger).(*logprinter.Logger)
 	stdout, stderr, _ := ctxt.GetInner(ctx).GetOutputs(host)
 	if len(stderr) > 0 {
-		log.Errorf("error scraping files: %s, logs might be incomplete", stderr)
+		logger.Errorf("error scraping files: %s, logs might be incomplete", stderr)
 	}
 	if len(stdout) < 1 {
 		// no matched files, just skip
