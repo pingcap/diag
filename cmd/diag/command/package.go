@@ -18,9 +18,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var pOpt packager.PackageOptions
-
 func newPackageCmd() *cobra.Command {
+	pOpt := (&packager.PackageOptions{}).WithLogger(log)
 	cmd := &cobra.Command{
 		Use:   "package <collected-datadir>",
 		Short: "Package collected files",
@@ -35,7 +34,12 @@ func newPackageCmd() *cobra.Command {
 				pOpt.InputDir = args[0]
 			}
 
-			return packager.PackageCollectedData(&pOpt)
+			f, err := packager.PackageCollectedData(pOpt)
+			if err != nil {
+				return err
+			}
+			log.Infof("packaged data set saved to %s", f)
+			return nil
 		},
 	}
 

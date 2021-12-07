@@ -412,6 +412,8 @@ definitions:
         format: dateTime
       status:
         type: string
+      result:
+        type: string
   ResponseMsg:
     type: object
     properties:

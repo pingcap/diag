@@ -46,17 +46,17 @@ func getDataList(c *gin.Context) {
 	for _, job := range diagCtx.getCollectJobs() {
 		switch status {
 		case "":
-			if job.Status != collectJobStatusFinish {
+			if job.Status != taskStatusFinish {
 				continue // only list finished jobs by default
 			}
 		case "all":
 			// do nothing, accept all jobs
-		case collectJobStatusAccepted,
-			collectJobStatusCancel,
-			collectJobStatusError,
-			collectJobStatusPurge,
-			collectJobStatusFinish,
-			collectJobStatusRunning:
+		case taskStatusAccepted,
+			taskStatusCancel,
+			taskStatusError,
+			taskStatusPurge,
+			taskStatusFinish,
+			taskStatusRunning:
 			if job.Status != status {
 				continue
 			}
@@ -94,7 +94,7 @@ func getDataSet(c *gin.Context) {
 	}
 
 	job := diagCtx.getCollectJob(id)
-	if job == nil || job.Status == collectJobStatusPurge {
+	if job == nil || job.Status == taskStatusPurge {
 		msg := fmt.Sprintf("data set for collect job '%s' not found", id)
 		sendErrMsg(c, http.StatusNotFound, msg)
 		return
@@ -126,13 +126,13 @@ func deleteDataSet(c *gin.Context) {
 	}
 
 	job := diagCtx.getCollectJob(id)
-	if job == nil || job.Status == collectJobStatusPurge {
+	if job == nil || job.Status == taskStatusPurge {
 		msg := fmt.Sprintf("data set for collect job '%s' not found", id)
 		sendErrMsg(c, http.StatusNotFound, msg)
 		return
 	}
-	if job.Status == collectJobStatusAccepted ||
-		job.Status == collectJobStatusRunning ||
+	if job.Status == taskStatusAccepted ||
+		job.Status == taskStatusRunning ||
 		job.Dir == "" {
 		msg := fmt.Sprintf("collect job '%s' not finished yet", id)
 		sendErrMsg(c, http.StatusServiceUnavailable, msg)
@@ -146,7 +146,7 @@ func deleteDataSet(c *gin.Context) {
 		sendErrMsg(c, http.StatusInternalServerError, msg)
 		return
 	}
-	job.Status = collectJobStatusPurge
+	job.Status = taskStatusPurge
 
 	c.JSON(http.StatusNoContent, nil)
 }

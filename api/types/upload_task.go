@@ -23,6 +23,9 @@ type UploadTask struct {
 	// id
 	ID string `json:"id,omitempty"`
 
+	// result
+	Result string `json:"result,omitempty"`
+
 	// status
 	Status string `json:"status,omitempty"`
 }

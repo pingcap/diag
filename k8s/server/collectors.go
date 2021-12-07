@@ -34,12 +34,12 @@ import (
 
 // collect job status
 const (
-	collectJobStatusAccepted = "accepted"
-	collectJobStatusRunning  = "running"
-	collectJobStatusError    = "error"
-	collectJobStatusFinish   = "finished"
-	collectJobStatusCancel   = "cancelled"
-	collectJobStatusPurge    = "purged" // data set deleted
+	taskStatusAccepted = "accepted"
+	taskStatusRunning  = "running"
+	taskStatusError    = "error"
+	taskStatusFinish   = "finished"
+	taskStatusCancel   = "cancelled"
+	taskStatusPurge    = "purged" // data set deleted
 )
 
 // collectData implements POST /collectors
@@ -93,7 +93,7 @@ func collectData(c *gin.Context) {
 
 	job := &types.CollectJob{
 		ID:          base52.Encode(currTime.UnixNano() + rand.Int63n(1000)),
-		Status:      collectJobStatusAccepted,
+		Status:      taskStatusAccepted,
 		ClusterName: opt.Cluster,
 		Collectors:  collectors,
 		From:        opt.ScrapeBegin,
@@ -155,7 +155,7 @@ func runCollector(
 	doneChan := make(chan struct{}, 1)
 	errChan := make(chan error, 1)
 	go func() {
-		ctx.setJobStatus(worker.job.ID, collectJobStatusRunning)
+		ctx.setJobStatus(worker.job.ID, taskStatusRunning)
 		resultDir, err := cm.CollectClusterInfo(opt, &cOpt, &gOpt, ctx.kubeCli, ctx.dynCli)
 		outW.Close()
 		errW.Close()
@@ -179,10 +179,10 @@ func runCollector(
 		klog.Infof("collect job %s cancelled.", worker.job.ID)
 	case err := <-errChan:
 		klog.Errorf("collect job %s failed with error: %s", worker.job.ID, err)
-		ctx.setJobStatus(worker.job.ID, collectJobStatusError)
+		ctx.setJobStatus(worker.job.ID, taskStatusError)
 	case <-doneChan:
 		klog.Infof("collect job %s finished.", worker.job.ID)
-		ctx.setJobStatus(worker.job.ID, collectJobStatusFinish)
+		ctx.setJobStatus(worker.job.ID, taskStatusFinish)
 	}
 }
 
@@ -248,18 +248,21 @@ func cancelCollectJob(c *gin.Context) {
 		return
 	}
 
+	diagCtx.Lock()
+	defer diagCtx.Unlock()
+
 	worker := diagCtx.getCollectWorker(id)
 	if worker == nil || worker.job == nil {
 		sendErrMsg(c, http.StatusNotFound,
 			fmt.Sprintf("collect job '%s' does not exist", id))
 		return
 	}
-	if worker.job.Status == collectJobStatusCancel {
+	if worker.job.Status == taskStatusCancel {
 		c.JSON(http.StatusGone, worker.job)
 		return
 	}
 
-	diagCtx.setJobStatus(worker.job.ID, collectJobStatusCancel)
+	worker.job.Status = taskStatusCancel
 	worker.cancel <- struct{}{}
 
 	c.JSON(http.StatusAccepted, worker.job)

@@ -55,7 +55,7 @@ func checkDataSet(c *gin.Context) {
 
 	worker := diagCtx.getCollectWorker(id)
 	if worker == nil || worker.job == nil ||
-		worker.job.Dir == "" || worker.job.Status == collectJobStatusPurge {
+		worker.job.Dir == "" || worker.job.Status == taskStatusPurge {
 		msg := fmt.Sprintf("data set for collect job '%s' not found", id)
 		sendErrMsg(c, http.StatusNotFound, msg)
 		return
@@ -208,6 +208,9 @@ func cancelCheck(c *gin.Context) {
 		return
 	}
 
+	diagCtx.Lock()
+	defer diagCtx.Unlock()
+
 	if worker.checker.finished {
 		output, err := getCheckerOutputString(diagCtx, id)
 		if err != nil {
@@ -218,8 +221,6 @@ func cancelCheck(c *gin.Context) {
 		c.String(http.StatusAccepted, output)
 	}
 
-	diagCtx.Lock()
-	defer diagCtx.Unlock()
 	worker.checker.cancel <- struct{}{}
 
 	c.JSON(http.StatusNoContent, nil)

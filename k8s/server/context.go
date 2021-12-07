@@ -15,6 +15,7 @@ package server
 
 import (
 	"sync"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/pingcap/diag/api/types"
@@ -28,11 +29,12 @@ const diagAPICtxKey = "DiagAPIServerContext"
 
 // collectJobWorker holds necessary info to manage a CollectJob
 type collectJobWorker struct {
-	job     *types.CollectJob
-	stdout  []byte
-	stderr  []byte
-	cancel  chan struct{}
-	checker *checkResult
+	job      *types.CollectJob
+	stdout   []byte
+	stderr   []byte
+	cancel   chan struct{}
+	checker  *checkResult
+	uploader *uploadResult
 }
 
 // checkResult holds checker result of a CollectJob
@@ -48,6 +50,20 @@ func (c *checkResult) reset() {
 	c.stderr = make([]byte, 0)
 	c.cancel = make(chan struct{}, 1)
 	c.finished = false
+}
+
+// uploadResult holds package and upload result of a CollectJob
+type uploadResult struct {
+	cancel chan struct{}
+	date   time.Time
+	status string
+	result string
+}
+
+func (u *uploadResult) reset() {
+	u.cancel = make(chan struct{}, 1)
+	u.date = time.Now()
+	u.status = ""
 }
 
 // context stores shared data of the server
@@ -104,6 +120,9 @@ func (ctx *context) insertCollectJob(job *types.CollectJob) *collectJobWorker {
 		checker: &checkResult{
 			stdout: make([]byte, 0),
 			stderr: make([]byte, 0),
+			cancel: make(chan struct{}, 1),
+		},
+		uploader: &uploadResult{
 			cancel: make(chan struct{}, 1),
 		},
 	}
@@ -166,6 +185,18 @@ func (ctx *context) getCheckOutputs(id string) ([]byte, []byte, bool) {
 	}
 
 	return nil, nil, false
+}
+
+// getUploadOutputs get uploader outputs of one CollectJob from list
+func (ctx *context) getUploadOutputs(id string) (time.Time, string, string, bool) {
+	ctx.RLock()
+	defer ctx.RUnlock()
+
+	if job, found := ctx.collectJobs[id]; found {
+		return job.uploader.date, job.uploader.status, job.uploader.result, found
+	}
+
+	return time.Time{}, "", "", false
 }
 
 // setJobStatus updates the status of a CollectJob, ignores if the
