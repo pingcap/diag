@@ -95,6 +95,9 @@ func newEngine(ctx *context, opt *Options) *gin.Engine {
 	apis.GET("/data", getDataList)
 	apis.GET("/data/:id", getDataSet)
 	apis.DELETE("/data/:id", deleteDataSet)
+	apis.GET("/data/:id/check", getCheckResult)
+	apis.POST("/data/:id/check", checkDataSet)
+	apis.DELETE("/data/:id/check", cancelCheck)
 
 	// - misc
 	apis.GET("/version", getVersion)

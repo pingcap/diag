@@ -28,10 +28,26 @@ const diagAPICtxKey = "DiagAPIServerContext"
 
 // collectJobWorker holds necessary info to manage a CollectJob
 type collectJobWorker struct {
-	job    *types.CollectJob
-	stdout []byte
-	stderr []byte
-	cancel chan struct{}
+	job     *types.CollectJob
+	stdout  []byte
+	stderr  []byte
+	cancel  chan struct{}
+	checker *checkResult
+}
+
+// checkResult holds checker result of a CollectJob
+type checkResult struct {
+	stdout   []byte
+	stderr   []byte
+	cancel   chan struct{}
+	finished bool
+}
+
+func (c *checkResult) reset() {
+	c.stdout = make([]byte, 0)
+	c.stderr = make([]byte, 0)
+	c.cancel = make(chan struct{}, 1)
+	c.finished = false
 }
 
 // context stores shared data of the server
@@ -85,6 +101,11 @@ func (ctx *context) insertCollectJob(job *types.CollectJob) *collectJobWorker {
 		stdout: make([]byte, 0),
 		stderr: make([]byte, 0),
 		cancel: make(chan struct{}, 1),
+		checker: &checkResult{
+			stdout: make([]byte, 0),
+			stderr: make([]byte, 0),
+			cancel: make(chan struct{}, 1),
+		},
 	}
 
 	return ctx.collectJobs[job.ID]
@@ -106,11 +127,19 @@ func (ctx *context) getCollectJobs() []*types.CollectJob {
 
 // getCollectJob reads one CollectJob from list
 func (ctx *context) getCollectJob(id string) *types.CollectJob {
+	if worker := ctx.getCollectWorker(id); worker != nil {
+		return worker.job
+	}
+	return nil
+}
+
+// getCollectWorker reads one worker of CollectJob from list
+func (ctx *context) getCollectWorker(id string) *collectJobWorker {
 	ctx.RLock()
 	defer ctx.RUnlock()
 
 	if job, found := ctx.collectJobs[id]; found {
-		return job.job
+		return job
 	}
 	return nil
 }
@@ -122,6 +151,18 @@ func (ctx *context) getCollectJobOutputs(id string) ([]byte, []byte, bool) {
 
 	if job, found := ctx.collectJobs[id]; found {
 		return job.stdout, job.stderr, found
+	}
+
+	return nil, nil, false
+}
+
+// getCheckOutputs get checker outputs of one CollectJob from list
+func (ctx *context) getCheckOutputs(id string) ([]byte, []byte, bool) {
+	ctx.RLock()
+	defer ctx.RUnlock()
+
+	if job, found := ctx.collectJobs[id]; found {
+		return job.checker.stdout, job.checker.stderr, found
 	}
 
 	return nil, nil, false

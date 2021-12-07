@@ -46,7 +46,7 @@ const (
 func collectData(c *gin.Context) {
 	currTime := time.Now()
 
-	// TODO: parse argument from POST body
+	// parse argument from POST body
 	var req types.CollectJobRequest
 	if err := json.NewDecoder(c.Request.Body).Decode(&req); err != nil {
 		msg := fmt.Sprintf("invalid request: %s", err)
@@ -103,12 +103,12 @@ func collectData(c *gin.Context) {
 	worker := diagCtx.insertCollectJob(job)
 
 	// run collector
-	go runCollectors(diagCtx, &opt, worker)
+	go runCollector(diagCtx, &opt, worker)
 
 	c.JSON(http.StatusAccepted, worker.job)
 }
 
-func runCollectors(
+func runCollector(
 	ctx *context,
 	opt *collector.BaseOptions,
 	worker *collectJobWorker,
@@ -248,8 +248,8 @@ func cancelCollectJob(c *gin.Context) {
 		return
 	}
 
-	worker, found := diagCtx.collectJobs[id]
-	if !found {
+	worker := diagCtx.getCollectWorker(id)
+	if worker == nil || worker.job == nil {
 		sendErrMsg(c, http.StatusNotFound,
 			fmt.Sprintf("collect job '%s' does not exist", id))
 		return

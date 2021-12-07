@@ -33,20 +33,18 @@ type Options struct {
 	DataPath string
 	Inc      []string
 	OutPath  string
-	logger   *logprinter.Logger
 }
 
 // NewOptions creates a default Options
-func NewOptions(logger *logprinter.Logger) *Options {
+func NewOptions() *Options {
 	return &Options{
-		Inc:    []string{"config"},
-		logger: logger,
+		Inc: []string{"config"},
 	}
 }
 
 // RunCheck do the checks
-func (opt *Options) RunChecker() error {
-
+func (opt *Options) RunChecker(ctx context.Context) error {
+	logger := ctx.Value(logprinter.ContextKeyLogger).(*logprinter.Logger)
 	// TODO: integrate fetcher
 
 	// todo: checker action id
@@ -72,17 +70,17 @@ func (opt *Options) RunChecker() error {
 		sourcedata.WithCheckFlag(checkFlag),
 		sourcedata.WithOutputDir(opt.OutPath))
 	if err != nil {
-		opt.logger.Errorf("error fetching source data: %s", err)
+		logger.Errorf("error fetching source data: %s", err)
 		return err
 	}
 	ruleSpec, err := config.LoadBetaRuleSpec()
 	if err != nil {
-		opt.logger.Errorf("error loading rule specs: %s", err)
+		logger.Errorf("error loading rule specs: %s", err)
 		return err
 	}
 	data, ruleSet, err := fetch.FetchData(ruleSpec)
 	if err != nil {
-		opt.logger.Errorf("error fetching data: %s", err)
+		logger.Errorf("error fetching data: %s", err)
 		return err
 	}
 	inc := strings.Join(opt.Inc, "-")
@@ -111,10 +109,10 @@ func (opt *Options) RunChecker() error {
 	// fetch unique num +1
 
 	errG.Go(func() error {
-		return wrapper.Start()
+		return wrapper.Start(ctx)
 	})
 	if err := errG.Wait(); err != nil {
-		opt.logger.Errorf("check meet error: %s", err)
+		logger.Errorf("check meet error: %s", err)
 		return err
 	}
 	return nil

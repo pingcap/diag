@@ -14,14 +14,17 @@
 package command
 
 import (
+	"context"
+
 	"github.com/pingcap/diag/checker"
+	logprinter "github.com/pingcap/tiup/pkg/logger/printer"
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"
 )
 
 func newCheckCmd() *cobra.Command {
 	var logLevel string
-	opt := checker.NewOptions(log)
+	opt := checker.NewOptions()
 	cmd := &cobra.Command{
 		Use:   "check <collected-datadir>",
 		Short: "Check config collected from a TiDB cluster",
@@ -41,7 +44,7 @@ func newCheckCmd() *cobra.Command {
 			}
 			zap.L().Debug("checker started")
 
-			return opt.RunChecker()
+			return opt.RunChecker(context.WithValue(context.Background(), logprinter.ContextKeyLogger, log))
 		},
 	}
 
