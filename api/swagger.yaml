@@ -71,8 +71,10 @@ paths:
           type: string
           required: true
       responses:
-        '204':
+        '202':
           description: job cancelled
+          schema:
+            $ref: '#/definitions/CollectJob'
         '404':
           description: job not found
           schema:

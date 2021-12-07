@@ -166,14 +166,17 @@ func runCollectors(
 		ctx.Lock()
 		defer ctx.Unlock()
 
+		// FIXME: if the CollectClusterInfo() did not finish (e.g., worker cancelled), the
+		// resultDir is never recorded, so files already collected by that job are not re-
+		// corded and can not be managed (deleted) via the APIs.
 		worker.job.Dir = resultDir
 		doneChan <- struct{}{}
 	}()
 
 	select {
 	case <-worker.cancel:
+		// status is updated in the cancel handling function
 		klog.Infof("collect job %s cancelled.", worker.job.ID)
-		ctx.setJobStatus(worker.job.ID, collectJobStatusCancel)
 	case err := <-errChan:
 		klog.Errorf("collect job %s failed with error: %s", worker.job.ID, err)
 		ctx.setJobStatus(worker.job.ID, collectJobStatusError)
@@ -226,6 +229,40 @@ func getCollectJob(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, job)
+}
+
+// cancelCollectJob implements DELETE /collectors/{id}
+func cancelCollectJob(c *gin.Context) {
+	id := c.Param("id")
+
+	ctx, ok := c.Get(diagAPICtxKey)
+	if !ok {
+		msg := "failed to read server config."
+		sendErrMsg(c, http.StatusInternalServerError, msg)
+		return
+	}
+	diagCtx, ok := ctx.(*context)
+	if !ok {
+		msg := "server config is in wrong type."
+		sendErrMsg(c, http.StatusInternalServerError, msg)
+		return
+	}
+
+	worker, found := diagCtx.collectJobs[id]
+	if !found {
+		sendErrMsg(c, http.StatusNotFound,
+			fmt.Sprintf("collect job '%s' does not exist", id))
+		return
+	}
+	if worker.job.Status == collectJobStatusCancel {
+		c.JSON(http.StatusGone, worker.job)
+		return
+	}
+
+	diagCtx.setJobStatus(worker.job.ID, collectJobStatusCancel)
+	worker.cancel <- struct{}{}
+
+	c.JSON(http.StatusAccepted, worker.job)
 }
 
 // getCollectLogs implements GET /collectors/{id}/logs
