@@ -29,6 +29,8 @@ const diagAPICtxKey = "DiagAPIServerContext"
 // collectJobWorker holds necessary info to manage a CollectJob
 type collectJobWorker struct {
 	job    *types.CollectJob
+	stdout []byte
+	stderr []byte
 	cancel chan struct{}
 }
 
@@ -80,6 +82,8 @@ func (ctx *context) insertCollectJob(job *types.CollectJob) *collectJobWorker {
 
 	ctx.collectJobs[job.ID] = &collectJobWorker{
 		job:    job,
+		stdout: make([]byte, 0),
+		stderr: make([]byte, 0),
 		cancel: make(chan struct{}, 1),
 	}
 
@@ -109,6 +113,18 @@ func (ctx *context) getCollectJob(id string) *types.CollectJob {
 		return job.job
 	}
 	return nil
+}
+
+// getCollectJobOutputs get outputs of one CollectJob from list
+func (ctx *context) getCollectJobOutputs(id string) ([]byte, []byte, bool) {
+	ctx.RLock()
+	defer ctx.RUnlock()
+
+	if job, found := ctx.collectJobs[id]; found {
+		return job.stdout, job.stderr, found
+	}
+
+	return nil, nil, false
 }
 
 // setJobStatus updates the status of a CollectJob, ignores if the

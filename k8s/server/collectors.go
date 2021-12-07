@@ -14,7 +14,9 @@
 package server
 
 import (
+	"bufio"
 	"fmt"
+	"io"
 	"net/http"
 	"time"
 
@@ -118,8 +120,36 @@ func runCollectors(
 		Mode:    collector.CollectModeK8s,
 	}
 
+	// populate logger for the collect job
 	cLogger := logprinter.NewLogger("")
 	cLogger.SetDisplayMode(logprinter.DisplayModePlain)
+	outR, outW := io.Pipe()
+	errR, errW := io.Pipe()
+	cLogger.SetStdout(outW)
+	cLogger.SetStderr(errW)
+
+	// pipe the outputs
+	go func() {
+		s := bufio.NewScanner(outR)
+		for s.Scan() {
+			worker.stdout = append(worker.stdout, s.Bytes()...)
+			worker.stdout = append(worker.stdout, '\n')
+		}
+		if err := s.Err(); err != nil {
+			klog.Error("error getting stdout of collect job %s: %s", worker.job.ID, err)
+		}
+	}()
+	go func() {
+		s := bufio.NewScanner(errR)
+		for s.Scan() {
+			worker.stdout = append(worker.stderr, s.Bytes()...)
+			worker.stdout = append(worker.stdout, '\n')
+		}
+		if err := s.Err(); err != nil {
+			klog.Error("error getting stdout of collect job %s: %s", worker.job.ID, err)
+		}
+	}()
+
 	cm := collector.NewEmptyManager("tidb", worker.job.ID, cLogger)
 
 	doneChan := make(chan struct{}, 1)
@@ -127,6 +157,8 @@ func runCollectors(
 	go func() {
 		ctx.setJobStatus(worker.job.ID, collectJobStatusRunning)
 		resultDir, err := cm.CollectClusterInfo(opt, &cOpt, &gOpt, ctx.kubeCli, ctx.dynCli)
+		outW.Close()
+		errW.Close()
 		if err != nil {
 			errChan <- err
 			return
@@ -194,4 +226,39 @@ func getCollectJob(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, job)
+}
+
+// getCollectLogs implements GET /collectors/{id}/logs
+func getCollectLogs(c *gin.Context) {
+	id := c.Param("id")
+
+	ctx, ok := c.Get(diagAPICtxKey)
+	if !ok {
+		msg := "failed to read server config."
+		sendErrMsg(c, http.StatusInternalServerError, msg)
+		return
+	}
+	diagCtx, ok := ctx.(*context)
+	if !ok {
+		msg := "server config is in wrong type."
+		sendErrMsg(c, http.StatusInternalServerError, msg)
+		return
+	}
+
+	stdout, stderr, ok := diagCtx.getCollectJobOutputs(id)
+	if !ok {
+		sendErrMsg(c, http.StatusNotFound,
+			fmt.Sprintf("collect job '%s' does not exist", id))
+		return
+	}
+
+	var output string
+	if stdout != nil {
+		output = fmt.Sprintf("stdout:\n%s\n", stdout)
+	}
+	if stderr != nil {
+		output = fmt.Sprintf("%sstderr:\n%s\n", output, stderr)
+	}
+
+	c.String(http.StatusOK, output)
 }

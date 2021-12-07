@@ -23,6 +23,7 @@ import (
 	"github.com/pingcap/diag/pkg/models"
 	"github.com/pingcap/tiup/pkg/cluster/executor"
 	operator "github.com/pingcap/tiup/pkg/cluster/operation"
+	logprinter "github.com/pingcap/tiup/pkg/logger/printer"
 	"github.com/pingcap/tiup/pkg/set"
 	"github.com/pingcap/tiup/pkg/tui"
 	"k8s.io/client-go/dynamic"
@@ -249,13 +250,18 @@ func (m *Manager) CollectClusterInfo(
 	prepareErrs := make(map[string]error)
 	stats := make([]map[string][]CollectStat, 0)
 	for _, c := range collectors {
-		fmt.Printf("Collecting %s...\n", c.Desc())
+		m.logger.Infof("Detecting %s...\n", c.Desc())
 		stat, err := c.Prepare(m, cls)
 		if err != nil {
 			if cOpt.ExitOnError {
 				return "", err
 			}
-			fmt.Println(color.YellowString("Error collecting %s: %s, the data might be incomplete.", c.Desc(), err))
+			msg := fmt.Sprintf("Error collecting %s: %s, the data might be incomplete.", c.Desc(), err)
+			if m.logger.GetDisplayMode() == logprinter.DisplayModeDefault {
+				fmt.Println(color.YellowString(msg))
+			} else {
+				m.logger.Warnf(msg)
+			}
 			prepareErrs[c.Desc()] = err
 		}
 		stats = append(stats, stat)
@@ -277,26 +283,37 @@ func (m *Manager) CollectClusterInfo(
 	// run collectors
 	collectErrs := make(map[string]error)
 	for _, c := range collectors {
-		fmt.Printf("Collecting %s...\n", c.Desc())
+		m.logger.Infof("Collecting %s...\n", c.Desc())
 		if err := c.Collect(m, cls); err != nil {
 			if cOpt.ExitOnError {
 				return "", err
 			}
-			fmt.Println(color.YellowString("Error collecting %s: %s, the data might be incomplete.", c.Desc(), err))
+			msg := fmt.Sprintf("Error collecting %s: %s, the data might be incomplete.", c.Desc(), err)
+			if m.logger.GetDisplayMode() == logprinter.DisplayModeDefault {
+				fmt.Println(color.YellowString(msg))
+			} else {
+				m.logger.Warnf(msg)
+			}
 			collectErrs[c.Desc()] = err
 		}
 	}
 
 	if len(collectErrs) > 0 {
-		fmt.Println(color.RedString("Some errors occured during the process, please check if data needed are complete:"))
+		if m.logger.GetDisplayMode() == logprinter.DisplayModeDefault {
+			fmt.Println(color.RedString("Some errors occured during the process, please check if data needed are complete:"))
+		}
 		for k, v := range prepareErrs {
-			fmt.Printf("%s:\t%s\n", k, v)
+			m.logger.Errorf("%s:\t%s\n", k, v)
 		}
 		for k, v := range collectErrs {
-			fmt.Printf("%s:\t%s\n", k, v)
+			m.logger.Errorf("%s:\t%s\n", k, v)
 		}
 	}
-	fmt.Printf("Collected data are stored in %s\n", color.CyanString(resultDir))
+	dir := resultDir
+	if m.logger.GetDisplayMode() == logprinter.DisplayModeDefault {
+		dir = color.CyanString(resultDir)
+	}
+	m.logger.Infof("Collected data are stored in %s\n", dir)
 	return resultDir, nil
 }
 
