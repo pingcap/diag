@@ -22,16 +22,43 @@ spec:
         imagePullPolicy: Always
         command:
         - /usr/local/bin/diag
+        volumeMounts:
+        - mountPath: "/var/lib/clinic-cert"
+          name: pingcap-clinic-cert
+          readOnly: true
         env:
         - name: NAMESPACE
           valueFrom:
             fieldRef:
               apiVersion: v1
               fieldPath: metadata.namespace
-        - name: TC_NAME
-          value: "demo-cluster"
-        - name: TIME_BEGIN
-          value: "-2h"
-        - name: TIME_END
-          value: ""
+        - name: CLINIC_USERNAME
+          value: "Asktug"
+        - name: CLINIC_PASSWORD
+          value: "Asktug"
+      volumes:
+      - name: pingcap-clinic-cert
+        secret:
+          secretName: pingcap-clinic-cert
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: diag-collector
+  labels:
+    app.kubernetes.io/name: diag-collector
+    app: pingcap-clinic
+spec:
+  ipFamilies:
+  - IPv4
+  ipFamilyPolicy: SingleStack
+  ports:
+  - name: diag-api
+    port: 4917
+    protocol: TCP
+    targetPort: 4917
+  selector:
+    app: pingcap-clinic
+  sessionAffinity: None
+  type: NodePort
 
