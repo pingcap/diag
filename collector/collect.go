@@ -66,6 +66,7 @@ type Collector interface {
 // BaseOptions contains the options for check command
 type BaseOptions struct {
 	Cluster     string                  // cluster name
+	Namespace   string                  // k8s namespace of the cluster
 	User        string                  // username to login to the SSH server
 	UsePassword bool                    // use password instead of identity file for ssh connection
 	SSH         *tui.SSHConnectionProps // SSH credentials

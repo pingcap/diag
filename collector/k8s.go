@@ -84,11 +84,14 @@ func buildTopoForK8sCluster(
 		Resource: "tidbmonitors",
 	}
 
-	ns := os.Getenv("NAMESPACE")
-	if ns == "" {
-		klog.Fatal("NAMESPACE environment variable not set")
+	ns := opt.Namespace
+	if opt.Namespace == "" {
+		ns = os.Getenv("NAMESPACE")
+		if ns == "" {
+			klog.Fatal("namespace not specified and NAMESPACE environment variable not set")
+		}
+		klog.Infof("got namespace '%s'", ns)
 	}
-	klog.Infof("got namespace '%s'", ns)
 
 	tcList, err := dynCli.Resource(gvrTiDB).Namespace(ns).List(context.TODO(), metav1.ListOptions{})
 	if err != nil {

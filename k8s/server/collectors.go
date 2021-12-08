@@ -57,6 +57,7 @@ func collectData(c *gin.Context) {
 	// build collect job
 	opt := collector.BaseOptions{
 		Cluster:     req.ClusterName,
+		Namespace:   req.Namespace,
 		ScrapeBegin: req.From,
 		ScrapeEnd:   req.To,
 	}
@@ -94,7 +95,7 @@ func collectData(c *gin.Context) {
 	job := &types.CollectJob{
 		ID:          base52.Encode(currTime.UnixNano() + rand.Int63n(1000)),
 		Status:      taskStatusAccepted,
-		ClusterName: opt.Cluster,
+		ClusterName: fmt.Sprintf("%s/%s", opt.Namespace, opt.Cluster),
 		Collectors:  collectors,
 		From:        opt.ScrapeBegin,
 		To:          opt.ScrapeEnd,
