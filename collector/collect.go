@@ -119,9 +119,9 @@ func (m *Manager) CollectClusterInfo(
 	if err != nil {
 		return err
 	}
-	//	if cls == nil || len(cls.Components()) < 1 {
-	//		return fmt.Errorf("no valid cluster topology parsed, can not collect anything")
-	//	}
+	if cls == nil {
+		return fmt.Errorf("no valid cluster topology parsed")
+	}
 
 	// parse time range
 	end, err := utils.ParseTime(opt.ScrapeEnd)

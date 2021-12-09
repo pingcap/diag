@@ -279,9 +279,7 @@ func (c *ConfigCollectOptions) collectForTiUP(m *Manager, cls *models.TiDBCluste
 				return err
 			}
 			for _, f := range c.fileStats[inst.GetHost()] {
-				// build checking tasks
 				t1 = t1.
-					// check for listening ports
 					CopyFile(
 						f.Target,
 						filepath.Join(c.resultDir, inst.GetHost(), f.Target),
