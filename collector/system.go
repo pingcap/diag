@@ -113,27 +113,28 @@ func (c *SystemCollectOptions) Collect(m *Manager, cls *models.TiDBCluster) erro
 				downloadTasks = append(downloadTasks, t0)
 			}
 
+			host := inst.GetHost()
 			// checks that applies to each host
-			if _, found := uniqueHosts[inst.GetHost()]; !found {
-				uniqueHosts[inst.GetHost()] = inst.GetSSHPort()
+			if _, found := uniqueHosts[host]; !found {
+				uniqueHosts[host] = inst.GetSSHPort()
 				// build system info collecting tasks
 				b1, err := m.sshTaskBuilder(c.GetBaseOptions().Cluster, topo, c.GetBaseOptions().User, *c.opt)
 				if err != nil {
 					return err
 				}
 				t1 := b1.
-					Mkdir(c.GetBaseOptions().User, inst.GetHost(), filepath.Join(task.CheckToolsPathDir, "bin")).
+					Mkdir(c.GetBaseOptions().User, host, filepath.Join(task.CheckToolsPathDir, "bin")).
 					CopyComponent(
 						spec.ComponentCheckCollector,
 						inst.OS(),
 						inst.Arch(),
 						insightVer,
 						"", // use default srcPath
-						inst.GetHost(),
+						host,
 						task.CheckToolsPathDir,
 					).
 					Shell(
-						inst.GetHost(),
+						host,
 						fmt.Sprintf("%s %s",
 							filepath.Join(task.CheckToolsPathDir, "bin", "insight"),
 							"--syscfg --dmesg", // enable collecting of extra info
@@ -142,32 +143,32 @@ func (c *SystemCollectOptions) Collect(m *Manager, cls *models.TiDBCluster) erro
 						true,
 					).
 					Func(
-						inst.GetHost(),
+						host,
 						func(ctx context.Context) error {
-							return saveInsightOutput(ctx, inst.GetHost(), c.resultDir)
+							return saveInsightOutput(ctx, host, c.resultDir)
 						},
 					).
-					BuildAsStep(fmt.Sprintf("  - Getting system info of %s:%d", inst.GetHost(), inst.GetSSHPort()))
+					BuildAsStep(fmt.Sprintf("  - Getting system info of %s:%d", host, inst.GetSSHPort()))
 				collectInsightTasks = append(collectInsightTasks, t1)
 
 				// build checking tasks
 				t2 := task.NewBuilder(m.DisplayMode).
 					// check for listening ports
 					Shell(
-						inst.GetHost(),
+						host,
 						"ss -lanp",
 						"",
 						false,
 					).
 					Func(
-						inst.GetHost(),
+						host,
 						func(ctx context.Context) error {
-							return saveRawOutput(ctx, inst.GetHost(), c.resultDir, "ss.txt")
+							return saveRawOutput(ctx, host, c.resultDir, "ss.txt")
 						},
 					)
 				checkSysTasks = append(
 					checkSysTasks,
-					t2.BuildAsStep(fmt.Sprintf("  - Collecting system info of node %s", inst.GetHost())),
+					t2.BuildAsStep(fmt.Sprintf("  - Collecting system info of node %s", host)),
 				)
 			}
 
@@ -176,8 +177,8 @@ func (c *SystemCollectOptions) Collect(m *Manager, cls *models.TiDBCluster) erro
 				return err
 			}
 			t3 := b3.
-				Rmdir(inst.GetHost(), task.CheckToolsPathDir).
-				BuildAsStep(fmt.Sprintf("  - Cleanup temp files on %s:%d", inst.GetHost(), inst.GetSSHPort()))
+				Rmdir(host, task.CheckToolsPathDir).
+				BuildAsStep(fmt.Sprintf("  - Cleanup temp files on %s:%d", host, inst.GetSSHPort()))
 			cleanTasks = append(cleanTasks, t3)
 		}
 	}
