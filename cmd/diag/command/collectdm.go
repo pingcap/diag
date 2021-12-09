@@ -22,6 +22,7 @@ import (
 	"time"
 
 	"github.com/pingcap/diag/collector"
+	dmspec "github.com/pingcap/tiup/components/dm/spec"
 	"github.com/pingcap/tiup/pkg/cluster/executor"
 	"github.com/pingcap/tiup/pkg/cluster/spec"
 	"github.com/pingcap/tiup/pkg/set"
@@ -30,7 +31,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func newCollectCmd() *cobra.Command {
+func newCollectDMCmd() *cobra.Command {
 	var collectAll bool
 	var metricsConf string
 	opt := collector.BaseOptions{
@@ -44,14 +45,14 @@ func newCollectCmd() *cobra.Command {
 	}
 	inc := make([]string, 0)
 	ext := make([]string, 0)
-	spec.Initialize("cluster")
 
-	tidbSpec := spec.GetSpecManager()
-	cm := collector.NewManager("tidb", tidbSpec)
+	spec.Initialize("dm")
 
+	dmSpec := dmspec.GetSpecManager()
+	cm := collector.NewManager("dm", dmSpec)
 	cmd := &cobra.Command{
-		Use:   "collect <cluster-name>",
-		Short: "Collect information and metrics from the cluster.",
+		Use:   "collectdm <cluster-name>",
+		Short: "Collect information and metrics from the dm cluster.",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if len(args) != 1 {
 				return cmd.Help()
@@ -96,13 +97,12 @@ func newCollectCmd() *cobra.Command {
 	cmd.Flags().StringVarP(&opt.ScrapeBegin, "from", "f", time.Now().Add(time.Hour*-2).Format(time.RFC3339), "start timepoint when collecting timeseries data")
 	cmd.Flags().StringVarP(&opt.ScrapeEnd, "to", "t", time.Now().Format(time.RFC3339), "stop timepoint when collecting timeseries data")
 	cmd.Flags().BoolVar(&collectAll, "all", false, "Collect all data")
-	cmd.Flags().StringSliceVar(&inc, "include", nil, fmt.Sprintf("types of data to collect: default[%s] non-default[%s]", strings.Join(collector.CollectDefaultSet.Slice(), ","), strings.Join(collector.CollectAdditionSet.Slice(), ",")))
+	cmd.Flags().StringSliceVar(&inc, "include", nil, fmt.Sprintf("types of data to collect: default[%s]", strings.Join(collector.CollectDefaultSet.Slice(), ",")))
 	cmd.Flags().StringSliceVar(&ext, "exclude", nil, "types of data not to collect")
 	cmd.Flags().StringSliceVar(&cOpt.MetricsFilter, "metricsfilter", nil, "prefix of metrics to collect")
 	cmd.Flags().StringVar(&metricsConf, "metricsconfig", "", "config file of metricsfilter")
 	cmd.Flags().StringVarP(&cOpt.Dir, "output", "o", "", "output directory of collected data")
 	cmd.Flags().IntVarP(&cOpt.Limit, "limit", "l", 100000, "Limits the used bandwidth, specified in Kbit/s")
-	cmd.Flags().Uint64Var(&gOpt.APITimeout, "api-timeout", 10, "Timeout in seconds when querying PD APIs.")
 	cmd.Flags().BoolVar(&cOpt.CompressMetrics, "compress-metrics", true, "Compress collected metrics data.")
 	cmd.Flags().BoolVar(&cOpt.CompressScp, "compress-scp", true, "Compress when transfer config and logs.")
 	cmd.Flags().BoolVar(&cOpt.ExitOnError, "exit-on-error", false, "Stop collecting and exit if an error occurs.")
