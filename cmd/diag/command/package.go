@@ -19,7 +19,7 @@ import (
 )
 
 func newPackageCmd() *cobra.Command {
-	pOpt := (&packager.PackageOptions{}).WithLogger(log)
+	pOpt := &packager.PackageOptions{}
 	cmd := &cobra.Command{
 		Use:   "package <collected-datadir>",
 		Short: "Package collected files",

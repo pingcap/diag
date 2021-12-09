@@ -27,7 +27,6 @@ import (
 
 	"github.com/klauspost/compress/zstd"
 	"github.com/pingcap/diag/pkg/crypto"
-	logprinter "github.com/pingcap/tiup/pkg/logger/printer"
 	"github.com/pingcap/tiup/pkg/tui"
 )
 
@@ -35,16 +34,10 @@ type PackageOptions struct {
 	InputDir   string // source directory of collected data
 	OutputFile string // target file to store packaged data
 	CertPath   string // crt file to encrypt data
-	l          *logprinter.Logger
-}
-
-func (opt *PackageOptions) WithLogger(logger *logprinter.Logger) *PackageOptions {
-	opt.l = logger
-	return opt
 }
 
 func PackageCollectedData(pOpt *PackageOptions) (string, error) {
-	input, err := selectInputDir(pOpt.l, pOpt.InputDir)
+	input, err := selectInputDir(pOpt.InputDir)
 	if err != nil {
 		return "", err
 	}
@@ -102,7 +95,7 @@ func PackageCollectedData(pOpt *PackageOptions) (string, error) {
 	return output, nil
 }
 
-func selectInputDir(logger *logprinter.Logger, dir string) (string, error) {
+func selectInputDir(dir string) (string, error) {
 	// choose latest diag directory if not specify
 	if dir == "" {
 		fileInfos, err := os.ReadDir(".")
@@ -121,7 +114,7 @@ func selectInputDir(logger *logprinter.Logger, dir string) (string, error) {
 		if dir == "" {
 			return "", fmt.Errorf("input directory not specified and can not be auto detected")
 		}
-		logger.Infof("found possible input directory: %s\n", dir)
+		fmt.Printf("found possible input directory: %s\n", dir)
 		err = tui.PromptForConfirmOrAbortError("Do you want to use it? [y/N]: ")
 		if err != nil {
 			return dir, err
