@@ -3,6 +3,7 @@ info:
   description: RESTful API definitions for Diag
   title: Diag API
   version: 1.0.0
+basePath: /api/v1
 schemes:
   - http
   - https

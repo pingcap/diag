@@ -15,8 +15,11 @@ package server
 
 import (
 	"fmt"
+	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/pingcap/diag/api"
+	"github.com/pingcap/diag/api/types"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -82,22 +85,39 @@ func newEngine(ctx *context, opt *Options) *gin.Engine {
 	r.Use(ctx.middleware())
 
 	// register routes
-	apis := r.Group(apiPrefix)
+	r.NoRoute(func(c *gin.Context) {
+		c.JSON(http.StatusNotFound, types.ResponseMsg{
+			Message: "Page not found",
+		})
+	})
+
+	// general pages
+
 	// register apis
+	apis := r.Group(apiPrefix)
+	apis.GET("/", func(c *gin.Context) {
+		c.FileFromFS("doc.html", http.FS(api.HTMLDocFS))
+	})
+
 	// - collectors
 	apis.GET("/collectors", getJobList)
 	apis.POST("/collectors", collectData)
+
 	apis.GET("/collectors/:id", getCollectJob)
 	apis.DELETE("/collectors/:id", cancelCollectJob)
+
 	apis.GET("/collectors/:id/logs", getCollectLogs)
 
 	// - data
 	apis.GET("/data", getDataList)
+
 	apis.GET("/data/:id", getDataSet)
 	apis.DELETE("/data/:id", deleteDataSet)
+
 	apis.GET("/data/:id/check", getCheckResult)
 	apis.POST("/data/:id/check", checkDataSet)
 	apis.DELETE("/data/:id/check", cancelCheck)
+
 	apis.GET("/data/:id/upload", getUploadTask)
 	apis.POST("/data/:id/upload", uploadDataSet)
 	apis.DELETE("/data/:id/upload", cancelDataUpload)
