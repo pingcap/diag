@@ -164,12 +164,10 @@ func runCollector(
 			errChan <- err
 			return
 		}
+
 		ctx.Lock()
 		defer ctx.Unlock()
 
-		// FIXME: if the CollectClusterInfo() did not finish (e.g., worker cancelled), the
-		// resultDir is never recorded, so files already collected by that job are not re-
-		// corded and can not be managed (deleted) via the APIs.
 		worker.job.Dir = resultDir
 		doneChan <- struct{}{}
 	}()
@@ -249,15 +247,16 @@ func cancelCollectJob(c *gin.Context) {
 		return
 	}
 
-	diagCtx.Lock()
-	defer diagCtx.Unlock()
-
 	worker := diagCtx.getCollectWorker(id)
 	if worker == nil || worker.job == nil {
 		sendErrMsg(c, http.StatusNotFound,
 			fmt.Sprintf("collect job '%s' does not exist", id))
 		return
 	}
+
+	diagCtx.Lock()
+	defer diagCtx.Unlock()
+
 	if worker.job.Status == taskStatusCancel {
 		c.JSON(http.StatusGone, worker.job)
 		return

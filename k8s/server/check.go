@@ -208,9 +208,6 @@ func cancelCheck(c *gin.Context) {
 		return
 	}
 
-	diagCtx.Lock()
-	defer diagCtx.Unlock()
-
 	if worker.checker.finished {
 		output, err := getCheckerOutputString(diagCtx, id)
 		if err != nil {
@@ -220,6 +217,9 @@ func cancelCheck(c *gin.Context) {
 
 		c.String(http.StatusAccepted, output)
 	}
+
+	diagCtx.Lock()
+	defer diagCtx.Unlock()
 
 	worker.checker.cancel <- struct{}{}
 

@@ -210,6 +210,8 @@ paths:
       responses:
         '202':
           description: package and upload a data set to the clinic server
+          schema:
+            $ref: '#/definitions/UploadTask'
         '404':
           description: data set not found
           schema:

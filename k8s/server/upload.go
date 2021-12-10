@@ -53,10 +53,26 @@ func uploadDataSet(c *gin.Context) {
 		return
 	}
 
+	// if another upload task is already running, cancel it and run the new one
+	diagCtx.Lock()
+	if worker.uploader.status == taskStatusRunning {
+		worker.uploader.cancel <- struct{}{}
+	}
+	// reset output buffers as we only store the latest upload result
+	worker.uploader.reset()
+	worker.uploader.status = taskStatusAccepted
+	diagCtx.Unlock()
+
+	task, err := buildUploadTask(diagCtx, id)
+	if err != nil {
+		sendErrMsg(c, http.StatusNotFound, err.Error())
+		return
+	}
+
 	// run uploader
 	go runUploader(diagCtx, worker)
 
-	c.JSON(http.StatusAccepted, nil)
+	c.JSON(http.StatusAccepted, task)
 }
 
 func runUploader(
@@ -84,11 +100,6 @@ func runUploader(
 	_, errW := io.Pipe()
 	cLogger.SetStdout(outW)
 	cLogger.SetStderr(errW)
-
-	// reset output buffers as we only store the latest upload result
-	ctx.Lock()
-	worker.uploader.reset()
-	ctx.Unlock()
 
 	doneChan := make(chan string, 1)
 	errChan := make(chan error, 1)
@@ -187,9 +198,6 @@ func cancelDataUpload(c *gin.Context) {
 		return
 	}
 
-	diagCtx.Lock()
-	defer diagCtx.Unlock()
-
 	if worker.uploader.status == taskStatusFinish {
 		task, err := buildUploadTask(diagCtx, id)
 		if err != nil {
@@ -199,6 +207,9 @@ func cancelDataUpload(c *gin.Context) {
 
 		c.JSON(http.StatusAccepted, task)
 	}
+
+	diagCtx.Lock()
+	defer diagCtx.Unlock()
 
 	worker.uploader.cancel <- struct{}{}
 
