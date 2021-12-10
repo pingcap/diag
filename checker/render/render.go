@@ -253,7 +253,6 @@ func NewCheckerWriter(dirPath string, filename string) (*CheckerWriter, error) {
 		fileWriter: termwriter,
 		termWriter: bufio.NewWriter(os.Stdout),
 		f:          f}, nil
-
 }
 
 // todo handle error
