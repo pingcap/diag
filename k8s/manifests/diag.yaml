@@ -49,9 +49,6 @@ metadata:
     app.kubernetes.io/name: diag-collector
     app: pingcap-clinic
 spec:
-  ipFamilies:
-  - IPv4
-  ipFamilyPolicy: SingleStack
   ports:
   - name: diag-api
     port: 4917
