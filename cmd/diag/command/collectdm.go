@@ -86,6 +86,15 @@ func newCollectDMCmd() *cobra.Command {
 				}
 			}
 
+			if cOpt.Limit == -1 {
+				switch gOpt.SSHType {
+				case "system":
+					cOpt.Limit = 100000
+				default:
+					cOpt.Limit = 10000
+				}
+			}
+
 			cOpt.Mode = collector.CollectModeTiUP
 			cm.DisplayMode = gOpt.DisplayMode
 			return cm.CollectClusterInfo(&opt, &cOpt, &gOpt, nil, nil)
@@ -102,9 +111,9 @@ func newCollectDMCmd() *cobra.Command {
 	cmd.Flags().StringSliceVar(&cOpt.MetricsFilter, "metricsfilter", nil, "prefix of metrics to collect")
 	cmd.Flags().StringVar(&metricsConf, "metricsconfig", "", "config file of metricsfilter")
 	cmd.Flags().StringVarP(&cOpt.Dir, "output", "o", "", "output directory of collected data")
-	cmd.Flags().IntVarP(&cOpt.Limit, "limit", "l", 100000, "Limits the used bandwidth, specified in Kbit/s")
+	cmd.Flags().IntVarP(&cOpt.Limit, "limit", "l", -1, "Limits the used bandwidth, specified in Kbit/s")
 	cmd.Flags().BoolVar(&cOpt.CompressMetrics, "compress-metrics", true, "Compress collected metrics data.")
-	cmd.Flags().BoolVar(&cOpt.CompressScp, "compress-scp", true, "Compress when transfer config and logs.")
+	cmd.Flags().BoolVar(&cOpt.CompressScp, "compress-scp", true, "Compress when transfer config and logs.Only works with system ssh")
 	cmd.Flags().BoolVar(&cOpt.ExitOnError, "exit-on-error", false, "Stop collecting and exit if an error occurs.")
 
 	return cmd
