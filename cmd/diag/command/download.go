@@ -54,7 +54,7 @@ func newDownloadCommand() *cobra.Command {
 	cmd.Flags().StringVarP(&opt.FileUUID, "uuid", "", "", "the uuid of file")
 	cmd.Flags().StringVarP(&opt.FileAlias, "alias", "", "", "the alias of file")
 	cmd.Flags().Uint64VarP(&opt.ClusterID, "cluster-id", "", 0, "the cluster id of file")
-	cmd.Flags().StringVarP(&opt.Endpoint, "Endpoint", "", "", "the clinic service Endpoint.")
+	cmd.Flags().StringVarP(&opt.Endpoint, "endpoint", "", "", "the clinic service Endpoint.")
 
 	return cmd
 }
