@@ -273,7 +273,7 @@ func UploadComplete(logger *logprinter.Logger, fileUUID string, opt *UploadOptio
 		return "", errors.Errorf("upload file failed, msg=%v", string(body))
 	}
 
-	url := string(body)
+	url := strings.Trim(string(body), "\"")
 	logger.Infof("Completed!")
 	logger.Infof("Download URL: %s\n", url)
 
