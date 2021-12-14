@@ -20,7 +20,7 @@ import (
 	"path/filepath"
 
 	"github.com/joomcode/errorx"
-	jsoniter "github.com/json-iterator/go"
+	json "github.com/json-iterator/go"
 	"github.com/pingcap/diag/pkg/models"
 	perrs "github.com/pingcap/errors"
 	"github.com/pingcap/tidb-insight/collector/insight"
@@ -102,7 +102,7 @@ func (c *SystemCollectOptions) Collect(m *Manager, cls *models.TiDBCluster) erro
 			archKey := fmt.Sprintf("%s-%s", inst.OS(), inst.Arch())
 			if _, found := uniqueArchList[archKey]; !found {
 				uniqueArchList[archKey] = struct{}{}
-				t0 := task.NewBuilder(m.DisplayMode).
+				t0 := task.NewBuilder(m.logger).
 					Download(
 						spec.ComponentCheckCollector,
 						inst.OS(),
@@ -152,7 +152,7 @@ func (c *SystemCollectOptions) Collect(m *Manager, cls *models.TiDBCluster) erro
 				collectInsightTasks = append(collectInsightTasks, t1)
 
 				// build checking tasks
-				t2 := task.NewBuilder(m.DisplayMode).
+				t2 := task.NewBuilder(m.logger).
 					// check for listening ports
 					Shell(
 						host,
@@ -183,14 +183,18 @@ func (c *SystemCollectOptions) Collect(m *Manager, cls *models.TiDBCluster) erro
 		}
 	}
 
-	t := task.NewBuilder(m.DisplayMode).
+	t := task.NewBuilder(m.logger).
 		ParallelStep("+ Download necessary tools", false, downloadTasks...).
 		ParallelStep("+ Collect host information", false, collectInsightTasks...).
 		ParallelStep("+ Collect system information", false, checkSysTasks...).
 		ParallelStep("+ Cleanup temp files", false, cleanTasks...).
 		Build()
 
-	ctx := ctxt.New(context.Background(), c.opt.Concurrency)
+	ctx := ctxt.New(
+		context.Background(),
+		c.opt.Concurrency,
+		m.logger,
+	)
 	if err := t.Execute(ctx); err != nil {
 		if errorx.Cast(err) != nil {
 			// FIXME: Map possible task errors and give suggestions.
@@ -239,7 +243,7 @@ func saveInsightOutput(ctx context.Context, host, dir string) error {
 	}
 
 	var info insight.InsightInfo
-	if err := jsoniter.Unmarshal(stdout, &info); err != nil {
+	if err := json.Unmarshal(stdout, &info); err != nil {
 		// save output directly on parsing errors
 		return saveOutput(stdout, filepath.Join(dir, host, "insight.json"))
 	}

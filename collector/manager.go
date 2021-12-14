@@ -16,13 +16,13 @@ package collector
 import (
 	"time"
 
-	perrs "github.com/pingcap/errors"
 	"github.com/pingcap/tiup/pkg/base52"
 	"github.com/pingcap/tiup/pkg/cluster/executor"
 	operator "github.com/pingcap/tiup/pkg/cluster/operation"
 	"github.com/pingcap/tiup/pkg/cluster/spec"
 	"github.com/pingcap/tiup/pkg/cluster/task"
 	"github.com/pingcap/tiup/pkg/crypto/rand"
+	logprinter "github.com/pingcap/tiup/pkg/logger/printer"
 	"github.com/pingcap/tiup/pkg/tui"
 )
 
@@ -32,11 +32,15 @@ type Manager struct {
 	specManager *spec.SpecManager
 	session     string // an unique ID of the collection
 	mode        string // tiup-cluster or tidb-operator
-	DisplayMode string // display format
+	logger      *logprinter.Logger
 }
 
 // NewManager create a Manager.
-func NewManager(sysName string, specManager *spec.SpecManager) *Manager {
+func NewManager(
+	sysName string,
+	specManager *spec.SpecManager,
+	logger *logprinter.Logger,
+) *Manager {
 	currTime := time.Now()
 	tid := base52.Encode(currTime.UnixNano() + rand.Int63n(1000))
 
@@ -44,37 +48,17 @@ func NewManager(sysName string, specManager *spec.SpecManager) *Manager {
 		sysName:     sysName,
 		specManager: specManager,
 		session:     tid,
+		logger:      logger,
 	}
 }
 
-// NewManager creates a Manager without initialing specManager
-func NewEmptyManager(sysName string) *Manager {
-	currTime := time.Now()
-	tid := base52.Encode(currTime.UnixNano() + rand.Int63n(1000))
-
+// NewEmptyManager creates a Manager with specific session ID and without initialing specManager
+func NewEmptyManager(sysName, tid string, logger *logprinter.Logger) *Manager {
 	return &Manager{
 		sysName: sysName,
 		session: tid,
+		logger:  logger,
 	}
-}
-
-func (m *Manager) meta(name string) (metadata spec.Metadata, err error) {
-	exist, err := m.specManager.Exist(name)
-	if err != nil {
-		return nil, err
-	}
-
-	if !exist {
-		return nil, perrs.Errorf("%s cluster `%s` not exists", m.sysName, name)
-	}
-
-	metadata = m.specManager.NewMetadata()
-	err = m.specManager.Metadata(name, metadata)
-	if err != nil {
-		return metadata, err
-	}
-
-	return metadata, nil
 }
 
 func (m *Manager) sshTaskBuilder(name string, topo spec.Topology, user string, opts operator.Options) (*task.Builder, error) {
@@ -86,7 +70,7 @@ func (m *Manager) sshTaskBuilder(name string, topo spec.Topology, user string, o
 		}
 	}
 
-	return task.NewBuilder(m.DisplayMode).
+	return task.NewBuilder(m.logger).
 		SSHKeySet(
 			m.specManager.Path(name, "ssh", "id_rsa"),
 			m.specManager.Path(name, "ssh", "id_rsa.pub"),

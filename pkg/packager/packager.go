@@ -36,25 +36,25 @@ type PackageOptions struct {
 	CertPath   string // crt file to encrypt data
 }
 
-func PackageCollectedData(pOpt *PackageOptions) error {
+func PackageCollectedData(pOpt *PackageOptions) (string, error) {
 	input, err := selectInputDir(pOpt.InputDir)
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	output, err := selectOutputFile(input, pOpt.OutputFile)
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	certPath, err := selectCertFile(pOpt.CertPath)
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	certString, err := os.ReadFile(certPath)
 	if err != nil {
-		return err
+		return "", err
 	}
 	block, _ := pem.Decode(certString)
 	cert, _ := x509.ParseCertificate(block.Bytes)
@@ -92,7 +92,7 @@ func PackageCollectedData(pOpt *PackageOptions) error {
 		return nil
 	})
 
-	return nil
+	return output, nil
 }
 
 func selectInputDir(dir string) (string, error) {

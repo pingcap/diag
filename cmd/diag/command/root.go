@@ -23,9 +23,11 @@ import (
 	"github.com/pingcap/diag/version"
 	"github.com/pingcap/tiup/pkg/cluster/executor"
 	operator "github.com/pingcap/tiup/pkg/cluster/operation"
+	"github.com/pingcap/tiup/pkg/cluster/spec"
 	tiupmeta "github.com/pingcap/tiup/pkg/environment"
 	"github.com/pingcap/tiup/pkg/localdata"
 	"github.com/pingcap/tiup/pkg/logger"
+	logprinter "github.com/pingcap/tiup/pkg/logger/printer"
 	"github.com/pingcap/tiup/pkg/repository"
 	"github.com/pingcap/tiup/pkg/tui"
 	"github.com/pingcap/tiup/pkg/utils"
@@ -37,6 +39,7 @@ var (
 	rootCmd     *cobra.Command
 	gOpt        operator.Options
 	skipConfirm bool
+	log         = logprinter.NewLogger("")
 )
 
 func init() {
@@ -59,10 +62,16 @@ func init() {
 		SilenceErrors: true,
 		Version:       version.String(),
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
+			// populate logger
+			log.SetDisplayModeFromString(gOpt.DisplayMode)
+
 			var err error
 			var env *tiupmeta.Environment
 			// unset component data dir to use clusters'
 			os.Unsetenv(localdata.EnvNameComponentDataDir)
+			if err = spec.Initialize("cluster"); err != nil {
+				return err
+			}
 
 			// Running in other OS/ARCH Should be fine we only download manifest file.
 			env, err = tiupmeta.InitEnv(repository.Options{

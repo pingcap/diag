@@ -1,6 +1,7 @@
 package engine
 
 import (
+	"context"
 	"fmt"
 	"regexp"
 	"strings"
@@ -39,7 +40,7 @@ func NewWrapper(sd *proto.SourceDataV2, rs map[string]*proto.Rule, rd *render.Re
 	}
 }
 
-func (w *Wrapper) Start() error {
+func (w *Wrapper) Start(ctx context.Context) error {
 	for _, rule := range w.RuleSet {
 		dataSet, err := w.GetDataSet(rule.NameStruct)
 		if err != nil {
@@ -58,7 +59,7 @@ func (w *Wrapper) Start() error {
 	if err := w.Exec(); err != nil {
 		return err
 	}
-	w.Render.Output(w.RuleResult) // todo@toto add ruleResultPrint
+	w.Render.Output(ctx, w.RuleResult) // todo@toto add ruleResultPrint
 	return nil
 }
 

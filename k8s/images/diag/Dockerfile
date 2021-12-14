@@ -1,5 +1,5 @@
-FROM alpine:3.14
+FROM alpine:3.15
 
-RUN apk add curl tzdata --no-cache
+RUN apk add tzdata --no-cache
 ADD bin/k8s-pod /usr/local/bin/diag
 

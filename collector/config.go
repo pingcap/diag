@@ -29,6 +29,7 @@ import (
 	operator "github.com/pingcap/tiup/pkg/cluster/operation"
 	"github.com/pingcap/tiup/pkg/cluster/spec"
 	"github.com/pingcap/tiup/pkg/cluster/task"
+	logprinter "github.com/pingcap/tiup/pkg/logger/printer"
 	"github.com/pingcap/tiup/pkg/set"
 	"github.com/pingcap/tiup/pkg/utils"
 )
@@ -117,7 +118,7 @@ func (c *ConfigCollectOptions) prepareForTiUP(m *Manager, cls *models.TiDBCluste
 			archKey := fmt.Sprintf("%s-%s", inst.OS(), inst.Arch())
 			if _, found := uniqueArchList[archKey]; !found {
 				uniqueArchList[archKey] = struct{}{}
-				t0 := task.NewBuilder(m.DisplayMode).
+				t0 := task.NewBuilder(m.logger).
 					Download(
 						componentDiagCollector,
 						inst.OS(),
@@ -189,12 +190,16 @@ func (c *ConfigCollectOptions) prepareForTiUP(m *Manager, cls *models.TiDBCluste
 		dryRunTasks = append(dryRunTasks, t1)
 	}
 
-	t := task.NewBuilder(m.DisplayMode).
+	t := task.NewBuilder(m.logger).
 		ParallelStep("+ Download necessary tools", false, downloadTasks...).
 		ParallelStep("+ Collect host information", false, dryRunTasks...).
 		Build()
 
-	ctx := ctxt.New(context.Background(), c.opt.Concurrency)
+	ctx := ctxt.New(
+		context.Background(),
+		c.opt.Concurrency,
+		m.logger,
+	)
 	if err := t.Execute(ctx); err != nil {
 		if errorx.Cast(err) != nil {
 			// FIXME: Map possible task errors and give suggestions.
@@ -227,7 +232,11 @@ func (c *ConfigCollectOptions) collectForTiUP(m *Manager, cls *models.TiDBCluste
 		cleanTasks   []*task.StepDisplay
 		queryTasks   []*task.StepDisplay
 	)
-	ctx := ctxt.New(context.Background(), c.opt.Concurrency)
+	ctx := ctxt.New(
+		context.Background(),
+		c.opt.Concurrency,
+		m.logger,
+	)
 
 	uniqueHosts := map[string]int{} // host -> ssh-port
 
@@ -246,7 +255,7 @@ func (c *ConfigCollectOptions) collectForTiUP(m *Manager, cls *models.TiDBCluste
 
 		// query realtime configs for each instance if supported
 		// TODO: support TLS enabled clusters
-		if t3 := buildRealtimeConfigCollectingTasks(ctx, m.DisplayMode, inst, c.resultDir, nil); t3 != nil {
+		if t3 := buildRealtimeConfigCollectingTasks(ctx, inst, c.resultDir, nil); t3 != nil {
 			queryTasks = append(queryTasks, t3)
 		}
 	}
@@ -306,7 +315,7 @@ func (c *ConfigCollectOptions) collectForTiUP(m *Manager, cls *models.TiDBCluste
 
 	}
 
-	t := task.NewBuilder(m.DisplayMode).
+	t := task.NewBuilder(m.logger).
 		ParallelStep("+ Scrap files on nodes", false, collectTasks...).
 		ParallelStep("+ Cleanup temp files", false, cleanTasks...).
 		ParallelStep("+ Query realtime configs", false, queryTasks...).
@@ -328,7 +337,11 @@ func (c *ConfigCollectOptions) collectForK8s(m *Manager, topo *models.TiDBCluste
 	var (
 		queryTasks []*task.StepDisplay
 	)
-	ctx := ctxt.New(context.Background(), c.opt.Concurrency)
+	ctx := ctxt.New(
+		context.Background(),
+		c.opt.Concurrency,
+		m.logger,
+	)
 
 	/*
 		roleFilter := set.NewStringSet(c.opt.Roles...)
@@ -348,12 +361,12 @@ func (c *ConfigCollectOptions) collectForK8s(m *Manager, topo *models.TiDBCluste
 
 		// query realtime configs for each instance if supported
 		// TODO: support TLS enabled clusters
-		if t3 := buildRealtimeConfigCollectingTasks(ctx, m.DisplayMode, inst, c.resultDir, nil); t3 != nil {
+		if t3 := buildRealtimeConfigCollectingTasks(ctx, inst, c.resultDir, nil); t3 != nil {
 			queryTasks = append(queryTasks, t3)
 		}
 	}
 
-	t := task.NewBuilder(m.DisplayMode).
+	t := task.NewBuilder(m.logger).
 		ParallelStep("+ Query realtime configs", false, queryTasks...).
 		Build()
 
@@ -373,7 +386,7 @@ type rtConfig struct {
 	url      string
 }
 
-func buildRealtimeConfigCollectingTasks(_ context.Context, displayMode string, inst models.Component, resultDir string, tlsCfg *tls.Config) *task.StepDisplay {
+func buildRealtimeConfigCollectingTasks(ctx context.Context, inst models.Component, resultDir string, tlsCfg *tls.Config) *task.StepDisplay {
 	var configs []rtConfig
 	scheme := "http"
 
@@ -403,7 +416,8 @@ func buildRealtimeConfigCollectingTasks(_ context.Context, displayMode string, i
 		host = pod
 	}
 
-	t := task.NewBuilder(displayMode).
+	logger := ctx.Value(logprinter.ContextKeyLogger).(*logprinter.Logger)
+	t := task.NewBuilder(logger).
 		Func(
 			fmt.Sprintf("querying %s:%d", host, inst.MainPort()),
 			func(ctx context.Context) error {

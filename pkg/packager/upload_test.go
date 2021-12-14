@@ -1,4 +1,17 @@
-package command
+// Copyright 2021 PingCAP, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+package packager
 
 import (
 	"bytes"
@@ -8,6 +21,7 @@ import (
 	"testing"
 
 	"github.com/onsi/gomega"
+	logprinter "github.com/pingcap/tiup/pkg/logger/printer"
 )
 
 func Test_ComputeTotalBlock(t *testing.T) {
@@ -41,9 +55,13 @@ func Test_UploadInitFile(t *testing.T) {
 		results: make(map[int64][]byte),
 	}
 
-	err := UploadFile(resp, int64(len(contents)), flushFunc(g, resp, contents, mt), func() (ReaderAtCloseable, error) {
-		return reader, nil
-	}, uploadFunc(g, mt, reader, len(contents), blockSize))
+	logger := logprinter.NewLogger("")
+	_, err := UploadFile(logger, resp, int64(len(contents)),
+		flushFunc(g, resp, contents, mt),
+		func() (ReaderAtCloseable, error) {
+			return reader, nil
+		},
+		uploadFunc(g, mt, reader, len(contents), blockSize))
 
 	g.Expect(err).To(gomega.Succeed())
 	g.Expect(reader.closed).To(gomega.Equal(true))
@@ -70,9 +88,13 @@ func Test_UploadFileMultiBlock(t *testing.T) {
 			results: make(map[int64][]byte),
 		}
 
-		err := UploadFile(resp, int64(len(contents)), flushFunc(g, resp, contents, mt), func() (ReaderAtCloseable, error) {
-			return reader, nil
-		}, uploadFunc(g, mt, reader, len(contents), blockSize))
+		logger := logprinter.NewLogger("")
+		_, err := UploadFile(logger, resp, int64(len(contents)),
+			flushFunc(g, resp, contents, mt),
+			func() (ReaderAtCloseable, error) {
+				return reader, nil
+			},
+			uploadFunc(g, mt, reader, len(contents), blockSize))
 
 		g.Expect(err).To(gomega.Succeed())
 		g.Expect(reader.closed).To(gomega.Equal(true))
@@ -100,9 +122,13 @@ func Test_UploadFileFromOffset(t *testing.T) {
 			results: make(map[int64][]byte),
 		}
 
-		err := UploadFile(resp, int64(len(contents)), flushFunc(g, resp, contents, mt), func() (ReaderAtCloseable, error) {
-			return reader, nil
-		}, uploadFunc(g, mt, reader, len(contents), blockSize))
+		logger := logprinter.NewLogger("")
+		_, err := UploadFile(logger, resp, int64(len(contents)),
+			flushFunc(g, resp, contents, mt),
+			func() (ReaderAtCloseable, error) {
+				return reader, nil
+			},
+			uploadFunc(g, mt, reader, len(contents), blockSize))
 
 		g.Expect(err).To(gomega.Succeed())
 		g.Expect(reader.closed).To(gomega.Equal(true))
@@ -131,7 +157,7 @@ var uploadFunc = func(g *gomega.WithT, mt *mapTest, reader *MockReader, fileSize
 }
 
 var flushFunc = func(g *gomega.WithT, resp *preCreateResponse, contents []byte, mt *mapTest) FlushUploadFile {
-	return func() error {
+	return func() (string, error) {
 		fmt.Println("\n<>>>>>>>>>")
 
 		totalBlockSize := computeTotalBlock(int64(len(contents)), resp.BlockBytes)
@@ -154,7 +180,7 @@ var flushFunc = func(g *gomega.WithT, resp *preCreateResponse, contents []byte, 
 		}
 
 		fmt.Println("Complete!")
-		return nil
+		return "", nil
 	}
 }
 

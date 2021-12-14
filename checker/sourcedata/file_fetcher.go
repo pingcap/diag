@@ -27,7 +27,7 @@ import (
 	"strings"
 	"time"
 
-	jsoniter "github.com/json-iterator/go"
+	json "github.com/json-iterator/go"
 	"github.com/pingcap/diag/checker/config"
 	"github.com/pingcap/diag/checker/proto"
 	"github.com/pingcap/diag/collector"
@@ -202,7 +202,7 @@ func (f *FileFetcher) loadRealTimeConfig(_ context.Context, sourceData *proto.So
 				if err != nil {
 					cfg.PdConfig = nil // skip error
 				} else {
-					if err := jsoniter.Unmarshal(bs, cfg); err != nil {
+					if err := json.Unmarshal(bs, cfg); err != nil {
 						logrus.Error(err)
 						return err
 					}
@@ -226,7 +226,7 @@ func (f *FileFetcher) loadRealTimeConfig(_ context.Context, sourceData *proto.So
 				if err != nil {
 					cfg.TikvConfig = nil // skip error
 				} else {
-					if err := jsoniter.Unmarshal(bs, cfg); err != nil {
+					if err := json.Unmarshal(bs, cfg); err != nil {
 						logrus.Error(err)
 						return err
 					}
@@ -251,7 +251,7 @@ func (f *FileFetcher) loadRealTimeConfig(_ context.Context, sourceData *proto.So
 				if err != nil {
 					cfg.TidbConfig = nil
 				} else {
-					if err := jsoniter.Unmarshal(bs, cfg); err != nil {
+					if err := json.Unmarshal(bs, cfg); err != nil {
 						logrus.Error(err)
 						return err
 					}
@@ -518,7 +518,7 @@ func (f *FileFetcher) loadClusterMetaData() error {
 	if err != nil {
 		return err
 	}
-	if err := jsoniter.Unmarshal(bs, clusterJSON); err != nil {
+	if err := json.Unmarshal(bs, clusterJSON); err != nil {
 		return err
 	}
 	f.clusterJSON = clusterJSON

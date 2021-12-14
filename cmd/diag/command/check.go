@@ -15,114 +15,41 @@ package command
 
 import (
 	"context"
-	"fmt"
-	"path"
-	"strings"
-	"time"
 
-	"github.com/pingcap/diag/checker/config"
-	"github.com/pingcap/diag/checker/engine"
-	"github.com/pingcap/diag/checker/render"
-	"github.com/pingcap/diag/checker/sourcedata"
-	"github.com/pingcap/log"
+	"github.com/pingcap/diag/checker"
+	logprinter "github.com/pingcap/tiup/pkg/logger/printer"
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"
-	"golang.org/x/sync/errgroup"
 )
 
 func newCheckCmd() *cobra.Command {
-	var datapath = ""
-	var inc = []string{"config"}
-	var logLevel = ""
-	var outpath = ""
+	var logLevel string
+	opt := checker.NewOptions()
 	cmd := &cobra.Command{
-		Use:   "check",
+		Use:   "check <collected-datadir>",
 		Short: "Check config collected from a TiDB cluster",
+		Args: func(cmd *cobra.Command, args []string) error {
+			if len(args) != 1 {
+				return cmd.Help()
+			}
+			opt.DataPath = args[0]
+			return nil
+		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if logLevel != "info" {
 				l := zap.NewAtomicLevel()
 				if l.UnmarshalText([]byte(logLevel)) == nil {
-					log.SetLevel(l.Level())
+					zap.IncreaseLevel(l)
 				}
 			}
-			log.Debug("start checker")
-			// TODO: integrate fetcher
+			zap.L().Debug("checker started")
 
-			// todo: checker action id
-			// todo: checker action time
-			// todo: version
-			var checkFlag sourcedata.CheckFlag
-			for _, val := range inc {
-				if val == "config" {
-					checkFlag |= sourcedata.ConfigFlag
-				}
-				if val == "performance" {
-					checkFlag |= sourcedata.PerformanceFlag
-				}
-				if val == "default_config" {
-					checkFlag |= sourcedata.DefaultConfigFlag
-				}
-			}
-			// if output is not defined, use an auto generated one.
-			if len(outpath) == 0 {
-				outpath = path.Join(datapath, fmt.Sprintf("report-%s", time.Now().Format("060102150405")))
-			}
-			fetch, err := sourcedata.NewFileFetcher(datapath,
-				sourcedata.WithCheckFlag(checkFlag),
-				sourcedata.WithOutputDir(outpath))
-			if err != nil {
-				log.Error(err.Error())
-				return err
-			}
-			ruleSpec, err := config.LoadBetaRuleSpec()
-			if err != nil {
-				log.Error(err.Error())
-				return err
-			}
-			data, ruleSet, err := fetch.FetchData(ruleSpec)
-			if err != nil {
-				log.Error(err.Error())
-				return err
-			}
-			include := strings.Join(inc, "-")
-			render := render.NewResultWrapper(data, ruleSet, outpath, include)
-			wrapper := engine.NewWrapper(data, ruleSet, render)
-			// checkline.Init()
-			// pipe := checkline.GetResultChan()
-			// screenRender := render.NewScreenRender(pipe)
-			errG, _ := errgroup.WithContext(context.Background())
-
-			// todo receive context
-			// cluster id
-			// cluster name
-			// cluster version
-			// cluster Time
-			// Uptime
-
-			// SampleId
-			// Sampling Date
-			// Sample Content
-			// - configuration: tidb, tikv, pd
-			// - performance: tidb dashboard, prometheus
-			// - Rule ID: <String> // e.g. 12343234334，全局唯一
-			// - Variation: <String> // e.g. tidb.file.max_days
-
-			// fetch unique num +1
-
-			errG.Go(func() error {
-				return wrapper.Start()
-			})
-			if err := errG.Wait(); err != nil {
-				log.Error("check meet error", zap.Error(err))
-				return err
-			}
-			return nil
+			return opt.RunChecker(context.WithValue(context.Background(), logprinter.ContextKeyLogger, log))
 		},
 	}
 
-	cmd.Flags().StringVar(&datapath, "datapath", "./data", "path to collected data")
 	cmd.Flags().StringVar(&logLevel, "loglevel", "info", "log level, supported value is debug, info")
-	cmd.Flags().StringVarP(&outpath, "output", "o", "","dir to save check report. report will be saved in datapath if not set")
-	cmd.Flags().StringSliceVar(&inc, "include", inc, "types of data to check, supported value is config, performance, default_config")
+	cmd.Flags().StringVarP(&opt.OutPath, "output", "o", "", "dir to save check report. report will be saved in datapath if not set")
+	cmd.Flags().StringSliceVar(&opt.Inc, "include", opt.Inc, "types of data to check, supported value is config, performance, default_config")
 	return cmd
 }

@@ -17,7 +17,6 @@ import (
 	"bytes"
 	"context"
 	"crypto/tls"
-	"encoding/json"
 	"fmt"
 	"os"
 	"os/exec"
@@ -33,7 +32,7 @@ import (
 	"time"
 
 	"github.com/fatih/color"
-	jsoniter "github.com/json-iterator/go"
+	json "github.com/json-iterator/go"
 	"github.com/pingcap/errors"
 	"github.com/pingcap/tiup/components/playground/instance"
 	"github.com/pingcap/tiup/pkg/cluster/spec"
@@ -428,7 +427,7 @@ func (i *influxdb) ready() bool {
 		return false
 	}
 	var status map[string]interface{}
-	if err := jsoniter.Unmarshal(body, &status); err != nil {
+	if err := json.Unmarshal(body, &status); err != nil {
 		fmt.Printf("still waiting for influxdb to start: %s\n", err)
 		return false
 	}

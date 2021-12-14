@@ -14,90 +14,48 @@
 package main
 
 import (
-	"os"
-	"os/signal"
-	"syscall"
-	"time"
-
-	"github.com/pingcap/diag/collector"
+	"github.com/pingcap/diag/k8s/server"
 	"github.com/pingcap/diag/version"
-	operator "github.com/pingcap/tiup/pkg/cluster/operation"
-	"github.com/pingcap/tiup/pkg/set"
-	"k8s.io/client-go/dynamic"
-	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/rest"
-	klog "k8s.io/klog"
+	"github.com/spf13/cobra"
+	"k8s.io/klog/v2"
 )
 
 var (
-	cm   *collector.Manager
-	cOpt collector.CollectOptions
-	gOpt operator.Options
-	opt  collector.BaseOptions
+	diagCmd *cobra.Command
+	srvOpt  *server.Options
 )
 
 func init() {
 	klog.InitFlags(nil)
-	cm = collector.NewEmptyManager("tidb")
-	cOpt = collector.CollectOptions{
-		Include: set.NewStringSet( // collect all types by default
-			collector.CollectTypeMonitor,
-			collector.CollectTypeConfig,
-		),
-		Exclude: set.NewStringSet(),
+	defer klog.Flush()
+
+	srvOpt = &server.Options{}
+
+	diagCmd = &cobra.Command{
+		Use:     "diag",
+		Short:   "The TiDB diagnostic collector and checker for Kubernetes.",
+		Version: version.String(),
+		RunE:    runServer,
 	}
-	gOpt.Concurrency = 2
-	opt = collector.BaseOptions{}
+
+	diagCmd.Flags().StringVar(&srvOpt.Host, "host", "0.0.0.0", "listen address")
+	diagCmd.Flags().IntVar(&srvOpt.Port, "port", 4917, "listen port")
+	diagCmd.Flags().BoolVar(&srvOpt.Verbose, "verbose", false, "debug log")
+}
+
+func runServer(_ *cobra.Command, args []string) error {
+	klog.Infof("started diag pod %s", version.String())
+
+	srv, err := server.NewServer(srvOpt)
+	if err != nil {
+		return err
+	}
+
+	return srv.Run()
 }
 
 func main() {
-	klog.Infof("started diag pod %s", version.String())
-
-	cfg, err := rest.InClusterConfig()
-	if err != nil {
-		klog.Fatalf("failed to get config: %v", err)
+	if err := diagCmd.Execute(); err != nil {
+		klog.Fatal(err)
 	}
-	kubeCli, err := kubernetes.NewForConfig(cfg)
-	if err != nil {
-		klog.Fatalf("failed to get kubernetes Clientset: %v", err)
-	}
-	dynCli, err := dynamic.NewForConfig(cfg)
-	if err != nil {
-		klog.Fatalf("failed to get kubernetes dynamic client interface: %v", err)
-	}
-	klog.Info("initialized kube clients")
-
-	// run collectors
-	cOpt.Mode = collector.CollectModeK8s
-	tc := os.Getenv("TC_NAME")
-	if tc == "" {
-		klog.Fatal("TC_NAME environment variable not set")
-	}
-	klog.Infof("collecting for tidb cluster '%s'", tc)
-	opt.Cluster = tc
-
-	// parsing time
-	opt.ScrapeBegin = os.Getenv("TIME_BEGIN")
-	if opt.ScrapeBegin == "" {
-		opt.ScrapeBegin = time.Now().Add(time.Hour * -2).Format(time.RFC3339)
-	}
-	opt.ScrapeEnd = os.Getenv("TIME_END")
-	if opt.ScrapeEnd == "" {
-		opt.ScrapeEnd = time.Now().Format(time.RFC3339)
-	}
-
-	if err := cm.CollectClusterInfo(&opt, &cOpt, &gOpt, kubeCli, dynCli); err != nil {
-		klog.Errorf("error collecting info: %s", err)
-	}
-
-	klog.Info("collecting finished, backup the data before deleting this pod.")
-
-	sc := make(chan os.Signal, 1)
-	signal.Notify(sc,
-		syscall.SIGINT,
-		syscall.SIGTERM,
-		syscall.SIGQUIT,
-	)
-	sig := <-sc
-	klog.Infof("got signal %s, exit", sig)
 }

@@ -14,9 +14,10 @@
 package proto
 
 import (
-	"encoding/json"
 	"os"
 	"testing"
+
+	json "github.com/json-iterator/go"
 )
 
 func TestJsonDecodeTikvConfigData(t *testing.T) {

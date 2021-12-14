@@ -14,6 +14,7 @@
 package collector
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"os"
@@ -21,12 +22,13 @@ import (
 	"strconv"
 	"time"
 
-	jsoniter "github.com/json-iterator/go"
+	json "github.com/json-iterator/go"
 	pingcapv1alpha1 "github.com/pingcap/diag/k8s/apis/pingcap/v1alpha1"
 	"github.com/pingcap/diag/pkg/models"
 	"github.com/pingcap/diag/version"
 	perrs "github.com/pingcap/errors"
 	"github.com/pingcap/tiup/pkg/cluster/api"
+	"github.com/pingcap/tiup/pkg/cluster/ctxt"
 	operator "github.com/pingcap/tiup/pkg/cluster/operation"
 	"github.com/pingcap/tiup/pkg/cluster/spec"
 	"github.com/pingcap/tiup/pkg/meta"
@@ -100,9 +102,15 @@ func (c *MetaCollectOptions) Collect(m *Manager, topo *models.TiDBCluster) error
 	var clusterID int64
 	var err error
 
+	ctx := ctxt.New(
+		context.Background(),
+		c.opt.Concurrency,
+		m.logger,
+	)
+
 	switch m.mode {
 	case CollectModeTiUP:
-		clusterID, err = getTiUPClusterID(b.Cluster)
+		clusterID, err = getTiUPClusterID(ctx, b.Cluster)
 	case CollectModeK8s:
 		var id int
 		id, err = strconv.Atoi(c.tc.GetClusterID())
@@ -124,7 +132,7 @@ func (c *MetaCollectOptions) Collect(m *Manager, topo *models.TiDBCluster) error
 		}
 	}
 
-	jsonbyte, _ := jsoniter.MarshalIndent(ClusterJSON{
+	jsonbyte, _ := json.MarshalIndent(ClusterJSON{
 		DiagVersion: version.ShortVer(),
 		ClusterName: b.Cluster,
 		ClusterID:   clusterID,
@@ -161,7 +169,7 @@ func (c *MetaCollectOptions) Collect(m *Manager, topo *models.TiDBCluster) error
 			return err
 		}
 	case CollectModeK8s:
-		tcData, err := jsoniter.MarshalIndent(c.tc, "", "  ")
+		tcData, err := json.MarshalIndent(c.tc, "", "  ")
 		if err != nil {
 			return err
 		}
@@ -174,7 +182,7 @@ func (c *MetaCollectOptions) Collect(m *Manager, topo *models.TiDBCluster) error
 			return err
 		}
 		if c.tm != nil {
-			tmData, err := jsoniter.MarshalIndent(c.tm, "", "  ")
+			tmData, err := json.MarshalIndent(c.tm, "", "  ")
 			if err != nil {
 				return err
 			}
@@ -191,7 +199,7 @@ func (c *MetaCollectOptions) Collect(m *Manager, topo *models.TiDBCluster) error
 	return nil
 }
 
-func getTiUPClusterID(clusterName string) (int64, error) {
+func getTiUPClusterID(ctx context.Context, clusterName string) (int64, error) {
 	metadata, err := spec.ClusterMetadata(clusterName)
 	if err != nil && !errors.Is(perrs.Cause(err), meta.ErrValidate) &&
 		!errors.Is(perrs.Cause(err), spec.ErrNoTiSparkMaster) {
@@ -203,6 +211,6 @@ func getTiUPClusterID(clusterName string) (int64, error) {
 		pdEndpoints = append(pdEndpoints, fmt.Sprintf("%s:%d", pd.Host, pd.ClientPort))
 	}
 
-	pdAPI := api.NewPDClient(pdEndpoints, 2*time.Second, nil)
+	pdAPI := api.NewPDClient(ctx, pdEndpoints, 2*time.Second, nil)
 	return pdAPI.GetClusterID()
 }

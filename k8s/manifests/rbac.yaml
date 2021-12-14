@@ -2,7 +2,6 @@ kind: ServiceAccount
 apiVersion: v1
 metadata:
   name: pingcap-clinic
-  namespace: ${namespace}
   labels:
     app: pingcap-clinic
 ---
@@ -10,7 +9,6 @@ kind: Role
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
   name: pingcap-clinic
-  namespace: ${namespace}
   labels:
     app: pingcap-clinic
 rules:
@@ -25,11 +23,10 @@ kind: RoleBinding
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
   name: diag
-  namespace: ${namespace}
 subjects:
 - kind: ServiceAccount
-  name: pingcap-clinic
   namespace: ${namespace}
+  name: pingcap-clinic
 roleRef:
   kind: Role
   name: pingcap-clinic
@@ -39,7 +36,6 @@ kind: ClusterRole
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
   name: pingcap-clinic
-  namespace: ${namespace}
   labels:
     app: pingcap-clinic
 rules:
@@ -54,11 +50,10 @@ kind: ClusterRoleBinding
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
   name: diag
-  namespace: ${namespace}
 subjects:
 - kind: ServiceAccount
-  name: pingcap-clinic
   namespace: ${namespace}
+  name: pingcap-clinic
 roleRef:
   kind: ClusterRole
   name: pingcap-clinic

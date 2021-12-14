@@ -24,7 +24,7 @@ import (
 func newRebuildCmd() *cobra.Command {
 	opt := collector.RebuildOptions{}
 	cmd := &cobra.Command{
-		Use:   "rebuild <path-to-the-dump> [flags]",
+		Use:   "rebuild <collected-datadir> [flags]",
 		Short: "Rebuild monitoring systems from the dumped data.",
 		Long: `Rebuild monitoring systems from the dumped metrics from
 a TiDB cluster. Metrics are reloaded to an InfluxDB instance

@@ -1,0 +1,424 @@
+swagger: '2.0'
+info:
+  description: RESTful API definitions for Diag
+  title: Diag API
+  version: 1.0.0
+basePath: /api/v1
+schemes:
+  - http
+  - https
+consumes:
+  - application/json
+produces:
+  - application/json
+  - text/plain
+paths:
+  /collectors:
+    get:
+      operationId: getJobList
+      responses:
+        '200':
+          description: list all collect jobs
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/CollectJob'
+        '500':
+          description: server side error
+          schema:
+            $ref: '#/definitions/ResponseMsg'
+    post:
+      operationId: collectData
+      parameters:
+        - name: body
+          in: body
+          schema:
+            $ref: '#/definitions/CollectJobRequest'
+      responses:
+        '202':
+          description: collector started
+          schema:
+            $ref: '#/definitions/CollectJob'
+        '500':
+          description: server side error
+          schema:
+            $ref: '#/definitions/ResponseMsg'
+  /collectors/{id}:
+    get:
+      operationId: getCollectJob
+      parameters:
+        - name: id
+          in: path
+          type: string
+          required: true
+      responses:
+        '200':
+          description: get a collect job
+          schema:
+            $ref: '#/definitions/CollectJob'
+        '404':
+          description: job not found
+          schema:
+            $ref: '#/definitions/ResponseMsg'
+        '500':
+          description: server side error
+          schema:
+            $ref: '#/definitions/ResponseMsg'
+    delete:
+      operationId: cancelCollectJob
+      parameters:
+        - name: id
+          in: path
+          type: string
+          required: true
+      responses:
+        '202':
+          description: job cancelled
+          schema:
+            $ref: '#/definitions/CollectJob'
+        '404':
+          description: job not found
+          schema:
+            $ref: '#/definitions/ResponseMsg'
+        '410':
+          description: the job has already been cancelled
+          schema:
+            $ref: '#/definitions/CollectJob'
+        '500':
+          description: server side error
+          schema:
+            $ref: '#/definitions/ResponseMsg'
+  /collectors/{id}/logs:
+    get:
+      operationId: getCollectJobLogs
+      parameters:
+        - name: id
+          in: path
+          type: string
+          required: true
+      produces:
+        - application/json
+        - text/plain
+      responses:
+        '200':
+          description: get logs of a collect job
+          schema:
+            type: string
+        '404':
+          description: job not found
+          schema:
+            $ref: '#/definitions/ResponseMsg'
+        '500':
+          description: server side error
+          schema:
+            $ref: '#/definitions/ResponseMsg'
+  /data:
+    get:
+      operationId: getDataList
+      parameters:
+        - name: status
+          in: query
+          type: string
+      responses:
+        '200':
+          description: list all available data sets
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/DataSet'
+        '400':
+          description: unknown status
+          schema:
+            $ref: '#/definitions/ResponseMsg'
+        '500':
+          description: server side error
+          schema:
+            $ref: '#/definitions/ResponseMsg'
+  /data/{id}:
+    get:
+      operationId: getDataSet
+      parameters:
+        - name: id
+          in: path
+          type: string
+          required: true
+      responses:
+        '200':
+          description: get a data set
+          schema:
+            $ref: '#/definitions/DataSet'
+        '404':
+          description: data set not found
+          schema:
+            $ref: '#/definitions/ResponseMsg'
+        '500':
+          description: server side error
+          schema:
+            $ref: '#/definitions/ResponseMsg'
+    delete:
+      operationId: deleteDataSet
+      parameters:
+        - name: id
+          in: path
+          type: string
+          required: true
+      responses:
+        '204':
+          description: deleted
+        '404':
+          description: data set not found
+          schema:
+            $ref: '#/definitions/ResponseMsg'
+        '500':
+          description: server side error
+          schema:
+            $ref: '#/definitions/ResponseMsg'
+        '503':
+          description: collect job not finished
+          schema:
+            $ref: '#/definitions/ResponseMsg'
+  /data/{id}/upload:
+    get:
+      operationId: getUploadTask
+      parameters:
+        - name: id
+          in: path
+          type: string
+          required: true
+      responses:
+        '200':
+          description: show last upload task of the data set
+          schema:
+            $ref: '#/definitions/UploadTask'
+        '204':
+          description: no upload task available
+        '404':
+          description: data set not found
+          schema:
+            $ref: '#/definitions/ResponseMsg'
+        '500':
+          description: server side error
+          schema:
+            $ref: '#/definitions/ResponseMsg'
+    post:
+      operationId: uploadDataSet
+      parameters:
+        - name: id
+          in: path
+          type: string
+          required: true
+      responses:
+        '202':
+          description: package and upload a data set to the clinic server
+          schema:
+            $ref: '#/definitions/UploadTask'
+        '404':
+          description: data set not found
+          schema:
+            $ref: '#/definitions/ResponseMsg'
+        '409':
+          description: an upload task is already running
+          schema:
+            $ref: '#/definitions/UploadTask'
+        '500':
+          description: server side error
+          schema:
+            $ref: '#/definitions/ResponseMsg'
+    delete:
+      operationId: cancelDataUpload
+      parameters:
+        - name: id
+          in: path
+          type: string
+          required: true
+      responses:
+        '202':
+          description: upload has finished, no need to cancal
+          schema:
+            $ref: '#/definitions/UploadTask'
+        '204':
+          description: upload cancelled
+        '404':
+          description: data set not found
+          schema:
+            $ref: '#/definitions/ResponseMsg'
+        '410':
+          description: the upload has already been cancelled
+          schema:
+            $ref: '#/definitions/UploadTask'
+        '500':
+          description: server side error
+          schema:
+            $ref: '#/definitions/ResponseMsg'
+  /data/{id}/check:
+    get:
+      operationId: getCheckResult
+      parameters:
+        - name: id
+          in: path
+          type: string
+          required: true
+      produces:
+        - application/json
+        - text/plain
+      responses:
+        '200':
+          description: show last check result of the data set
+          schema:
+            description: check result of the data set
+            type: string
+        '204':
+          description: no check result available
+        '404':
+          description: data set not found
+          schema:
+            $ref: '#/definitions/ResponseMsg'
+        '500':
+          description: server side error
+          schema:
+            $ref: '#/definitions/ResponseMsg'
+    post:
+      operationId: checkDataSet
+      parameters:
+        - name: id
+          in: path
+          type: string
+          required: true
+        - name: body
+          in: body
+          schema:
+            $ref: '#/definitions/CheckDataRequest'
+      produces:
+        - application/json
+        - text/plain
+      responses:
+        '200':
+          description: run checker on a data set
+          schema:
+            description: check result of the data set
+            type: string
+        '404':
+          description: data set not found
+          schema:
+            $ref: '#/definitions/ResponseMsg'
+        '500':
+          description: server side error
+          schema:
+            $ref: '#/definitions/ResponseMsg'
+    delete:
+      operationId: cancelCheck
+      parameters:
+        - name: id
+          in: path
+          type: string
+          required: true
+      produces:
+        - application/json
+        - text/plain
+      responses:
+        '202':
+          description: check has finished, no need to cancal
+          schema:
+            description: check result of the data set
+            type: string
+        '204':
+          description: check cancelled
+        '404':
+          description: data set not found or check result unavailable
+          schema:
+            $ref: '#/definitions/ResponseMsg'
+        '500':
+          description: server side error
+          schema:
+            $ref: '#/definitions/ResponseMsg'
+  /version:
+    get:
+      operationId: getVersion
+      responses:
+        '200':
+          description: get server version
+          schema:
+            type: object
+            properties:
+              version:
+                type: string
+              go:
+                type: string
+definitions:
+  DataSet:
+    type: object
+    properties:
+      id:
+        type: string
+      clusterName:
+        type: string
+      size:
+        type: integer
+      date:
+        type: string
+        format: dateTime
+  CollectJobRequest:
+    type: object
+    properties:
+      clusterName:
+        type: string
+      namespace:
+        type: string
+      collectors:
+        type: array
+        items:
+          type: string
+      from:
+        type: string
+        format: dateTime
+      to:
+        type: string
+        format: dateTime
+  CollectJob:
+    type: object
+    properties:
+      id:
+        type: string
+      clusterName:
+        type: string
+      collectors:
+        type: array
+        items:
+          type: string
+      from:
+        type: string
+        format: dateTime
+      to:
+        type: string
+        format: dateTime
+      date:
+        type: string
+        format: dateTime
+      status:
+        type: string
+      dir:
+        type: string
+  CheckDataRequest:
+    type: object
+    properties:
+      types:
+        type: array
+        items:
+          type: string
+  UploadTask:
+    type: object
+    properties:
+      id:
+        type: string
+      date:
+        type: string
+        format: dateTime
+      status:
+        type: string
+      result:
+        type: string
+  ResponseMsg:
+    type: object
+    properties:
+      message:
+        type: string

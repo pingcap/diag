@@ -27,12 +27,12 @@ import (
 	"sync"
 	"time"
 
-	jsoniter "github.com/json-iterator/go"
+	json "github.com/json-iterator/go"
 	"github.com/klauspost/compress/zstd"
 	"github.com/pingcap/diag/pkg/models"
 	"github.com/pingcap/diag/pkg/utils"
 	operator "github.com/pingcap/tiup/pkg/cluster/operation"
-	"github.com/pingcap/tiup/pkg/logger/log"
+	logprinter "github.com/pingcap/tiup/pkg/logger/printer"
 	"github.com/pingcap/tiup/pkg/tui/progress"
 	tiuputils "github.com/pingcap/tiup/pkg/utils"
 )
@@ -83,7 +83,7 @@ func (c *AlertCollectOptions) Prepare(_ *Manager, _ *models.TiDBCluster) (map[st
 }
 
 // Collect implements the Collector interface
-func (c *AlertCollectOptions) Collect(_ *Manager, topo *models.TiDBCluster) error {
+func (c *AlertCollectOptions) Collect(m *Manager, topo *models.TiDBCluster) error {
 	if len(topo.Monitors) < 1 {
 		fmt.Println("No monitoring node (prometheus) found in topology, skip.")
 		return nil
@@ -119,13 +119,13 @@ func (c *AlertCollectOptions) Collect(_ *Manager, topo *models.TiDBCluster) erro
 		} else {
 			enc, err := zstd.NewWriter(f)
 			if err != nil {
-				log.Errorf("failed compressing alert list: %s, retry...\n", err)
+				m.logger.Errorf("failed compressing alert list: %s, retry...\n", err)
 				return err
 			}
 			defer enc.Close()
 			_, err = io.Copy(enc, resp.Body)
 			if err != nil {
-				log.Errorf("failed writing alert list to file: %s, retry...\n", err)
+				m.logger.Errorf("failed writing alert list to file: %s, retry...\n", err)
 				return err
 			}
 		}
@@ -269,7 +269,7 @@ func (c *MetricCollectOptions) Collect(m *Manager, topo *models.TiDBCluster) err
 					Suffix: fmt.Sprintf("%d/%d querying %s ...", done, total, mtc),
 				})
 
-				collectMetric(client, prom, c.timeSteps, mtc, c.resultDir, c.compress)
+				collectMetric(m.logger, client, prom, c.timeSteps, mtc, c.resultDir, c.compress)
 
 				mu.Lock()
 				done++
@@ -301,20 +301,21 @@ func getMetricList(c *http.Client, prom string) ([]string, error) {
 	r := struct {
 		Metrics []string `json:"data"`
 	}{}
-	if err := jsoniter.NewDecoder(resp.Body).Decode(&r); err != nil {
+	if err := json.NewDecoder(resp.Body).Decode(&r); err != nil {
 		return []string{}, err
 	}
 	return r.Metrics, nil
 }
 
 func collectMetric(
+	l *logprinter.Logger,
 	c *http.Client,
 	prom *models.MonitorSpec,
 	ts []string,
 	mtc, resultDir string,
 	compress bool,
 ) {
-	log.Debugf("Dumping metric %s...", mtc)
+	l.Debugf("Dumping metric %s...", mtc)
 
 	promAddr := fmt.Sprintf("%s:%d", prom.Host(), prom.MainPort())
 
@@ -331,8 +332,7 @@ func collectMetric(
 					},
 				)
 				if err != nil {
-					log.Errorf("failed query metric %s: %s, retry...", mtc, err)
-					fmt.Printf("failed query metric %s: %s, retry...\n", mtc, err)
+					l.Errorf("failed query metric %s: %s, retry...", mtc, err)
 					return err
 				}
 				defer resp.Body.Close()
@@ -344,8 +344,7 @@ func collectMetric(
 					),
 				)
 				if err != nil {
-					log.Errorf("collect metric %s: %s, retry...", mtc, err)
-					fmt.Printf("collect metric %s: %s, retry...\n", mtc, err)
+					l.Errorf("collect metric %s: %s, retry...", mtc, err)
 				}
 				defer dst.Close()
 
@@ -354,23 +353,23 @@ func collectMetric(
 				if !compress {
 					n, err = io.Copy(dst, resp.Body)
 					if err != nil {
-						log.Errorf("failed writing metric %s to file: %s, retry...\n", mtc, err)
+						l.Errorf("failed writing metric %s to file: %s, retry...\n", mtc, err)
 						return err
 					}
 				} else {
 					enc, err := zstd.NewWriter(dst)
 					if err != nil {
-						log.Errorf("failed compressing metric %s: %s, retry...\n", mtc, err)
+						l.Errorf("failed compressing metric %s: %s, retry...\n", mtc, err)
 						return err
 					}
 					defer enc.Close()
 					n, err = io.Copy(enc, resp.Body)
 					if err != nil {
-						log.Errorf("failed writing metric %s to file: %s, retry...\n", mtc, err)
+						l.Errorf("failed writing metric %s to file: %s, retry...\n", mtc, err)
 						return err
 					}
 				}
-				log.Debugf(" Dumped metric %s from %s to %s (%d bytes)", mtc, ts[i], ts[i+1], n)
+				l.Debugf(" Dumped metric %s from %s to %s (%d bytes)", mtc, ts[i], ts[i+1], n)
 				return nil
 			},
 			tiuputils.RetryOption{
@@ -379,7 +378,7 @@ func collectMetric(
 				Timeout:  time.Second * 120,
 			},
 		); err != nil {
-			log.Errorf("Error quering metrics %s: %s", mtc, err)
+			l.Errorf("Error quering metrics %s: %s", mtc, err)
 		}
 	}
 }
