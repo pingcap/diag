@@ -44,10 +44,6 @@ func newCollectCmd() *cobra.Command {
 	}
 	inc := make([]string, 0)
 	ext := make([]string, 0)
-	spec.Initialize("cluster")
-
-	tidbSpec := spec.GetSpecManager()
-	cm := collector.NewManager("tidb", tidbSpec, log)
 
 	cmd := &cobra.Command{
 		Use:   "collect <cluster-name>",
@@ -58,6 +54,9 @@ func newCollectCmd() *cobra.Command {
 			}
 
 			log.SetDisplayModeFromString(gOpt.DisplayMode)
+			spec.Initialize("cluster")
+			tidbSpec := spec.GetSpecManager()
+			cm := collector.NewManager("tidb", tidbSpec, log)
 
 			// natvie ssh has it's own logic to find the default identity_file
 			if gOpt.SSHType == executor.SSHTypeSystem && !utils.IsFlagSetByUser(cmd.Flags(), "identity_file") {
