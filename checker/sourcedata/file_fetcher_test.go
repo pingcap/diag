@@ -3,14 +3,14 @@ package sourcedata
 import (
 	"bytes"
 	"fmt"
-	"github.com/pingcap/diag/collector"
-	"github.com/pingcap/diag/pkg/models"
-	"github.com/pingcap/tiup/pkg/cluster/spec"
 	"os"
 	"testing"
 
 	"github.com/pingcap/diag/checker/config"
 	"github.com/pingcap/diag/checker/proto"
+	"github.com/pingcap/diag/collector"
+	"github.com/pingcap/diag/pkg/models"
+	"github.com/pingcap/tiup/pkg/cluster/spec"
 	"github.com/stretchr/testify/require"
 )
 
@@ -217,12 +217,12 @@ func TestFileFetcher_getClusterVersion(t *testing.T) {
 	assert := require.New(t)
 	tt := []struct {
 		clusterMeta *spec.ClusterMeta
-		clusterJson *collector.ClusterJSON
+		clusterJSON *collector.ClusterJSON
 		expect      string
 	}{
 		{
 			clusterMeta: nil,
-			clusterJson: &collector.ClusterJSON{
+			clusterJSON: &collector.ClusterJSON{
 				Topology: &models.TiDBCluster{
 					Version: "v5.0.1",
 					PD: []*models.PDSpec{
@@ -238,7 +238,7 @@ func TestFileFetcher_getClusterVersion(t *testing.T) {
 		},
 		{
 			clusterMeta: nil,
-			clusterJson: &collector.ClusterJSON{
+			clusterJSON: &collector.ClusterJSON{
 				Topology: &models.TiDBCluster{
 					Version: "",
 					PD: []*models.PDSpec{
@@ -254,7 +254,7 @@ func TestFileFetcher_getClusterVersion(t *testing.T) {
 		},
 		{
 			clusterMeta: nil,
-			clusterJson: &collector.ClusterJSON{
+			clusterJSON: &collector.ClusterJSON{
 				Topology: &models.TiDBCluster{
 					Version: "",
 					TiDB: []*models.TiDBSpec{
@@ -270,7 +270,7 @@ func TestFileFetcher_getClusterVersion(t *testing.T) {
 		},
 		{
 			clusterMeta: nil,
-			clusterJson: &collector.ClusterJSON{
+			clusterJSON: &collector.ClusterJSON{
 				Topology: &models.TiDBCluster{
 					Version: "",
 					PD: []*models.PDSpec{
@@ -289,7 +289,7 @@ func TestFileFetcher_getClusterVersion(t *testing.T) {
 		t.Run("", func(t *testing.T) {
 			f := FileFetcher{
 				clusterMeta: tc.clusterMeta,
-				clusterJSON: tc.clusterJson,
+				clusterJSON: tc.clusterJSON,
 			}
 			ver, err := f.getClusterVersion()
 			assert.Nil(err)
