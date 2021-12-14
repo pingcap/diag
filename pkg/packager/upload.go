@@ -26,6 +26,7 @@ import (
 	"mime/multipart"
 	"net/http"
 	"os"
+	"path/filepath"
 	"strings"
 	"sync"
 	"syscall"
@@ -63,7 +64,28 @@ func Upload(ctx context.Context, opt *UploadOptions) (string, error) {
 		return "", err
 	}
 	if fileStat.IsDir() {
-		return "", errors.Errorf("expect a file, got directory: %s", opt.FilePath)
+		// package and upload when intput is DIR
+		tmpdir, err := os.MkdirTemp("", "diag-packager")
+		if err != nil {
+			return "", err
+		}
+		pkgPath := filepath.Join(tmpdir, filepath.Base(opt.FilePath)+".diag")
+
+		_, err = PackageCollectedData(&PackageOptions{
+			InputDir:   opt.FilePath,
+			OutputFile: pkgPath,
+			CertPath:   "", // use default cert in install path
+		})
+		if err != nil {
+			return "", err
+		}
+
+		opt.FilePath = pkgPath
+		fileStat, err = os.Stat(opt.FilePath)
+		if err != nil {
+			return "", err
+		}
+		defer os.RemoveAll(tmpdir)
 	}
 
 	uuid := fmt.Sprintf("%s-%s-%s",

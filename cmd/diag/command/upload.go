@@ -19,9 +19,9 @@ func newUploadCommand() *cobra.Command {
 			}
 			opt.FilePath = args[0]
 
-			userName, password := packager.Credentials()
-			opt.UserName = userName
-			opt.Password = password
+			if opt.UserName == "" || opt.Password == "" {
+				opt.UserName, opt.Password = packager.Credentials()
+			}
 			opt.Client = packager.InitClient(opt.Endpoint)
 
 			ctx := context.WithValue(
@@ -37,6 +37,8 @@ func newUploadCommand() *cobra.Command {
 	cmd.Flags().StringVarP(&opt.Alias, "alias", "", "", "the Alias of upload file.")
 	cmd.Flags().StringVarP(&opt.Endpoint, "endpoint", "", "https://clinic.pingcap.com:4433", "the clinic service Endpoint.")
 	cmd.Flags().StringVarP(&opt.Issue, "issue", "", "", "related jira oncall Issue, example: ONCALL-1131")
+	cmd.Flags().StringVarP(&opt.UserName, "username", "u", "", "username of clinic service")
+	cmd.Flags().StringVarP(&opt.Password, "password", "p", "", "password of clinic service")
 
 	return cmd
 }
