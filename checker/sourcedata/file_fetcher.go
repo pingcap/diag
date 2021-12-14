@@ -16,7 +16,6 @@ package sourcedata
 import (
 	"context"
 	"encoding/csv"
-	"fmt"
 	"github.com/Masterminds/semver"
 	"github.com/pingcap/tiup/pkg/cluster/spec"
 	"gopkg.in/yaml.v3"
@@ -547,27 +546,34 @@ func (f *FileFetcher) getClusterVersion() (string, error) {
 		}
 		return f.clusterMeta.Version, nil
 	}
-	// use Topology.Version first
+	// use Topology.Version as the cluster version first
 	if _, err := semver.NewVersion(f.clusterJSON.Topology.Version); err == nil {
 		return f.clusterJSON.Topology.Version, nil
 	}
-	// use tidb image version
-	if len(f.clusterJSON.Topology.TiDB) == 0 {
-		return "", errors.New("can not infer tidb version")
+	imageURL := ""
+	// use pd image version or tidb image version to infer cluster version
+	if len(f.clusterJSON.Topology.TiDB) > 0 {
+		if u, ok := f.clusterJSON.Topology.TiDB[0].Attributes()["image"].(string); ok {
+			imageURL = u
+		}
+	} else if len(f.clusterJSON.Topology.PD) > 0 {
+		if u, ok := f.clusterJSON.Topology.PD[0].Attributes()["image"].(string); ok {
+			imageURL = u
+		}
 	}
-	imageURL, ok := f.clusterJSON.Topology.TiDB[0].Attributes()["image"].(string)
-	if !ok {
+	if len(imageURL) == 0 {
 		return "", errors.New("can not infer tidb version")
 	}
 	imageTag := strings.Split(imageURL, ":")
 	if len(imageTag) != 2 {
 		return "", errors.New("can not infer tidb version")
 	}
+	//
 	mainVersion := strings.Split(imageTag[1], "-")[0]
-	if !strings.HasPrefix(mainVersion, "v") {
-		mainVersion = fmt.Sprintf("v%s", mainVersion)
+	if _, err := semver.NewVersion(mainVersion); err == nil {
+		return mainVersion, nil
 	}
-	return mainVersion, nil
+	return "nightly", nil
 }
 
 func (f *FileFetcher) getComponents(name proto.ComponentName) []models.Component {

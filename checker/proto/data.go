@@ -326,6 +326,7 @@ type NodeData struct {
 	Configs    []Config
 	DeviceData DeviceData
 }
+
 type Config interface {
 	GetComponent() string
 	GetPort() int
@@ -383,9 +384,10 @@ func (vr VersionRange) Contain(target string) (bool, error) {
 	if err != nil {
 		return false, err
 	}
+	// if the given version can not be parsed, return false without error
 	ver, err := semver.NewVersion(target)
 	if err != nil {
-		return false, err
+		return false, nil
 	}
 	return verCheck.Check(ver), nil
 }
