@@ -46,6 +46,12 @@ func TestVersionRange_IsTarget(t *testing.T) {
 		{Target: "v5.0.3", VRange: VersionRange(">=v4.0.0,<v4.0.15||v5.0.0||v5.0.1||v5.0.2||v5.0.3||v5.1.0||v5.1.1||v5.2.0||v5.2.1"), Expected: true},
 		{Target: "v4.0.15", VRange: VersionRange(">=v4.0.0,<v4.0.15||v5.0.0||v5.0.1||v5.0.2||v5.0.3||v5.1.0||v5.1.1||v5.2.0||v5.2.1"), Expected: false},
 		{Target: "v5.3.0", VRange: VersionRange(">=v4.0.0,<v4.0.15||v5.0.0||v5.0.1||v5.0.2||v5.0.3||v5.1.0||v5.1.1||v5.2.0||v5.2.1"), Expected: false},
+		{Target: "latest", VRange: VersionRange(""), Expected: true},
+		{Target: "latest", VRange: VersionRange(">=v4.0.0"), Expected: false},
+		{Target: "nightly", VRange: VersionRange(""), Expected: true},
+		{Target: "nightly", VRange: VersionRange(">=v4.0.0"), Expected: false},
+		{Target: "xxxxx", VRange: VersionRange(""), Expected: true},          // invalid version
+		{Target: "xxxxx", VRange: VersionRange(">=v4.0.0"), Expected: false}, // invalid version
 	}
 	for _, tc := range tt {
 		t.Run("", func(t *testing.T) {

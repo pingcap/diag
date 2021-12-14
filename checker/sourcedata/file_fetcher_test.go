@@ -11,6 +11,7 @@ import (
 
 	"github.com/pingcap/diag/checker/config"
 	"github.com/pingcap/diag/checker/proto"
+	"github.com/stretchr/testify/require"
 )
 
 func TestFileFetcher_loadSlowPlanData(t *testing.T) {
@@ -208,6 +209,91 @@ func TestFileFetcher_checkAvailable(t *testing.T) {
 					t.Error("incorrect result")
 				}
 			}
+		})
+	}
+}
+
+func TestFileFetcher_getClusterVersion(t *testing.T) {
+	assert := require.New(t)
+	tt := []struct {
+		clusterMeta *spec.ClusterMeta
+		clusterJson *collector.ClusterJSON
+		expect      string
+	}{
+		{
+			clusterMeta: nil,
+			clusterJson: &collector.ClusterJSON{
+				Topology: &models.TiDBCluster{
+					Version: "v5.0.1",
+					PD: []*models.PDSpec{
+						{ComponentSpec: models.ComponentSpec{
+							Attributes: map[string]interface{}{
+								"image": "pingcap.hub.com:v5.0.1",
+							},
+						}},
+					},
+				},
+			},
+			expect: "v5.0.1",
+		},
+		{
+			clusterMeta: nil,
+			clusterJson: &collector.ClusterJSON{
+				Topology: &models.TiDBCluster{
+					Version: "",
+					PD: []*models.PDSpec{
+						{ComponentSpec: models.ComponentSpec{
+							Attributes: map[string]interface{}{
+								"image": "pingcap.hub.com:v5.0.1",
+							},
+						}},
+					},
+				},
+			},
+			expect: "v5.0.1",
+		},
+		{
+			clusterMeta: nil,
+			clusterJson: &collector.ClusterJSON{
+				Topology: &models.TiDBCluster{
+					Version: "",
+					TiDB: []*models.TiDBSpec{
+						{ComponentSpec: models.ComponentSpec{
+							Attributes: map[string]interface{}{
+								"image": "pingcap.hub.com:v5.0.2",
+							},
+						}},
+					},
+				},
+			},
+			expect: "v5.0.2",
+		},
+		{
+			clusterMeta: nil,
+			clusterJson: &collector.ClusterJSON{
+				Topology: &models.TiDBCluster{
+					Version: "",
+					PD: []*models.PDSpec{
+						{ComponentSpec: models.ComponentSpec{
+							Attributes: map[string]interface{}{
+								"image": "pingcap.hub.com:<whatever>",
+							},
+						}},
+					},
+				},
+			},
+			expect: "nightly",
+		},
+	}
+	for _, tc := range tt {
+		t.Run("", func(t *testing.T) {
+			f := FileFetcher{
+				clusterMeta: tc.clusterMeta,
+				clusterJSON: tc.clusterJson,
+			}
+			ver, err := f.getClusterVersion()
+			assert.Nil(err)
+			assert.Equal(ver, tc.expect)
 		})
 	}
 }
