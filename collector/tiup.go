@@ -16,6 +16,7 @@ package collector
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"strconv"
 	"time"
 
@@ -307,6 +308,12 @@ func buildTopoForTiUPCluster(m *Manager, opt *BaseOptions) (*models.TiDBCluster,
 				cls.DMMaster = make([]*models.DMMasterSpec, 0)
 			}
 			i := ins.(*dmspec.MasterInstance).BaseInstance.InstanceSpec.(*dmspec.MasterSpec)
+			var logdir string
+			if i.LogDir == "" {
+				logdir = filepath.Join(i.DeployDir, "log")
+			} else {
+				logdir = i.LogDir
+			}
 			cls.DMMaster = append(cls.DMMaster, &models.DMMasterSpec{
 				ComponentSpec: models.ComponentSpec{
 					Host:       i.Host,
@@ -319,7 +326,7 @@ func buildTopoForTiUPCluster(m *Manager, opt *BaseOptions) (*models.TiDBCluster,
 						"patched":    i.Patched,
 						"deploy_dir": i.DeployDir,
 						"data_dir":   i.DataDir,
-						"log_dir":    i.LogDir,
+						"log_dir":    logdir,
 						"config":     i.Config,
 						"os":         i.OS,
 						"arch":       i.Arch,
@@ -331,6 +338,12 @@ func buildTopoForTiUPCluster(m *Manager, opt *BaseOptions) (*models.TiDBCluster,
 				cls.DMWorker = make([]*models.DMWorkerSpec, 0)
 			}
 			i := ins.(*dmspec.WorkerInstance).BaseInstance.InstanceSpec.(*dmspec.WorkerSpec)
+			var logdir string
+			if i.LogDir == "" {
+				logdir = filepath.Join(i.DeployDir, "log")
+			} else {
+				logdir = i.LogDir
+			}
 			cls.DMWorker = append(cls.DMWorker, &models.DMWorkerSpec{
 				ComponentSpec: models.ComponentSpec{
 					Host:       i.Host,
@@ -343,7 +356,7 @@ func buildTopoForTiUPCluster(m *Manager, opt *BaseOptions) (*models.TiDBCluster,
 						"patched":    i.Patched,
 						"deploy_dir": i.DeployDir,
 						"data_dir":   i.DataDir,
-						"log_dir":    i.LogDir,
+						"log_dir":    logdir,
 						"config":     i.Config,
 						"os":         i.OS,
 						"arch":       i.Arch,
