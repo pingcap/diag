@@ -56,8 +56,9 @@ type MetaCollectOptions struct {
 type ClusterJSON struct {
 	DiagVersion string              `json:"diag_version"`
 	ClusterName string              `json:"cluster_name"`
-	ClusterID   int64               `json:"cluster_id"`  // the id from pd
-	DeployType  string              `json:"deploy_type"` // deployment type
+	ClusterID   int64               `json:"cluster_id"`   // the id from pd
+	ClusterType string              `json:"cluster_type"` // tidb-cluster or dm-cluster
+	DeployType  string              `json:"deploy_type"`  // deployment type
 	Session     string              `json:"session"`
 	BeginTime   string              `json:"begin_time"`
 	EndTime     string              `json:"end_time"`
@@ -100,6 +101,7 @@ func (c *MetaCollectOptions) Collect(m *Manager, topo *models.TiDBCluster) error
 	// write cluster.json
 	b := c.GetBaseOptions()
 	var clusterID int64
+	var clusterType string
 	var err error
 
 	ctx := ctxt.New(
@@ -111,10 +113,12 @@ func (c *MetaCollectOptions) Collect(m *Manager, topo *models.TiDBCluster) error
 	switch m.mode {
 	case CollectModeTiUP:
 		clusterID, err = getTiUPClusterID(ctx, b.Cluster)
+		clusterType = topo.Attributes[CollectModeTiUP].(spec.Topology).Type()
 	case CollectModeK8s:
 		var id int
 		id, err = strconv.Atoi(c.tc.GetClusterID())
 		clusterID = int64(id)
+		clusterType = spec.TopoTypeTiDB
 	default:
 		// nothing
 	}
@@ -136,6 +140,7 @@ func (c *MetaCollectOptions) Collect(m *Manager, topo *models.TiDBCluster) error
 		DiagVersion: version.ShortVer(),
 		ClusterName: b.Cluster,
 		ClusterID:   clusterID,
+		ClusterType: clusterType,
 		DeployType:  m.mode,
 		Session:     c.session,
 		Collectors:  collectors,

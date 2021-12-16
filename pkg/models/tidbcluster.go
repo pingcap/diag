@@ -56,7 +56,7 @@ type TiDBCluster struct {
 	Version    string          `json:"version"` // cluster version
 	Namespace  string          `json:"namespace,omitempty"`
 	Attributes AttributeMap    `json:"attributes,omitempty"`
-	PD         []*PDSpec       `json:"pd"` // PD is the minimal required component for a cluster
+	PD         []*PDSpec       `json:"pd,omitempty"` // PD not exist on DM cluster
 	TiKV       []*TiKVSpec     `json:"tikv,omitempty"`
 	TiDB       []*TiDBSpec     `json:"tidb,omitempty"`
 	TiFlash    []*TiFlashSpec  `json:"tiflash,omitempty"`
@@ -64,6 +64,8 @@ type TiDBCluster struct {
 	Pump       []*PumpSpec     `json:"pump,omitempty"`
 	Drainer    []*DrainerSpec  `json:"drainer,omitempty"`
 	TiSpark    []*TiSparkCSpec `json:"tispark,omitempty"`
+	DMMaster   []*DMMasterSpec `json:"dm-master,omitempty"`
+	DMWorker   []*DMWorkerSpec `json:"dm-worker,omitempty"`
 	Monitors   []*MonitorSpec  `json:"monitors,omitempty"` // prometheus nodes
 }
 
@@ -91,6 +93,12 @@ func (c *TiDBCluster) Components() (comps []Component) {
 		comps = append(comps, i)
 	}
 	for _, i := range c.TiSpark {
+		comps = append(comps, i)
+	}
+	for _, i := range c.DMMaster {
+		comps = append(comps, i)
+	}
+	for _, i := range c.DMWorker {
 		comps = append(comps, i)
 	}
 	for _, i := range c.Monitors {
@@ -392,6 +400,68 @@ func (s *TiSparkCSpec) Attributes() AttributeMap { return s.ComponentSpec.Attrib
 
 // IsMster checks if the node is a TiSpark master
 func (s *TiSparkCSpec) IsMaster() bool { return s.Master }
+
+// DMMaterSpec represent PD nodes
+type DMMasterSpec struct {
+	ComponentSpec `json:",inline"`
+}
+
+// Type implements Component interface
+func (s *DMMasterSpec) Type() ComponentType { return ComponentTypeTiKV }
+
+// Host implements Component interface
+func (s *DMMasterSpec) Host() string { return s.ComponentSpec.Host }
+
+// MainPort implements Component interface
+func (s *DMMasterSpec) MainPort() int { return s.ComponentSpec.Port }
+
+// StatusPort implements Component interface
+func (s *DMMasterSpec) StatusPort() int { return s.ComponentSpec.StatusPort }
+
+// SSHPort implements Component interface
+func (s *DMMasterSpec) SSHPort() int { return s.ComponentSpec.SSHPort }
+
+// ConfigURL implements Component interface
+func (s *DMMasterSpec) ConfigURL() string {
+	return fmt.Sprintf("%s:%d/config", s.Host(), s.StatusPort())
+}
+
+// ID implements Component interface
+func (s *DMMasterSpec) ID() string { return fmt.Sprintf("%s:%d", s.Host(), s.MainPort()) }
+
+// Attributes implements Component interface
+func (s *DMMasterSpec) Attributes() AttributeMap { return s.ComponentSpec.Attributes }
+
+// DMWorkerSpec represent PD nodes
+type DMWorkerSpec struct {
+	ComponentSpec `json:",inline"`
+}
+
+// Type implements Component interface
+func (s *DMWorkerSpec) Type() ComponentType { return ComponentTypeTiKV }
+
+// Host implements Component interface
+func (s *DMWorkerSpec) Host() string { return s.ComponentSpec.Host }
+
+// MainPort implements Component interface
+func (s *DMWorkerSpec) MainPort() int { return s.ComponentSpec.Port }
+
+// StatusPort implements Component interface
+func (s *DMWorkerSpec) StatusPort() int { return s.ComponentSpec.StatusPort }
+
+// SSHPort implements Component interface
+func (s *DMWorkerSpec) SSHPort() int { return s.ComponentSpec.SSHPort }
+
+// ConfigURL implements Component interface
+func (s *DMWorkerSpec) ConfigURL() string {
+	return fmt.Sprintf("%s:%d/config", s.Host(), s.StatusPort())
+}
+
+// ID implements Component interface
+func (s *DMWorkerSpec) ID() string { return fmt.Sprintf("%s:%d", s.Host(), s.MainPort()) }
+
+// Attributes implements Component interface
+func (s *DMWorkerSpec) Attributes() AttributeMap { return s.ComponentSpec.Attributes }
 
 // FilterComponent filter components by set
 func FilterComponent(comps []Component, components set.StringSet) (res []Component) {

@@ -16,6 +16,7 @@ package collector
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"strconv"
 	"time"
 
@@ -23,6 +24,7 @@ import (
 	"github.com/pingcap/diag/pkg/models"
 	"github.com/pingcap/diag/pkg/utils"
 	perrs "github.com/pingcap/errors"
+	dmspec "github.com/pingcap/tiup/components/dm/spec"
 	"github.com/pingcap/tiup/pkg/cluster/spec"
 )
 
@@ -301,6 +303,66 @@ func buildTopoForTiUPCluster(m *Manager, opt *BaseOptions) (*models.TiDBCluster,
 					},
 				})
 			}
+		case dmspec.ComponentDMMaster:
+			if cls.DMMaster == nil {
+				cls.DMMaster = make([]*models.DMMasterSpec, 0)
+			}
+			i := ins.(*dmspec.MasterInstance).BaseInstance.InstanceSpec.(*dmspec.MasterSpec)
+			var logdir string
+			if i.LogDir == "" {
+				logdir = filepath.Join(i.DeployDir, "log")
+			} else {
+				logdir = i.LogDir
+			}
+			cls.DMMaster = append(cls.DMMaster, &models.DMMasterSpec{
+				ComponentSpec: models.ComponentSpec{
+					Host:       i.Host,
+					Port:       i.GetMainPort(),
+					StatusPort: 0,
+					SSHPort:    i.SSHPort,
+					Attributes: map[string]interface{}{
+						"name":       i.Name,
+						"imported":   i.Imported,
+						"patched":    i.Patched,
+						"deploy_dir": i.DeployDir,
+						"data_dir":   i.DataDir,
+						"log_dir":    logdir,
+						"config":     i.Config,
+						"os":         i.OS,
+						"arch":       i.Arch,
+					},
+				},
+			})
+		case dmspec.ComponentDMWorker:
+			if cls.DMWorker == nil {
+				cls.DMWorker = make([]*models.DMWorkerSpec, 0)
+			}
+			i := ins.(*dmspec.WorkerInstance).BaseInstance.InstanceSpec.(*dmspec.WorkerSpec)
+			var logdir string
+			if i.LogDir == "" {
+				logdir = filepath.Join(i.DeployDir, "log")
+			} else {
+				logdir = i.LogDir
+			}
+			cls.DMWorker = append(cls.DMWorker, &models.DMWorkerSpec{
+				ComponentSpec: models.ComponentSpec{
+					Host:       i.Host,
+					Port:       i.GetMainPort(),
+					StatusPort: 0,
+					SSHPort:    i.SSHPort,
+					Attributes: map[string]interface{}{
+						"name":       i.Name,
+						"imported":   i.Imported,
+						"patched":    i.Patched,
+						"deploy_dir": i.DeployDir,
+						"data_dir":   i.DataDir,
+						"log_dir":    logdir,
+						"config":     i.Config,
+						"os":         i.OS,
+						"arch":       i.Arch,
+					},
+				},
+			})
 		case spec.ComponentPrometheus:
 			if cls.Monitors == nil {
 				cls.Monitors = make([]*models.MonitorSpec, 0)
