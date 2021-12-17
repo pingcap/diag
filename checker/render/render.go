@@ -20,6 +20,7 @@ import (
 	"os"
 	"path"
 	"sort"
+	"strings"
 
 	"github.com/pingcap/diag/checker/proto"
 	logprinter "github.com/pingcap/tiup/pkg/logger/printer"
@@ -94,8 +95,8 @@ func (w *ResultWrapper) OutputSummary(logger *logprinter.Logger, checkresult map
 		writer.Flush()
 		writer.Close()
 	}()
-	writer.WriteString(logger, "\n# Check Result Report")
-	writer.WriteString(logger, fmt.Sprintf("%s %s\n", w.Data.ClusterInfo.ClusterName, w.Data.ClusterInfo.BeginTime))
+	writer.WriteString(logger, "# Check Result Report")
+	writer.WriteString(logger, fmt.Sprintf("%s %s", w.Data.ClusterInfo.ClusterName, w.Data.ClusterInfo.BeginTime))
 
 	writer.WriteString(logger, "\n## 1. Cluster Information")
 	writer.WriteString(logger, fmt.Sprint("- Cluster ID: ", w.Data.ClusterInfo.ClusterID))
@@ -166,6 +167,12 @@ func (w *ResultWrapper) OutputSummary(logger *logprinter.Logger, checkresult map
 				writer.WriteString(logger, fmt.Sprint("- For more information, please visit: ", rule.ExpectRes))
 			}
 			writer.WriteString(logger, "- Check Result: ")
+			loggerWrapper := writer.WrapLogger(logger)
+			printer.Print(loggerWrapper)
+			writer.SaveString("\n")
+			if err := loggerWrapper.Flush(); err != nil {
+				return err
+			}
 		}
 	}
 
@@ -185,7 +192,7 @@ func (w *ResultWrapper) SaveDetail(checkresult map[string]proto.PrintTemplate) e
 		writer.Flush()
 		writer.Close()
 	}()
-	writer.SaveString("\n## Check Result Log")
+	writer.SaveString("## Check Result Log")
 
 	typeRules, keys := w.GroupByType()
 	for _, ruleType := range keys {
@@ -239,21 +246,36 @@ func NewCheckerWriter(dirPath string, filename string) (*CheckerWriter, error) {
 		logprinter.Errorf("create file failed, %+v", err.Error())
 		return nil, err
 	}
-	termwriter := bufio.NewWriter(f)
 	return &CheckerWriter{
-		fileWriter: termwriter,
+		fileWriter: bufio.NewWriter(f),
 		f:          f}, nil
 }
 
 // todo handle error
+// these `\n`  just to make the format correct
 func (w *CheckerWriter) WriteString(logger *logprinter.Logger, info string) {
-	w.fileWriter.WriteString(info)
+	if strings.HasPrefix(info, "-") || strings.HasPrefix(info, "\n#") {
+		_, _ = w.fileWriter.WriteString("\n" + info)
+	} else {
+		_, _ = w.fileWriter.WriteString(info)
+	}
+	if strings.HasPrefix(info, "- Check Result:") || strings.HasSuffix(info, "# Check Result Report") {
+		_, _ = w.fileWriter.WriteString("\n")
+	}
 	logger.Infof(info)
 }
 
 // todo handle error
+// these `\n`  just to make the format correct
 func (w *CheckerWriter) SaveString(info string) {
-	w.fileWriter.WriteString(info)
+	if strings.HasPrefix(info, "-") || strings.HasPrefix(info, "\n#") {
+		_, _ = w.fileWriter.WriteString("\n" + info)
+	} else {
+		_, _ = w.fileWriter.WriteString(info)
+	}
+	if strings.HasPrefix(info, "- Check Result:") || strings.HasSuffix(info, "# Check Result Report") {
+		_, _ = w.fileWriter.WriteString("\n")
+	}
 }
 
 // todo handle error
@@ -268,6 +290,50 @@ func (w *CheckerWriter) Write(logger *logprinter.Logger, p []byte) (nn int, err 
 	}
 	logger.Infof("%s", p)
 	return nn, err
+}
+
+type LoggerWriter struct {
+	*logprinter.Logger
+}
+
+func (w *LoggerWriter) Write(p []byte) (nn int, err error) {
+	s := string(p)
+	w.Logger.Infof(s)
+	return len(p), nil
+}
+
+type WriterWrapper struct {
+	termWriter *bufio.Writer
+	fileWriter *bufio.Writer
+}
+
+func (w *WriterWrapper) Flush() error {
+	if err := w.fileWriter.Flush(); err != nil {
+		return err
+	}
+	if err := w.termWriter.Flush(); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (w *WriterWrapper) Write(p []byte) (nn int, err error) {
+	nn, err = w.fileWriter.Write(p)
+	if err != nil {
+		return 0, err
+	}
+	if _, err := w.termWriter.Write(p); err != nil {
+		return 0, err
+	}
+	return nn, nil
+}
+
+func (w *CheckerWriter) WrapLogger(logger *logprinter.Logger) *WriterWrapper {
+	bufWriter := bufio.NewWriter(&LoggerWriter{logger})
+	return &WriterWrapper{
+		termWriter: bufWriter,
+		fileWriter: w.fileWriter,
+	}
 }
 
 func (w *CheckerWriter) Close() {
