@@ -17,7 +17,6 @@ import (
 	"bufio"
 	"context"
 	"fmt"
-	"io"
 	"os"
 	"path"
 	"sort"
@@ -168,8 +167,12 @@ func (w *ResultWrapper) OutputSummary(logger *logprinter.Logger, checkresult map
 				writer.WriteString(logger, fmt.Sprint("- For more information, please visit: ", rule.ExpectRes))
 			}
 			writer.WriteString(logger, "- Check Result: ")
-			printer.Print(writer.WrapStdOut())
+			loggerWrapper := writer.WrapLogger(logger)
+			printer.Print(loggerWrapper)
 			writer.SaveString("\n")
+			if err := loggerWrapper.Flush(); err != nil {
+				return err
+			}
 		}
 	}
 
@@ -243,36 +246,35 @@ func NewCheckerWriter(dirPath string, filename string) (*CheckerWriter, error) {
 		logprinter.Errorf("create file failed, %+v", err.Error())
 		return nil, err
 	}
-	termwriter := bufio.NewWriter(f)
 	return &CheckerWriter{
-		fileWriter: termwriter,
+		fileWriter: bufio.NewWriter(f),
 		f:          f}, nil
 }
 
 // todo handle error
-// this `\n` is just to make the format correct
+// these `\n`  just to make the format correct
 func (w *CheckerWriter) WriteString(logger *logprinter.Logger, info string) {
 	if strings.HasPrefix(info, "-") || strings.HasPrefix(info, "\n#") {
-		w.fileWriter.WriteString("\n" + info)
+		_, _ = w.fileWriter.WriteString("\n" + info)
 	} else {
-		w.fileWriter.WriteString(info)
+		_, _ = w.fileWriter.WriteString(info)
 	}
 	if strings.HasPrefix(info, "- Check Result:") || strings.HasSuffix(info, "# Check Result Report") {
-		w.fileWriter.WriteString("\n")
+		_, _ = w.fileWriter.WriteString("\n")
 	}
 	logger.Infof(info)
 }
 
 // todo handle error
-// the `\n` is just to make the format correct
+// these `\n`  just to make the format correct
 func (w *CheckerWriter) SaveString(info string) {
 	if strings.HasPrefix(info, "-") || strings.HasPrefix(info, "\n#") {
-		w.fileWriter.WriteString("\n" + info)
+		_, _ = w.fileWriter.WriteString("\n" + info)
 	} else {
-		w.fileWriter.WriteString(info)
+		_, _ = w.fileWriter.WriteString(info)
 	}
 	if strings.HasPrefix(info, "- Check Result:") || strings.HasSuffix(info, "# Check Result Report") {
-		w.fileWriter.WriteString("\n")
+		_, _ = w.fileWriter.WriteString("\n")
 	}
 }
 
@@ -290,9 +292,29 @@ func (w *CheckerWriter) Write(logger *logprinter.Logger, p []byte) (nn int, err 
 	return nn, err
 }
 
+type LoggerWriter struct {
+	*logprinter.Logger
+}
+
+func (w *LoggerWriter) Write(p []byte) (nn int, err error) {
+	s := string(p)
+	w.Logger.Infof(s)
+	return len(p), nil
+}
+
 type WriterWrapper struct {
-	termWriter io.Writer
+	termWriter *bufio.Writer
 	fileWriter *bufio.Writer
+}
+
+func (w *WriterWrapper) Flush() error {
+	if err := w.fileWriter.Flush(); err != nil {
+		return err
+	}
+	if err := w.termWriter.Flush(); err != nil {
+		return err
+	}
+	return nil
 }
 
 func (w *WriterWrapper) Write(p []byte) (nn int, err error) {
@@ -303,12 +325,13 @@ func (w *WriterWrapper) Write(p []byte) (nn int, err error) {
 	if _, err := w.termWriter.Write(p); err != nil {
 		return 0, err
 	}
-	return nn, err
+	return nn, nil
 }
 
-func (w *CheckerWriter) WrapStdOut() io.Writer {
+func (w *CheckerWriter) WrapLogger(logger *logprinter.Logger) *WriterWrapper {
+	bufWriter := bufio.NewWriter(&LoggerWriter{logger})
 	return &WriterWrapper{
-		termWriter: os.Stdout,
+		termWriter: bufWriter,
 		fileWriter: w.fileWriter,
 	}
 }
