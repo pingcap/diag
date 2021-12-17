@@ -243,7 +243,6 @@ func NewCheckerWriter(dirPath string, filename string) (*CheckerWriter, error) {
 	return &CheckerWriter{
 		fileWriter: termwriter,
 		f:          f}, nil
-
 }
 
 // todo handle error
