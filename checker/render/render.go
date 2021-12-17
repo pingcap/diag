@@ -20,7 +20,6 @@ import (
 	"os"
 	"path"
 	"sort"
-	"strings"
 
 	"github.com/pingcap/diag/checker/proto"
 	logprinter "github.com/pingcap/tiup/pkg/logger/printer"
@@ -75,7 +74,7 @@ func (w *ResultWrapper) Output(ctx context.Context, checkresult map[string]proto
 	// todo@toto find rule check result
 	// print OutputMetaData
 	defer func() {
-		logger.Infof("\nResult report and record are saved at %s", w.storePath)
+		logger.Infof("Result report and record are saved at %s", w.storePath)
 	}()
 	if err := w.OutputSummary(logger, checkresult); err != nil {
 		return err
@@ -169,7 +168,6 @@ func (w *ResultWrapper) OutputSummary(logger *logprinter.Logger, checkresult map
 			writer.WriteString(logger, "- Check Result: ")
 			loggerWrapper := writer.WrapLogger(logger)
 			printer.Print(loggerWrapper)
-			writer.SaveString("\n")
 			if err := loggerWrapper.Flush(); err != nil {
 				return err
 			}
@@ -221,7 +219,6 @@ func (w *ResultWrapper) SaveDetail(checkresult map[string]proto.PrintTemplate) e
 			}
 			writer.SaveString("- Check Result: ")
 			printer.Print(writer.fileWriter)
-			writer.SaveString("")
 		}
 	}
 	return nil
@@ -251,34 +248,18 @@ func NewCheckerWriter(dirPath string, filename string) (*CheckerWriter, error) {
 		f:          f}, nil
 }
 
-// todo handle error
-// these `\n`  just to make the format correct
+// WriteString write content to a file and the given logger TODO handle error
 func (w *CheckerWriter) WriteString(logger *logprinter.Logger, info string) {
-	if strings.HasPrefix(info, "-") || strings.HasPrefix(info, "\n#") {
-		_, _ = w.fileWriter.WriteString("\n" + info)
-	} else {
-		_, _ = w.fileWriter.WriteString(info)
-	}
-	if strings.HasPrefix(info, "- Check Result:") || strings.HasSuffix(info, "# Check Result Report") {
-		_, _ = w.fileWriter.WriteString("\n")
-	}
+	_, _ = w.fileWriter.WriteString(info + "\n")
 	logger.Infof(info)
 }
 
-// todo handle error
-// these `\n`  just to make the format correct
+// SaveString only write content to a file TODO handle error
 func (w *CheckerWriter) SaveString(info string) {
-	if strings.HasPrefix(info, "-") || strings.HasPrefix(info, "\n#") {
-		_, _ = w.fileWriter.WriteString("\n" + info)
-	} else {
-		_, _ = w.fileWriter.WriteString(info)
-	}
-	if strings.HasPrefix(info, "- Check Result:") || strings.HasSuffix(info, "# Check Result Report") {
-		_, _ = w.fileWriter.WriteString("\n")
-	}
+	_, _ = w.fileWriter.WriteString(info + "\n")
 }
 
-// todo handle error
+// PrintString only write content to logger TODO handle error
 func (w *CheckerWriter) PrintString(logger *logprinter.Logger, info string) {
 	logger.Infof(info)
 }
