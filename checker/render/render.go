@@ -17,9 +17,11 @@ import (
 	"bufio"
 	"context"
 	"fmt"
+	"io"
 	"os"
 	"path"
 	"sort"
+	"strings"
 
 	"github.com/pingcap/diag/checker/proto"
 	logprinter "github.com/pingcap/tiup/pkg/logger/printer"
@@ -94,8 +96,8 @@ func (w *ResultWrapper) OutputSummary(logger *logprinter.Logger, checkresult map
 		writer.Flush()
 		writer.Close()
 	}()
-	writer.WriteString(logger, "\n# Check Result Report")
-	writer.WriteString(logger, fmt.Sprintf("%s %s\n", w.Data.ClusterInfo.ClusterName, w.Data.ClusterInfo.BeginTime))
+	writer.WriteString(logger, "# Check Result Report")
+	writer.WriteString(logger, fmt.Sprintf("%s %s", w.Data.ClusterInfo.ClusterName, w.Data.ClusterInfo.BeginTime))
 
 	writer.WriteString(logger, "\n## 1. Cluster Information")
 	writer.WriteString(logger, fmt.Sprint("- Cluster ID: ", w.Data.ClusterInfo.ClusterID))
@@ -166,6 +168,8 @@ func (w *ResultWrapper) OutputSummary(logger *logprinter.Logger, checkresult map
 				writer.WriteString(logger, fmt.Sprint("- For more information, please visit: ", rule.ExpectRes))
 			}
 			writer.WriteString(logger, "- Check Result: ")
+			printer.Print(writer.WrapStdOut())
+			writer.SaveString("\n")
 		}
 	}
 
@@ -185,7 +189,7 @@ func (w *ResultWrapper) SaveDetail(checkresult map[string]proto.PrintTemplate) e
 		writer.Flush()
 		writer.Close()
 	}()
-	writer.SaveString("\n## Check Result Log")
+	writer.SaveString("## Check Result Log")
 
 	typeRules, keys := w.GroupByType()
 	for _, ruleType := range keys {
@@ -246,14 +250,30 @@ func NewCheckerWriter(dirPath string, filename string) (*CheckerWriter, error) {
 }
 
 // todo handle error
+// this `\n` is just to make the format correct
 func (w *CheckerWriter) WriteString(logger *logprinter.Logger, info string) {
-	w.fileWriter.WriteString(info)
+	if strings.HasPrefix(info, "-") || strings.HasPrefix(info, "\n#") {
+		w.fileWriter.WriteString("\n" + info)
+	} else {
+		w.fileWriter.WriteString(info)
+	}
+	if strings.HasPrefix(info, "- Check Result:") || strings.HasSuffix(info, "# Check Result Report") {
+		w.fileWriter.WriteString("\n")
+	}
 	logger.Infof(info)
 }
 
 // todo handle error
+// the `\n` is just to make the format correct
 func (w *CheckerWriter) SaveString(info string) {
-	w.fileWriter.WriteString(info)
+	if strings.HasPrefix(info, "-") || strings.HasPrefix(info, "\n#") {
+		w.fileWriter.WriteString("\n" + info)
+	} else {
+		w.fileWriter.WriteString(info)
+	}
+	if strings.HasPrefix(info, "- Check Result:") || strings.HasSuffix(info, "# Check Result Report") {
+		w.fileWriter.WriteString("\n")
+	}
 }
 
 // todo handle error
@@ -268,6 +288,29 @@ func (w *CheckerWriter) Write(logger *logprinter.Logger, p []byte) (nn int, err 
 	}
 	logger.Infof("%s", p)
 	return nn, err
+}
+
+type WriterWrapper struct {
+	termWriter io.Writer
+	fileWriter *bufio.Writer
+}
+
+func (w *WriterWrapper) Write(p []byte) (nn int, err error) {
+	nn, err = w.fileWriter.Write(p)
+	if err != nil {
+		return 0, err
+	}
+	if _, err := w.termWriter.Write(p); err != nil {
+		return 0, err
+	}
+	return nn, err
+}
+
+func (w *CheckerWriter) WrapStdOut() io.Writer {
+	return &WriterWrapper{
+		termWriter: os.Stdout,
+		fileWriter: w.fileWriter,
+	}
 }
 
 func (w *CheckerWriter) Close() {
