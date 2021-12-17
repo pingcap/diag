@@ -24,84 +24,30 @@ func ParseTime(s string) (time.Time, error) {
 		ns = math.Round(ns*1000) / 1000
 		return time.Unix(int64(s), int64(ns*float64(time.Second))).UTC(), nil
 	}
-	if t, err := time.Parse(time.RFC3339Nano, s); err == nil {
-		return t, nil
-	}
-	if t, err := time.Parse(time.RFC3339, s); err == nil {
-		return t, nil
-	}
-
-	currTime := time.Now().UTC()
 
 	// try to parse input as some common time formats, all timestamps are supposed to
 	// be localtime if not specified
-	for i, guess := range []string{
-		"2006-01-02 15:04:05 -0700", // 0
-		"2006-01-02 15:04 -0700",    // 1
-		"2006-01-02 15 -0700",       // 2
-		"2006-01-02 -0700",          // 3 ^-- full date time with timezone
-		"2006-01-02 15:04:05",       // 4
-		"2006-01-02 15:04",          // 5
-		"2006-01-02 15",             // 6
-		"2006-01-02",                // 7 ^-- full date time wo/ timezone
-		"01-02 15:04:15 -0700",      // 8
-		"01-02 15:04 -0700",         // 9
-		"01-02 15 -0700",            // 10
-		"01-02 -0700",               // 11 ^-- month date time with timezone
-		"01-02 15:04:15",            // 12
-		"01-02 15:04",               // 13
-		"01-02 15",                  // 14
-		"01-02",                     // 15 ^-- month date time wo/ timezone
-		"15:04:15 -0700",            // 16
-		"15:04 -0700",               // 17
-		"15 -0700",                  // 18 ^-- hour time with timezone
-		"15:04:15",                  // 19
-		"15:04",                     // 20
-		"15",                        // 21 ^-- hour time wo/ timezone
-	} {
-		if t, err := time.Parse(guess, s); err == nil {
-			parsedLoc := t.Location()
-			if i > 7 && t.Year() == 0 {
-				t = time.Date(
-					currTime.Year(), t.Month(),
-					t.Day(), t.Hour(),
-					t.Minute(), t.Second(),
-					t.Nanosecond(), currTime.Location(),
-				)
-			}
-			if i > 15 && t.Month() == 1 {
-				t = time.Date(
-					currTime.Year(), currTime.Month(),
-					t.Day(), t.Hour(),
-					t.Minute(), t.Second(),
-					t.Nanosecond(), currTime.Location(),
-				)
-			}
-			if i > 15 && t.Day() == 1 {
-				t = time.Date(
-					currTime.Year(), currTime.Month(),
-					currTime.Day(), t.Hour(),
-					t.Minute(), t.Second(),
-					t.Nanosecond(), currTime.Location(),
-				)
-			}
-			// set timezone if specified in input
-			if i <= 3 || (i >= 8 && i <= 11) || (i >= 16 && i <= 18) {
-				t = time.Date(
-					t.Year(), t.Month(),
-					t.Day(), t.Hour(),
-					t.Minute(), t.Second(),
-					t.Nanosecond(), parsedLoc,
-				)
-			}
-
+	layouts := []string{
+		time.RFC3339,
+		time.RFC3339Nano,
+		"2006-01-02 15:04:05 -0700",
+		"2006-01-02 15:04 -0700",
+		"2006-01-02 15 -0700",
+		"2006-01-02 -0700",
+		"2006-01-02 15:04:05",
+		"2006-01-02 15:04",
+		"2006-01-02 15",
+		"2006-01-02",
+	}
+	for _, layout := range layouts {
+		if t, err := time.ParseInLocation(layout, s, time.Local); err == nil {
 			return t, nil
 		}
 	}
 
 	// try to parse input as (minus) time duration
 	if td, err := time.ParseDuration(s); err == nil {
-		t := currTime.Add(td)
+		t := time.Now().Add(td)
 		return t, nil
 	}
 
