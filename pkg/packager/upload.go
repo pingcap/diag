@@ -28,7 +28,6 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"sync"
 	"syscall"
 	"time"
 
@@ -194,10 +193,6 @@ func UploadFile(
 	}
 	defer reader.Close()
 
-	logger.Infof("")
-	waitGroup := sync.WaitGroup{}
-	errChan := make(chan error, totalBlock)
-	doneChan := make(chan struct{}, 1)
 	for i := int64(presp.Partseq); i < int64(totalBlock); i++ {
 		eachSize := presp.BlockBytes
 		if i == int64(totalBlock)-1 {
@@ -205,43 +200,24 @@ func UploadFile(
 		}
 
 		s := make([]byte, eachSize)
-		n, _ := reader.ReadAt(s, i*presp.BlockBytes)
+		_, _ = reader.ReadAt(s, i*presp.BlockBytes)
 
-		if n < 0 {
-			logger.Errorf("cat: error reading: %s\n", err)
+		if logger.GetDisplayMode() == logprinter.DisplayModeDefault {
+			fmt.Printf(">")
+		}
+
+		if err = uploadPart(i+1, s); err != nil {
+			logger.Errorf("cat: upload file failed: %s\n", err)
 			return "", err
 		}
 
-		if n > 0 {
-			waitGroup.Add(1)
-			go func(serial int64) {
-				defer waitGroup.Done()
-				if logger.GetDisplayMode() == logprinter.DisplayModeDefault {
-					fmt.Printf(">")
-				}
-
-				if err = uploadPart(serial, s); err != nil {
-					logger.Errorf("cat: upload file failed: %s\n", err)
-					errChan <- err
-					return
-				}
-
-				if logger.GetDisplayMode() == logprinter.DisplayModeDefault {
-					fmt.Printf(">")
-				}
-			}(i + 1)
+		if logger.GetDisplayMode() == logprinter.DisplayModeDefault {
+			fmt.Printf(">")
 		}
+
 	}
 
-	waitGroup.Wait()
-	doneChan <- struct{}{}
-
-	select {
-	case err := <-errChan:
-		return "", err
-	case <-doneChan:
-		return flush()
-	}
+	return flush()
 }
 
 func appendClinicHeader(req *http.Request) {
