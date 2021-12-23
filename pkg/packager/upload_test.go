@@ -55,7 +55,7 @@ func Test_UploadInitFile(t *testing.T) {
 	}
 
 	logger := logprinter.NewLogger("")
-	_, err := UploadFile(logger, resp, int64(len(contents)),
+	_, err := UploadFile(logger, 5, resp, int64(len(contents)),
 		flushFunc(g, resp, contents, mt),
 		func() (io.ReadSeekCloser, error) {
 			reader := NewMockReader(contents, int(resp.BlockBytes))
@@ -86,7 +86,7 @@ func Test_UploadFileMultiBlock(t *testing.T) {
 		}
 
 		logger := logprinter.NewLogger("")
-		_, err := UploadFile(logger, resp, int64(len(contents)),
+		_, err := UploadFile(logger, 4, resp, int64(len(contents)),
 			flushFunc(g, resp, contents, mt),
 			func() (io.ReadSeekCloser, error) {
 				reader := NewMockReader(contents, int(resp.BlockBytes))
@@ -118,7 +118,7 @@ func Test_UploadFileFromOffset(t *testing.T) {
 		}
 
 		logger := logprinter.NewLogger("")
-		_, err := UploadFile(logger, resp, int64(len(contents)),
+		_, err := UploadFile(logger, 3, resp, int64(len(contents)),
 			flushFunc(g, resp, contents, mt),
 			func() (io.ReadSeekCloser, error) {
 				reader := NewMockReader(contents, int(resp.BlockBytes))

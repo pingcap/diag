@@ -42,9 +42,10 @@ type preCreateResponse struct {
 }
 
 type UploadOptions struct {
-	FilePath string
-	Alias    string
-	Issue    string
+	FilePath    string
+	Alias       string
+	Issue       string
+	Concurrency int
 	ClientOptions
 }
 
@@ -102,6 +103,7 @@ func Upload(ctx context.Context, opt *UploadOptions) (string, error) {
 
 	return UploadFile(
 		logger,
+		opt.Concurrency,
 		presp,
 		fileStat.Size(),
 		func() (string, error) {
@@ -161,7 +163,7 @@ func computeTotalBlock(fileSize int64, blockSize int64) int {
 	return int(fileSize/blockSize) + 1
 }
 
-type Reader func() (io.ReadSeekCloser, error)
+type OpenFunc func() (io.ReadSeekCloser, error)
 
 type UploadPart func(int64, int64, io.Reader) error
 
@@ -169,10 +171,11 @@ type FlushUploadFile func() (string, error)
 
 func UploadFile(
 	logger *logprinter.Logger,
+	concurrency int,
 	presp *preCreateResponse,
 	fileSize int64,
 	flush FlushUploadFile,
-	readerFunc Reader,
+	open OpenFunc,
 	uploadPart UploadPart,
 ) (string, error) {
 	totalBlock := computeTotalBlock(fileSize, presp.BlockBytes)
@@ -180,47 +183,48 @@ func UploadFile(
 		return flush()
 	}
 
-	reader, err := readerFunc()
-	if err != nil {
-		return "", err
-	}
-	defer reader.Close()
-
-	logger.Infof("")
 	waitGroup := sync.WaitGroup{}
 	errChan := make(chan error, totalBlock)
 	doneChan := make(chan struct{}, 1)
-	for i := int64(presp.Partseq); i < int64(totalBlock); i++ {
-		eachSize := presp.BlockBytes
-		if i == int64(totalBlock)-1 {
-			eachSize = fileSize - i*presp.BlockBytes
-		}
-
-		f, err := readerFunc()
-		if err != nil {
-			return "", err
-		}
-		defer f.Close()
-
-		f.Seek(i*presp.BlockBytes, 0)
-
+	if concurrency < 1 {
+		concurrency = 1
+	}
+	for c := 0; c < concurrency; c++ {
+		i := int64(presp.Partseq) + int64(c)
 		waitGroup.Add(1)
-		go func(serial int64) {
+		go func() {
 			defer waitGroup.Done()
-			if logger.GetDisplayMode() == logprinter.DisplayModeDefault {
-				fmt.Printf(">")
-			}
+			for ; i < int64(totalBlock); i = i + int64(concurrency) {
+				eachSize := presp.BlockBytes
+				if i == int64(totalBlock)-1 {
+					eachSize = fileSize - i*presp.BlockBytes
+				}
 
-			if err = uploadPart(serial, eachSize, f); err != nil {
-				logger.Errorf("cat: upload file failed: %s\n", err)
-				errChan <- err
-				return
-			}
+				f, err := open()
+				if err != nil {
+					logger.Errorf("cat: upload file failed: %s\n", err)
+					errChan <- err
+					return
+				}
+				defer f.Close()
 
-			if logger.GetDisplayMode() == logprinter.DisplayModeDefault {
-				fmt.Printf(">")
+				f.Seek(i*presp.BlockBytes, 0)
+
+				if logger.GetDisplayMode() == logprinter.DisplayModeDefault {
+					fmt.Printf(">")
+				}
+
+				if err = uploadPart(i+1, eachSize, f); err != nil {
+					logger.Errorf("cat: upload file failed: %s\n", err)
+					errChan <- err
+					return
+				}
+
+				if logger.GetDisplayMode() == logprinter.DisplayModeDefault {
+					fmt.Printf(">")
+				}
 			}
-		}(i + 1)
+		}()
 	}
 
 	waitGroup.Wait()
@@ -240,7 +244,7 @@ func appendClinicHeader(req *http.Request) {
 }
 
 func UploadComplete(logger *logprinter.Logger, fileUUID string, opt *UploadOptions) (string, error) {
-	logger.Infof("\n<>>>>>>>>>")
+	fmt.Println("<>>>>>>>>>")
 	req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("%s/api/v1/flush", opt.Endpoint), nil)
 	if err != nil {
 		return "", err
