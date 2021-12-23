@@ -74,10 +74,7 @@ func init() {
 			}
 
 			// Running in other OS/ARCH Should be fine we only download manifest file.
-			env, err = tiupmeta.InitEnv(repository.Options{
-				GOOS:   "linux",
-				GOARCH: "amd64",
-			})
+			env, err = tiupmeta.InitEnv(repository.Options{})
 			if err != nil {
 				return err
 			}
