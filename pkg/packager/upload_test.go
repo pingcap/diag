@@ -16,6 +16,7 @@ package packager
 import (
 	"bytes"
 	"fmt"
+	"io"
 	"math"
 	"sync"
 	"testing"
@@ -49,8 +50,6 @@ func Test_UploadInitFile(t *testing.T) {
 
 	g := gomega.NewGomegaWithT(t)
 
-	reader := NewMockReader(contents, int(resp.BlockBytes))
-
 	mt := &mapTest{
 		results: make(map[int64][]byte),
 	}
@@ -58,13 +57,13 @@ func Test_UploadInitFile(t *testing.T) {
 	logger := logprinter.NewLogger("")
 	_, err := UploadFile(logger, resp, int64(len(contents)),
 		flushFunc(g, resp, contents, mt),
-		func() (ReaderAtCloseable, error) {
+		func() (io.ReadSeekCloser, error) {
+			reader := NewMockReader(contents, int(resp.BlockBytes))
 			return reader, nil
 		},
-		uploadFunc(g, mt, reader, len(contents), blockSize))
+		uploadFunc(g, mt, len(contents), blockSize))
 
 	g.Expect(err).To(gomega.Succeed())
-	g.Expect(reader.closed).To(gomega.Equal(true))
 }
 
 func Test_UploadFileMultiBlock(t *testing.T) {
@@ -82,8 +81,6 @@ func Test_UploadFileMultiBlock(t *testing.T) {
 			BlockBytes: int64(blockSize),
 		}
 
-		reader := NewMockReader(contents, int(resp.BlockBytes))
-
 		mt := &mapTest{
 			results: make(map[int64][]byte),
 		}
@@ -91,13 +88,13 @@ func Test_UploadFileMultiBlock(t *testing.T) {
 		logger := logprinter.NewLogger("")
 		_, err := UploadFile(logger, resp, int64(len(contents)),
 			flushFunc(g, resp, contents, mt),
-			func() (ReaderAtCloseable, error) {
+			func() (io.ReadSeekCloser, error) {
+				reader := NewMockReader(contents, int(resp.BlockBytes))
 				return reader, nil
 			},
-			uploadFunc(g, mt, reader, len(contents), blockSize))
+			uploadFunc(g, mt, len(contents), blockSize))
 
 		g.Expect(err).To(gomega.Succeed())
-		g.Expect(reader.closed).To(gomega.Equal(true))
 	}
 }
 
@@ -116,8 +113,6 @@ func Test_UploadFileFromOffset(t *testing.T) {
 			BlockBytes: int64(blockSize),
 		}
 
-		reader := NewMockReader(contents, int(resp.BlockBytes))
-
 		mt := &mapTest{
 			results: make(map[int64][]byte),
 		}
@@ -125,33 +120,32 @@ func Test_UploadFileFromOffset(t *testing.T) {
 		logger := logprinter.NewLogger("")
 		_, err := UploadFile(logger, resp, int64(len(contents)),
 			flushFunc(g, resp, contents, mt),
-			func() (ReaderAtCloseable, error) {
+			func() (io.ReadSeekCloser, error) {
+				reader := NewMockReader(contents, int(resp.BlockBytes))
 				return reader, nil
 			},
-			uploadFunc(g, mt, reader, len(contents), blockSize))
+			uploadFunc(g, mt, len(contents), blockSize))
 
 		g.Expect(err).To(gomega.Succeed())
-		g.Expect(reader.closed).To(gomega.Equal(true))
 	}
 }
 
-var uploadFunc = func(g *gomega.WithT, mt *mapTest, reader *MockReader, fileSize int, defaultBlockSize int) UploadPart {
-	return func(i int64, i2 []byte) error {
-		g.Expect(reader.closed).To(gomega.Equal(false))
-		mt.put(i, i2)
-
+var uploadFunc = func(g *gomega.WithT, mt *mapTest, fileSize int, defaultBlockSize int) UploadPart {
+	return func(i, size int64, r io.Reader) error {
+		buf := make([]byte, size)
+		r.Read(buf)
+		mt.put(i, buf)
 		totalBlock := computeTotalBlock(int64(fileSize), int64(defaultBlockSize))
 		if i == int64(totalBlock) {
 			if fileSize%defaultBlockSize == 0 {
-				g.Expect(len(i2)).To(gomega.Equal(defaultBlockSize))
+				g.Expect(int(size)).To(gomega.Equal(defaultBlockSize))
 			} else {
-				g.Expect(len(i2)).To(gomega.Equal(fileSize % defaultBlockSize))
+				g.Expect(int(size)).To(gomega.Equal(fileSize % defaultBlockSize))
 			}
 
 		} else {
-			g.Expect(len(i2)).To(gomega.Equal(defaultBlockSize))
+			g.Expect(int(size)).To(gomega.Equal(defaultBlockSize))
 		}
-
 		return nil
 	}
 }
@@ -218,6 +212,10 @@ func (m *MockReader) Close() error {
 	return nil
 }
 
-func (m *MockReader) ReadAt(b []byte, off int64) (n int, err error) {
-	return m.reader.ReadAt(b, off)
+func (m *MockReader) Read(b []byte) (int, error) {
+	return m.reader.Read(b)
+}
+
+func (m *MockReader) Seek(offset int64, whence int) (int64, error) {
+	return m.reader.Seek(offset, whence)
 }
