@@ -209,12 +209,13 @@ func UploadFile(
 				defer f.Close()
 
 				f.Seek(i*presp.BlockBytes, 0)
+				partR := io.LimitReader(f, eachSize)
 
 				if logger.GetDisplayMode() == logprinter.DisplayModeDefault {
 					fmt.Printf(">")
 				}
 
-				if err = uploadPart(i+1, eachSize, f); err != nil {
+				if err = uploadPart(i+1, eachSize, partR); err != nil {
 					logger.Errorf("cat: upload file failed: %s\n", err)
 					errChan <- err
 					return
