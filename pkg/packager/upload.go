@@ -15,7 +15,6 @@ package packager
 
 import (
 	"bufio"
-	"bytes"
 	"context"
 	"crypto/tls"
 	"crypto/x509"
@@ -23,7 +22,6 @@ import (
 	"fmt"
 	"hash/fnv"
 	"io"
-	"mime/multipart"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -44,9 +42,10 @@ type preCreateResponse struct {
 }
 
 type UploadOptions struct {
-	FilePath string
-	Alias    string
-	Issue    string
+	FilePath    string
+	Alias       string
+	Issue       string
+	Concurrency int
 	ClientOptions
 }
 
@@ -104,16 +103,17 @@ func Upload(ctx context.Context, opt *UploadOptions) (string, error) {
 
 	return UploadFile(
 		logger,
+		opt.Concurrency,
 		presp,
 		fileStat.Size(),
 		func() (string, error) {
 			return UploadComplete(logger, uuid, opt)
 		},
-		func() (ReaderAtCloseable, error) {
+		func() (io.ReadSeekCloser, error) {
 			return os.Open(opt.FilePath)
 		},
-		func(serial int64, data []byte) error {
-			return uploadMultipartFile(uuid, serial, data, opt)
+		func(serial, size int64, r io.Reader) error {
+			return uploadMultipartFile(uuid, serial, size, r, opt)
 		},
 	)
 }
@@ -163,24 +163,19 @@ func computeTotalBlock(fileSize int64, blockSize int64) int {
 	return int(fileSize/blockSize) + 1
 }
 
-type ReaderAtCloseable interface {
-	Close() error
+type OpenFunc func() (io.ReadSeekCloser, error)
 
-	ReadAt(b []byte, off int64) (n int, err error)
-}
-
-type Reader func() (ReaderAtCloseable, error)
-
-type UploadPart func(int64, []byte) error
+type UploadPart func(int64, int64, io.Reader) error
 
 type FlushUploadFile func() (string, error)
 
 func UploadFile(
 	logger *logprinter.Logger,
+	concurrency int,
 	presp *preCreateResponse,
 	fileSize int64,
 	flush FlushUploadFile,
-	readerFunc Reader,
+	open OpenFunc,
 	uploadPart UploadPart,
 ) (string, error) {
 	totalBlock := computeTotalBlock(fileSize, presp.BlockBytes)
@@ -188,39 +183,39 @@ func UploadFile(
 		return flush()
 	}
 
-	reader, err := readerFunc()
-	if err != nil {
-		return "", err
-	}
-	defer reader.Close()
-
-	logger.Infof("")
 	waitGroup := sync.WaitGroup{}
 	errChan := make(chan error, totalBlock)
 	doneChan := make(chan struct{}, 1)
-	for i := int64(presp.Partseq); i < int64(totalBlock); i++ {
-		eachSize := presp.BlockBytes
-		if i == int64(totalBlock)-1 {
-			eachSize = fileSize - i*presp.BlockBytes
-		}
+	if concurrency < 1 {
+		concurrency = 1
+	}
+	for c := 0; c < concurrency; c++ {
+		i := int64(presp.Partseq) + int64(c)
+		waitGroup.Add(1)
+		go func() {
+			defer waitGroup.Done()
+			for ; i < int64(totalBlock); i = i + int64(concurrency) {
+				eachSize := presp.BlockBytes
+				if i == int64(totalBlock)-1 {
+					eachSize = fileSize - i*presp.BlockBytes
+				}
 
-		s := make([]byte, eachSize)
-		n, _ := reader.ReadAt(s, i*presp.BlockBytes)
+				f, err := open()
+				if err != nil {
+					logger.Errorf("cat: upload file failed: %s\n", err)
+					errChan <- err
+					return
+				}
+				defer f.Close()
 
-		if n < 0 {
-			logger.Errorf("cat: error reading: %s\n", err)
-			return "", err
-		}
+				f.Seek(i*presp.BlockBytes, 0)
+				partR := io.LimitReader(f, eachSize)
 
-		if n > 0 {
-			waitGroup.Add(1)
-			go func(serial int64) {
-				defer waitGroup.Done()
 				if logger.GetDisplayMode() == logprinter.DisplayModeDefault {
 					fmt.Printf(">")
 				}
 
-				if err = uploadPart(serial, s); err != nil {
+				if err = uploadPart(i+1, eachSize, partR); err != nil {
 					logger.Errorf("cat: upload file failed: %s\n", err)
 					errChan <- err
 					return
@@ -229,8 +224,8 @@ func UploadFile(
 				if logger.GetDisplayMode() == logprinter.DisplayModeDefault {
 					fmt.Printf(">")
 				}
-			}(i + 1)
-		}
+			}
+		}()
 	}
 
 	waitGroup.Wait()
@@ -250,7 +245,7 @@ func appendClinicHeader(req *http.Request) {
 }
 
 func UploadComplete(logger *logprinter.Logger, fileUUID string, opt *UploadOptions) (string, error) {
-	logger.Infof("\n<>>>>>>>>>")
+	fmt.Println("<>>>>>>>>>")
 	req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("%s/api/v1/flush", opt.Endpoint), nil)
 	if err != nil {
 		return "", err
@@ -303,33 +298,18 @@ func fnvHash32(logger *logprinter.Logger, raw string) string {
 	return fmt.Sprintf("%x", hash.Sum32())
 }
 
-func uploadMultipartFile(fileUUID string, serialNum int64, data []byte, opt *UploadOptions) error {
-	if len(data) == 0 {
-		return nil
-	}
-	var b bytes.Buffer
-	mwriter := multipart.NewWriter(&b)
-
-	fw, err := mwriter.CreateFormFile("file", "file")
-	if err != nil {
-		return err
-	}
-
-	fw.Write(data)
-
-	mwriter.Close()
-
-	req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("%s/api/v1/upload", opt.Endpoint), &b)
+func uploadMultipartFile(fileUUID string, serialNum, size int64, r io.Reader, opt *UploadOptions) error {
+	req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("%s/api/v1/upload", opt.Endpoint), r)
 	if err != nil {
 		return err
 	}
 	q := req.URL.Query()
 	q.Add("uuid", fileUUID)
 	q.Add("partseq", fmt.Sprintf("%d", serialNum))
-	q.Add("partlen", fmt.Sprintf("%d", len(data)))
+	q.Add("partlen", fmt.Sprintf("%d", size))
 	req.URL.RawQuery = q.Encode()
 
-	req.Header.Add("Content-Type", mwriter.FormDataContentType())
+	req.Header.Add("Content-Type", "application/octet-stream")
 
 	appendClinicHeader(req)
 	resp, err := requestWithAuth(&opt.ClientOptions, req)

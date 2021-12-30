@@ -23,6 +23,7 @@ func newUploadCommand() *cobra.Command {
 				opt.UserName, opt.Password = packager.Credentials()
 			}
 			opt.Client = packager.InitClient(opt.Endpoint)
+			opt.Concurrency = gOpt.Concurrency
 
 			ctx := context.WithValue(
 				context.Background(),

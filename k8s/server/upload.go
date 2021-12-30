@@ -125,7 +125,8 @@ func runUploader(
 		// upload the packaged data set
 		endpoint := "https://clinic.pingcap.com:4433"
 		uOpt := &packager.UploadOptions{
-			FilePath: pf,
+			FilePath:    pf,
+			Concurrency: 5,
 			ClientOptions: packager.ClientOptions{
 				Endpoint: endpoint,
 				UserName: clinicUsername,
