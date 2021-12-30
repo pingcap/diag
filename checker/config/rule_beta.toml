@@ -15,7 +15,7 @@ begin
 end
 """
 name_struct = "TikvConfig"
-expect_res = ""   #
+expect_res = "https://s.tidb.io/rwu7f0ra"
 warn_level = "info"
 version = ""
 
@@ -37,7 +37,7 @@ begin
 end
 """
 name_struct = "TikvConfig"
-expect_res = ""   #
+expect_res = "https://s.tidb.io/keg6gmsv"
 warn_level = "warning"
 version = "v5.0.0||v5.0.1"
 
@@ -58,7 +58,7 @@ begin
 end
 """
 name_struct = "TidbConfig"
-expect_res = ""   #
+expect_res = "https://s.tidb.io/msmo6awg"
 warn_level = "warning"
 version = ""
 
@@ -79,7 +79,7 @@ begin
 end
 """
 name_struct = "TidbConfig"
-expect_res = ""   #
+expect_res = "https://s.tidb.io/8bobfejh"
 warn_level = "warning"
 version = ""
 
@@ -100,7 +100,7 @@ begin
 end
 """
 name_struct = "TidbConfig"
-expect_res = ""   #
+expect_res = "https://s.tidb.io/hsaegivp"
 warn_level = "info"
 version = ""
 
@@ -121,7 +121,7 @@ begin
 end
 """
 name_struct = "TidbConfig"
-expect_res = ""   #
+expect_res = "https://s.tidb.io/4gss70fk"
 warn_level = "info"
 version = ""
 
@@ -142,7 +142,7 @@ begin
 end
 """
 name_struct = "PdConfig"
-expect_res = ""   #
+expect_res = "https://s.tidb.io/xhsd706u"
 warn_level = "info"
 version = "> v4.0.0"
 
@@ -163,7 +163,7 @@ begin
 end
 """
 name_struct = "PdConfig"
-expect_res = ""   #
+expect_res = "https://s.tidb.io/yfjhx9g8"
 warn_level = "info"
 version = "> v4.0.0"
 
@@ -184,7 +184,7 @@ begin
 end
 """
 name_struct = "PdConfig"
-expect_res = ""   #
+expect_res = "https://s.tidb.io/3bfdqiy2"
 warn_level = "info"
 version = "> v4.0.0"
 
@@ -206,7 +206,7 @@ begin
 end
 """
 name_struct = "PdConfig"
-expect_res = ""   #
+expect_res = "https://s.tidb.io/ykcvp9zj"
 warn_level = "info"
 version = "> v4.0.0"
 
@@ -228,7 +228,7 @@ begin
 end
 """
 name_struct = "PdConfig"
-expect_res = ""   #
+expect_res = "https://s.tidb.io/vkh414nn"
 warn_level = "info"
 version = "> v4.0.0"
 
@@ -250,7 +250,7 @@ begin
 end
 """
 name_struct = "PdConfig"
-expect_res = ""   #
+expect_res = "https://s.tidb.io/xquk9z2e"
 warn_level = "info"
 version = "> v4.0.0"
 
@@ -273,7 +273,7 @@ begin
 end
 """
 name_struct = "PdConfig"
-expect_res = ""   #
+expect_res = "https://s.tidb.io/8sxavsez"
 warn_level = "info"
 version = "> v4.0.0"
 
@@ -294,7 +294,7 @@ begin
 end
 """
 name_struct = "PdConfig"
-expect_res = ""   #
+expect_res = "https://s.tidb.io/8sxavsez"
 warn_level = "info"
 version = "> v4.0.0"
 
@@ -316,7 +316,7 @@ begin
 end
 """
 name_struct = "PdConfig"
-expect_res = ""   #
+expect_res = "https://s.tidb.io/slvz6mrn"
 warn_level = "warning"
 version = "> v4.0.0"
 
@@ -337,7 +337,7 @@ begin
 end
 """
 name_struct = "PdConfig"
-expect_res = ""   #
+expect_res = "https://s.tidb.io/jkdqxudq"
 warn_level = "warning"
 version = "> v4.0.0"
 
@@ -358,7 +358,7 @@ begin
 end
 """
 name_struct = "PdConfig"
-expect_res = ""   #
+expect_res = "https://s.tidb.io/brd9zy53"
 warn_level = "warning"
 version = "> v4.0.0"
 
@@ -379,7 +379,7 @@ begin
 end
 """
 name_struct = "PdConfig"
-expect_res = ""   #
+expect_res = "https://s.tidb.io/81f52ii1"
 warn_level = "info"
 version = "> v4.0.0"
 
@@ -469,7 +469,7 @@ end
 """
 name_struct = "TidbConfig"
 check_type = "config"
-expect_res = ""   #
+expect_res = "https://s.tidb.io/8q1yp
 warn_level = "warning"
 version = ">=v4.0.0,<v4.0.15||v5.0.0||v5.0.1||v5.0.2||v5.0.3||v5.1.0||v5.1.1||v5.2.0||v5.2.1||v5.2.2||v5.3.0"
 
@@ -490,7 +490,7 @@ end
 """
 name_struct = "TidbConfig"
 check_type = "config"
-expect_res = "https://s.tidb.io/wvuoe8f4"
+expect_res = "https://s.tidb.io/wvuoe
 warn_level = "warning"
 version = ""
 
@@ -511,7 +511,7 @@ end
 """
 name_struct = "PdConfig"
 check_type = "config"
-expect_res = ""   #
+expect_res = "https://s.tidb.io/z26bgtcp"
 warn_level = "info"
 version = ">= v5.1.0"
 
@@ -532,7 +532,7 @@ end
 """
 name_struct = "PdConfig"
 check_type = "config"
-expect_res = ""   #
+expect_res = "https://s.tidb.io/29f66p8d"
 warn_level = "info"
 version = ">= v4.0.0,<= v4.0.15"
 
@@ -553,7 +553,7 @@ end
 """
 name_struct = "PdConfig"
 check_type = "config"
-expect_res = ""   #
+expect_res = "https://s.tidb.io/6pwz5mk4"
 warn_level = "warning"
 version = ""
 
@@ -574,7 +574,7 @@ end
 """
 name_struct = "PdConfig"
 check_type = "config"
-expect_res = ""   #
+expect_res = "https://s.tidb.io/36kjtpll"
 warn_level = "warning"
 version = ""
 
