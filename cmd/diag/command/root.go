@@ -14,6 +14,7 @@
 package command
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"strings"
@@ -69,7 +70,7 @@ func init() {
 			var env *tiupmeta.Environment
 			// unset component data dir to use clusters'
 			os.Unsetenv(localdata.EnvNameComponentDataDir)
-			if err = spec.Initialize("cluster"); err != nil {
+			if err = spec.Initialize("diag"); err != nil {
 				return err
 			}
 
@@ -79,6 +80,8 @@ func init() {
 				return err
 			}
 			tiupmeta.SetGlobalEnv(env)
+
+			logger.EnableAuditLog(spec.AuditDir())
 
 			if gOpt.NativeSSH {
 				gOpt.SSHType = executor.SSHTypeSystem
@@ -118,6 +121,7 @@ func init() {
 		newDownloadCommand(),
 		newHistoryCommand(),
 		newCheckCmd(),
+		newAuditCmd(),
 	)
 }
 
@@ -190,19 +194,34 @@ func Execute() {
 	zap.L().Info("Execute command finished", zap.Int("code", code), zap.Error(err))
 
 	if err != nil {
-		if errx := errorx.Cast(err); errx != nil {
-			printErrorMessageForErrorX(errx)
-		} else {
-			printErrorMessageForNormalError(err)
-		}
+		switch strings.ToLower(gOpt.DisplayMode) {
+		case "json":
+			obj := struct {
+				Err string `json:"error"`
+			}{
+				Err: err.Error(),
+			}
+			data, err := json.Marshal(obj)
+			if err != nil {
+				fmt.Printf("{\"error\": \"%s\"}", err)
+				break
+			}
+			fmt.Fprintln(os.Stderr, string(data))
+		default:
+			if errx := errorx.Cast(err); errx != nil {
+				printErrorMessageForErrorX(errx)
+			} else {
+				printErrorMessageForNormalError(err)
+			}
 
-		if !errorx.HasTrait(err, utils.ErrTraitPreCheck) {
-			logger.OutputDebugLog("tiup-diag")
-		}
+			if !errorx.HasTrait(err, utils.ErrTraitPreCheck) {
+				logger.OutputDebugLog("tiup-diag")
+			}
 
-		if errx := errorx.Cast(err); errx != nil {
-			if suggestion := extractSuggestionFromErrorX(errx); len(suggestion) > 0 {
-				_, _ = fmt.Fprintf(os.Stderr, "\n%s\n", suggestion)
+			if errx := errorx.Cast(err); errx != nil {
+				if suggestion := extractSuggestionFromErrorX(errx); len(suggestion) > 0 {
+					_, _ = fmt.Fprintf(os.Stderr, "\n%s\n", suggestion)
+				}
 			}
 		}
 	}
