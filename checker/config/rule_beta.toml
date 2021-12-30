@@ -469,7 +469,7 @@ end
 """
 name_struct = "TidbConfig"
 check_type = "config"
-expect_res = "https://s.tidb.io/8q1yp
+expect_res = "https://s.tidb.io/8q1yp"
 warn_level = "warning"
 version = ">=v4.0.0,<v4.0.15||v5.0.0||v5.0.1||v5.0.2||v5.0.3||v5.1.0||v5.1.1||v5.2.0||v5.2.1||v5.2.2||v5.3.0"
 
@@ -490,7 +490,7 @@ end
 """
 name_struct = "TidbConfig"
 check_type = "config"
-expect_res = "https://s.tidb.io/wvuoe
+expect_res = "https://s.tidb.io/wvuoe"
 warn_level = "warning"
 version = ""
 
