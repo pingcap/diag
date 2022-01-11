@@ -378,15 +378,17 @@ func buildTopoForK8sCluster(
 	klog.Infof("found %d services in '%s/%s'", len(svcs.Items), ns, matchedMon.Name)
 
 	for _, svc := range svcs.Items {
-		if len(svc.Spec.ClusterIPs) < 1 {
+		// svc.Spec.ClusterIPs is not available on k8s v1.19.x
+		if svc.Spec.ClusterIP == "" {
 			klog.Errorf("service %s does not have any clusterIP, skip", svc.Name)
+			continue
 		}
 		ip := svc.Spec.ClusterIP
 		port := 0
 
 		for _, p := range svc.Spec.Ports {
 			if p.Name == "http-prometheus" {
-				port = 9090
+				port = int(p.Port)
 			}
 			break
 		}
