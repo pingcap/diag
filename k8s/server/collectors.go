@@ -179,6 +179,7 @@ func runCollector(
 	case err := <-errChan:
 		klog.Errorf("collect job %s failed with error: %s", worker.job.ID, err)
 		ctx.setJobStatus(worker.job.ID, taskStatusError)
+		ctx.setJobStderr(worker.job.ID, err.Error())
 	case <-doneChan:
 		klog.Infof("collect job %s finished.", worker.job.ID)
 		ctx.setJobStatus(worker.job.ID, taskStatusFinish)
