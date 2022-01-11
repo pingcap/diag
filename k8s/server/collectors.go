@@ -157,7 +157,7 @@ func runCollector(
 	errChan := make(chan error, 1)
 	go func() {
 		ctx.setJobStatus(worker.job.ID, taskStatusRunning)
-		resultDir, err := cm.CollectClusterInfo(opt, &cOpt, &gOpt, ctx.kubeCli, ctx.dynCli)
+		resultDir, err := cm.CollectClusterInfo(opt, &cOpt, &gOpt, ctx.kubeCli, ctx.dynCli, true)
 		outW.Close()
 		errW.Close()
 		if err != nil {

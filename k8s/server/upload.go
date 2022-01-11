@@ -113,7 +113,7 @@ func runUploader(
 			InputDir: worker.job.Dir,
 			CertPath: "/var/lib/clinic-cert/pingcap.crt", // mounted via secret
 		}
-		pf, err := packager.PackageCollectedData(pOpt)
+		pf, err := packager.PackageCollectedData(pOpt, true)
 		outW.Close()
 		errW.Close()
 		if err != nil {
@@ -139,7 +139,7 @@ func runUploader(
 			logprinter.ContextKeyLogger,
 			cLogger,
 		)
-		result, err := packager.Upload(ctx, uOpt)
+		result, err := packager.Upload(ctx, uOpt, true)
 		if err != nil {
 			errChan <- err
 			return

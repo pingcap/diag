@@ -34,7 +34,7 @@ func newPackageCmd() *cobra.Command {
 				pOpt.InputDir = args[0]
 			}
 
-			f, err := packager.PackageCollectedData(pOpt)
+			f, err := packager.PackageCollectedData(pOpt, skipConfirm)
 			if err != nil {
 				return err
 			}
