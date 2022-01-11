@@ -15,6 +15,7 @@ package collector
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"strconv"
 	"time"
@@ -88,37 +89,51 @@ func buildTopoForK8sCluster(
 	if opt.Namespace == "" {
 		ns = os.Getenv("NAMESPACE")
 		if ns == "" {
-			klog.Fatal("namespace not specified and NAMESPACE environment variable not set")
+			msg := "namespace not specified and NAMESPACE environment variable not set"
+			klog.Error(msg)
+			return nil, nil, nil, fmt.Errorf(msg)
 		}
 		klog.Infof("got namespace '%s'", ns)
 	}
 
 	tcList, err := dynCli.Resource(gvrTiDB).Namespace(ns).List(context.TODO(), metav1.ListOptions{})
 	if err != nil {
-		klog.Fatalf("failed to list tidbclusters in namespace %s: %v", ns, err)
+		msg := fmt.Sprintf("failed to list tidbclusters in namespace %s: %v", ns, err)
+		klog.Errorf(msg)
+		return nil, nil, nil, fmt.Errorf(msg)
 	}
 	tcData, err := tcList.MarshalJSON()
 	if err != nil {
-		klog.Fatalf("failed to marshal tidbclusters to json: %v", err)
+		msg := fmt.Sprintf("failed to marshal tidbclusters to json: %v", err)
+		klog.Errorf(msg)
+		return nil, nil, nil, fmt.Errorf(msg)
 	}
 	var tcs pingcapv1alpha1.TidbClusterList
 	if err := json.Unmarshal(tcData, &tcs); err != nil {
-		klog.Fatalf("failed to unmarshal tidbclusters crd: %v", err)
+		msg := fmt.Sprintf("failed to unmarshal tidbclusters crd: %v", err)
+		klog.Errorf(msg)
+		return nil, nil, nil, fmt.Errorf(msg)
 	}
 
 	klog.Infof("found %d tidbclusters in namespace '%s'", len(tcs.Items), ns)
 
 	monList, err := dynCli.Resource(gvrMonitor).Namespace(ns).List(context.TODO(), metav1.ListOptions{})
 	if err != nil {
-		klog.Fatalf("failed to list tidbmonitors in namespace %s: %v", ns, err)
+		msg := fmt.Sprintf("failed to list tidbmonitors in namespace %s: %v", ns, err)
+		klog.Errorf(msg)
+		return nil, nil, nil, fmt.Errorf(msg)
 	}
 	monData, err := monList.MarshalJSON()
 	if err != nil {
-		klog.Fatalf("failed to marshal tidbmonitors to json: %v", err)
+		msg := fmt.Sprintf("failed to marshal tidbmonitors to json: %v", err)
+		klog.Errorf(msg)
+		return nil, nil, nil, fmt.Errorf(msg)
 	}
 	var mon pingcapv1alpha1.TidbMonitorList
 	if err := json.Unmarshal(monData, &mon); err != nil {
-		klog.Fatalf("failed to unmarshal tidbmonitors crd: %v", err)
+		msg := fmt.Sprintf("failed to unmarshal tidbmonitors crd: %v", err)
+		klog.Errorf(msg)
+		return nil, nil, nil, fmt.Errorf(msg)
 	}
 
 	klog.Infof("found %d tidbmonitors in namespace '%s'", len(mon.Items), ns)
@@ -350,7 +365,8 @@ func buildTopoForK8sCluster(
 	}
 	selector, err := metav1.LabelSelectorAsSelector(labels)
 	if err != nil {
-		klog.Fatal(err)
+		klog.Error(err)
+		return nil, nil, nil, err
 	}
 	svcs, err := kubeCli.CoreV1().Services(ns).List(context.TODO(), metav1.ListOptions{
 		LabelSelector: selector.String(),

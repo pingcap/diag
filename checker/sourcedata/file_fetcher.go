@@ -16,9 +16,6 @@ package sourcedata
 import (
 	"context"
 	"encoding/csv"
-	"github.com/Masterminds/semver"
-	"github.com/pingcap/tiup/pkg/cluster/spec"
-	"gopkg.in/yaml.v3"
 	"io"
 	"os"
 	"path"
@@ -26,6 +23,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/Masterminds/semver"
 	json "github.com/json-iterator/go"
 	"github.com/pingcap/diag/checker/config"
 	"github.com/pingcap/diag/checker/proto"
@@ -33,8 +31,10 @@ import (
 	"github.com/pingcap/diag/pkg/models"
 	"github.com/pingcap/errors"
 	"github.com/pingcap/log"
+	"github.com/pingcap/tiup/pkg/cluster/spec"
 	"github.com/sirupsen/logrus"
 	"go.uber.org/zap"
+	"gopkg.in/yaml.v3"
 )
 
 type Fetcher interface {
