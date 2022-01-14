@@ -16,6 +16,7 @@ type Parser interface {
 // List all parsers this package has
 func List() []Parser {
 	return []Parser{
+		&UnifiedJSONLogParser{},
 		&UnifiedLogParser{},
 		&SlowQueryParser{},
 		&TiFlashErrLogParser{},
