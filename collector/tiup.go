@@ -382,7 +382,7 @@ func buildTopoForTiUPCluster(m *Manager, opt *BaseOptions) (*models.TiDBCluster,
 			// do nothing, skip
 		default:
 			fmt.Fprintf(os.Stderr,
-				"instance %s is an unsupport/unecessary component (%s), skipped",
+				"instance %s is an unsupport/unnecessary component (%s), skipped",
 				ins.ID(), ins.ComponentName())
 		}
 	})

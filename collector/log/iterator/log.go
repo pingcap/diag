@@ -84,7 +84,7 @@ func (iter *LogIterator) Peek() item.Item {
 }
 
 // The Next method return next log and error (if any), and read
-// disk for future logs. If any erros happend in Next(), the error
+// disk for future logs. If any erros happened in Next(), the error
 // will not be returned immediately, instead, the error will be
 // deplayed to the next call of Next().
 func (iter *LogIterator) Next() (current item.Item, err error) {
@@ -161,7 +161,7 @@ func (iter *LogIterator) seekLog(bpos, epos int64, point time.Time) error {
 		return iter.seekLog(begin, epos, point)
 	}
 	if err == nil {
-		// the may not be the very begining of target point
+		// the may not be the very beginning of target point
 		if err := iter.seekLog(bpos, begin, point); err == nil {
 			return nil
 		} else if err == io.EOF {
