@@ -56,7 +56,7 @@ type ClientOptions struct {
 	Client   *http.Client
 }
 
-func Upload(ctx context.Context, opt *UploadOptions) (string, error) {
+func Upload(ctx context.Context, opt *UploadOptions, skipConfirm bool) (string, error) {
 	logger := ctx.Value(logprinter.ContextKeyLogger).(*logprinter.Logger)
 	fileStat, err := os.Stat(opt.FilePath)
 	if err != nil {
@@ -74,7 +74,7 @@ func Upload(ctx context.Context, opt *UploadOptions) (string, error) {
 			InputDir:   opt.FilePath,
 			OutputFile: pkgPath,
 			CertPath:   "", // use default cert in install path
-		})
+		}, skipConfirm)
 		if err != nil {
 			return "", err
 		}
