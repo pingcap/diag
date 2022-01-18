@@ -1,9 +1,9 @@
 package parser
 
 import (
-	"encoding/json"
 	"time"
 
+	json "github.com/json-iterator/go"
 	"github.com/pingcap/diag/collector/log/item"
 )
 
@@ -21,14 +21,22 @@ func (*UnifiedJSONLogParser) ParseHead(head []byte) (*time.Time, item.LevelType)
 		return nil, item.LevelInvalid
 	}
 
-	t, err := parseTimeStamp([]byte(headmap["time"].(string)))
+	entryTime, ok := headmap["time"].(string)
+	if !ok {
+		return nil, item.LevelInvalid
+	}
+	t, err := parseTimeStamp([]byte(entryTime))
 	if err != nil {
 		return nil, item.LevelInvalid
 	}
-	level := ParseLogLevel([]byte(headmap["level"].(string)))
+
+	entryLevel, ok := headmap["level"].(string)
+	if !ok {
+		return nil, item.LevelInvalid
+	}
+	level := ParseLogLevel([]byte(entryLevel))
 	if level == item.LevelInvalid {
 		return nil, item.LevelInvalid
 	}
-	return t, level
 	return t, level
 }
