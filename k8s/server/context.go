@@ -211,3 +211,16 @@ func (ctx *context) setJobStatus(id, status string) {
 	}
 	klog.Warningf("job '%s' not found, skip setting its status to '%s'", id, status)
 }
+
+// setJobStderr updates the stderr part of a CollectJob, ignores if the
+// job worker does not exist
+func (ctx *context) setJobStderr(id string, stderr string) {
+	ctx.Lock()
+	defer ctx.Unlock()
+
+	if worker, found := ctx.collectJobs[id]; found {
+		worker.stderr = append(worker.stderr, []byte(stderr)...)
+		return
+	}
+	klog.Warningf("job '%s' not found, skip setting its stderr to '%s'", id, stderr)
+}

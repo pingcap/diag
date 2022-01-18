@@ -292,10 +292,7 @@ func (w *WriterWrapper) Flush() error {
 	if err := w.fileWriter.Flush(); err != nil {
 		return err
 	}
-	if err := w.termWriter.Flush(); err != nil {
-		return err
-	}
-	return nil
+	return w.termWriter.Flush()
 }
 
 func (w *WriterWrapper) Write(p []byte) (nn int, err error) {
