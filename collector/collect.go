@@ -302,7 +302,7 @@ func (m *Manager) CollectClusterInfo(
 
 	if len(collectErrs) > 0 {
 		if m.logger.GetDisplayMode() == logprinter.DisplayModeDefault {
-			fmt.Println(color.RedString("Some errors occured during the process, please check if data needed are complete:"))
+			fmt.Println(color.RedString("Some errors occurred during the process, please check if data needed are complete:"))
 		}
 		for k, v := range prepareErrs {
 			m.logger.Errorf("%s:\t%s\n", k, v)

@@ -160,7 +160,7 @@ func (opt *RebuildOptions) LoadMetrics(tl *utils.TokenLimiter) error {
 		defer dec.Close()
 		input, decodeErr = io.ReadAll(dec)
 	}
-	// if any error occured during decompressing the data
+	// if any error occurred during decompressing the data
 	// just try to read the file directly
 	if decodeErr != nil {
 		f.Seek(0, io.SeekStart)

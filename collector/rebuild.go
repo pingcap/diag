@@ -234,7 +234,7 @@ type component interface {
 type rebuilder struct {
 	Proc    map[string]component
 	walker  errgroup.Group
-	lastSig int32 // latest signal recieved
+	lastSig int32 // latest signal received
 	env     *environment.Environment
 }
 
