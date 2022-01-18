@@ -3,14 +3,15 @@ package sourcedata
 import (
 	"encoding/csv"
 	"fmt"
-	"github.com/pingcap/diag/checker/proto"
-	"github.com/pingcap/errors"
-	"github.com/pingcap/log"
-	"go.uber.org/zap"
 	"io"
 	"math"
 	"strconv"
 	"time"
+
+	"github.com/pingcap/diag/checker/proto"
+	"github.com/pingcap/errors"
+	"github.com/pingcap/log"
+	"go.uber.org/zap"
 )
 
 type accumulator interface {

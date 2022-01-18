@@ -36,8 +36,8 @@ type PackageOptions struct {
 	CertPath   string // crt file to encrypt data
 }
 
-func PackageCollectedData(pOpt *PackageOptions) (string, error) {
-	input, err := selectInputDir(pOpt.InputDir)
+func PackageCollectedData(pOpt *PackageOptions, skipConfirm bool) (string, error) {
+	input, err := selectInputDir(pOpt.InputDir, skipConfirm)
 	if err != nil {
 		return "", err
 	}
@@ -95,7 +95,7 @@ func PackageCollectedData(pOpt *PackageOptions) (string, error) {
 	return output, nil
 }
 
-func selectInputDir(dir string) (string, error) {
+func selectInputDir(dir string, skipConfirm bool) (string, error) {
 	// choose latest diag directory if not specify
 	if dir == "" {
 		fileInfos, err := os.ReadDir(".")
@@ -115,6 +115,11 @@ func selectInputDir(dir string) (string, error) {
 			return "", fmt.Errorf("input directory not specified and can not be auto detected")
 		}
 		fmt.Printf("found possible input directory: %s\n", dir)
+
+		if skipConfirm {
+			return dir, nil
+		}
+
 		err = tui.PromptForConfirmOrAbortError("Do you want to use it? [y/N]: ")
 		if err != nil {
 			return dir, err

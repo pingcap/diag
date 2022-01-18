@@ -100,6 +100,7 @@ func (m *Manager) CollectClusterInfo(
 	gOpt *operator.Options,
 	kubeCli *kubernetes.Clientset,
 	dynCli dynamic.Interface,
+	skipConfirm bool,
 ) (string, error) {
 	m.mode = cOpt.Mode
 
@@ -271,7 +272,7 @@ func (m *Manager) CollectClusterInfo(
 	// confirm before really collect
 	if m.mode == CollectModeTiUP {
 		fmt.Println(prompt)
-		if err := confirmStats(stats, resultDir); err != nil {
+		if err := confirmStats(stats, resultDir, skipConfirm); err != nil {
 			return "", err
 		}
 	}
@@ -301,7 +302,7 @@ func (m *Manager) CollectClusterInfo(
 
 	if len(collectErrs) > 0 {
 		if m.logger.GetDisplayMode() == logprinter.DisplayModeDefault {
-			fmt.Println(color.RedString("Some errors occured during the process, please check if data needed are complete:"))
+			fmt.Println(color.RedString("Some errors occurred during the process, please check if data needed are complete:"))
 		}
 		for k, v := range prepareErrs {
 			m.logger.Errorf("%s:\t%s\n", k, v)
@@ -348,7 +349,7 @@ func (m *Manager) getOutputDir(dir string) (string, error) {
 	return dir, fmt.Errorf("%s is not a directory", dir)
 }
 
-func confirmStats(stats []map[string][]CollectStat, resultDir string) error {
+func confirmStats(stats []map[string][]CollectStat, resultDir string, skipConfirm bool) error {
 	fmt.Printf("Estimated size of data to collect:\n")
 	var total int64
 	statTable := [][]string{{"Host", "Size", "Target"}}
@@ -368,7 +369,12 @@ func confirmStats(stats []map[string][]CollectStat, resultDir string) error {
 	}
 	statTable = append(statTable, []string{"Total", color.YellowString(readableSize(total)), "(inaccurate)"})
 	tui.PrintTable(statTable, true)
+
 	fmt.Printf("These data will be stored in %s\n", color.CyanString(resultDir))
+
+	if skipConfirm {
+		return nil
+	}
 	return tui.PromptForConfirmOrAbortError("Do you want to continue? [y/N]: ")
 }
 

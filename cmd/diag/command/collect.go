@@ -95,9 +95,8 @@ func newCollectCmd() *cobra.Command {
 					cOpt.Limit = 10000
 				}
 			}
-
 			cOpt.Mode = collector.CollectModeTiUP
-			_, err := cm.CollectClusterInfo(&opt, &cOpt, &gOpt, nil, nil)
+			_, err := cm.CollectClusterInfo(&opt, &cOpt, &gOpt, nil, nil, skipConfirm)
 			return err
 		},
 	}

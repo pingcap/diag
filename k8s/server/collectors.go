@@ -157,7 +157,7 @@ func runCollector(
 	errChan := make(chan error, 1)
 	go func() {
 		ctx.setJobStatus(worker.job.ID, taskStatusRunning)
-		resultDir, err := cm.CollectClusterInfo(opt, &cOpt, &gOpt, ctx.kubeCli, ctx.dynCli)
+		resultDir, err := cm.CollectClusterInfo(opt, &cOpt, &gOpt, ctx.kubeCli, ctx.dynCli, true)
 		outW.Close()
 		errW.Close()
 		if err != nil {
@@ -179,6 +179,7 @@ func runCollector(
 	case err := <-errChan:
 		klog.Errorf("collect job %s failed with error: %s", worker.job.ID, err)
 		ctx.setJobStatus(worker.job.ID, taskStatusError)
+		ctx.setJobStderr(worker.job.ID, err.Error())
 	case <-doneChan:
 		klog.Infof("collect job %s finished.", worker.job.ID)
 		ctx.setJobStatus(worker.job.ID, taskStatusFinish)

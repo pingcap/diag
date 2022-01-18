@@ -30,7 +30,7 @@ func newUploadCommand() *cobra.Command {
 				logprinter.ContextKeyLogger,
 				log,
 			)
-			_, err := packager.Upload(ctx, &opt)
+			_, err := packager.Upload(ctx, &opt, skipConfirm)
 			return err
 		},
 	}
