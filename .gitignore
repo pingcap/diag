@@ -3,6 +3,7 @@ bin/
 *.tar
 *.gz
 *.xz
+*.diag
 
 # ---> Go
 # Binaries for programs and plugins
