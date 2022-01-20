@@ -76,15 +76,14 @@ type BaseOptions struct {
 
 // CollectOptions contains the options defining which type of data to collect
 type CollectOptions struct {
-	Mode            string // the cluster is deployed with what type of tool
-	Include         set.StringSet
-	Exclude         set.StringSet
-	MetricsFilter   []string
-	Dir             string // target directory to store collected data
-	Limit           int    // rate limit of SCP
-	CompressMetrics bool   // compress of files during collecting
-	CompressScp     bool   // compress of files during collecting
-	ExitOnError     bool   // break the process and exit when an error occurs
+	Mode          string // the cluster is deployed with what type of tool
+	Include       set.StringSet
+	Exclude       set.StringSet
+	MetricsFilter []string
+	Dir           string // target directory to store collected data
+	Limit         int    // rate limit of SCP
+	CompressScp   bool   // compress of files during collecting
+	ExitOnError   bool   // break the process and exit when an error occurs
 }
 
 // CollectStat is estimated size stats of data to be collected
@@ -169,13 +168,11 @@ func (m *Manager) CollectClusterInfo(
 				BaseOptions: opt,
 				opt:         gOpt,
 				resultDir:   resultDir,
-				compress:    cOpt.CompressMetrics,
 			},
 			&MetricCollectOptions{ // metrics
 				BaseOptions: opt,
 				opt:         gOpt,
 				resultDir:   resultDir,
-				compress:    cOpt.CompressMetrics,
 				filter:      cOpt.MetricsFilter,
 			},
 		)

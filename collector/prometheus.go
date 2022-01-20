@@ -49,7 +49,6 @@ type AlertCollectOptions struct {
 	*BaseOptions
 	opt       *operator.Options // global operations from cli
 	resultDir string
-	compress  bool // compress collected JSON files
 }
 
 // Desc implements the Collector interface
@@ -112,22 +111,16 @@ func (c *AlertCollectOptions) Collect(m *Manager, topo *models.TiDBCluster) erro
 		}
 		defer f.Close()
 
-		if !c.compress {
-			if _, err := io.Copy(f, resp.Body); err != nil {
-				return err
-			}
-		} else {
-			enc, err := zstd.NewWriter(f)
-			if err != nil {
-				m.logger.Errorf("failed compressing alert list: %s, retry...\n", err)
-				return err
-			}
-			defer enc.Close()
-			_, err = io.Copy(enc, resp.Body)
-			if err != nil {
-				m.logger.Errorf("failed writing alert list to file: %s, retry...\n", err)
-				return err
-			}
+		enc, err := zstd.NewWriter(f)
+		if err != nil {
+			m.logger.Errorf("failed compressing alert list: %s, retry...\n", err)
+			return err
+		}
+		defer enc.Close()
+		_, err = io.Copy(enc, resp.Body)
+		if err != nil {
+			m.logger.Errorf("failed writing alert list to file: %s, retry...\n", err)
+			return err
 		}
 	}
 
