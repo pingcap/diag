@@ -32,7 +32,7 @@ require (
 	github.com/pingcap/check v0.0.0-20211026125417-57bd13f7b5f0
 	github.com/pingcap/errors v0.11.5-0.20201126102027-b0a155152ca3
 	github.com/pingcap/log v0.0.0-20210906054005-afc726e70354
-	github.com/pingcap/tidb-insight/collector v0.0.0-20211201041326-0f05f9ddcba2
+	github.com/pingcap/tidb-insight/collector v0.0.0-20211201041326-0f05f9ddcba2 // indirect
 	github.com/pingcap/tiup v1.9.0-dev
 	github.com/prometheus/common v0.32.1
 	github.com/prometheus/prometheus v1.8.2-0.20210518124745-db7f0bcec27b
