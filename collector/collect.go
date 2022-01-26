@@ -37,6 +37,7 @@ const (
 	CollectTypeLog     = "log"
 	CollectTypeConfig  = "config"
 	CollectTypeSchema  = "db_vars"
+	CollectTypePerf    = "perf"
 
 	CollectModeTiUP = "tiup-cluster"  // collect from a tiup-cluster deployed cluster
 	CollectModeK8s  = "tidb-operator" // collect from a tidb-operator deployed cluster
@@ -52,6 +53,7 @@ var CollectDefaultSet = set.NewStringSet(
 
 var CollectAdditionSet = set.NewStringSet(
 	CollectTypeSchema,
+	CollectTypePerf,
 )
 
 // Collector is the configuration defining an collecting job
@@ -82,6 +84,7 @@ type CollectOptions struct {
 	MetricsFilter []string
 	Dir           string // target directory to store collected data
 	Limit         int    // rate limit of SCP
+	Duration      int    //seconds: profile time(s), default is 30s.
 	CompressScp   bool   // compress of files during collecting
 	ExitOnError   bool   // break the process and exit when an error occurs
 }
@@ -239,6 +242,17 @@ func (m *Manager) CollectClusterInfo(
 				opt:         gOpt,
 				dbuser:      user,
 				dbpasswd:    password,
+				resultDir:   resultDir,
+				fileStats:   make(map[string][]CollectStat),
+			})
+	}
+
+	if canCollect(cOpt, CollectTypePerf) {
+		collectors = append(collectors,
+			&PerfCollectOptions{
+				BaseOptions: opt,
+				opt:         gOpt,
+				duration:    cOpt.Duration,
 				resultDir:   resultDir,
 				fileStats:   make(map[string][]CollectStat),
 			})
