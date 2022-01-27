@@ -14,14 +14,11 @@
 package collector
 
 import (
-	"archive/zip"
 	"context"
 	"crypto/tls"
 	"fmt"
-	"io"
 	"os"
 	"path/filepath"
-	"strings"
 	"time"
 
 	"github.com/joomcode/errorx"
@@ -31,6 +28,7 @@ import (
 	operator "github.com/pingcap/tiup/pkg/cluster/operation"
 	"github.com/pingcap/tiup/pkg/cluster/task"
 	logprinter "github.com/pingcap/tiup/pkg/logger/printer"
+	"github.com/pingcap/tiup/pkg/set"
 	"github.com/pingcap/tiup/pkg/utils"
 )
 
@@ -85,8 +83,25 @@ func (c *PerfCollectOptions) Collect(m *Manager, topo *models.TiDBCluster) error
 
 	collectePerfTasks := []*task.StepDisplay{}
 
-	for _, inst := range topo.TiDB {
-		collectePerfTasks = append(collectePerfTasks, buildPerfCollectingWithTiDBTasks(ctx, inst, c.resultDir, c.duration, nil))
+	// filter nodes or roles
+	roleFilter := set.NewStringSet(c.opt.Roles...)
+	nodeFilter := set.NewStringSet(c.opt.Nodes...)
+	comps := topo.Components()
+	comps = models.FilterComponent(comps, roleFilter)
+	instances := models.FilterInstance(comps, nodeFilter)
+
+	// build tsaks
+	for _, inst := range instances {
+		switch inst.Type() {
+		case models.ComponentTypePD,
+			models.ComponentTypeTiDB:
+			// TODO: support TLS enabled clusters
+			if t := buildPerfCollectingTasks(ctx, inst, c.resultDir, c.duration, nil); len(t) != 0 {
+				collectePerfTasks = append(collectePerfTasks, t...)
+			}
+		default:
+			continue
+		}
 	}
 
 	t := task.NewBuilder(m.logger).
@@ -106,38 +121,19 @@ func (c *PerfCollectOptions) Collect(m *Manager, topo *models.TiDBCluster) error
 // perfInfo  profile information
 type perfInfo struct {
 	filename string
+	perfType string
 	url      string
-	zip      bool
+	timeout  time.Duration
+	proto    bool
 }
-
-// TaskRawDataType, error) {
-// var profilingRawDataType TaskRawDataType
-// var fileExtenstion string
-// secs := strconv.Itoa(int(duration))
-// var url string
-// switch profilingType {
-// case ProfilingTypeCPU:
-// 	url = "/debug/pprof/profile?seconds=" + secs
-// 	profilingRawDataType = RawDataTypeProtobuf
-// 	fileExtenstion = "*.proto"
-// case ProfilingTypeHeap:
-// 	url = "/debug/pprof/heap"
-// 	profilingRawDataType = RawDataTypeProtobuf
-// 	fileExtenstion = "*.proto"
-// case ProfilingTypeGoroutine:
-// 	url = "/debug/pprof/goroutine?debug=1"
-// 	profilingRawDataType = RawDataTypeText
-// 	fileExtenstion = "*.txt"
-// case ProfilingTypeMutex:
-// 	url = "/debug/pprof/mutex?debug=1"
-// 	profilingRawDataType = RawDataTypeText
-// 	fileExtenstion = "*.txt"
-// }
 
 // http://172.16.7.147:2379
 
-func buildPerfCollectingWithTiDBTasks(ctx context.Context, inst *models.TiDBSpec, resultDir string, duration int, tlsCfg *tls.Config) *task.StepDisplay {
-	var perfInfos []perfInfo
+func buildPerfCollectingTasks(ctx context.Context, inst models.Component, resultDir string, duration int, tlsCfg *tls.Config) []*task.StepDisplay {
+	var (
+		perfInfoTasks []*task.StepDisplay
+		perfInfos     []perfInfo
+	)
 	scheme := "http"
 	if tlsCfg != nil {
 		scheme = "https"
@@ -154,25 +150,53 @@ func buildPerfCollectingWithTiDBTasks(ctx context.Context, inst *models.TiDBSpec
 	}
 
 	switch inst.Type() {
-	case models.ComponentTypeTiDB:
-		url := fmt.Sprintf("%s:%d/debug/zip?seconds=%d", host, inst.StatusPort(), duration)
-		perfInfos = append(perfInfos, perfInfo{"debug.zip", url, true})
+	case models.ComponentTypeTiDB, models.ComponentTypePD:
+		// cpu profile
+		perfInfos = append(perfInfos,
+			perfInfo{"cpu_profile.proto",
+				"cpu_profile",
+				fmt.Sprintf("%s:%d/debug/pprof/profile?seconds=%d", host, inst.StatusPort(), duration),
+				time.Second * time.Duration(duration+3),
+				true})
+		// mem Heap
+		perfInfos = append(perfInfos,
+			perfInfo{"mem_heap.proto",
+				"mem_heap",
+				fmt.Sprintf("%s:%d/debug/pprof/heap", host, inst.StatusPort()),
+				time.Second * 3,
+				true})
+		// Goroutine
+		perfInfos = append(perfInfos,
+			perfInfo{"goroutine.txt",
+				"goroutine",
+				fmt.Sprintf("%s:%d/debug/pprof/goroutine?debug=1", host, inst.StatusPort()),
+				time.Second * 3,
+				false})
+		// mutex
+		perfInfos = append(perfInfos,
+			perfInfo{"mutex.txt",
+				"mutex",
+				fmt.Sprintf("%s:%d/debug/pprof/mutex?debug=1", host, inst.StatusPort()),
+				time.Second * 3,
+				false})
 	default:
 		// not supported yet, just ignore
 		return nil
 	}
 
 	logger := ctx.Value(logprinter.ContextKeyLogger).(*logprinter.Logger)
-	t := task.NewBuilder(logger).
-		Func(
-			fmt.Sprintf("querying %s:%d", host, inst.StatusPort()),
-			func(ctx context.Context) error {
-				c := utils.NewHTTPClient(time.Second*time.Duration(duration+3), tlsCfg)
-				for _, perfInfo := range perfInfos {
+	for _, perfInfo := range perfInfos {
+		perfInfo := perfInfo
+		t := task.NewBuilder(logger).
+			Func(
+				fmt.Sprintf("querying %s %s:%d", perfInfo.perfType, host, inst.StatusPort()),
+				func(ctx context.Context) error {
+					c := utils.NewHTTPClient(perfInfo.timeout, tlsCfg)
 					url := fmt.Sprintf("%s://%s", scheme, perfInfo.url)
 					resp, err := c.Get(ctx, url)
 					if err != nil {
-						return fmt.Errorf("fail querying %s: %s, continue", url, err)
+						logger.Warnf("fail querying %s: %s, continue", url, err)
+						return err
 					}
 
 					fpath := filepath.Join(resultDir, host, instDir, "perf")
@@ -187,90 +211,26 @@ func buildPerfCollectingWithTiDBTasks(ctx context.Context, inst *models.TiDBSpec
 						0644,
 					)
 					if err != nil {
+						logger.Warnf("fail querying %s: %s, continue", url, err)
 						return err
 					}
 
-					if perfInfo.zip {
-						Unzip(fFile, fpath)
-						os.Remove(fFile)                           // delete zip file
-						os.Remove(filepath.Join(fpath, "version")) // delete version duplicate file
-						os.Remove(filepath.Join(fpath, "config"))  // delete version duplicate file
-					}
+					// if perfInfo.proto {
+					// 	proto.
+					// }
 
-				}
-				return nil
-			},
-		).
-		BuildAsStep(fmt.Sprintf(
-			"  - Querying configs for %s %s:%d",
-			inst.Type(),
-			inst.Host(),
-			inst.MainPort(),
-		))
-
-	return t
-}
-
-func Unzip(src, dest string) error {
-	r, err := zip.OpenReader(src)
-	if err != nil {
-		return err
-	}
-	defer func() {
-		if err := r.Close(); err != nil {
-			panic(err)
-		}
-	}()
-
-	os.MkdirAll(dest, 0755)
-
-	// Closure to address file descriptors issue with all the deferred .Close() methods
-	extractAndWriteFile := func(f *zip.File) error {
-		rc, err := f.Open()
-		if err != nil {
-			return err
-		}
-		defer func() {
-			if err := rc.Close(); err != nil {
-				panic(err)
-			}
-		}()
-
-		path := filepath.Join(dest, f.Name)
-
-		// Check for ZipSlip (Directory traversal)
-		if !strings.HasPrefix(path, filepath.Clean(dest)+string(os.PathSeparator)) {
-			return fmt.Errorf("illegal file path: %s", path)
-		}
-
-		if f.FileInfo().IsDir() {
-			os.MkdirAll(path, f.Mode())
-		} else {
-			os.MkdirAll(filepath.Dir(path), f.Mode())
-			f, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, f.Mode())
-			if err != nil {
-				return err
-			}
-			defer func() {
-				if err := f.Close(); err != nil {
-					panic(err)
-				}
-			}()
-
-			_, err = io.Copy(f, rc)
-			if err != nil {
-				return err
-			}
-		}
-		return nil
+					return nil
+				},
+			).
+			BuildAsStep(fmt.Sprintf(
+				"  - Querying %s for %s %s:%d",
+				perfInfo.perfType,
+				inst.Type(),
+				inst.Host(),
+				inst.StatusPort(),
+			))
+		perfInfoTasks = append(perfInfoTasks, t)
 	}
 
-	for _, f := range r.File {
-		err := extractAndWriteFile(f)
-		if err != nil {
-			return err
-		}
-	}
-
-	return nil
+	return perfInfoTasks
 }
