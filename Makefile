@@ -60,7 +60,7 @@ diag:
 
 insight:
 	$(GOBUILD) $(RACE_FLAG) -ldflags '$(LDFLAGS) $(CHECK_FLAG) -extldflags "-static"' \
-		-o bin/insight cmd/insight/collector.go
+		-o bin/insight cmd/insight/*.go
 
 scraper:
 	$(GOBUILD) $(RACE_FLAG) -ldflags '$(LDFLAGS) $(CHECK_FLAG)' -o bin/scraper cmd/scraper/*.go
@@ -103,7 +103,6 @@ lint: tests/bin/revive
 	@tests/bin/revive -formatter friendly \
 		-exclude ./k8s/apis/... \
 		-exclude ./api/types/... \
-		-exclude ./collector/kmsg/... \
 		-config tests/check/revive.toml \
 		$(FILES)
 

@@ -19,14 +19,7 @@ import (
 	"strings"
 )
 
-// Version information
 var (
-	// GitBranch is initialized during make
-	GitBranch = "Not Provided"
-
-	// GitCommit is initialized during make
-	GitCommit = "Not Provided"
-
 	// Proc dir path for Linux
 	procPath = "/proc"
 )

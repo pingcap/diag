@@ -20,6 +20,7 @@ import (
 
 	si "github.com/AstroProfundis/sysinfo"
 	"github.com/pingcap/diag/collector/kmsg"
+	"github.com/pingcap/diag/version"
 )
 
 // Meta are information about insight itself
@@ -28,6 +29,7 @@ type Meta struct {
 	UPTime    float64   `json:"uptime,omitempty"`
 	IdleTime  float64   `json:"idle_time,omitempty"`
 	SiVer     string    `json:"sysinfo_ver"`
+	Version   string    `json:"version"`
 	GitBranch string    `json:"git_branch"`
 	GitCommit string    `json:"git_commit"`
 	GoVersion string    `json:"go_version"`
@@ -100,7 +102,8 @@ func (meta *Meta) getMeta() {
 	}
 
 	meta.SiVer = si.Version
-	meta.GitBranch = GitBranch
-	meta.GitCommit = GitCommit
+	meta.Version = version.ReleaseVersion
+	meta.GitBranch = version.GitBranch
+	meta.GitCommit = version.GitHash
 	meta.GoVersion = fmt.Sprintf("%s %s/%s", runtime.Version(), runtime.GOOS, runtime.GOARCH)
 }
