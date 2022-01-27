@@ -14,7 +14,7 @@
 package sysinfo
 
 import (
-	"github.com/pingcap/diag/collector/insight/kmsg"
+	"github.com/pingcap/diag/collector/kmsg"
 )
 
 func (info *InsightInfo) collectDmsg() error {

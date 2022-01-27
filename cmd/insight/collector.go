@@ -19,7 +19,7 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/pingcap/diag/collector/insight/sysinfo"
+	"github.com/pingcap/diag/collector/sysinfo"
 )
 
 func parseOpts() sysinfo.Options {

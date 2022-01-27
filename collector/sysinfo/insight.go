@@ -19,7 +19,7 @@ import (
 	"time"
 
 	si "github.com/AstroProfundis/sysinfo"
-	"github.com/pingcap/diag/collector/insight/kmsg"
+	"github.com/pingcap/diag/collector/kmsg"
 )
 
 // Meta are information about insight itself

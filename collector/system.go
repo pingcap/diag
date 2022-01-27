@@ -21,7 +21,7 @@ import (
 
 	"github.com/joomcode/errorx"
 	json "github.com/json-iterator/go"
-	insight "github.com/pingcap/diag/collector/insight/sysinfo"
+	insight "github.com/pingcap/diag/collector/sysinfo"
 	"github.com/pingcap/diag/pkg/models"
 	perrs "github.com/pingcap/errors"
 	"github.com/pingcap/tiup/pkg/cluster/ctxt"
