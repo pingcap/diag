@@ -92,15 +92,10 @@ func (c *PerfCollectOptions) Collect(m *Manager, topo *models.TiDBCluster) error
 
 	// build tsaks
 	for _, inst := range instances {
-		switch inst.Type() {
-		case models.ComponentTypePD,
-			models.ComponentTypeTiDB:
-			// TODO: support TLS enabled clusters
-			if t := buildPerfCollectingTasks(ctx, inst, c.resultDir, c.duration, nil); len(t) != 0 {
-				collectePerfTasks = append(collectePerfTasks, t...)
-			}
-		default:
-			continue
+
+		// TODO: support TLS enabled clusters
+		if t := buildPerfCollectingTasks(ctx, inst, c.resultDir, c.duration, nil); len(t) != 0 {
+			collectePerfTasks = append(collectePerfTasks, t...)
 		}
 	}
 
@@ -123,6 +118,7 @@ type perfInfo struct {
 	filename string
 	perfType string
 	url      string
+	header   map[string]string
 	timeout  time.Duration
 	proto    bool
 }
@@ -153,32 +149,49 @@ func buildPerfCollectingTasks(ctx context.Context, inst models.Component, result
 	case models.ComponentTypeTiDB, models.ComponentTypePD:
 		// cpu profile
 		perfInfos = append(perfInfos,
-			perfInfo{"cpu_profile.proto",
-				"cpu_profile",
-				fmt.Sprintf("%s:%d/debug/pprof/profile?seconds=%d", host, inst.StatusPort(), duration),
-				time.Second * time.Duration(duration+3),
-				true})
+			perfInfo{
+				filename: "cpu_profile.proto",
+				perfType: "cpu_profile",
+				url:      fmt.Sprintf("%s:%d/debug/pprof/profile?seconds=%d", host, inst.StatusPort(), duration),
+				timeout:  time.Second * time.Duration(duration+3),
+				proto:    true,
+			})
 		// mem Heap
 		perfInfos = append(perfInfos,
-			perfInfo{"mem_heap.proto",
-				"mem_heap",
-				fmt.Sprintf("%s:%d/debug/pprof/heap", host, inst.StatusPort()),
-				time.Second * 3,
-				true})
+			perfInfo{
+				filename: "mem_heap.proto",
+				perfType: "mem_heap",
+				url:      fmt.Sprintf("%s:%d/debug/pprof/heap", host, inst.StatusPort()),
+				timeout:  time.Second * 3,
+				proto:    true,
+			})
 		// Goroutine
 		perfInfos = append(perfInfos,
-			perfInfo{"goroutine.txt",
-				"goroutine",
-				fmt.Sprintf("%s:%d/debug/pprof/goroutine?debug=1", host, inst.StatusPort()),
-				time.Second * 3,
-				false})
+			perfInfo{
+				filename: "goroutine.txt",
+				perfType: "goroutine",
+				url:      fmt.Sprintf("%s:%d/debug/pprof/goroutine?debug=1", host, inst.StatusPort()),
+				timeout:  time.Second * 3,
+			})
 		// mutex
 		perfInfos = append(perfInfos,
-			perfInfo{"mutex.txt",
-				"mutex",
-				fmt.Sprintf("%s:%d/debug/pprof/mutex?debug=1", host, inst.StatusPort()),
-				time.Second * 3,
-				false})
+			perfInfo{
+				filename: "mutex.txt",
+				perfType: "mutex",
+				url:      fmt.Sprintf("%s:%d/debug/pprof/mutex?debug=1", host, inst.StatusPort()),
+				timeout:  time.Second * 3,
+			})
+	case models.ComponentTypeTiKV, models.ComponentTypeTiFlash:
+		// cpu profile
+		perfInfos = append(perfInfos,
+			perfInfo{
+				filename: "cpu_profile.proto",
+				perfType: "cpu_profile",
+				header:   map[string]string{"Content-Type": "application/protobuf"},
+				url:      fmt.Sprintf("%s:%d/debug/pprof/profile?seconds=%d", host, inst.StatusPort(), duration),
+				timeout:  time.Second * time.Duration(duration+3),
+				proto:    true,
+			})
 	default:
 		// not supported yet, just ignore
 		return nil
@@ -192,6 +205,13 @@ func buildPerfCollectingTasks(ctx context.Context, inst models.Component, result
 				fmt.Sprintf("querying %s %s:%d", perfInfo.perfType, host, inst.StatusPort()),
 				func(ctx context.Context) error {
 					c := utils.NewHTTPClient(perfInfo.timeout, tlsCfg)
+
+					if perfInfo.header != nil {
+						for k, v := range perfInfo.header {
+							c.SetRequestHeader(k, v)
+						}
+					}
+
 					url := fmt.Sprintf("%s://%s", scheme, perfInfo.url)
 					resp, err := c.Get(ctx, url)
 					if err != nil {
