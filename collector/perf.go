@@ -213,31 +213,37 @@ func buildPerfCollectingTasks(ctx context.Context, inst models.Component, result
 					}
 
 					url := fmt.Sprintf("%s://%s", scheme, perfInfo.url)
-					resp, err := c.Get(ctx, url)
-					if err != nil {
-						logger.Warnf("fail querying %s: %s, continue", url, err)
-						return err
-					}
-
 					fpath := filepath.Join(resultDir, host, instDir, "perf")
+					fFile := filepath.Join(resultDir, host, instDir, "perf", perfInfo.filename)
 					if err := utils.CreateDir(fpath); err != nil {
 						return err
 					}
 
-					fFile := filepath.Join(resultDir, host, instDir, "perf", perfInfo.filename)
-					err = os.WriteFile(
-						fFile,
-						resp,
-						0644,
-					)
-					if err != nil {
-						logger.Warnf("fail querying %s: %s, continue", url, err)
-						return err
-					}
+					if perfInfo.proto {
+						err := c.Download(ctx, url, fFile)
+						if err != nil {
+							logger.Warnf("fail querying %s: %s, continue", url, err)
+							return err
+						}
 
-					// if perfInfo.proto {
-					// 	proto.
-					// }
+					} else {
+						resp, err := c.Get(ctx, url)
+						if err != nil {
+							logger.Warnf("fail querying %s: %s, continue", url, err)
+							return err
+						}
+
+						err = os.WriteFile(
+							fFile,
+							resp,
+							0644,
+						)
+						if err != nil {
+							logger.Warnf("fail querying %s: %s, continue", url, err)
+							return err
+						}
+
+					}
 
 					return nil
 				},
