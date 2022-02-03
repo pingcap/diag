@@ -44,7 +44,7 @@ func ParseReadableSize(s string) (ReadableSize, error) {
 		return 0, fmt.Errorf("%q is not a vaild size", s)
 	}
 	unitStr := sizeStr[idx+1:]
-	unit := UNIT
+	var unit uint64
 	switch unitStr {
 	case "K", "KB", "KiB":
 		unit = KIB
