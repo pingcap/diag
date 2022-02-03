@@ -436,7 +436,7 @@ func buildRealtimeConfigCollectingTasks(ctx context.Context, inst models.Compone
 					err = os.WriteFile(
 						filepath.Join(resultDir, host, instDir, "conf", config.filename),
 						resp,
-						0644,
+						0600,
 					)
 					if err != nil {
 						return err

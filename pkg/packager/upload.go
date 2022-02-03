@@ -335,7 +335,7 @@ func InitClient(Endpoint string) *http.Client {
 		}
 		return &http.Client{
 			Transport: &http.Transport{
-				TLSClientConfig: &tls.Config{RootCAs: roots},
+				TLSClientConfig: &tls.Config{RootCAs: roots, MinVersion: tls.VersionTLS12},
 			},
 		}
 

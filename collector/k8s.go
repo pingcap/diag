@@ -152,7 +152,7 @@ func buildTopoForK8sCluster(
 		status := tc.Status.Conditions[0].Type
 		klog.Infof("found cluster '%s': %s, %s, created at %s",
 			clsName, tc.Spec.Version, status, cTime)
-		cluster = &tc
+		cluster = &tc //#nosec G601
 		cls.Version = tc.Spec.Version
 
 		for _, ins := range tc.Status.PD.Members {

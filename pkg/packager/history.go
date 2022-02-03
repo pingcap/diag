@@ -51,7 +51,7 @@ func (h *Histroy) Store() error {
 	if len(list) > 10 {
 		list = list[:10]
 	}
-	return os.WriteFile(h.file, []byte(strings.Join(list, "\n")), 0664)
+	return os.WriteFile(h.file, []byte(strings.Join(list, "\n")), 0600)
 }
 
 func (h *Histroy) PrintList() {
