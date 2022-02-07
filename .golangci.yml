@@ -4,11 +4,11 @@ linters:
   disable-all: true
   enable:
     - misspell
-      # - ineffassign
+    - ineffassign
       # - typecheck
       # - varcheck
       # - unused
-      # - structcheck
+    - structcheck
       # - deadcode
       # - gosimple
       # - goimports

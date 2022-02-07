@@ -112,22 +112,16 @@ func (c *MetaCollectOptions) Collect(m *Manager, topo *models.TiDBCluster) error
 
 	switch m.mode {
 	case CollectModeTiUP:
-		clusterID, err = getTiUPClusterID(ctx, b.Cluster)
+		clusterID, _ = getTiUPClusterID(ctx, b.Cluster)
 		clusterType = topo.Attributes[CollectModeTiUP].(spec.Topology).Type()
 	case CollectModeK8s:
 		var id int
-		id, err = strconv.Atoi(c.tc.GetClusterID())
+		id, _ = strconv.Atoi(c.tc.GetClusterID())
 		clusterID = int64(id)
 		clusterType = spec.TopoTypeTiDB
 	default:
 		// nothing
 	}
-	/*
-		if err != nil {
-			fmt.Fprint(os.Stderr, fmt.Errorf("cannot get clusterID from PD"))
-			return err
-		}
-	*/
 
 	collectors := []string{}
 	for name, enabled := range c.collectors {

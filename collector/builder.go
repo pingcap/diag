@@ -17,13 +17,6 @@ import (
 	"github.com/pingcap/tiup/pkg/cluster/task"
 )
 
-type hostInfo struct {
-	ssh  int    // ssh port of host
-	os   string // operating system
-	arch string // cpu architecture
-	// vendor string
-}
-
 // Deprecated
 func convertStepDisplaysToTasks(t []*task.StepDisplay) []task.Task {
 	tasks := make([]task.Task, 0, len(t))
