@@ -35,11 +35,9 @@ import (
 type PerfCollectOptions struct {
 	*BaseOptions
 	opt       *operator.Options // global operations from cli
-	limit     int
-	duration  int // scp rate limit
+	duration  int               // scp rate limit
 	resultDir string
 	fileStats map[string][]CollectStat
-	compress  bool
 }
 
 // Desc implements the Collector interface
@@ -68,8 +66,50 @@ func (c *PerfCollectOptions) SetDir(dir string) {
 }
 
 // Prepare implements the Collector interface
-func (c *PerfCollectOptions) Prepare(_ *Manager, _ *models.TiDBCluster) (map[string][]CollectStat, error) {
-	return nil, nil
+func (c *PerfCollectOptions) Prepare(_ *Manager, topo *models.TiDBCluster) (map[string][]CollectStat, error) {
+	// filter nodes or roles
+	roleFilter := set.NewStringSet(c.opt.Roles...)
+	nodeFilter := set.NewStringSet(c.opt.Nodes...)
+	comps := topo.Components()
+	comps = models.FilterComponent(comps, roleFilter)
+	instances := models.FilterInstance(comps, nodeFilter)
+
+	for _, inst := range instances {
+		switch inst.Type() {
+		case models.ComponentTypeTiDB, models.ComponentTypePD:
+			fsize := int64(0)
+			// cpu profile
+			fsize = +(6 * 1024) * int64(c.duration)
+
+			// mem Heap
+			fsize = +500 * 1024
+
+			// Goroutine
+			fsize = +100 * 1024
+
+			// mutex
+			fsize = +500 * 1024
+
+			if inst.Type() == models.ComponentTypePD {
+				fsize = +800 * 1024
+			}
+
+			c.fileStats[inst.Host()] = append(c.fileStats[inst.Host()], CollectStat{
+				Target: fmt.Sprintf("%s:%d", inst.Host(), inst.MainPort()),
+				Size:   fsize,
+			})
+
+		case models.ComponentTypeTiKV, models.ComponentTypeTiFlash:
+			// cpu profile
+			c.fileStats[inst.Host()] = append(c.fileStats[inst.Host()], CollectStat{
+				Target: fmt.Sprintf("%s:%d", inst.Host(), inst.MainPort()),
+				Size:   (18 * 1024) * int64(c.duration),
+			})
+		}
+
+	}
+
+	return c.fileStats, nil
 }
 
 // Collect implements the Collector interface
@@ -93,7 +133,7 @@ func (c *PerfCollectOptions) Collect(m *Manager, topo *models.TiDBCluster) error
 	for _, inst := range instances {
 
 		// TODO: support TLS enabled clusters
-		if t := buildPerfCollectingTasks(ctx, inst, c.resultDir, c.duration, nil); len(t) != 0 {
+		if t := buildPerfCollectingTasks(ctx, inst, c, nil); len(t) != 0 {
 			collectePerfTasks = append(collectePerfTasks, t...)
 		}
 	}
@@ -119,12 +159,10 @@ type perfInfo struct {
 	url      string
 	header   map[string]string
 	timeout  time.Duration
-	proto    bool
 }
 
-// http://172.16.7.147:2379
-
-func buildPerfCollectingTasks(ctx context.Context, inst models.Component, resultDir string, duration int, tlsCfg *tls.Config) []*task.StepDisplay {
+// buildPerfCollectingTasks build collect profile information tasks
+func buildPerfCollectingTasks(ctx context.Context, inst models.Component, c *PerfCollectOptions, tlsCfg *tls.Config) []*task.StepDisplay {
 	var (
 		perfInfoTasks []*task.StepDisplay
 		perfInfos     []perfInfo
@@ -151,9 +189,8 @@ func buildPerfCollectingTasks(ctx context.Context, inst models.Component, result
 			perfInfo{
 				filename: "cpu_profile.proto",
 				perfType: "cpu_profile",
-				url:      fmt.Sprintf("%s:%d/debug/pprof/profile?seconds=%d", host, inst.StatusPort(), duration),
-				timeout:  time.Second * time.Duration(duration+3),
-				proto:    true,
+				url:      fmt.Sprintf("%s:%d/debug/pprof/profile?seconds=%d", host, inst.StatusPort(), c.duration),
+				timeout:  time.Second * time.Duration(c.duration+3),
 			})
 		// mem Heap
 		perfInfos = append(perfInfos,
@@ -162,7 +199,6 @@ func buildPerfCollectingTasks(ctx context.Context, inst models.Component, result
 				perfType: "mem_heap",
 				url:      fmt.Sprintf("%s:%d/debug/pprof/heap", host, inst.StatusPort()),
 				timeout:  time.Second * 3,
-				proto:    true,
 			})
 		// Goroutine
 		perfInfos = append(perfInfos,
@@ -187,9 +223,8 @@ func buildPerfCollectingTasks(ctx context.Context, inst models.Component, result
 				filename: "cpu_profile.proto",
 				perfType: "cpu_profile",
 				header:   map[string]string{"Content-Type": "application/protobuf"},
-				url:      fmt.Sprintf("%s:%d/debug/pprof/profile?seconds=%d", host, inst.StatusPort(), duration),
-				timeout:  time.Second * time.Duration(duration+3),
-				proto:    true,
+				url:      fmt.Sprintf("%s:%d/debug/pprof/profile?seconds=%d", host, inst.StatusPort(), c.duration),
+				timeout:  time.Second * time.Duration(c.duration+3),
 			})
 	default:
 		// not supported yet, just ignore
@@ -203,22 +238,22 @@ func buildPerfCollectingTasks(ctx context.Context, inst models.Component, result
 			Func(
 				fmt.Sprintf("querying %s %s:%d", perfInfo.perfType, host, inst.StatusPort()),
 				func(ctx context.Context) error {
-					c := utils.NewHTTPClient(perfInfo.timeout, tlsCfg)
+					httpClient := utils.NewHTTPClient(perfInfo.timeout, tlsCfg)
 
 					if perfInfo.header != nil {
 						for k, v := range perfInfo.header {
-							c.SetRequestHeader(k, v)
+							httpClient.SetRequestHeader(k, v)
 						}
 					}
 
 					url := fmt.Sprintf("%s://%s", scheme, perfInfo.url)
-					fpath := filepath.Join(resultDir, host, instDir, "perf")
-					fFile := filepath.Join(resultDir, host, instDir, "perf", perfInfo.filename)
+					fpath := filepath.Join(c.resultDir, host, instDir, "perf")
+					fFile := filepath.Join(c.resultDir, host, instDir, "perf", perfInfo.filename)
 					if err := utils.CreateDir(fpath); err != nil {
 						return err
 					}
 
-					err := c.Download(ctx, url, fFile)
+					err := httpClient.Download(ctx, url, fFile)
 					if err != nil {
 						logger.Warnf("fail querying %s: %s, continue", url, err)
 						return err

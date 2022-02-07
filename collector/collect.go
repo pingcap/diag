@@ -84,7 +84,7 @@ type CollectOptions struct {
 	MetricsFilter []string
 	Dir           string // target directory to store collected data
 	Limit         int    // rate limit of SCP
-	Duration      int    //seconds: profile time(s), default is 30s.
+	PerfDuration  int    //seconds: profile time(s), default is 30s.
 	CompressScp   bool   // compress of files during collecting
 	ExitOnError   bool   // break the process and exit when an error occurs
 }
@@ -252,7 +252,7 @@ func (m *Manager) CollectClusterInfo(
 			&PerfCollectOptions{
 				BaseOptions: opt,
 				opt:         gOpt,
-				duration:    cOpt.Duration,
+				duration:    cOpt.PerfDuration,
 				resultDir:   resultDir,
 				fileStats:   make(map[string][]CollectStat),
 			})
