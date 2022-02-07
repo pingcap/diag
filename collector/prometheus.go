@@ -138,7 +138,6 @@ type MetricCollectOptions struct {
 	resultDir string
 	timeSteps []string
 	metrics   []string // metric list
-	compress  bool     // compress collected JSON files
 	filter    []string
 }
 
@@ -200,14 +199,12 @@ func (c *MetricCollectOptions) Prepare(_ *Manager, topo *models.TiDBCluster) (ma
 	result := make(map[string][]CollectStat)
 	insCnt := len(topo.Components())
 	cStat := CollectStat{
-		Target: fmt.Sprintf("%d metrics", len(c.metrics)),
+		Target: fmt.Sprintf("%d metrics, compressed", len(c.metrics)),
 		Size:   int64(11*len(c.metrics)*insCnt) * nsec, // empirical formula, inaccurate
 	}
-	if c.compress {
-		// compression rate is approximately 2.5%
-		cStat.Size = int64(float64(cStat.Size) * 0.025)
-		cStat.Target = fmt.Sprintf("%d metrics, compressed", len(c.metrics))
-	}
+	// compression rate is approximately 2.5%
+	cStat.Size = int64(float64(cStat.Size) * 0.025)
+
 	result[promAddr] = append(result[promAddr], cStat)
 
 	return result, nil
@@ -262,7 +259,7 @@ func (c *MetricCollectOptions) Collect(m *Manager, topo *models.TiDBCluster) err
 					Suffix: fmt.Sprintf("%d/%d querying %s ...", done, total, mtc),
 				})
 
-				collectMetric(m.logger, client, prom, c.timeSteps, mtc, c.resultDir, c.compress)
+				collectMetric(m.logger, client, prom, c.timeSteps, mtc, c.resultDir)
 
 				mu.Lock()
 				done++
@@ -306,7 +303,6 @@ func collectMetric(
 	prom *models.MonitorSpec,
 	ts []string,
 	mtc, resultDir string,
-	compress bool,
 ) {
 	l.Debugf("Dumping metric %s...", mtc)
 
@@ -343,24 +339,16 @@ func collectMetric(
 
 				// compress the metric
 				var n int64
-				if !compress {
-					n, err = io.Copy(dst, resp.Body)
-					if err != nil {
-						l.Errorf("failed writing metric %s to file: %s, retry...\n", mtc, err)
-						return err
-					}
-				} else {
-					enc, err := zstd.NewWriter(dst)
-					if err != nil {
-						l.Errorf("failed compressing metric %s: %s, retry...\n", mtc, err)
-						return err
-					}
-					defer enc.Close()
-					n, err = io.Copy(enc, resp.Body)
-					if err != nil {
-						l.Errorf("failed writing metric %s to file: %s, retry...\n", mtc, err)
-						return err
-					}
+				enc, err := zstd.NewWriter(dst)
+				if err != nil {
+					l.Errorf("failed compressing metric %s: %s, retry...\n", mtc, err)
+					return err
+				}
+				defer enc.Close()
+				n, err = io.Copy(enc, resp.Body)
+				if err != nil {
+					l.Errorf("failed writing metric %s to file: %s, retry...\n", mtc, err)
+					return err
 				}
 				l.Debugf(" Dumped metric %s from %s to %s (%d bytes)", mtc, ts[i], ts[i+1], n)
 				return nil
