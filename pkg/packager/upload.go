@@ -181,7 +181,6 @@ func UploadFile(
 
 	waitGroup := sync.WaitGroup{}
 	errChan := make(chan error, totalBlock)
-	doneChan := make(chan struct{}, 1)
 	if concurrency < 1 {
 		concurrency = 1
 	}
@@ -198,7 +197,6 @@ func UploadFile(
 
 				f, err := open()
 				if err != nil {
-					logger.Errorf("cat: upload file failed: %s\n", err)
 					errChan <- err
 					return
 				}
@@ -212,7 +210,6 @@ func UploadFile(
 				}
 
 				if err = uploadPart(i+1, eachSize, partR); err != nil {
-					logger.Errorf("cat: upload file failed: %s\n", err)
 					errChan <- err
 					return
 				}
@@ -224,14 +221,22 @@ func UploadFile(
 		}()
 	}
 
+	// all goroutines are executed
 	waitGroup.Wait()
-	doneChan <- struct{}{}
+	close(errChan)
 
-	select {
-	case err := <-errChan:
-		return "", err
-	case <-doneChan:
-		return flush()
+	// catch errors
+	for {
+		errCount := 0
+		if err, ok := <-errChan; ok {
+			errCount++
+			logger.Errorf("cat: upload file failed: %s\n", err)
+		} else {
+			if errCount > 0 {
+				return "", fmt.Errorf("upload file failed")
+			}
+			return flush()
+		}
 	}
 }
 
