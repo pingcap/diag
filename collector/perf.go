@@ -17,7 +17,6 @@ import (
 	"context"
 	"crypto/tls"
 	"fmt"
-	"os"
 	"path/filepath"
 	"time"
 
@@ -219,30 +218,10 @@ func buildPerfCollectingTasks(ctx context.Context, inst models.Component, result
 						return err
 					}
 
-					if perfInfo.proto {
-						err := c.Download(ctx, url, fFile)
-						if err != nil {
-							logger.Warnf("fail querying %s: %s, continue", url, err)
-							return err
-						}
-
-					} else {
-						resp, err := c.Get(ctx, url)
-						if err != nil {
-							logger.Warnf("fail querying %s: %s, continue", url, err)
-							return err
-						}
-
-						err = os.WriteFile(
-							fFile,
-							resp,
-							0644,
-						)
-						if err != nil {
-							logger.Warnf("fail querying %s: %s, continue", url, err)
-							return err
-						}
-
+					err := c.Download(ctx, url, fFile)
+					if err != nil {
+						logger.Warnf("fail querying %s: %s, continue", url, err)
+						return err
 					}
 
 					return nil
