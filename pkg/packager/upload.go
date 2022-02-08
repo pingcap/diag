@@ -178,9 +178,33 @@ func UploadFile(
 	if totalBlock <= presp.Partseq {
 		return flush()
 	}
+	errChan := make(chan error, totalBlock)
+
+	go concurrentUploadFile(logger, concurrency, presp, totalBlock, fileSize, open, uploadPart, errChan)
+
+	// catch errors
+	// errChan is not closed or the error can be obtained, exit
+	if err, ok := <-errChan; ok {
+		logger.Errorf("cat: upload file failed: %s\n", err)
+		return "", fmt.Errorf("upload file failed: %s", err)
+	}
+
+	return flush()
+}
+
+// concurrentUploadFile  concurrent execute the function that actually uploads the file
+func concurrentUploadFile(
+	logger *logprinter.Logger,
+	concurrency int,
+	presp *preCreateResponse,
+	totalBlock int,
+	fileSize int64,
+	open OpenFunc,
+	uploadPart UploadPart,
+	errChan chan error,
+) {
 
 	waitGroup := sync.WaitGroup{}
-	errChan := make(chan error, totalBlock)
 	if concurrency < 1 {
 		concurrency = 1
 	}
@@ -224,20 +248,6 @@ func UploadFile(
 	// all goroutines are executed
 	waitGroup.Wait()
 	close(errChan)
-
-	// catch errors
-	for {
-		errCount := 0
-		if err, ok := <-errChan; ok {
-			errCount++
-			logger.Errorf("cat: upload file failed: %s\n", err)
-		} else {
-			if errCount > 0 {
-				return "", fmt.Errorf("upload file failed")
-			}
-			return flush()
-		}
-	}
 }
 
 func appendClinicHeader(req *http.Request) {
