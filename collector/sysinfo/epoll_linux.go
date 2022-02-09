@@ -14,15 +14,10 @@
 // Check if epoll exclusive available on the host
 // Ported from https://github.com/pingcap/tidb-ansible/blob/v3.1.0/scripts/check/epoll_chk.cc
 
-//go:build cgo && linux
-// +build cgo,linux
+//go:build linux
+// +build linux
 
 package sysinfo
-
-/*
-#include <sys/eventfd.h>
-*/
-import "C"
 
 import (
 	"syscall"
@@ -38,8 +33,8 @@ func checkEpollExclusive() bool {
 	}
 	defer syscall.Close(fd)
 
-	evfd, err := C.eventfd(0, C.EFD_NONBLOCK|C.EFD_CLOEXEC)
-	if err != nil || evfd < 0 {
+	evfd, _, evErr := syscall.Syscall(syscall.SYS_EVENTFD2, 0, uintptr(syscall.O_CLOEXEC), 0)
+	if evErr != 0 || int(evfd) < 0 {
 		return false
 	}
 	defer syscall.Close(int(evfd))

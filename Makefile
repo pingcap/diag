@@ -59,7 +59,7 @@ diag:
 	$(GOBUILD) $(RACE_FLAG) -ldflags '$(LDFLAGS) $(CHECK_FLAG)' -o bin/diag cmd/diag/*.go
 
 insight:
-	$(GOBUILD) $(RACE_FLAG) -ldflags '$(LDFLAGS) $(CHECK_FLAG) -extldflags "-static"' \
+	$(GOBUILD) $(RACE_FLAG) -ldflags '$(LDFLAGS) $(CHECK_FLAG)' \
 		-o bin/insight cmd/insight/*.go
 
 scraper:
