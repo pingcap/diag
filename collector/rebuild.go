@@ -421,7 +421,7 @@ func (i *influxdb) start(ctx context.Context) error {
 
 func (i *influxdb) ready() bool {
 	url := fmt.Sprintf("http://%s:%d/health", i.Host, i.HTTPPort)
-	body, err := utils.NewHTTPClient(time.Second*2, &tls.Config{}).Get(context.TODO(), url)
+	body, err := utils.NewHTTPClient(time.Second*2, &tls.Config{MinVersion: tls.VersionTLS12}).Get(context.TODO(), url)
 	if err != nil {
 		//fmt.Println("still waiting for influxdb to start...")
 		return false
@@ -714,7 +714,7 @@ http_port = %d
 	custom := fmt.Sprintf(tpl, g.Host, g.Port)
 	customFName := filepath.Join(g.DataDir, "conf", "custom.ini")
 
-	err = os.WriteFile(customFName, []byte(custom), 0644)
+	err = os.WriteFile(customFName, []byte(custom), 0600)
 	if err != nil {
 		return nil, errors.AddStack(err)
 	}
@@ -747,7 +747,7 @@ datasources:
 `
 
 	s := fmt.Sprintf(tpl, clusterName, clusterName, promURL)
-	err = os.WriteFile(fname, []byte(s), 0644)
+	err = os.WriteFile(fname, []byte(s), 0600)
 	if err != nil {
 		return errors.AddStack(err)
 	}
@@ -782,7 +782,7 @@ func replaceDatasource(dashboardDir string, datasourceName string) error {
 		s = strings.ReplaceAll(s, "${DS_LIGHTNING}", datasourceName)
 		s = re.ReplaceAllLiteralString(s, datasourceName)
 
-		return os.WriteFile(path, []byte(s), 0644)
+		return os.WriteFile(path, []byte(s), 0600)
 	})
 
 	if err != nil {
@@ -811,7 +811,7 @@ providers:
 `
 	s := fmt.Sprintf(tpl, clusterName, clusterName, dir)
 
-	err = os.WriteFile(fname, []byte(s), 0644)
+	err = os.WriteFile(fname, []byte(s), 0600)
 	if err != nil {
 		return errors.AddStack(err)
 	}

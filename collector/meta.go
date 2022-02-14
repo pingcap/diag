@@ -15,6 +15,7 @@ package collector
 
 import (
 	"context"
+	"crypto/tls"
 	"errors"
 	"fmt"
 	"os"
@@ -112,22 +113,21 @@ func (c *MetaCollectOptions) Collect(m *Manager, topo *models.TiDBCluster) error
 
 	switch m.mode {
 	case CollectModeTiUP:
-		clusterID, err = getTiUPClusterID(ctx, b.Cluster)
-		clusterType = topo.Attributes[CollectModeTiUP].(spec.Topology).Type()
+		tiupTopo := topo.Attributes[CollectModeTiUP].(spec.Topology)
+		tlsCfg, err := tiupTopo.TLSConfig(m.specManager.Path(b.Cluster, spec.TLSCertKeyDir))
+		if err != nil {
+			return err
+		}
+		clusterID, _ = getTiUPClusterID(ctx, b.Cluster, tlsCfg)
+		clusterType = tiupTopo.Type()
 	case CollectModeK8s:
 		var id int
-		id, err = strconv.Atoi(c.tc.GetClusterID())
+		id, _ = strconv.Atoi(c.tc.GetClusterID())
 		clusterID = int64(id)
 		clusterType = spec.TopoTypeTiDB
 	default:
 		// nothing
 	}
-	/*
-		if err != nil {
-			fmt.Fprint(os.Stderr, fmt.Errorf("cannot get clusterID from PD"))
-			return err
-		}
-	*/
 
 	collectors := []string{}
 	for name, enabled := range c.collectors {
@@ -204,7 +204,7 @@ func (c *MetaCollectOptions) Collect(m *Manager, topo *models.TiDBCluster) error
 	return nil
 }
 
-func getTiUPClusterID(ctx context.Context, clusterName string) (int64, error) {
+func getTiUPClusterID(ctx context.Context, clusterName string, tlsCfg *tls.Config) (int64, error) {
 	metadata, err := spec.ClusterMetadata(clusterName)
 	if err != nil && !errors.Is(perrs.Cause(err), meta.ErrValidate) &&
 		!errors.Is(perrs.Cause(err), spec.ErrNoTiSparkMaster) {
@@ -216,6 +216,6 @@ func getTiUPClusterID(ctx context.Context, clusterName string) (int64, error) {
 		pdEndpoints = append(pdEndpoints, fmt.Sprintf("%s:%d", pd.Host, pd.ClientPort))
 	}
 
-	pdAPI := api.NewPDClient(ctx, pdEndpoints, 2*time.Second, nil)
+	pdAPI := api.NewPDClient(ctx, pdEndpoints, 2*time.Second, tlsCfg)
 	return pdAPI.GetClusterID()
 }

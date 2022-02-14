@@ -178,10 +178,33 @@ func UploadFile(
 	if totalBlock <= presp.Partseq {
 		return flush()
 	}
+	errChan := make(chan error, totalBlock)
+
+	go concurrentUploadFile(logger, concurrency, presp, totalBlock, fileSize, open, uploadPart, errChan)
+
+	// catch errors
+	// errChan is not closed or the error can be obtained, exit
+	if err, ok := <-errChan; ok {
+		logger.Errorf("cat: upload file failed: %s\n", err)
+		return "", fmt.Errorf("upload file failed: %s", err)
+	}
+
+	return flush()
+}
+
+// concurrentUploadFile  concurrent execute the function that actually uploads the file
+func concurrentUploadFile(
+	logger *logprinter.Logger,
+	concurrency int,
+	presp *preCreateResponse,
+	totalBlock int,
+	fileSize int64,
+	open OpenFunc,
+	uploadPart UploadPart,
+	errChan chan error,
+) {
 
 	waitGroup := sync.WaitGroup{}
-	errChan := make(chan error, totalBlock)
-	doneChan := make(chan struct{}, 1)
 	if concurrency < 1 {
 		concurrency = 1
 	}
@@ -198,7 +221,6 @@ func UploadFile(
 
 				f, err := open()
 				if err != nil {
-					logger.Errorf("cat: upload file failed: %s\n", err)
 					errChan <- err
 					return
 				}
@@ -212,7 +234,6 @@ func UploadFile(
 				}
 
 				if err = uploadPart(i+1, eachSize, partR); err != nil {
-					logger.Errorf("cat: upload file failed: %s\n", err)
 					errChan <- err
 					return
 				}
@@ -224,15 +245,9 @@ func UploadFile(
 		}()
 	}
 
+	// all goroutines are executed
 	waitGroup.Wait()
-	doneChan <- struct{}{}
-
-	select {
-	case err := <-errChan:
-		return "", err
-	case <-doneChan:
-		return flush()
-	}
+	close(errChan)
 }
 
 func appendClinicHeader(req *http.Request) {
@@ -335,7 +350,7 @@ func InitClient(Endpoint string) *http.Client {
 		}
 		return &http.Client{
 			Transport: &http.Transport{
-				TLSClientConfig: &tls.Config{RootCAs: roots},
+				TLSClientConfig: &tls.Config{RootCAs: roots, MinVersion: tls.VersionTLS12},
 			},
 		}
 

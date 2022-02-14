@@ -691,14 +691,13 @@ func (e *slowQueryRetriever) parseLog(ctx context.Context, logs []string, offset
 	return data, nil
 }
 
-func (e *slowQueryRetriever) setColumnValue(row []string, tz *time.Location, field, value string, checker *slowLogChecker, lineNum int) bool {
+func (e *slowQueryRetriever) setColumnValue(row []string, tz *time.Location, field, value string, checker *slowLogChecker, _ int) bool {
 	factory := e.columnValueFactoryMap[field]
 	if factory == nil {
 		return true
 	}
 	valid, err := factory(row, value, tz, checker)
 	if err != nil {
-		err = fmt.Errorf("Parse slow log at line %v, failed field is %v, failed value is %v, error is %v", lineNum, field, value, err)
 		return true
 	}
 	return valid
@@ -816,7 +815,6 @@ func getColumnValueFactoryByName(colName string, columnIdx int) (slowQueryColumn
 			}
 			if t.Location() != tz {
 				t = t.In(tz)
-				timeValue = types.NewTime(types.FromGoTime(t), 12, types.MaxFsp)
 			}
 			row[columnIdx] = t.Format("2006-01-02 15:04:05.999999")
 			return true, nil

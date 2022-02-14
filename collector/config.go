@@ -243,6 +243,11 @@ func (c *ConfigCollectOptions) collectForTiUP(m *Manager, cls *models.TiDBCluste
 	roleFilter := set.NewStringSet(c.opt.Roles...)
 	nodeFilter := set.NewStringSet(c.opt.Nodes...)
 
+	tlsCfg, err := topo.TLSConfig(m.specManager.Path(c.BaseOptions.Cluster, spec.TLSCertKeyDir))
+	if err != nil {
+		return err
+	}
+
 	comps := cls.Components()
 	comps = models.FilterComponent(comps, roleFilter)
 	instances := models.FilterInstance(comps, nodeFilter)
@@ -255,7 +260,7 @@ func (c *ConfigCollectOptions) collectForTiUP(m *Manager, cls *models.TiDBCluste
 
 		// query realtime configs for each instance if supported
 		// TODO: support TLS enabled clusters
-		if t3 := buildRealtimeConfigCollectingTasks(ctx, inst, c.resultDir, nil); t3 != nil {
+		if t3 := buildRealtimeConfigCollectingTasks(ctx, inst, c.resultDir, tlsCfg); t3 != nil {
 			queryTasks = append(queryTasks, t3)
 		}
 	}
@@ -389,6 +394,9 @@ type rtConfig struct {
 func buildRealtimeConfigCollectingTasks(ctx context.Context, inst models.Component, resultDir string, tlsCfg *tls.Config) *task.StepDisplay {
 	var configs []rtConfig
 	scheme := "http"
+	if tlsCfg != nil {
+		scheme = "https"
+	}
 
 	switch inst.Type() {
 	case models.ComponentTypePD:
@@ -436,7 +444,7 @@ func buildRealtimeConfigCollectingTasks(ctx context.Context, inst models.Compone
 					err = os.WriteFile(
 						filepath.Join(resultDir, host, instDir, "conf", config.filename),
 						resp,
-						0644,
+						0600,
 					)
 					if err != nil {
 						return err
