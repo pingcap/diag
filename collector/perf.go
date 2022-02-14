@@ -25,6 +25,7 @@ import (
 	perrs "github.com/pingcap/errors"
 	"github.com/pingcap/tiup/pkg/cluster/ctxt"
 	operator "github.com/pingcap/tiup/pkg/cluster/operation"
+	"github.com/pingcap/tiup/pkg/cluster/spec"
 	"github.com/pingcap/tiup/pkg/cluster/task"
 	logprinter "github.com/pingcap/tiup/pkg/logger/printer"
 	"github.com/pingcap/tiup/pkg/set"
@@ -35,7 +36,7 @@ import (
 type PerfCollectOptions struct {
 	*BaseOptions
 	opt       *operator.Options // global operations from cli
-	duration  int               // scp rate limit
+	duration  int               //seconds: profile time(s), default is 30s.
 	resultDir string
 	fileStats map[string][]CollectStat
 }
@@ -66,7 +67,17 @@ func (c *PerfCollectOptions) SetDir(dir string) {
 }
 
 // Prepare implements the Collector interface
-func (c *PerfCollectOptions) Prepare(_ *Manager, topo *models.TiDBCluster) (map[string][]CollectStat, error) {
+func (c *PerfCollectOptions) Prepare(m *Manager, topo *models.TiDBCluster) (map[string][]CollectStat, error) {
+
+	switch m.mode {
+	case CollectModeTiUP:
+		return c.prepareForTiUP(m, topo)
+	}
+	return nil, nil
+}
+
+// // prepareForTiUP implements preparation for tiup-cluster deployed clusters
+func (c *PerfCollectOptions) prepareForTiUP(_ *Manager, topo *models.TiDBCluster) (map[string][]CollectStat, error) {
 	// filter nodes or roles
 	roleFilter := set.NewStringSet(c.opt.Roles...)
 	nodeFilter := set.NewStringSet(c.opt.Nodes...)
@@ -77,27 +88,29 @@ func (c *PerfCollectOptions) Prepare(_ *Manager, topo *models.TiDBCluster) (map[
 	for _, inst := range instances {
 		switch inst.Type() {
 		case models.ComponentTypeTiDB, models.ComponentTypePD:
-			fsize := int64(0)
+
 			// cpu profile
-			fsize = +(6 * 1024) * int64(c.duration)
+			fsize := (6 * 1024) * int64(c.duration)
 
 			// mem Heap
-			fsize = +500 * 1024
+			fsize = fsize + 500*1024
 
 			// Goroutine
-			fsize = +100 * 1024
+			fsize = fsize + 100*1024
 
 			// mutex
-			fsize = +500 * 1024
+			fsize = fsize + 500*1024
 
 			if inst.Type() == models.ComponentTypePD {
-				fsize = +800 * 1024
+				fsize = fsize + 800*1024
 			}
 
-			c.fileStats[inst.Host()] = append(c.fileStats[inst.Host()], CollectStat{
+			stat := CollectStat{
 				Target: fmt.Sprintf("%s:%d", inst.Host(), inst.MainPort()),
 				Size:   fsize,
-			})
+			}
+
+			c.fileStats[inst.Host()] = append(c.fileStats[inst.Host()], stat)
 
 		case models.ComponentTypeTiKV, models.ComponentTypeTiFlash:
 			// cpu profile
@@ -114,6 +127,18 @@ func (c *PerfCollectOptions) Prepare(_ *Manager, topo *models.TiDBCluster) (map[
 
 // Collect implements the Collector interface
 func (c *PerfCollectOptions) Collect(m *Manager, topo *models.TiDBCluster) error {
+	switch m.mode {
+	case CollectModeTiUP:
+		return c.collectForTiUP(m, topo)
+	case CollectModeK8s:
+		return c.collectForK8s(m, topo)
+	}
+
+	return nil
+}
+
+// collectForTiUP implements config collecting for tiup-cluster deployed clusters
+func (c *PerfCollectOptions) collectForTiUP(m *Manager, topo *models.TiDBCluster) error {
 	ctx := ctxt.New(
 		context.Background(),
 		c.opt.Concurrency,
@@ -129,10 +154,55 @@ func (c *PerfCollectOptions) Collect(m *Manager, topo *models.TiDBCluster) error
 	comps = models.FilterComponent(comps, roleFilter)
 	instances := models.FilterInstance(comps, nodeFilter)
 
+	// get tls config
+	tlsCfg, err := topo.Attributes[CollectModeTiUP].(spec.Topology).
+		TLSConfig(m.specManager.Path(c.BaseOptions.Cluster, spec.TLSCertKeyDir))
+	if err != nil {
+		return err
+	}
+
 	// build tsaks
 	for _, inst := range instances {
 
-		// TODO: support TLS enabled clusters
+		if t := buildPerfCollectingTasks(ctx, inst, c, tlsCfg); len(t) != 0 {
+			collectePerfTasks = append(collectePerfTasks, t...)
+		}
+	}
+
+	t := task.NewBuilder(m.logger).
+		ParallelStep("+ Query profile info", false, collectePerfTasks...).Build()
+
+	if err := t.Execute(ctx); err != nil {
+		if errorx.Cast(err) != nil {
+			// FIXME: Map possible task errors and give suggestions.
+			return err
+		}
+		return perrs.Trace(err)
+	}
+
+	return nil
+}
+
+// collectForK8s implements config collecting for tidb-operator deployed clusters
+func (c *PerfCollectOptions) collectForK8s(m *Manager, topo *models.TiDBCluster) error {
+
+	collectePerfTasks := []*task.StepDisplay{}
+	ctx := ctxt.New(
+		context.Background(),
+		c.opt.Concurrency,
+		m.logger,
+	)
+
+	instances := topo.Components()
+
+	for _, inst := range instances {
+		switch inst.Type() {
+		case models.ComponentTypeMonitor,
+			models.ComponentTypeTiSpark:
+			continue
+		}
+
+		// query perf info for each instance if supported
 		if t := buildPerfCollectingTasks(ctx, inst, c, nil); len(t) != 0 {
 			collectePerfTasks = append(collectePerfTasks, t...)
 		}
@@ -236,7 +306,7 @@ func buildPerfCollectingTasks(ctx context.Context, inst models.Component, c *Per
 		perfInfo := perfInfo
 		t := task.NewBuilder(logger).
 			Func(
-				fmt.Sprintf("querying %s %s:%d", perfInfo.perfType, host, inst.StatusPort()),
+				fmt.Sprintf("querying %s %s:%d", perfInfo.perfType, host, inst.MainPort()),
 				func(ctx context.Context) error {
 					httpClient := utils.NewHTTPClient(perfInfo.timeout, tlsCfg)
 
@@ -267,7 +337,7 @@ func buildPerfCollectingTasks(ctx context.Context, inst models.Component, c *Per
 				perfInfo.perfType,
 				inst.Type(),
 				inst.Host(),
-				inst.StatusPort(),
+				inst.MainPort(),
 			))
 		perfInfoTasks = append(perfInfoTasks, t)
 	}
