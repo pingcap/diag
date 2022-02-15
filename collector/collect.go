@@ -37,6 +37,7 @@ const (
 	CollectTypeLog     = "log"
 	CollectTypeConfig  = "config"
 	CollectTypeSchema  = "db_vars"
+	CollectTypePerf    = "perf"
 
 	CollectModeTiUP = "tiup-cluster"  // collect from a tiup-cluster deployed cluster
 	CollectModeK8s  = "tidb-operator" // collect from a tidb-operator deployed cluster
@@ -52,6 +53,7 @@ var CollectDefaultSet = set.NewStringSet(
 
 var CollectAdditionSet = set.NewStringSet(
 	CollectTypeSchema,
+	CollectTypePerf,
 )
 
 // Collector is the configuration defining an collecting job
@@ -76,14 +78,15 @@ type BaseOptions struct {
 
 // CollectOptions contains the options defining which type of data to collect
 type CollectOptions struct {
-	Mode          string // the cluster is deployed with what type of tool
-	Include       set.StringSet
-	Exclude       set.StringSet
-	MetricsFilter []string
-	Dir           string // target directory to store collected data
-	Limit         int    // rate limit of SCP
-	CompressScp   bool   // compress of files during collecting
-	ExitOnError   bool   // break the process and exit when an error occurs
+	Mode          string        // the cluster is deployed with what type of tool
+	Include       set.StringSet // types of data to collect
+	Exclude       set.StringSet // types of data not to collect
+	MetricsFilter []string      // prefix of metrics to collect"
+	Dir           string        // target directory to store collected data
+	Limit         int           // rate limit of SCP
+	PerfDuration  int           //seconds: profile time(s), default is 30s.
+	CompressScp   bool          // compress of files during collecting
+	ExitOnError   bool          // break the process and exit when an error occur
 }
 
 // CollectStat is estimated size stats of data to be collected
@@ -140,7 +143,10 @@ func (m *Manager) CollectClusterInfo(
 		CollectTypeMonitor: false,
 		CollectTypeLog:     false,
 		CollectTypeConfig:  false,
+		CollectTypeSchema:  false,
+		CollectTypePerf:    false,
 	}
+
 	for name := range collectorSet {
 		if canCollect(cOpt, name) {
 			collectorSet[name] = true
@@ -239,6 +245,17 @@ func (m *Manager) CollectClusterInfo(
 				opt:         gOpt,
 				dbuser:      user,
 				dbpasswd:    password,
+				resultDir:   resultDir,
+				fileStats:   make(map[string][]CollectStat),
+			})
+	}
+
+	if canCollect(cOpt, CollectTypePerf) {
+		collectors = append(collectors,
+			&PerfCollectOptions{
+				BaseOptions: opt,
+				opt:         gOpt,
+				duration:    cOpt.PerfDuration,
 				resultDir:   resultDir,
 				fileStats:   make(map[string][]CollectStat),
 			})
