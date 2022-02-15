@@ -21,9 +21,9 @@ import (
 
 	"github.com/joomcode/errorx"
 	json "github.com/json-iterator/go"
+	insight "github.com/pingcap/diag/collector/sysinfo"
 	"github.com/pingcap/diag/pkg/models"
 	perrs "github.com/pingcap/errors"
-	"github.com/pingcap/tidb-insight/collector/insight"
 	"github.com/pingcap/tiup/pkg/cluster/ctxt"
 	operator "github.com/pingcap/tiup/pkg/cluster/operation"
 	"github.com/pingcap/tiup/pkg/cluster/spec"
@@ -82,7 +82,7 @@ func (c *SystemCollectOptions) Collect(m *Manager, cls *models.TiDBCluster) erro
 		cleanTasks          []*task.StepDisplay
 		downloadTasks       []*task.StepDisplay
 	)
-	insightVer := spec.TiDBComponentVersion(spec.ComponentCheckCollector, "")
+	insightVer := spec.TiDBComponentVersion(componentDiagCollector, "")
 
 	uniqueHosts := map[string]int{}             // host -> ssh-port
 	uniqueArchList := make(map[string]struct{}) // map["os-arch"]{}
@@ -104,7 +104,7 @@ func (c *SystemCollectOptions) Collect(m *Manager, cls *models.TiDBCluster) erro
 				uniqueArchList[archKey] = struct{}{}
 				t0 := task.NewBuilder(m.logger).
 					Download(
-						spec.ComponentCheckCollector,
+						componentDiagCollector,
 						inst.OS(),
 						inst.Arch(),
 						insightVer,
@@ -125,7 +125,7 @@ func (c *SystemCollectOptions) Collect(m *Manager, cls *models.TiDBCluster) erro
 				t1 := b1.
 					Mkdir(c.GetBaseOptions().User, host, filepath.Join(task.CheckToolsPathDir, "bin")).
 					CopyComponent(
-						spec.ComponentCheckCollector,
+						componentDiagCollector,
 						inst.OS(),
 						inst.Arch(),
 						insightVer,

@@ -50,13 +50,17 @@ CHECK_LDFLAGS += $(LDFLAGS)
 
 all: check build
 
-build: diag scraper metricsconfig
+build: diag insight scraper metricsconfig
 
 clean:
 	@rm -rf bin
 
 diag:
 	$(GOBUILD) $(RACE_FLAG) -ldflags '$(LDFLAGS) $(CHECK_FLAG)' -o bin/diag cmd/diag/*.go
+
+insight:
+	$(GOBUILD) $(RACE_FLAG) -ldflags '$(LDFLAGS) $(CHECK_FLAG)' \
+		-o bin/insight cmd/insight/*.go
 
 scraper:
 	$(GOBUILD) $(RACE_FLAG) -ldflags '$(LDFLAGS) $(CHECK_FLAG)' -o bin/scraper cmd/scraper/*.go
@@ -96,7 +100,11 @@ vet:
 lint: tests/bin/revive
 	@echo "linting"
 	./tests/check/check-lint.sh
-	@tests/bin/revive -formatter friendly -exclude ./k8s/apis/... -exclude ./api/types/... -config tests/check/revive.toml $(FILES)
+	@tests/bin/revive -formatter friendly \
+		-exclude ./k8s/apis/... \
+		-exclude ./api/types/... \
+		-config tests/check/revive.toml \
+		$(FILES)
 
 tests/bin/revive: tests/check/go.mod
 	cd tests/check; \
