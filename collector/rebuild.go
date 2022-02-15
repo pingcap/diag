@@ -395,24 +395,13 @@ func (i *influxdb) start(ctx context.Context) error {
 		"-config", filepath.Join(i.Dir, "influxdb.conf"),
 	}
 
-	env := environment.GlobalEnv()
 	os.Setenv("INFLUXD_CONFIG_PATH", i.Dir)
-	params := &tiupexec.PrepareCommandParams{
-		Ctx:         ctx,
-		Component:   "influxdb",
-		Version:     tiuputil.Version(i.version),
-		InstanceDir: i.Dir,
-		WD:          i.Dir,
-		Args:        args,
-		SysProcAttr: instance.SysProcAttr,
-		Env:         env,
-	}
-	cmd, err := tiupexec.PrepareCommand(params)
+	binPath, err := tiupexec.PrepareBinary("influxdb", tiuputil.Version(i.version), "")
 	if err != nil {
-		return err
+		return nil
 	}
-	cmd.Stdout = nil
-	cmd.Stderr = nil
+
+	cmd := instance.PrepareCommand(ctx, binPath, args, nil, i.Dir)
 
 	i.cmd = cmd
 
@@ -549,23 +538,12 @@ func (m *prometheus) start(ctx context.Context) error {
 		fmt.Sprintf("--storage.tsdb.path=%s", filepath.Join(m.dir, "data")),
 	}
 
-	env := environment.GlobalEnv()
-	params := &tiupexec.PrepareCommandParams{
-		Ctx:         ctx,
-		Component:   "prometheus",
-		Version:     tiuputil.Version(m.version),
-		InstanceDir: m.dir,
-		WD:          m.dir,
-		Args:        args,
-		SysProcAttr: instance.SysProcAttr,
-		Env:         env,
-	}
-	cmd, err := tiupexec.PrepareCommand(params)
+	binPath, err := tiupexec.PrepareBinary("prometheus", tiuputil.Version(m.version), "")
 	if err != nil {
-		return err
+		return nil
 	}
-	cmd.Stdout = nil
-	cmd.Stderr = nil
+
+	cmd := instance.PrepareCommand(ctx, binPath, args, nil, m.dir)
 
 	m.cmd = cmd
 
@@ -834,25 +812,15 @@ func (g *grafana) start(ctx context.Context) (err error) {
 		fmt.Sprintf("cfg:default.paths.plugins=%s", path.Join(g.DataDir, "plugins")),
 	}
 
-	env := environment.GlobalEnv()
-	params := &tiupexec.PrepareCommandParams{
-		Ctx:         ctx,
-		Component:   "grafana",
-		Version:     tiuputil.Version(g.Version),
-		InstanceDir: g.DataDir,
-		WD:          g.DataDir,
-		Args:        args,
-		SysProcAttr: instance.SysProcAttr,
-		Env:         env,
-	}
-	cmd, err := tiupexec.PrepareCommand(params)
+	binPath, err := tiupexec.PrepareBinary("grafana", tiuputil.Version(g.Version), "")
 	if err != nil {
-		return err
+		return nil
 	}
-	cmd.Stdout = nil
-	cmd.Stderr = nil
+
+	cmd := instance.PrepareCommand(ctx, binPath, args, nil, g.DataDir)
 
 	g.cmd = cmd
+
 	return g.cmd.Start()
 }
 

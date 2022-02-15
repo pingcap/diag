@@ -4,9 +4,8 @@ go 1.16
 
 require (
 	github.com/AstroProfundis/sysinfo v0.0.0-20211201040748-b52c88acb418
-	github.com/BurntSushi/toml v0.4.1
+	github.com/BurntSushi/toml v1.0.0
 	github.com/Masterminds/semver v1.5.0
-	github.com/alecthomas/repr v0.0.0-20181024024818-d37bc2a10ba1 // indirect
 	github.com/bilibili/gengine v1.5.7
 	github.com/fatih/color v1.13.0
 	github.com/fatih/structs v1.1.0
@@ -21,7 +20,7 @@ require (
 	github.com/google/uuid v1.3.0
 	github.com/influxdata/influxdb v1.9.5
 	github.com/joho/sqltocsv v0.0.0-20210428211105-a6d6801d59df
-	github.com/joomcode/errorx v1.0.3
+	github.com/joomcode/errorx v1.1.0
 	github.com/json-iterator/go v1.1.12
 	github.com/kataras/tablewriter v0.0.0-20180708051242-e063d29b7c23 // indirect
 	github.com/klauspost/compress v1.13.6
@@ -31,21 +30,19 @@ require (
 	github.com/onsi/gomega v1.17.0
 	github.com/pingcap/check v0.0.0-20211026125417-57bd13f7b5f0
 	github.com/pingcap/errors v0.11.5-0.20201126102027-b0a155152ca3
-	github.com/pingcap/log v0.0.0-20210906054005-afc726e70354
-	github.com/pingcap/tidb-insight/collector v0.0.0-20211201041326-0f05f9ddcba2 // indirect
-	github.com/pingcap/tiup v1.9.0-dev
+	github.com/pingcap/log v0.0.0-20211215031037-e024ba4eb0ee
+	github.com/pingcap/tiup v1.9.0
 	github.com/prometheus/common v0.32.1
 	github.com/prometheus/prometheus v1.8.2-0.20210518124745-db7f0bcec27b
-	github.com/shirou/gopsutil v3.21.10+incompatible
+	github.com/shirou/gopsutil v3.21.11+incompatible
 	github.com/sirupsen/logrus v1.8.1
-	github.com/spf13/cobra v1.2.1
+	github.com/spf13/cobra v1.3.0
 	github.com/stretchr/testify v1.7.0
 	github.com/vishvananda/netlink v0.0.0-20210530105856-14e832ae1e8f
-	go.uber.org/zap v1.19.1
+	go.uber.org/zap v1.21.0
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
-	golang.org/x/sys v0.0.0-20211124211545-fe61309f8881
+	golang.org/x/sys v0.0.0-20220207234003-57398862261d
 	golang.org/x/term v0.0.0-20210927222741-03fcf44c2211
-	golang.org/x/text v0.3.7 // indirect
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b
 	k8s.io/api v0.22.4
 	k8s.io/apiextensions-apiserver v0.22.4
