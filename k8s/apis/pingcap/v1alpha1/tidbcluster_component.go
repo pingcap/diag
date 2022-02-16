@@ -48,6 +48,7 @@ type ComponentAccessor interface {
 	AdditionalVolumeMounts() []corev1.VolumeMount
 	TerminationGracePeriodSeconds() *int64
 	StatefulSetUpdateStrategy() apps.StatefulSetUpdateStrategyType
+	PodManagementPolicy() apps.PodManagementPolicyType
 	TopologySpreadConstraints() []corev1.TopologySpreadConstraint
 }
 
@@ -62,6 +63,10 @@ const (
 	ComponentTiCDC
 	ComponentPump
 	ComponentDiscovery
+	ComponentDMDiscovery
+	ComponentDMMaster
+	ComponentDMWorker
+	ComponentNGMonitoring
 )
 
 type componentAccessorImpl struct {
@@ -79,8 +84,10 @@ type componentAccessorImpl struct {
 	clusterAnnotations        map[string]string
 	clusterLabels             map[string]string
 	tolerations               []corev1.Toleration
+	dnsConfig                 *corev1.PodDNSConfig
 	configUpdateStrategy      ConfigUpdateStrategy
 	statefulSetUpdateStrategy apps.StatefulSetUpdateStrategyType
+	podManagementPolicy       apps.PodManagementPolicyType
 	podSecurityContext        *corev1.PodSecurityContext
 	topologySpreadConstraints []TopologySpreadConstraint
 
@@ -96,6 +103,21 @@ func (a *componentAccessorImpl) StatefulSetUpdateStrategy() apps.StatefulSetUpda
 		return a.statefulSetUpdateStrategy
 	}
 	return a.ComponentSpec.StatefulSetUpdateStrategy
+}
+
+func (a *componentAccessorImpl) PodManagementPolicy() apps.PodManagementPolicyType {
+	policy := apps.ParallelPodManagement
+	if a.ComponentSpec != nil && len(a.ComponentSpec.PodManagementPolicy) != 0 {
+		policy = a.ComponentSpec.PodManagementPolicy
+	} else if len(a.podManagementPolicy) != 0 {
+		policy = a.podManagementPolicy
+	}
+
+	// unified podManagementPolicy check to avoid check everywhere
+	if policy == apps.OrderedReadyPodManagement {
+		return apps.OrderedReadyPodManagement
+	}
+	return apps.ParallelPodManagement
 }
 
 func (a *componentAccessorImpl) PodSecurityContext() *corev1.PodSecurityContext {
@@ -204,6 +226,13 @@ func (a *componentAccessorImpl) DnsPolicy() corev1.DNSPolicy {
 	return dnsPolicy
 }
 
+func (a *componentAccessorImpl) DNSConfig() *corev1.PodDNSConfig {
+	if a.ComponentSpec == nil || a.ComponentSpec.DNSConfig == nil {
+		return a.dnsConfig
+	}
+	return a.ComponentSpec.DNSConfig
+}
+
 func (a *componentAccessorImpl) ConfigUpdateStrategy() ConfigUpdateStrategy {
 	// defaulting logic will set a default value for configUpdateStrategy field, but if the
 	// object is created in early version without this field being set, we should set a safe default
@@ -230,6 +259,7 @@ func (a *componentAccessorImpl) BuildPodSpec() corev1.PodSpec {
 		SecurityContext:           a.PodSecurityContext(),
 		TopologySpreadConstraints: a.TopologySpreadConstraints(),
 		DNSPolicy:                 a.DnsPolicy(),
+		DNSConfig:                 a.DNSConfig(),
 	}
 	if a.PriorityClassName() != nil {
 		spec.PriorityClassName = *a.PriorityClassName()
@@ -307,6 +337,8 @@ func (a *componentAccessorImpl) TopologySpreadConstraints() []corev1.TopologySpr
 		switch a.kind {
 		case TiDBClusterKind:
 			l = label.New()
+		case DMClusterKind:
+			l = label.NewDM()
 		}
 		l[label.ComponentLabelKey] = componentLabelVal
 		l[label.InstanceLabelKey] = a.name
@@ -334,6 +366,12 @@ func getComponentLabelValue(c Component) string {
 		return label.PumpLabelVal
 	case ComponentDiscovery:
 		return label.DiscoveryLabelVal
+	case ComponentDMDiscovery:
+		return label.DiscoveryLabelVal
+	case ComponentDMMaster:
+		return label.DMMasterLabelVal
+	case ComponentDMWorker:
+		return label.DMWorkerLabelVal
 	}
 	return ""
 }
@@ -354,8 +392,37 @@ func buildTidbClusterComponentAccessor(c Component, tc *TidbCluster, componentSp
 		clusterLabels:             spec.Labels,
 		clusterAnnotations:        spec.Annotations,
 		tolerations:               spec.Tolerations,
+		dnsConfig:                 spec.DNSConfig,
 		configUpdateStrategy:      spec.ConfigUpdateStrategy,
 		statefulSetUpdateStrategy: spec.StatefulSetUpdateStrategy,
+		podManagementPolicy:       spec.PodManagementPolicy,
+		podSecurityContext:        spec.PodSecurityContext,
+		topologySpreadConstraints: spec.TopologySpreadConstraints,
+
+		ComponentSpec: componentSpec,
+	}
+}
+
+func buildDMClusterComponentAccessor(c Component, dc *DMCluster, componentSpec *ComponentSpec) ComponentAccessor {
+	spec := &dc.Spec
+	return &componentAccessorImpl{
+		name:                      dc.Name,
+		kind:                      DMClusterKind,
+		component:                 c,
+		imagePullPolicy:           spec.ImagePullPolicy,
+		imagePullSecrets:          spec.ImagePullSecrets,
+		hostNetwork:               spec.HostNetwork,
+		affinity:                  spec.Affinity,
+		priorityClassName:         spec.PriorityClassName,
+		schedulerName:             spec.SchedulerName,
+		clusterNodeSelector:       spec.NodeSelector,
+		clusterLabels:             spec.Labels,
+		clusterAnnotations:        spec.Annotations,
+		tolerations:               spec.Tolerations,
+		dnsConfig:                 spec.DNSConfig,
+		configUpdateStrategy:      spec.ConfigUpdateStrategy,
+		statefulSetUpdateStrategy: spec.StatefulSetUpdateStrategy,
+		podManagementPolicy:       spec.PodManagementPolicy,
 		podSecurityContext:        spec.PodSecurityContext,
 		topologySpreadConstraints: spec.TopologySpreadConstraints,
 
@@ -426,4 +493,21 @@ func (tc *TidbCluster) BasePumpSpec() ComponentAccessor {
 	}
 
 	return buildTidbClusterComponentAccessor(ComponentPump, tc, spec)
+}
+
+func (dc *DMCluster) BaseDiscoverySpec() ComponentAccessor {
+	return buildDMClusterComponentAccessor(ComponentDMDiscovery, dc, dc.Spec.Discovery.ComponentSpec)
+}
+
+func (dc *DMCluster) BaseMasterSpec() ComponentAccessor {
+	return buildDMClusterComponentAccessor(ComponentDMMaster, dc, &dc.Spec.Master.ComponentSpec)
+}
+
+func (dc *DMCluster) BaseWorkerSpec() ComponentAccessor {
+	var spec *ComponentSpec
+	if dc.Spec.Worker != nil {
+		spec = &dc.Spec.Worker.ComponentSpec
+	}
+
+	return buildDMClusterComponentAccessor(ComponentDMWorker, dc, spec)
 }

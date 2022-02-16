@@ -66,6 +66,10 @@ func addKnownTypes(scheme *runtime.Scheme) error {
 		&TidbMonitorList{},
 		&TidbClusterAutoScaler{},
 		&TidbClusterAutoScalerList{},
+		&DMCluster{},
+		&DMClusterList{},
+		&TidbNGMonitoring{},
+		&TidbNGMonitoringList{},
 	)
 
 	metav1.AddToGroupVersion(scheme, SchemeGroupVersion)
