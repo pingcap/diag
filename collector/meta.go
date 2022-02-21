@@ -46,6 +46,7 @@ const (
 // MetaCollectOptions is the options collecting cluster meta
 type MetaCollectOptions struct {
 	*BaseOptions
+	rawRequest interface{}       // raw collect request or command
 	opt        *operator.Options // global operations from cli
 	session    string            // an unique session ID of the collection
 	collectors map[string]bool
@@ -64,6 +65,7 @@ type ClusterJSON struct {
 	BeginTime   string              `json:"begin_time"`
 	EndTime     string              `json:"end_time"`
 	Collectors  []string            `json:"collectors"`
+	RawRequest  interface{}         `json:"raw_request"`
 	Topology    *models.TiDBCluster `json:"topology"` // abstract cluster topo
 }
 
@@ -146,6 +148,7 @@ func (c *MetaCollectOptions) Collect(m *Manager, topo *models.TiDBCluster) error
 		Collectors:  collectors,
 		BeginTime:   b.ScrapeBegin,
 		EndTime:     b.ScrapeEnd,
+		RawRequest:  c.rawRequest,
 		Topology:    topo,
 	}, "", "  ")
 
