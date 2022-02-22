@@ -49,6 +49,28 @@ func ValidateTidbCluster(tc *v1alpha1.TidbCluster) field.ErrorList {
 	return allErrs
 }
 
+// ValidateDMCluster validates a DMCluster, it performs basic validation for all DMClusters despite it is legacy
+// or not
+func ValidateDMCluster(dc *v1alpha1.DMCluster) field.ErrorList {
+	allErrs := field.ErrorList{}
+	// validate metadata
+	fldPath := field.NewPath("metadata")
+	// validate metadata/annotations
+	allErrs = append(allErrs, validateDMAnnotations(dc.ObjectMeta.Annotations, fldPath.Child("annotations"))...)
+	// validate spec
+	allErrs = append(allErrs, validateDMClusterSpec(&dc.Spec, field.NewPath("spec"))...)
+	return allErrs
+}
+
+// ValidateTiDBNGMonitoring validates a TidbNGMonitoring
+func ValidateTiDBNGMonitoring(tngm *v1alpha1.TidbNGMonitoring) field.ErrorList {
+	allErrs := field.ErrorList{}
+
+	allErrs = append(allErrs, validateTidbNGMonitorinSpec(&tngm.Spec, field.NewPath("spec"))...)
+
+	return allErrs
+}
+
 func ValidateTidbMonitor(monitor *v1alpha1.TidbMonitor) field.ErrorList {
 	allErrs := field.ErrorList{}
 	// validate monitor service
@@ -154,6 +176,12 @@ func validateTiKVSpec(spec *v1alpha1.TiKVSpec, fldPath *field.Path) field.ErrorL
 	if len(spec.StorageVolumes) > 0 {
 		allErrs = append(allErrs, validateStorageVolumes(spec.StorageVolumes, fldPath.Child("storageVolumes"))...)
 	}
+	if spec.ShouldSeparateRaftLog() && spec.RaftLogVolumeName != "" {
+		allErrs = append(allErrs, validateVolumeName(spec.RaftLogVolumeName, spec.StorageVolumes, spec.AdditionalVolumes, spec.AdditionalVolumeMounts, fldPath)...)
+	}
+	if spec.ShouldSeparateRocksDBLog() && spec.RocksDBLogVolumeName != "" {
+		allErrs = append(allErrs, validateVolumeName(spec.RocksDBLogVolumeName, spec.StorageVolumes, spec.AdditionalVolumes, spec.AdditionalVolumeMounts, fldPath)...)
+	}
 	allErrs = append(allErrs, validateTimeDurationStr(spec.EvictLeaderTimeout, fldPath.Child("evictLeaderTimeout"))...)
 	return allErrs
 }
@@ -239,7 +267,7 @@ func validateTiDBSpec(spec *v1alpha1.TiDBSpec, fldPath *field.Path) field.ErrorL
 		allErrs = append(allErrs, validateStorageVolumes(spec.StorageVolumes, fldPath.Child("storageVolumes"))...)
 	}
 	if spec.ShouldSeparateSlowLog() && spec.SlowLogVolumeName != "" {
-		allErrs = append(allErrs, validateSlowQueryLogVolume(spec.SlowLogVolumeName, spec.StorageVolumes, spec.AdditionalVolumes, spec.AdditionalVolumeMounts, fldPath)...)
+		allErrs = append(allErrs, validateVolumeName(spec.SlowLogVolumeName, spec.StorageVolumes, spec.AdditionalVolumes, spec.AdditionalVolumeMounts, fldPath)...)
 	}
 	return allErrs
 }
@@ -247,6 +275,69 @@ func validateTiDBSpec(spec *v1alpha1.TiDBSpec, fldPath *field.Path) field.ErrorL
 func validatePumpSpec(spec *v1alpha1.PumpSpec, fldPath *field.Path) field.ErrorList {
 	allErrs := field.ErrorList{}
 	allErrs = append(allErrs, validateComponentSpec(&spec.ComponentSpec, fldPath)...)
+	return allErrs
+}
+
+func validateDMClusterSpec(spec *v1alpha1.DMClusterSpec, fldPath *field.Path) field.ErrorList {
+	allErrs := field.ErrorList{}
+	if spec.Version != "" {
+		clusterVersionLT2, _ := clusterVersionLessThan2(spec.Version)
+		if clusterVersionLT2 {
+			allErrs = append(allErrs, field.Invalid(fldPath.Child("version"), spec.Version, "dm cluster version can't set to v1.x.y"))
+		}
+	}
+	allErrs = append(allErrs, validateDMDiscoverySpec(spec.Discovery, fldPath.Child("discovery"))...)
+	allErrs = append(allErrs, validateMasterSpec(&spec.Master, fldPath.Child("master"))...)
+	if spec.Worker != nil {
+		allErrs = append(allErrs, validateWorkerSpec(spec.Worker, fldPath.Child("worker"))...)
+	}
+	return allErrs
+}
+
+func validateDMDiscoverySpec(spec v1alpha1.DMDiscoverySpec, fldPath *field.Path) field.ErrorList {
+	allErrs := field.ErrorList{}
+	if spec.ComponentSpec != nil {
+		allErrs = append(allErrs, validateComponentSpec(spec.ComponentSpec, fldPath)...)
+	}
+	return allErrs
+}
+
+func validateMasterSpec(spec *v1alpha1.MasterSpec, fldPath *field.Path) field.ErrorList {
+	allErrs := field.ErrorList{}
+	allErrs = append(allErrs, validateComponentSpec(&spec.ComponentSpec, fldPath)...)
+	// make sure that storageSize for dm-master is assigned
+	if spec.Replicas > 0 && spec.StorageSize == "" {
+		allErrs = append(allErrs, field.Required(fldPath.Child("storageSize"), "storageSize must not be empty"))
+	}
+	return allErrs
+}
+
+func validateWorkerSpec(spec *v1alpha1.WorkerSpec, fldPath *field.Path) field.ErrorList {
+	allErrs := field.ErrorList{}
+	allErrs = append(allErrs, validateComponentSpec(&spec.ComponentSpec, fldPath)...)
+	return allErrs
+}
+
+func validateTidbNGMonitorinSpec(spec *v1alpha1.TidbNGMonitoringSpec, fldPath *field.Path) field.ErrorList {
+	allErrs := field.ErrorList{}
+
+	if len(spec.Clusters) < 1 {
+		allErrs = append(allErrs, field.Invalid(fldPath.Child("clusters"), len(spec.Clusters), "must have at least one item"))
+	}
+	allErrs = append(allErrs, validateComponentSpec(&spec.ComponentSpec, fldPath)...)
+	allErrs = append(allErrs, validateNGMonitoringSpec(&spec.NGMonitoring, fldPath.Child("ngMonitoring"))...)
+
+	return allErrs
+}
+
+func validateNGMonitoringSpec(spec *v1alpha1.NGMonitoringSpec, fldPath *field.Path) field.ErrorList {
+	allErrs := field.ErrorList{}
+
+	allErrs = append(allErrs, validateComponentSpec(&spec.ComponentSpec, fldPath)...)
+	if len(spec.StorageVolumes) > 0 {
+		allErrs = append(allErrs, validateStorageVolumes(spec.StorageVolumes, fldPath.Child("storageVolumes"))...)
+	}
+
 	return allErrs
 }
 
@@ -286,24 +377,24 @@ func validateStorageVolumes(storageVolumes []v1alpha1.StorageVolume, fldPath *fi
 	return allErrs
 }
 
-func validateSlowQueryLogVolume(slowLogVolumeName string, storageVolumes []v1alpha1.StorageVolume, additionalVolumes []corev1.Volume, AdditionalVolumeMounts []corev1.VolumeMount, fldPath *field.Path) field.ErrorList {
+func validateVolumeName(volumeName string, storageVolumes []v1alpha1.StorageVolume, additionalVolumes []corev1.Volume, additionalVolumeMounts []corev1.VolumeMount, fldPath *field.Path) field.ErrorList {
 	allErrs := field.ErrorList{}
 	for _, volume := range storageVolumes {
-		if volume.Name == slowLogVolumeName {
+		if volume.Name == volumeName {
 			return allErrs
 		}
 	}
 	for _, volume := range additionalVolumes {
-		if volume.Name == slowLogVolumeName {
-			for _, volumeMount := range AdditionalVolumeMounts {
-				if volumeMount.Name == slowLogVolumeName {
+		if volume.Name == volumeName {
+			for _, volumeMount := range additionalVolumeMounts {
+				if volumeMount.Name == volumeName {
 					return allErrs
 				}
 			}
 		}
 	}
-	errMsg := fmt.Sprintf("Can not find slowLogVolume: %s in storageVolumes or additionalVolumes/additionalVolumeMounts", slowLogVolumeName)
-	allErrs = append(allErrs, field.Invalid(fldPath.Child("slowLogVolumeName"), slowLogVolumeName, errMsg))
+	errMsg := fmt.Sprintf("Can not find volumeName: %s in storageVolumes or additionalVolumes/additionalVolumeMounts", volumeName)
+	allErrs = append(allErrs, field.Invalid(fldPath.Child("volumeName"), volumeName, errMsg))
 	return allErrs
 }
 

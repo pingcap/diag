@@ -104,7 +104,7 @@ func collectData(c *gin.Context) {
 	worker := diagCtx.insertCollectJob(job)
 
 	// run collector
-	go runCollector(diagCtx, &opt, worker)
+	go runCollector(diagCtx, &opt, worker, req)
 
 	c.JSON(http.StatusAccepted, worker.job)
 }
@@ -113,12 +113,14 @@ func runCollector(
 	ctx *context,
 	opt *collector.BaseOptions,
 	worker *collectJobWorker,
+	req interface{},
 ) {
 	gOpt := operator.Options{Concurrency: 2}
 	cOpt := collector.CollectOptions{
-		Include: set.NewStringSet(worker.job.Collectors...),
-		Exclude: set.NewStringSet(),
-		Mode:    collector.CollectModeK8s,
+		Include:    set.NewStringSet(worker.job.Collectors...),
+		Exclude:    set.NewStringSet(),
+		Mode:       collector.CollectModeK8s,
+		RawRequest: req,
 	}
 
 	// populate logger for the collect job

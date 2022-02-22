@@ -21,37 +21,33 @@ import (
 	"k8s.io/apimachinery/pkg/util/json"
 )
 
-type TiFlashConfigWraper struct {
-	// +kubebuilder:validation:Schemaless
-	// +kubebuilder:validation:XPreserveUnknownFields
-	Common *TiFlashCommonConfigWraper `json:"config,omitempty"`
-	// +kubebuilder:validation:Schemaless
-	// +kubebuilder:validation:XPreserveUnknownFields
-	Proxy *TiFlashProxyConfigWraper `json:"proxy,omitempty"`
-}
+var _ stdjson.Marshaler = &MasterConfigWraper{}
+var _ stdjson.Unmarshaler = &MasterConfigWraper{}
+var _ stdjson.Marshaler = &WorkerConfigWraper{}
+var _ stdjson.Unmarshaler = &WorkerConfigWraper{}
 
-func NewTiFlashConfig() *TiFlashConfigWraper {
-	return &TiFlashConfigWraper{
-		Common: NewTiFlashCommonConfig(),
-		Proxy:  NewTiFlashProxyConfig(),
-	}
-}
-
-var _ stdjson.Marshaler = &TiFlashCommonConfigWraper{}
-var _ stdjson.Unmarshaler = &TiFlashCommonConfigWraper{}
-
-func NewTiFlashCommonConfig() *TiFlashCommonConfigWraper {
-	return &TiFlashCommonConfigWraper{
+func NewMasterConfig() *MasterConfigWraper {
+	return &MasterConfigWraper{
 		GenericConfig: config.New(map[string]interface{}{}),
 	}
 }
 
-type TiFlashCommonConfigWraper struct {
+func NewWorkerConfig() *WorkerConfigWraper {
+	return &WorkerConfigWraper{
+		GenericConfig: config.New(map[string]interface{}{}),
+	}
+}
+
+type MasterConfigWraper struct {
+	*config.GenericConfig `json:",inline"`
+}
+
+type WorkerConfigWraper struct {
 	*config.GenericConfig `json:",inline"`
 }
 
 // MarshalJSON implements stdjson.Marshaler interface.
-func (c *TiFlashCommonConfigWraper) MarshalJSON() ([]byte, error) {
+func (c *MasterConfigWraper) MarshalJSON() ([]byte, error) {
 	toml, err := c.GenericConfig.MarshalTOML()
 	if err != nil {
 		return nil, errors.AddStack(err)
@@ -61,17 +57,17 @@ func (c *TiFlashCommonConfigWraper) MarshalJSON() ([]byte, error) {
 }
 
 // UnmarshalJSON implements stdjson.Unmarshaler interface.
-// If the data is a object, we must use the Deprecated TiFlashCommonConfig to Unmarshal
+// If the data is a object, we must use the Deprecated MasterConfig to Unmarshal
 // for compatibility, if we use a map[string]interface{} to Unmarshal directly,
 // we can not distinct the type between integer and float for toml.
-func (c *TiFlashCommonConfigWraper) UnmarshalJSON(data []byte) error {
-	deprecated := new(CommonConfig)
+func (c *MasterConfigWraper) UnmarshalJSON(data []byte) error {
+	deprecated := new(MasterConfig)
 	var err error
 	c.GenericConfig, err = unmarshalJSON(data, deprecated)
 	return err
 }
 
-func (c *TiFlashCommonConfigWraper) MarshalTOML() ([]byte, error) {
+func (c *MasterConfigWraper) MarshalTOML() ([]byte, error) {
 	if c == nil {
 		return nil, nil
 	}
@@ -79,21 +75,8 @@ func (c *TiFlashCommonConfigWraper) MarshalTOML() ([]byte, error) {
 	return c.GenericConfig.MarshalTOML()
 }
 
-var _ stdjson.Marshaler = &TiFlashProxyConfigWraper{}
-var _ stdjson.Unmarshaler = &TiFlashProxyConfigWraper{}
-
-func NewTiFlashProxyConfig() *TiFlashProxyConfigWraper {
-	return &TiFlashProxyConfigWraper{
-		GenericConfig: config.New(map[string]interface{}{}),
-	}
-}
-
-type TiFlashProxyConfigWraper struct {
-	*config.GenericConfig `json:",inline"`
-}
-
 // MarshalJSON implements stdjson.Marshaler interface.
-func (c *TiFlashProxyConfigWraper) MarshalJSON() ([]byte, error) {
+func (c *WorkerConfigWraper) MarshalJSON() ([]byte, error) {
 	toml, err := c.GenericConfig.MarshalTOML()
 	if err != nil {
 		return nil, errors.AddStack(err)
@@ -103,17 +86,17 @@ func (c *TiFlashProxyConfigWraper) MarshalJSON() ([]byte, error) {
 }
 
 // UnmarshalJSON implements stdjson.Unmarshaler interface.
-// If the data is a object, we must use the Deprecated TiFlashProxyConfig to Unmarshal
+// If the data is a object, we must use the Deprecated WorkerConfig to Unmarshal
 // for compatibility, if we use a map[string]interface{} to Unmarshal directly,
 // we can not distinct the type between integer and float for toml.
-func (c *TiFlashProxyConfigWraper) UnmarshalJSON(data []byte) error {
-	deprecated := new(ProxyConfig)
+func (c *WorkerConfigWraper) UnmarshalJSON(data []byte) error {
+	deprecated := new(WorkerConfig)
 	var err error
 	c.GenericConfig, err = unmarshalJSON(data, deprecated)
 	return err
 }
 
-func (c *TiFlashProxyConfigWraper) MarshalTOML() ([]byte, error) {
+func (c *WorkerConfigWraper) MarshalTOML() ([]byte, error) {
 	if c == nil {
 		return nil, nil
 	}

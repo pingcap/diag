@@ -78,6 +78,7 @@ type BaseOptions struct {
 
 // CollectOptions contains the options defining which type of data to collect
 type CollectOptions struct {
+	RawRequest    interface{}   // raw collect command or request
 	Mode          string        // the cluster is deployed with what type of tool
 	Include       set.StringSet // types of data to collect
 	Exclude       set.StringSet // types of data not to collect
@@ -160,6 +161,7 @@ func (m *Manager) CollectClusterInfo(
 	collectors = append(collectors, &MetaCollectOptions{ // cluster metadata, always collected
 		BaseOptions: opt,
 		opt:         gOpt,
+		rawRequest:  cOpt.RawRequest,
 		session:     m.session,
 		collectors:  collectorSet,
 		resultDir:   resultDir,
