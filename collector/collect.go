@@ -18,10 +18,11 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/fatih/color"
-	"github.com/srstack/diag/k8s/apis/kubetls"
 	pingcapv1alpha1 "github.com/pingcap/diag/k8s/apis/pingcap/v1alpha1"
+	kubetls "github.com/pingcap/diag/k8s/apis/tls"
 	"github.com/pingcap/diag/pkg/models"
 	"github.com/pingcap/tiup/pkg/cluster/executor"
 	operator "github.com/pingcap/tiup/pkg/cluster/operation"
@@ -31,6 +32,7 @@ import (
 	"github.com/pingcap/tiup/pkg/tui"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/klog"
 )
 
 // types of data to collect
@@ -118,13 +120,21 @@ func (m *Manager) CollectClusterInfo(
 	switch cOpt.Mode {
 	case CollectModeTiUP:
 		cls, err = buildTopoForTiUPCluster(m, opt)
+		if err != nil {
+			return "", err
+		}
 		// get tls config
 		tlsCfg, err = cls.Attributes[CollectModeTiUP].(spec.Topology).
 			TLSConfig(m.specManager.Path(opt.Cluster, spec.TLSCertKeyDir))
+		if err != nil {
+			return "", err
+		}
+		klog.Infof("get tls config success")
 	case CollectModeK8s:
 		cls, tc, tm, err = buildTopoForK8sCluster(m, opt, kubeCli, dynCli)
 		if tc.Spec.TLSCluster.Enabled {
-			tlsCfg, err = kubetls.GetKubeTLSConfig(kubeCli, opt.Namespace, opt.Cluster, gOpt.APITimeout)
+			tlsCfg, err = kubetls.GetClusterClientTLSConfig(kubeCli, opt.Namespace, opt.Cluster, time.Duration(gOpt.APITimeout))
+			klog.Infof("get tls config success")
 		}
 	default:
 		return "", fmt.Errorf("unknown collect mode '%s'", cOpt.Mode)
@@ -242,6 +252,7 @@ func (m *Manager) CollectClusterInfo(
 				resultDir:   resultDir,
 				fileStats:   make(map[string][]CollectStat),
 				compress:    cOpt.CompressScp,
+				tlsCfg:      tlsCfg,
 			})
 	}
 

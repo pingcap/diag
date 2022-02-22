@@ -11,21 +11,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package kubetls
+package tls
 
 import (
-	"crypto/rand"
-	"crypto/rsa"
 	"crypto/tls"
 	"crypto/x509"
-	"crypto/x509/pkix"
-	"encoding/pem"
 	"fmt"
-	"io/ioutil"
-	"net"
 
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/klog/v2"
 )
 
 const (
@@ -33,102 +26,24 @@ const (
 	k8sCAFile  = "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt"
 )
 
-func DMClientTLSSecretName(dcName string) string {
+func dmClientTLSSecretName(dcName string) string {
 	return fmt.Sprintf("%s-dm-client-secret", dcName)
 }
 
-func ClusterClientTLSSecretName(tcName string) string {
+func clusterClientTLSSecretName(tcName string) string {
 	return fmt.Sprintf("%s-cluster-client-secret", tcName)
 }
 
-func ClusterTLSSecretName(tcName, component string) string {
+func clusterTLSSecretName(tcName, component string) string {
 	return fmt.Sprintf("%s-%s-cluster-secret", tcName, component)
 }
 
-func TiDBClientTLSSecretName(tcName string) string {
+func tiDBClientTLSSecretName(tcName string) string {
 	return fmt.Sprintf("%s-tidb-client-secret", tcName)
 }
 
-func TiDBServerTLSSecretName(tcName string) string {
+func tiDBServerTLSSecretName(tcName string) string {
 	return fmt.Sprintf("%s-tidb-server-secret", tcName)
-}
-
-// generate a new private key
-func newPrivateKey(size int) (*rsa.PrivateKey, error) {
-	// TODO: support more key types
-	privateKey, err := rsa.GenerateKey(rand.Reader, size)
-	if err != nil {
-		return nil, err
-	}
-	return privateKey, nil
-}
-
-// convert private key to PEM format
-func convertKeyToPEM(blockType string, dataBytes *rsa.PrivateKey) []byte {
-	return pem.EncodeToMemory(
-		&pem.Block{
-			Type:    blockType,
-			Headers: nil,
-			Bytes:   x509.MarshalPKCS1PrivateKey(dataBytes),
-		},
-	)
-}
-
-func NewCSR(commonName string, hostList []string, IPList []string) ([]byte, []byte, error) {
-	// TODO: option to use an exist private key
-	privKey, err := newPrivateKey(rsaKeySize)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	var ipAddrList []net.IP
-	for _, ip := range IPList {
-		ipAddr := net.ParseIP(ip)
-		ipAddrList = append(ipAddrList, ipAddr)
-	}
-
-	// set CSR attributes
-	csrTemplate := &x509.CertificateRequest{
-		Subject: pkix.Name{
-			Organization:       []string{"PingCAP"},
-			OrganizationalUnit: []string{"TiDB Operator"},
-			CommonName:         commonName,
-		},
-		DNSNames:    hostList,
-		IPAddresses: ipAddrList,
-	}
-	csr, err := x509.CreateCertificateRequest(rand.Reader, csrTemplate, privKey)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	return csr, convertKeyToPEM("RSA PRIVATE KEY", privKey), nil
-}
-
-func readCACerts(tryAppendCAFile string) (*x509.CertPool, error) {
-	// try to load system CA certs
-	rootCAs, err := x509.SystemCertPool()
-	if err != nil {
-		return nil, err
-	}
-	if rootCAs == nil {
-		rootCAs = x509.NewCertPool()
-	}
-
-	caCert, err := ioutil.ReadFile(tryAppendCAFile)
-	if err != nil {
-		klog.Errorf("fail to read CA file %s, error: %v", tryAppendCAFile, err)
-		return nil, err
-	}
-	if ok := rootCAs.AppendCertsFromPEM(caCert); !ok {
-		klog.Warningf("fail to append CA file to pool, using system CAs only")
-	}
-	return rootCAs, nil
-}
-
-func ReadCACerts() (*x509.CertPool, error) {
-	// load k8s CA cert
-	return readCACerts(k8sCAFile)
 }
 
 func LoadTlsConfigFromSecret(secret *corev1.Secret) (*tls.Config, error) {
@@ -150,8 +65,9 @@ func LoadTlsConfigFromSecret(secret *corev1.Secret) (*tls.Config, error) {
 	}
 
 	return &tls.Config{
-		RootCAs:      rootCAs,
-		ClientCAs:    rootCAs,
+		RootCAs:   rootCAs,
+		ClientCAs: rootCAs,
+		// MinVersion:   tls.VersionTLS12,
 		Certificates: []tls.Certificate{tlsCert},
 	}, nil
 }

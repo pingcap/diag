@@ -13,8 +13,8 @@ metadata:
     app: pingcap-clinic
 rules:
   - apiGroups: [""]
-    resources: ["pods", "services"]
-    verbs: ["get", "list"]
+    resources: ["pods", "services", "secrets"]
+    verbs: ["get", "list", "watch"]
   - apiGroups: ["pingcap.com"]
     resources: ["tidbclusters", "tidbmonitors"]
     verbs: ["get", "list"]
@@ -40,8 +40,8 @@ metadata:
     app: pingcap-clinic
 rules:
   - apiGroups: [""]
-    resources: ["pods", "services"]
-    verbs: ["get", "list"]
+    resources: ["pods", "services", "secrets"]
+    verbs: ["get", "list", "watch"]
   - apiGroups: ["pingcap.com"]
     resources: ["tidbclusters", "tidbmonitors"]
     verbs: ["get", "list"]

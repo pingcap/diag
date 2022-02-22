@@ -1,4 +1,4 @@
-package kubetls
+package tls
 
 import (
 	"context"
@@ -8,64 +8,36 @@ import (
 
 	kubeinformers "k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
-	corelisterv1 "k8s.io/client-go/listers/core/v1"
+	"k8s.io/client-go/tools/cache"
 )
 
-// Namespace is a newtype of a string
-type Namespace string
-
-type clientConfig struct {
-	clusterDomain string
-	headlessSvc   bool // use headless service to connect, default to use service
-
-	// clientURL is PD/Etcd addr. If it is empty, will generate from target TC
-	clientURL string
-	// clientKey is client name. If it is empty, will generate from target TC
-	clientKey string
-
-	tlsEnable          bool
-	tlsSecretNamespace Namespace
-	tlsSecretName      string
+// GetDmClientTLSConfig return *tls.Config for given DM clinet
+func GetDmClientTLSConfig(c kubernetes.Interface, namespace, dcName string, resync time.Duration) (*tls.Config, error) {
+	return getTLSConfig(c, namespace, dmClientTLSSecretName(dcName), resync)
 }
 
-// Option configures the PDClient
-type Option func(c *clientConfig)
-
-// ClusterRef sets the cluster domain of TC, it is used when generating the client address from TC.
-func ClusterRef(clusterDomain string) Option {
-	return func(c *clientConfig) {
-		c.clusterDomain = clusterDomain
-	}
+// GetClusterClientClientTLSConfig  GetDmClientTLSConfig return *tls.Config for given tidb cluster clinet
+func GetClusterClientTLSConfig(c kubernetes.Interface, namespace, tcName string, resync time.Duration) (*tls.Config, error) {
+	return getTLSConfig(c, namespace, clusterClientTLSSecretName(tcName), resync)
 }
 
-// TLSCertFromTC indicates that the clients use certs from specified TC's secret.
-func TLSCertFromTC(ns Namespace, tcName string) Option {
-	return func(c *clientConfig) {
-		c.tlsSecretNamespace = ns
-		c.tlsSecretName = ClusterClientTLSSecretName(tcName)
-	}
+// GetClusterTLSConfig  GetDmClientTLSConfig return *tls.Config for given tidb cluster
+func GetClusterTLSConfig(c kubernetes.Interface, namespace, tcName, component string, resync time.Duration) (*tls.Config, error) {
+	return getTLSConfig(c, namespace, clusterTLSSecretName(tcName, component), resync)
 }
 
-// TLSCertFromTC indicates that clients use certs from specified secret.
-func TLSCertFromSecret(ns Namespace, secret string) Option {
-	return func(c *clientConfig) {
-		c.tlsSecretNamespace = ns
-		c.tlsSecretName = secret
-	}
+// GetTiDBClientTLSConfig  GetDmClientTLSConfig return *tls.Config for given tidb client
+func GetTiDBClientTLSConfig(c kubernetes.Interface, namespace, tcName string, resync time.Duration) (*tls.Config, error) {
+	return getTLSConfig(c, namespace, tiDBClientTLSSecretName(tcName), resync)
 }
 
-// getTLSConfig returns *tls.Config for given TiDB cluster.
-func getTLSConfig(secretLister corelisterv1.SecretLister, namespace, secretName string) (*tls.Config, error) {
-	secret, err := secretLister.Secrets(string(namespace)).Get(secretName)
-	if err != nil {
-		return nil, fmt.Errorf("unable to load certificates from secret %s/%s: %v", namespace, secretName, err)
-	}
-
-	return LoadTlsConfigFromSecret(secret)
+// GetTiDBServerTLSConfig  GetDmClientTLSConfig return *tls.Config for given tidb client
+func GetTiDBServerTLSConfig(c kubernetes.Interface, namespace, tcName string, resync time.Duration) (*tls.Config, error) {
+	return getTLSConfig(c, namespace, tiDBServerTLSSecretName(tcName), resync)
 }
 
-//GetKubeTLSConfig  return *tls.Config for given TiDB cluster on kube
-func GetKubeTLSConfig(c kubernetes.Interface, namespace, clusterName string, resync time.Duration) (*tls.Config, error) {
+// getKubeTLSConfig  return *tls.Config for given TiDB cluster on kube
+func getTLSConfig(c kubernetes.Interface, namespace, secretName string, resync time.Duration) (*tls.Config, error) {
 	kubeInformerFactory := kubeinformers.NewSharedInformerFactory(c, resync)
 	secretInformer := kubeInformerFactory.Core().V1().Secrets()
 
@@ -73,5 +45,13 @@ func GetKubeTLSConfig(c kubernetes.Interface, namespace, clusterName string, res
 	defer cancel()
 	go kubeInformerFactory.Start(ctx.Done())
 
-	return getTLSConfig(secretInformer.Lister(), namespace, ClusterClientTLSSecretName(clusterName))
+	// waiting for the shared informer's store has synced.
+	cache.WaitForCacheSync(ctx.Done(), secretInformer.Informer().HasSynced)
+
+	secret, err := secretInformer.Lister().Secrets(namespace).Get(secretName)
+	if err != nil {
+		return nil, fmt.Errorf("unable to load certificates from secret %s/%s: %v", namespace, secretName, err)
+	}
+
+	return LoadTlsConfigFromSecret(secret)
 }
