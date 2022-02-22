@@ -1,9 +1,13 @@
-package tls
+package kubetls
 
 import (
+	"context"
 	"crypto/tls"
 	"fmt"
+	"time"
 
+	kubeinformers "k8s.io/client-go/informers"
+	"k8s.io/client-go/kubernetes"
 	corelisterv1 "k8s.io/client-go/listers/core/v1"
 )
 
@@ -50,12 +54,24 @@ func TLSCertFromSecret(ns Namespace, secret string) Option {
 	}
 }
 
-// GetTLSConfig returns *tls.Config for given TiDB cluster.
-func GetTLSConfig(secretLister corelisterv1.SecretLister, namespace Namespace, secretName string) (*tls.Config, error) {
+// getTLSConfig returns *tls.Config for given TiDB cluster.
+func getTLSConfig(secretLister corelisterv1.SecretLister, namespace, secretName string) (*tls.Config, error) {
 	secret, err := secretLister.Secrets(string(namespace)).Get(secretName)
 	if err != nil {
 		return nil, fmt.Errorf("unable to load certificates from secret %s/%s: %v", namespace, secretName, err)
 	}
 
 	return LoadTlsConfigFromSecret(secret)
+}
+
+//GetKubeTLSConfig  return *tls.Config for given TiDB cluster on kube
+func GetKubeTLSConfig(c kubernetes.Interface, namespace, clusterName string, resync time.Duration) (*tls.Config, error) {
+	kubeInformerFactory := kubeinformers.NewSharedInformerFactory(c, resync)
+	secretInformer := kubeInformerFactory.Core().V1().Secrets()
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	go kubeInformerFactory.Start(ctx.Done())
+
+	return getTLSConfig(secretInformer.Lister(), namespace, ClusterClientTLSSecretName(clusterName))
 }

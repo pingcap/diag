@@ -11,7 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package tls
+package kubetls
 
 import (
 	"crypto/x509"
