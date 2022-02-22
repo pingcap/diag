@@ -21,8 +21,9 @@ import (
 
 	"github.com/pingcap/diag/k8s/apis/label"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/sets"
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 )
 
 const (
@@ -708,12 +709,19 @@ func (tc *TidbCluster) TiKVIsAvailable() bool {
 }
 
 func (tc *TidbCluster) PumpIsAvailable() bool {
-	var lowerLimit int32 = 1
-	if tc.Status.Pump.StatefulSet == nil || tc.Status.Pump.StatefulSet.ReadyReplicas < lowerLimit {
+	lowerLimit := 1
+	if len(tc.Status.Pump.Members) < lowerLimit {
 		return false
 	}
 
-	return true
+	availableNum := 0
+	for _, member := range tc.Status.Pump.Members {
+		if member.State == PumpStateOnline {
+			availableNum++
+		}
+	}
+
+	return availableNum >= lowerLimit
 }
 
 func (tc *TidbCluster) GetClusterID() string {
@@ -722,6 +730,10 @@ func (tc *TidbCluster) GetClusterID() string {
 
 func (tc *TidbCluster) IsTLSClusterEnabled() bool {
 	return tc.Spec.TLSCluster != nil && tc.Spec.TLSCluster.Enabled
+}
+
+func (tc *TidbCluster) NeedToSyncTiDBInitializer() bool {
+	return tc.Spec.TiDB != nil && tc.Spec.TiDB.Initializer != nil && tc.Spec.TiDB.Initializer.CreatePassword && tc.Status.TiDB.PasswordInitialized == nil
 }
 
 func (tc *TidbCluster) Scheme() string {
@@ -800,6 +812,20 @@ func (tikv *TiKVSpec) GetLogTailerSpec() LogTailerSpec {
 		return defaultLogTailerSpec
 	}
 	return *tikv.LogTailer
+}
+
+func (tikv *TiKVSpec) GetRecoverByUID() types.UID {
+	if tikv.Failover == nil {
+		return ""
+	}
+	return tikv.Failover.RecoverByUID
+}
+
+func (tiflash *TiFlashSpec) GetRecoverByUID() types.UID {
+	if tiflash.Failover == nil {
+		return ""
+	}
+	return tiflash.Failover.RecoverByUID
 }
 
 func (tidbSvc *TiDBServiceSpec) ShouldExposeStatus() bool {
@@ -905,6 +931,18 @@ func (tc *TidbCluster) TiCDCLogLevel() string {
 	return "info"
 }
 
-func (tc *TidbCluster) HeterogeneousWithoutLocalPD() bool {
-	return tc.Spec.Cluster != nil && len(tc.Spec.Cluster.Name) > 0 && tc.Spec.PD == nil
+func (tc *TidbCluster) Heterogeneous() bool {
+	return tc.Spec.Cluster != nil && len(tc.Spec.Cluster.Name) > 0
+}
+
+func (tc *TidbCluster) WithoutLocalPD() bool {
+	return tc.Spec.PD == nil
+}
+
+func (tc *TidbCluster) WithoutLocalTiDB() bool {
+	return tc.Spec.TiDB == nil
+}
+
+func (tc *TidbCluster) AcrossK8s() bool {
+	return tc.Spec.AcrossK8s
 }
