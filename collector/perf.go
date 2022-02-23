@@ -201,7 +201,7 @@ func buildPerfCollectingTasks(ctx context.Context, inst models.Component, c *Per
 			perfInfo{
 				filename: "cpu_profile.proto",
 				perfType: "cpu_profile",
-				url:      fmt.Sprintf("%s:%d/debug/pprof/profile?seconds=%d", host, inst.StatusPort(), c.duration),
+				url:      fmt.Sprintf("%s/debug/pprof/profile?seconds=%d", inst.StatusURL(), c.duration),
 				timeout:  time.Second * time.Duration(c.duration+3),
 			})
 		// mem Heap
@@ -209,7 +209,7 @@ func buildPerfCollectingTasks(ctx context.Context, inst models.Component, c *Per
 			perfInfo{
 				filename: "mem_heap.proto",
 				perfType: "mem_heap",
-				url:      fmt.Sprintf("%s:%d/debug/pprof/heap", host, inst.StatusPort()),
+				url:      fmt.Sprintf("%s/debug/pprof/heap", inst.StatusURL()),
 				timeout:  time.Second * 3,
 			})
 		// Goroutine
@@ -217,7 +217,7 @@ func buildPerfCollectingTasks(ctx context.Context, inst models.Component, c *Per
 			perfInfo{
 				filename: "goroutine.txt",
 				perfType: "goroutine",
-				url:      fmt.Sprintf("%s:%d/debug/pprof/goroutine?debug=1", host, inst.StatusPort()),
+				url:      fmt.Sprintf("%s/debug/pprof/goroutine?debug=1", inst.StatusURL()),
 				timeout:  time.Second * 3,
 			})
 		// mutex
@@ -225,7 +225,7 @@ func buildPerfCollectingTasks(ctx context.Context, inst models.Component, c *Per
 			perfInfo{
 				filename: "mutex.txt",
 				perfType: "mutex",
-				url:      fmt.Sprintf("%s:%d/debug/pprof/mutex?debug=1", host, inst.StatusPort()),
+				url:      fmt.Sprintf("%s/debug/pprof/mutex?debug=1", inst.StatusURL()),
 				timeout:  time.Second * 3,
 			})
 	case models.ComponentTypeTiKV, models.ComponentTypeTiFlash:
@@ -235,7 +235,7 @@ func buildPerfCollectingTasks(ctx context.Context, inst models.Component, c *Per
 				filename: "cpu_profile.proto",
 				perfType: "cpu_profile",
 				header:   map[string]string{"Content-Type": "application/protobuf"},
-				url:      fmt.Sprintf("%s:%d/debug/pprof/profile?seconds=%d", host, inst.StatusPort(), c.duration),
+				url:      fmt.Sprintf("%s/debug/pprof/profile?seconds=%d", inst.StatusURL(), c.duration),
 				timeout:  time.Second * time.Duration(c.duration+3),
 			})
 	default:

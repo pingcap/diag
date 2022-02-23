@@ -21,11 +21,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 )
 
-const (
-	rsaKeySize = 2048
-	k8sCAFile  = "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt"
-)
-
 func dmClientTLSSecretName(dcName string) string {
 	return fmt.Sprintf("%s-dm-client-secret", dcName)
 }
@@ -65,9 +60,9 @@ func LoadTlsConfigFromSecret(secret *corev1.Secret) (*tls.Config, error) {
 	}
 
 	return &tls.Config{
-		RootCAs:   rootCAs,
-		ClientCAs: rootCAs,
-		// MinVersion:   tls.VersionTLS12,
+		RootCAs:      rootCAs,
+		ClientCAs:    rootCAs,
+		MinVersion:   tls.VersionTLS12,
 		Certificates: []tls.Certificate{tlsCert},
 	}, nil
 }

@@ -129,7 +129,6 @@ func (m *Manager) CollectClusterInfo(
 		if err != nil {
 			return "", err
 		}
-		klog.Infof("get tls config success")
 	case CollectModeK8s:
 		cls, tc, tm, err = buildTopoForK8sCluster(m, opt, kubeCli, dynCli)
 		if tc.Spec.TLSCluster.Enabled {

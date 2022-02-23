@@ -85,6 +85,7 @@ func buildTopoForK8sCluster(
 		Resource: "tidbmonitors",
 	}
 
+	// get namespace
 	ns := opt.Namespace
 	if opt.Namespace == "" {
 		ns = os.Getenv("NAMESPACE")
@@ -172,6 +173,7 @@ func buildTopoForK8sCluster(
 			cls.PD = append(cls.PD, &models.PDSpec{
 				ComponentSpec: models.ComponentSpec{
 					Host:       pod.Status.PodIP,
+					Domain:     fmt.Sprintf("%s.%s-pd-peer.%s.svc", ins.Name, clsName, ns),
 					Port:       2379,
 					StatusPort: 2379,
 					Attributes: map[string]interface{}{
@@ -202,6 +204,7 @@ func buildTopoForK8sCluster(
 				cls.TiDB = append(cls.TiDB, &models.TiDBSpec{
 					ComponentSpec: models.ComponentSpec{
 						Host:       pod.Status.PodIP,
+						Domain:     fmt.Sprintf("%s.%s-tidb-peer.%s.svc", ins.Name, clsName, ns),
 						Port:       4000,
 						StatusPort: 10080,
 						Attributes: map[string]interface{}{
@@ -231,6 +234,7 @@ func buildTopoForK8sCluster(
 				cls.TiKV = append(cls.TiKV, &models.TiKVSpec{
 					ComponentSpec: models.ComponentSpec{
 						Host:       pod.Status.PodIP,
+						Domain:     fmt.Sprintf("%s.%s-tikv-peer.%s.svc", ins.PodName, clsName, ns),
 						Port:       20160,
 						StatusPort: 20180,
 						Attributes: map[string]interface{}{
@@ -262,6 +266,7 @@ func buildTopoForK8sCluster(
 				cls.TiFlash = append(cls.TiFlash, &models.TiFlashSpec{
 					ComponentSpec: models.ComponentSpec{
 						Host:       pod.Status.PodIP,
+						Domain:     fmt.Sprintf("%s.%s-tiflash-peer.%s.svc", ins.PodName, clsName, ns),
 						Port:       3930,
 						StatusPort: 20292,
 						Attributes: map[string]interface{}{
@@ -292,8 +297,9 @@ func buildTopoForK8sCluster(
 
 				cls.TiCDC = append(cls.TiCDC, &models.TiCDCSpec{
 					ComponentSpec: models.ComponentSpec{
-						Host: pod.Status.PodIP,
-						Port: 8301,
+						Host:   pod.Status.PodIP,
+						Domain: fmt.Sprintf("%s.%s-ticdc-peer.%s.svc", ins.PodName, clsName, ns),
+						Port:   8301,
 						Attributes: map[string]interface{}{
 							"id":  ins.ID,
 							"pod": ins.PodName,
