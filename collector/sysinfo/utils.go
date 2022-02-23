@@ -14,7 +14,7 @@
 package sysinfo
 
 import (
-	"io/ioutil"
+	"os"
 	"strconv"
 	"strings"
 )
@@ -37,7 +37,7 @@ func GetProcPath(paths ...string) string {
 }
 
 func GetSysUptime() (float64, float64, error) {
-	contents, err := ioutil.ReadFile(GetProcPath("uptime"))
+	contents, err := os.ReadFile(GetProcPath("uptime"))
 	if err != nil {
 		return 0, 0, err
 	}
