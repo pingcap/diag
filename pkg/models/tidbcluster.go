@@ -112,7 +112,6 @@ func (c *TiDBCluster) Components() (comps []Component) {
 type ComponentSpec struct {
 	Host       string       `json:"host"`
 	Port       int          `json:"port"`
-	Domain     string       `json:"domain_name,omitempty"`
 	StatusPort int          `json:"status_port"`
 	SSHPort    int          `json:"ssh_port,omitempty"`
 	Attributes AttributeMap `json:"attributes,omitempty"`
@@ -132,7 +131,12 @@ func (s *MonitorSpec) Type() ComponentType { return ComponentTypeMonitor }
 func (s *MonitorSpec) Host() string { return s.ComponentSpec.Host }
 
 // Domain implements Component interface
-func (s *MonitorSpec) Domain() string { return s.ComponentSpec.Domain }
+func (s *MonitorSpec) Domain() string {
+	if domain, ok := s.Attributes()["domain"].(string); ok {
+		return domain
+	}
+	return ""
+}
 
 // MainPort implements Component interface
 func (s *MonitorSpec) MainPort() int { return s.ComponentSpec.Port }
@@ -171,7 +175,12 @@ func (s *PDSpec) Type() ComponentType { return ComponentTypePD }
 func (s *PDSpec) Host() string { return s.ComponentSpec.Host }
 
 // Domain implements Component interface
-func (s *PDSpec) Domain() string { return s.ComponentSpec.Domain }
+func (s *PDSpec) Domain() string {
+	if domain, ok := s.Attributes()["domain"].(string); ok {
+		return domain
+	}
+	return ""
+}
 
 // MainPort implements Component interface
 func (s *PDSpec) MainPort() int { return s.ComponentSpec.Port }
@@ -213,7 +222,12 @@ func (s *TiKVSpec) Type() ComponentType { return ComponentTypeTiKV }
 func (s *TiKVSpec) Host() string { return s.ComponentSpec.Host }
 
 // Domain implements Component interface
-func (s *TiKVSpec) Domain() string { return s.ComponentSpec.Domain }
+func (s *TiKVSpec) Domain() string {
+	if domain, ok := s.Attributes()["domain"].(string); ok {
+		return domain
+	}
+	return ""
+}
 
 // MainPort implements Component interface
 func (s *TiKVSpec) MainPort() int { return s.ComponentSpec.Port }
@@ -255,7 +269,12 @@ func (s *TiDBSpec) Type() ComponentType { return ComponentTypeTiDB }
 func (s *TiDBSpec) Host() string { return s.ComponentSpec.Host }
 
 // Domain implements Component interface
-func (s *TiDBSpec) Domain() string { return s.ComponentSpec.Domain }
+func (s *TiDBSpec) Domain() string {
+	if domain, ok := s.Attributes()["domain"].(string); ok {
+		return domain
+	}
+	return ""
+}
 
 // MainPort implements Component interface
 func (s *TiDBSpec) MainPort() int { return s.ComponentSpec.Port }
@@ -297,7 +316,12 @@ func (s *TiFlashSpec) Type() ComponentType { return ComponentTypeTiFlash }
 func (s *TiFlashSpec) Host() string { return s.ComponentSpec.Host }
 
 // Domain implements Component interface
-func (s *TiFlashSpec) Domain() string { return s.ComponentSpec.Domain }
+func (s *TiFlashSpec) Domain() string {
+	if domain, ok := s.Attributes()["domain"].(string); ok {
+		return domain
+	}
+	return ""
+}
 
 // MainPort implements Component interface
 func (s *TiFlashSpec) MainPort() int { return s.ComponentSpec.Port }
@@ -339,7 +363,12 @@ func (s *PumpSpec) Type() ComponentType { return ComponentTypePump }
 func (s *PumpSpec) Host() string { return s.ComponentSpec.Host }
 
 // Domain implements Component interface
-func (s *PumpSpec) Domain() string { return s.ComponentSpec.Domain }
+func (s *PumpSpec) Domain() string {
+	if domain, ok := s.Attributes()["domain"].(string); ok {
+		return domain
+	}
+	return ""
+}
 
 // MainPort implements Component interface
 func (s *PumpSpec) MainPort() int { return s.ComponentSpec.Port }
@@ -378,7 +407,12 @@ func (s *DrainerSpec) Type() ComponentType { return ComponentTypeDrainer }
 func (s *DrainerSpec) Host() string { return s.ComponentSpec.Host }
 
 // Domain implements Component interface
-func (s *DrainerSpec) Domain() string { return s.ComponentSpec.Domain }
+func (s *DrainerSpec) Domain() string {
+	if domain, ok := s.Attributes()["domain"].(string); ok {
+		return domain
+	}
+	return ""
+}
 
 // MainPort implements Component interface
 func (s *DrainerSpec) MainPort() int { return s.ComponentSpec.Port }
@@ -417,7 +451,12 @@ func (s *TiCDCSpec) Type() ComponentType { return ComponentTypeTiCDC }
 func (s *TiCDCSpec) Host() string { return s.ComponentSpec.Host }
 
 // Domain implements Component interface
-func (s *TiCDCSpec) Domain() string { return s.ComponentSpec.Domain }
+func (s *TiCDCSpec) Domain() string {
+	if domain, ok := s.Attributes()["domain"].(string); ok {
+		return domain
+	}
+	return ""
+}
 
 // MainPort implements Component interface
 func (s *TiCDCSpec) MainPort() int { return s.ComponentSpec.Port }
@@ -457,7 +496,12 @@ func (s *TiSparkCSpec) Type() ComponentType { return ComponentTypeTiSpark }
 func (s *TiSparkCSpec) Host() string { return s.ComponentSpec.Host }
 
 // Domain implements Component interface
-func (s *TiSparkCSpec) Domain() string { return s.ComponentSpec.Domain }
+func (s *TiSparkCSpec) Domain() string {
+	if domain, ok := s.Attributes()["domain"].(string); ok {
+		return domain
+	}
+	return ""
+}
 
 // MainPort implements Component interface
 func (s *TiSparkCSpec) MainPort() int { return s.ComponentSpec.Port }
@@ -499,7 +543,12 @@ func (s *DMMasterSpec) Type() ComponentType { return ComponentTypeTiKV }
 func (s *DMMasterSpec) Host() string { return s.ComponentSpec.Host }
 
 // Domain implements Component interface
-func (s *DMMasterSpec) Domain() string { return s.ComponentSpec.Domain }
+func (s *DMMasterSpec) Domain() string {
+	if domain, ok := s.Attributes()["domain"].(string); ok {
+		return domain
+	}
+	return ""
+}
 
 // MainPort implements Component interface
 func (s *DMMasterSpec) MainPort() int { return s.ComponentSpec.Port }
@@ -538,7 +587,12 @@ func (s *DMWorkerSpec) Type() ComponentType { return ComponentTypeTiKV }
 func (s *DMWorkerSpec) Host() string { return s.ComponentSpec.Host }
 
 // Domain implements Component interface
-func (s *DMWorkerSpec) Domain() string { return s.ComponentSpec.Domain }
+func (s *DMWorkerSpec) Domain() string {
+	if domain, ok := s.Attributes()["domain"].(string); ok {
+		return domain
+	}
+	return ""
+}
 
 // MainPort implements Component interface
 func (s *DMWorkerSpec) MainPort() int { return s.ComponentSpec.Port }
