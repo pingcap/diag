@@ -186,6 +186,7 @@ func (m *Manager) CollectClusterInfo(
 		resultDir:   resultDir,
 		tc:          tc,
 		tm:          tm,
+		tlsCfg:      tlsCfg,
 	})
 
 	// collect data from monitoring system
