@@ -47,6 +47,7 @@ type InsightInfo struct {
 	SysConfig  *SysCfg       `json:"system_configs,omitempty"`
 	DMesg      []*kmsg.Msg   `json:"dmesg,omitempty"`
 	Sockets    []Socket      `json:"sockets,omitempty"`
+	SlabInfo   []SlabInfo    `json:"slabinfo,omitempty"`
 }
 
 type Options struct {
@@ -92,6 +93,8 @@ func (info *InsightInfo) GetInfo(opts Options) {
 	}
 
 	_ = info.collectSockets()
+
+	_ = info.getSlabInfo()
 }
 
 func (meta *Meta) getMeta() {

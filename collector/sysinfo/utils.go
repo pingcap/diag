@@ -52,3 +52,12 @@ func GetSysUptime() (float64, float64, error) {
 	}
 	return uptime, idleTime, err
 }
+
+// atoi converts a string to int, ignore any errors and return 0 on failure
+func atoi(s string) int {
+	i, err := strconv.Atoi(s)
+	if err != nil {
+		return 0
+	}
+	return i
+}
