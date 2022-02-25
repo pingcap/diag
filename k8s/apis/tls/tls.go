@@ -49,7 +49,7 @@ func GetTiDBServerTLSConfig(c kubernetes.Interface, namespace, tcName string, re
 	return getTLSConfig(c, namespace, tiDBServerTLSSecretName(tcName), resync)
 }
 
-// getKubeTLSConfig  return *tls.Config for given TiDB cluster on kube
+// getTLSConfig  return *tls.Config for given TiDB cluster on kube
 func getTLSConfig(c kubernetes.Interface, namespace, secretName string, resync time.Duration) (*tls.Config, error) {
 	kubeInformerFactory := kubeinformers.NewSharedInformerFactory(c, resync)
 	secretInformer := kubeInformerFactory.Core().V1().Secrets()
