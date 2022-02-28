@@ -14,7 +14,7 @@
 package sysinfo
 
 import (
-	"io/ioutil"
+	"os"
 	"strconv"
 	"strings"
 
@@ -53,7 +53,7 @@ const limitFilePath = "/etc/security/limits.conf"
 func collectSecLimit() []SecLimitField {
 	result := make([]SecLimitField, 0)
 
-	data, err := ioutil.ReadFile(limitFilePath)
+	data, err := os.ReadFile(limitFilePath)
 	if err != nil {
 		return result
 	}
