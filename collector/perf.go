@@ -25,6 +25,7 @@ import (
 	perrs "github.com/pingcap/errors"
 	"github.com/pingcap/tiup/pkg/cluster/ctxt"
 	operator "github.com/pingcap/tiup/pkg/cluster/operation"
+	"github.com/pingcap/tiup/pkg/cluster/spec"
 	"github.com/pingcap/tiup/pkg/cluster/task"
 	logprinter "github.com/pingcap/tiup/pkg/logger/printer"
 	"github.com/pingcap/tiup/pkg/set"
@@ -38,7 +39,6 @@ type PerfCollectOptions struct {
 	duration  int               //seconds: profile time(s), default is 30s.
 	resultDir string
 	fileStats map[string][]CollectStat
-	tlsCfg    *tls.Config
 }
 
 // Desc implements the Collector interface
@@ -127,6 +127,18 @@ func (c *PerfCollectOptions) prepareForTiUP(_ *Manager, topo *models.TiDBCluster
 
 // Collect implements the Collector interface
 func (c *PerfCollectOptions) Collect(m *Manager, topo *models.TiDBCluster) error {
+	switch m.mode {
+	case CollectModeTiUP:
+		return c.collectForTiUP(m, topo)
+	case CollectModeK8s:
+		return c.collectForK8s(m, topo)
+	}
+
+	return nil
+}
+
+// collectForTiUP implements config collecting for tiup-cluster deployed clusters
+func (c *PerfCollectOptions) collectForTiUP(m *Manager, topo *models.TiDBCluster) error {
 	ctx := ctxt.New(
 		context.Background(),
 		c.opt.Concurrency,
@@ -142,10 +154,56 @@ func (c *PerfCollectOptions) Collect(m *Manager, topo *models.TiDBCluster) error
 	comps = models.FilterComponent(comps, roleFilter)
 	instances := models.FilterInstance(comps, nodeFilter)
 
+	// get tls config
+	tlsCfg, err := topo.Attributes[CollectModeTiUP].(spec.Topology).
+		TLSConfig(m.specManager.Path(c.BaseOptions.Cluster, spec.TLSCertKeyDir))
+	if err != nil {
+		return err
+	}
+
 	// build tsaks
 	for _, inst := range instances {
 
-		if t := buildPerfCollectingTasks(ctx, inst, c); len(t) != 0 {
+		if t := buildPerfCollectingTasks(ctx, inst, c, tlsCfg); len(t) != 0 {
+			collectePerfTasks = append(collectePerfTasks, t...)
+		}
+	}
+
+	t := task.NewBuilder(m.logger).
+		ParallelStep("+ Query profile info", false, collectePerfTasks...).Build()
+
+	if err := t.Execute(ctx); err != nil {
+		if errorx.Cast(err) != nil {
+			// FIXME: Map possible task errors and give suggestions.
+			return err
+		}
+		return perrs.Trace(err)
+	}
+
+	return nil
+}
+
+// collectForK8s implements config collecting for tidb-operator deployed clusters
+func (c *PerfCollectOptions) collectForK8s(m *Manager, topo *models.TiDBCluster) error {
+
+	collectePerfTasks := []*task.StepDisplay{}
+	ctx := ctxt.New(
+		context.Background(),
+		c.opt.Concurrency,
+		m.logger,
+	)
+
+	instances := topo.Components()
+
+	for _, inst := range instances {
+		switch inst.Type() {
+		case models.ComponentTypeMonitor,
+			models.ComponentTypeTiSpark:
+			continue
+		}
+
+		// query perf info for each instance if supported
+		if t := buildPerfCollectingTasks(ctx, inst, c, nil); len(t) != 0 {
 			collectePerfTasks = append(collectePerfTasks, t...)
 		}
 	}
@@ -174,13 +232,13 @@ type perfInfo struct {
 }
 
 // buildPerfCollectingTasks build collect profile information tasks
-func buildPerfCollectingTasks(ctx context.Context, inst models.Component, c *PerfCollectOptions) []*task.StepDisplay {
+func buildPerfCollectingTasks(ctx context.Context, inst models.Component, c *PerfCollectOptions, tlsCfg *tls.Config) []*task.StepDisplay {
 	var (
 		perfInfoTasks []*task.StepDisplay
 		perfInfos     []perfInfo
 	)
 	scheme := "http"
-	if c.tlsCfg != nil {
+	if tlsCfg != nil {
 		scheme = "https"
 	}
 
@@ -250,7 +308,7 @@ func buildPerfCollectingTasks(ctx context.Context, inst models.Component, c *Per
 			Func(
 				fmt.Sprintf("querying %s %s:%d", perfInfo.perfType, host, inst.MainPort()),
 				func(ctx context.Context) error {
-					httpClient := utils.NewHTTPClient(perfInfo.timeout, c.tlsCfg)
+					httpClient := utils.NewHTTPClient(perfInfo.timeout, tlsCfg)
 
 					if perfInfo.header != nil {
 						for k, v := range perfInfo.header {
