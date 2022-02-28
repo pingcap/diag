@@ -20,9 +20,6 @@ import (
 	"github.com/pingcap/tiup/pkg/set"
 )
 
-// AttributeMap are extended key-values related to an object
-type AttributeMap map[string]interface{}
-
 // ComponentType are types of a component
 type ComponentType string
 
