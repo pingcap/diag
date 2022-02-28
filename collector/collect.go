@@ -131,6 +131,9 @@ func (m *Manager) CollectClusterInfo(
 		}
 	case CollectModeK8s:
 		cls, tc, tm, err = buildTopoForK8sCluster(m, opt, kubeCli, dynCli)
+		if err != nil {
+			return "", err
+		}
 		if tc.Spec.TLSCluster.Enabled {
 			tlsCfg, err = kubetls.GetClusterClientTLSConfig(kubeCli, opt.Namespace, opt.Cluster, time.Duration(gOpt.APITimeout))
 			klog.Infof("get tls config from secrets success")
