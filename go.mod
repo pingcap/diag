@@ -3,7 +3,7 @@ module github.com/pingcap/diag
 go 1.16
 
 require (
-	github.com/AstroProfundis/sysinfo v0.0.0-20211201040748-b52c88acb418
+	github.com/AstroProfundis/sysinfo v0.0.0-20220225042645-97eb85080e73
 	github.com/BurntSushi/toml v1.0.0
 	github.com/Masterminds/semver v1.5.0
 	github.com/bilibili/gengine v1.5.7
@@ -31,7 +31,7 @@ require (
 	github.com/pingcap/check v0.0.0-20211026125417-57bd13f7b5f0
 	github.com/pingcap/errors v0.11.5-0.20201126102027-b0a155152ca3
 	github.com/pingcap/log v0.0.0-20211215031037-e024ba4eb0ee
-	github.com/pingcap/tiup v1.9.0
+	github.com/pingcap/tiup v1.9.1
 	github.com/prometheus/common v0.32.1
 	github.com/prometheus/prometheus v1.8.2
 	github.com/shirou/gopsutil v3.21.11+incompatible
