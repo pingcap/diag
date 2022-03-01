@@ -1,0 +1,43 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.diag.diagName }}
+  labels:
+    app: {{ .Values.diag.app }}
+spec:
+  replicas: {{ .Values.diag.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ .Values.diag.app }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.diag.app }}
+        app.kubernetes.io/instance: {{ .Release.Name }}
+    spec:
+      serviceAccount: {{ .Values.diag.serviceAccount }}
+      serviceAccountName: {{ .Values.diag.serviceAccountName }}
+      containers:
+      - name: collector
+        image: {{ .Values.image.diagImage }}
+        imagePullPolicy: {{ .Values.image.imagePullPolicy }}
+        command:
+        - /usr/local/bin/diag
+        volumeMounts:
+        - mountPath: "/var/lib/clinic-cert"
+          name: {{ .Values.diag.secretName }}
+          readOnly: true
+        env:
+        - name: NAMESPACE
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.namespace
+        - name: CLINIC_USERNAME
+          value: "{{ .Values.diag.clinicUsername | default "Asktug" }}"
+        - name: CLINIC_PASSWORD
+          value: "{{ .Values.diag.clinicPassword | default "Asktug" }}"
+      volumes:
+      - name: {{ .Values.diag.secretName }}
+        secret:
+          secretName: {{ .Values.diag.secretName }}
