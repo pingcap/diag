@@ -42,6 +42,7 @@ type ConfigCollectOptions struct {
 	resultDir string
 	fileStats map[string][]CollectStat
 	compress  bool
+	tlsCfg    *tls.Config
 }
 
 // Desc implements the Collector interface
@@ -243,11 +244,6 @@ func (c *ConfigCollectOptions) collectForTiUP(m *Manager, cls *models.TiDBCluste
 	roleFilter := set.NewStringSet(c.opt.Roles...)
 	nodeFilter := set.NewStringSet(c.opt.Nodes...)
 
-	tlsCfg, err := topo.TLSConfig(m.specManager.Path(c.BaseOptions.Cluster, spec.TLSCertKeyDir))
-	if err != nil {
-		return err
-	}
-
 	comps := cls.Components()
 	comps = models.FilterComponent(comps, roleFilter)
 	instances := models.FilterInstance(comps, nodeFilter)
@@ -260,7 +256,7 @@ func (c *ConfigCollectOptions) collectForTiUP(m *Manager, cls *models.TiDBCluste
 
 		// query realtime configs for each instance if supported
 		// TODO: support TLS enabled clusters
-		if t3 := buildRealtimeConfigCollectingTasks(ctx, inst, c.resultDir, tlsCfg); t3 != nil {
+		if t3 := buildRealtimeConfigCollectingTasks(ctx, inst, c.resultDir, c.tlsCfg); t3 != nil {
 			queryTasks = append(queryTasks, t3)
 		}
 	}
@@ -366,7 +362,7 @@ func (c *ConfigCollectOptions) collectForK8s(m *Manager, topo *models.TiDBCluste
 
 		// query realtime configs for each instance if supported
 		// TODO: support TLS enabled clusters
-		if t3 := buildRealtimeConfigCollectingTasks(ctx, inst, c.resultDir, nil); t3 != nil {
+		if t3 := buildRealtimeConfigCollectingTasks(ctx, inst, c.resultDir, c.tlsCfg); t3 != nil {
 			queryTasks = append(queryTasks, t3)
 		}
 	}
@@ -401,8 +397,8 @@ func buildRealtimeConfigCollectingTasks(ctx context.Context, inst models.Compone
 	switch inst.Type() {
 	case models.ComponentTypePD:
 		configs = append(configs, rtConfig{"config.json", inst.ConfigURL()})
-		configs = append(configs, rtConfig{"store.json", fmt.Sprintf("%s:%d/pd/api/v1/stores", inst.Host(), inst.StatusPort())})
-		configs = append(configs, rtConfig{"placement-rule.json", fmt.Sprintf("%s:%d/pd/api/v1/config/placement-rule", inst.Host(), inst.StatusPort())})
+		configs = append(configs, rtConfig{"store.json", fmt.Sprintf("%s/pd/api/v1/stores", inst.StatusURL())})
+		configs = append(configs, rtConfig{"placement-rule.json", fmt.Sprintf("%s/pd/api/v1/config/placement-rule", inst.StatusURL())})
 	case models.ComponentTypeTiKV:
 		configs = append(configs, rtConfig{"config.json", fmt.Sprintf("%s?full=true", inst.ConfigURL())})
 	case models.ComponentTypeTiDB:
@@ -441,6 +437,7 @@ func buildRealtimeConfigCollectingTasks(ctx context.Context, inst models.Compone
 					if err := utils.CreateDir(fpath); err != nil {
 						return err
 					}
+
 					err = os.WriteFile(
 						filepath.Join(resultDir, host, instDir, "conf", config.filename),
 						resp,

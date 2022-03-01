@@ -47,6 +47,7 @@ type Component interface {
 	StatusPort() int
 	SSHPort() int      // empty for tidb-operator
 	ID() string        // host:port identifier
+	StatusURL() string // the url to request for compoent status, without http/https scheme
 	ConfigURL() string // the url to request for realtime configs, without http/https scheme
 	Attributes() AttributeMap
 }
@@ -129,6 +130,14 @@ func (s *MonitorSpec) Type() ComponentType { return ComponentTypeMonitor }
 // Host implements Component interface
 func (s *MonitorSpec) Host() string { return s.ComponentSpec.Host }
 
+// Domain implements Component interface
+func (s *MonitorSpec) Domain() string {
+	if domain, ok := s.Attributes()["domain"].(string); ok {
+		return domain
+	}
+	return ""
+}
+
 // MainPort implements Component interface
 func (s *MonitorSpec) MainPort() int { return s.ComponentSpec.Port }
 
@@ -138,9 +147,14 @@ func (s *MonitorSpec) StatusPort() int { return s.ComponentSpec.StatusPort }
 // SSHPort implements Component interface
 func (s *MonitorSpec) SSHPort() int { return s.ComponentSpec.SSHPort }
 
+// StatusURL implements Component interface
+func (s *MonitorSpec) StatusURL() string {
+	return ""
+}
+
 // ConfigURL implements Component interface
 func (s *MonitorSpec) ConfigURL() string {
-	return ""
+	return s.StatusURL()
 }
 
 // ID implements Component interface
@@ -160,6 +174,14 @@ func (s *PDSpec) Type() ComponentType { return ComponentTypePD }
 // Host implements Component interface
 func (s *PDSpec) Host() string { return s.ComponentSpec.Host }
 
+// Domain implements Component interface
+func (s *PDSpec) Domain() string {
+	if domain, ok := s.Attributes()["domain"].(string); ok {
+		return domain
+	}
+	return ""
+}
+
 // MainPort implements Component interface
 func (s *PDSpec) MainPort() int { return s.ComponentSpec.Port }
 
@@ -169,9 +191,17 @@ func (s *PDSpec) StatusPort() int { return s.ComponentSpec.StatusPort }
 // SSHPort implements Component interface
 func (s *PDSpec) SSHPort() int { return s.ComponentSpec.SSHPort }
 
+// StatusURL implements Component interface
+func (s *PDSpec) StatusURL() string {
+	if s.Domain() != "" {
+		return fmt.Sprintf("%s:%d", s.Domain(), s.StatusPort())
+	}
+	return fmt.Sprintf("%s:%d", s.Host(), s.StatusPort())
+}
+
 // ConfigURL implements Component interface
 func (s *PDSpec) ConfigURL() string {
-	return fmt.Sprintf("%s:%d/pd/api/v1/config", s.Host(), s.StatusPort())
+	return fmt.Sprintf("%s/pd/api/v1/config", s.StatusURL())
 }
 
 // ID implements Component interface
@@ -191,6 +221,14 @@ func (s *TiKVSpec) Type() ComponentType { return ComponentTypeTiKV }
 // Host implements Component interface
 func (s *TiKVSpec) Host() string { return s.ComponentSpec.Host }
 
+// Domain implements Component interface
+func (s *TiKVSpec) Domain() string {
+	if domain, ok := s.Attributes()["domain"].(string); ok {
+		return domain
+	}
+	return ""
+}
+
 // MainPort implements Component interface
 func (s *TiKVSpec) MainPort() int { return s.ComponentSpec.Port }
 
@@ -200,9 +238,17 @@ func (s *TiKVSpec) StatusPort() int { return s.ComponentSpec.StatusPort }
 // SSHPort implements Component interface
 func (s *TiKVSpec) SSHPort() int { return s.ComponentSpec.SSHPort }
 
+// StatusURL implements Component interface
+func (s *TiKVSpec) StatusURL() string {
+	if s.Domain() != "" {
+		return fmt.Sprintf("%s:%d", s.Domain(), s.StatusPort())
+	}
+	return fmt.Sprintf("%s:%d", s.Host(), s.StatusPort())
+}
+
 // ConfigURL implements Component interface
 func (s *TiKVSpec) ConfigURL() string {
-	return fmt.Sprintf("%s:%d/config", s.Host(), s.StatusPort())
+	return fmt.Sprintf("%s/config", s.StatusURL())
 }
 
 // ID implements Component interface
@@ -222,6 +268,14 @@ func (s *TiDBSpec) Type() ComponentType { return ComponentTypeTiDB }
 // Host implements Component interface
 func (s *TiDBSpec) Host() string { return s.ComponentSpec.Host }
 
+// Domain implements Component interface
+func (s *TiDBSpec) Domain() string {
+	if domain, ok := s.Attributes()["domain"].(string); ok {
+		return domain
+	}
+	return ""
+}
+
 // MainPort implements Component interface
 func (s *TiDBSpec) MainPort() int { return s.ComponentSpec.Port }
 
@@ -231,9 +285,17 @@ func (s *TiDBSpec) StatusPort() int { return s.ComponentSpec.StatusPort }
 // SSHPort implements Component interface
 func (s *TiDBSpec) SSHPort() int { return s.ComponentSpec.SSHPort }
 
+// StatusURL implements Component interface
+func (s *TiDBSpec) StatusURL() string {
+	if s.Domain() != "" {
+		return fmt.Sprintf("%s:%d", s.Domain(), s.StatusPort())
+	}
+	return fmt.Sprintf("%s:%d", s.Host(), s.StatusPort())
+}
+
 // ConfigURL implements Component interface
 func (s *TiDBSpec) ConfigURL() string {
-	return fmt.Sprintf("%s:%d/config", s.Host(), s.StatusPort())
+	return fmt.Sprintf("%s/config", s.StatusURL())
 }
 
 // ID implements Component interface
@@ -253,6 +315,14 @@ func (s *TiFlashSpec) Type() ComponentType { return ComponentTypeTiFlash }
 // Host implements Component interface
 func (s *TiFlashSpec) Host() string { return s.ComponentSpec.Host }
 
+// Domain implements Component interface
+func (s *TiFlashSpec) Domain() string {
+	if domain, ok := s.Attributes()["domain"].(string); ok {
+		return domain
+	}
+	return ""
+}
+
 // MainPort implements Component interface
 func (s *TiFlashSpec) MainPort() int { return s.ComponentSpec.Port }
 
@@ -262,9 +332,17 @@ func (s *TiFlashSpec) StatusPort() int { return s.ComponentSpec.StatusPort }
 // SSHPort implements Component interface
 func (s *TiFlashSpec) SSHPort() int { return s.ComponentSpec.SSHPort }
 
+// StatusURL implements Component interface
+func (s *TiFlashSpec) StatusURL() string {
+	if s.Domain() != "" {
+		return fmt.Sprintf("%s:%d", s.Domain(), s.StatusPort())
+	}
+	return fmt.Sprintf("%s:%d", s.Host(), s.StatusPort())
+}
+
 // ConfigURL implements Component interface
 func (s *TiFlashSpec) ConfigURL() string {
-	return fmt.Sprintf("%s:%d/config", s.Host(), s.StatusPort())
+	return fmt.Sprintf("%s/config", s.StatusURL())
 }
 
 // ID implements Component interface
@@ -284,6 +362,14 @@ func (s *PumpSpec) Type() ComponentType { return ComponentTypePump }
 // Host implements Component interface
 func (s *PumpSpec) Host() string { return s.ComponentSpec.Host }
 
+// Domain implements Component interface
+func (s *PumpSpec) Domain() string {
+	if domain, ok := s.Attributes()["domain"].(string); ok {
+		return domain
+	}
+	return ""
+}
+
 // MainPort implements Component interface
 func (s *PumpSpec) MainPort() int { return s.ComponentSpec.Port }
 
@@ -293,9 +379,14 @@ func (s *PumpSpec) StatusPort() int { return s.ComponentSpec.StatusPort }
 // SSHPort implements Component interface
 func (s *PumpSpec) SSHPort() int { return s.ComponentSpec.SSHPort }
 
+// StatusURL implements Component interface
+func (s *PumpSpec) StatusURL() string {
+	return ""
+}
+
 // ConfigURL implements Component interface
 func (s *PumpSpec) ConfigURL() string {
-	return ""
+	return s.StatusURL()
 }
 
 // ID implements Component interface
@@ -315,6 +406,14 @@ func (s *DrainerSpec) Type() ComponentType { return ComponentTypeDrainer }
 // Host implements Component interface
 func (s *DrainerSpec) Host() string { return s.ComponentSpec.Host }
 
+// Domain implements Component interface
+func (s *DrainerSpec) Domain() string {
+	if domain, ok := s.Attributes()["domain"].(string); ok {
+		return domain
+	}
+	return ""
+}
+
 // MainPort implements Component interface
 func (s *DrainerSpec) MainPort() int { return s.ComponentSpec.Port }
 
@@ -324,9 +423,14 @@ func (s *DrainerSpec) StatusPort() int { return s.ComponentSpec.StatusPort }
 // SSHPort implements Component interface
 func (s *DrainerSpec) SSHPort() int { return s.ComponentSpec.SSHPort }
 
+// StatusURL implements Component interface
+func (s *DrainerSpec) StatusURL() string {
+	return ""
+}
+
 // ConfigURL implements Component interface
 func (s *DrainerSpec) ConfigURL() string {
-	return ""
+	return s.StatusURL()
 }
 
 // ID implements Component interface
@@ -346,6 +450,14 @@ func (s *TiCDCSpec) Type() ComponentType { return ComponentTypeTiCDC }
 // Host implements Component interface
 func (s *TiCDCSpec) Host() string { return s.ComponentSpec.Host }
 
+// Domain implements Component interface
+func (s *TiCDCSpec) Domain() string {
+	if domain, ok := s.Attributes()["domain"].(string); ok {
+		return domain
+	}
+	return ""
+}
+
 // MainPort implements Component interface
 func (s *TiCDCSpec) MainPort() int { return s.ComponentSpec.Port }
 
@@ -355,9 +467,14 @@ func (s *TiCDCSpec) StatusPort() int { return s.ComponentSpec.StatusPort }
 // SSHPort implements Component interface
 func (s *TiCDCSpec) SSHPort() int { return s.ComponentSpec.SSHPort }
 
+// StatusURL implements Component interface
+func (s *TiCDCSpec) StatusURL() string {
+	return ""
+}
+
 // ConfigURL implements Component interface
 func (s *TiCDCSpec) ConfigURL() string {
-	return ""
+	return s.StatusURL()
 }
 
 // ID implements Component interface
@@ -378,6 +495,14 @@ func (s *TiSparkCSpec) Type() ComponentType { return ComponentTypeTiSpark }
 // Host implements Component interface
 func (s *TiSparkCSpec) Host() string { return s.ComponentSpec.Host }
 
+// Domain implements Component interface
+func (s *TiSparkCSpec) Domain() string {
+	if domain, ok := s.Attributes()["domain"].(string); ok {
+		return domain
+	}
+	return ""
+}
+
 // MainPort implements Component interface
 func (s *TiSparkCSpec) MainPort() int { return s.ComponentSpec.Port }
 
@@ -387,9 +512,14 @@ func (s *TiSparkCSpec) StatusPort() int { return s.ComponentSpec.StatusPort }
 // SSHPort implements Component interface
 func (s *TiSparkCSpec) SSHPort() int { return s.ComponentSpec.SSHPort }
 
+// StatusURL implements Component interface
+func (s *TiSparkCSpec) StatusURL() string {
+	return ""
+}
+
 // ConfigURL implements Component interface
 func (s *TiSparkCSpec) ConfigURL() string {
-	return ""
+	return s.StatusURL()
 }
 
 // ID implements Component interface
@@ -412,6 +542,14 @@ func (s *DMMasterSpec) Type() ComponentType { return ComponentTypeTiKV }
 // Host implements Component interface
 func (s *DMMasterSpec) Host() string { return s.ComponentSpec.Host }
 
+// Domain implements Component interface
+func (s *DMMasterSpec) Domain() string {
+	if domain, ok := s.Attributes()["domain"].(string); ok {
+		return domain
+	}
+	return ""
+}
+
 // MainPort implements Component interface
 func (s *DMMasterSpec) MainPort() int { return s.ComponentSpec.Port }
 
@@ -421,9 +559,14 @@ func (s *DMMasterSpec) StatusPort() int { return s.ComponentSpec.StatusPort }
 // SSHPort implements Component interface
 func (s *DMMasterSpec) SSHPort() int { return s.ComponentSpec.SSHPort }
 
+// StatusURL implements Component interface
+func (s *DMMasterSpec) StatusURL() string {
+	return ""
+}
+
 // ConfigURL implements Component interface
 func (s *DMMasterSpec) ConfigURL() string {
-	return fmt.Sprintf("%s:%d/config", s.Host(), s.StatusPort())
+	return s.StatusURL()
 }
 
 // ID implements Component interface
@@ -443,6 +586,14 @@ func (s *DMWorkerSpec) Type() ComponentType { return ComponentTypeTiKV }
 // Host implements Component interface
 func (s *DMWorkerSpec) Host() string { return s.ComponentSpec.Host }
 
+// Domain implements Component interface
+func (s *DMWorkerSpec) Domain() string {
+	if domain, ok := s.Attributes()["domain"].(string); ok {
+		return domain
+	}
+	return ""
+}
+
 // MainPort implements Component interface
 func (s *DMWorkerSpec) MainPort() int { return s.ComponentSpec.Port }
 
@@ -452,9 +603,17 @@ func (s *DMWorkerSpec) StatusPort() int { return s.ComponentSpec.StatusPort }
 // SSHPort implements Component interface
 func (s *DMWorkerSpec) SSHPort() int { return s.ComponentSpec.SSHPort }
 
+// StatusURL implements Component interface
+func (s *DMWorkerSpec) StatusURL() string {
+	if s.Domain() != "" {
+		return fmt.Sprintf("%s:%d", s.Domain(), s.StatusPort())
+	}
+	return fmt.Sprintf("%s:%d", s.Host(), s.StatusPort())
+}
+
 // ConfigURL implements Component interface
 func (s *DMWorkerSpec) ConfigURL() string {
-	return fmt.Sprintf("%s:%d/config", s.Host(), s.StatusPort())
+	return fmt.Sprintf("%s/config", s.StatusURL())
 }
 
 // ID implements Component interface

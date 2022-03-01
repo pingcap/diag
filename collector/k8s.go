@@ -85,6 +85,7 @@ func buildTopoForK8sCluster(
 		Resource: "tidbmonitors",
 	}
 
+	// get namespace
 	ns := opt.Namespace
 	if opt.Namespace == "" {
 		ns = os.Getenv("NAMESPACE")
@@ -180,6 +181,7 @@ func buildTopoForK8sCluster(
 						"client_url": ins.ClientURL,
 						"image":      tc.Status.PD.Image,
 						"pod":        ins.Name,
+						"domain":     fmt.Sprintf("%s.%s-pd-peer.%s.svc", ins.Name, clsName, ns),
 					},
 				},
 			})
@@ -208,6 +210,7 @@ func buildTopoForK8sCluster(
 							"health": ins.Health,
 							"image":  tc.Status.TiDB.Image,
 							"pod":    ins.Name,
+							"domain": fmt.Sprintf("%s.%s-tidb-peer.%s.svc", ins.Name, clsName, ns),
 						},
 					},
 				})
@@ -239,6 +242,7 @@ func buildTopoForK8sCluster(
 							"leader_count": ins.LeaderCount,
 							"image":        tc.Status.TiKV.Image,
 							"pod":          ins.PodName,
+							"domain":       fmt.Sprintf("%s.%s-tikv-peer.%s.svc", ins.PodName, clsName, ns),
 						},
 					},
 				})
@@ -270,6 +274,7 @@ func buildTopoForK8sCluster(
 							"leader_count": ins.LeaderCount,
 							"image":        tc.Status.TiFlash.Image,
 							"pod":          ins.PodName,
+							"domain":       fmt.Sprintf("%s.%s-tiflash-peer.%s.svc", ins.PodName, clsName, ns),
 						},
 					},
 				})
@@ -295,8 +300,9 @@ func buildTopoForK8sCluster(
 						Host: pod.Status.PodIP,
 						Port: 8301,
 						Attributes: map[string]interface{}{
-							"id":  ins.ID,
-							"pod": ins.PodName,
+							"id":     ins.ID,
+							"pod":    ins.PodName,
+							"domain": fmt.Sprintf("%s.%s-ticdc-peer.%s.svc", ins.PodName, clsName, ns),
 						},
 					},
 				})

@@ -14,20 +14,25 @@
 package collector
 
 import (
+	"crypto/tls"
 	"fmt"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/fatih/color"
 	pingcapv1alpha1 "github.com/pingcap/diag/k8s/apis/pingcap/v1alpha1"
+	kubetls "github.com/pingcap/diag/k8s/apis/tls"
 	"github.com/pingcap/diag/pkg/models"
 	"github.com/pingcap/tiup/pkg/cluster/executor"
 	operator "github.com/pingcap/tiup/pkg/cluster/operation"
+	"github.com/pingcap/tiup/pkg/cluster/spec"
 	logprinter "github.com/pingcap/tiup/pkg/logger/printer"
 	"github.com/pingcap/tiup/pkg/set"
 	"github.com/pingcap/tiup/pkg/tui"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/klog"
 )
 
 // types of data to collect
@@ -110,12 +115,29 @@ func (m *Manager) CollectClusterInfo(
 	var cls *models.TiDBCluster
 	var tc *pingcapv1alpha1.TidbCluster
 	var tm *pingcapv1alpha1.TidbMonitor
+	var tlsCfg *tls.Config
 	var err error
 	switch cOpt.Mode {
 	case CollectModeTiUP:
 		cls, err = buildTopoForTiUPCluster(m, opt)
+		if err != nil {
+			return "", err
+		}
+		// get tls config
+		tlsCfg, err = cls.Attributes[CollectModeTiUP].(spec.Topology).
+			TLSConfig(m.specManager.Path(opt.Cluster, spec.TLSCertKeyDir))
+		if err != nil {
+			return "", err
+		}
 	case CollectModeK8s:
 		cls, tc, tm, err = buildTopoForK8sCluster(m, opt, kubeCli, dynCli)
+		if err != nil {
+			return "", err
+		}
+		if tc.Spec.TLSCluster.Enabled {
+			tlsCfg, err = kubetls.GetClusterClientTLSConfig(kubeCli, opt.Namespace, opt.Cluster, time.Duration(gOpt.APITimeout))
+			klog.Infof("get tls config from secrets success")
+		}
 	default:
 		return "", fmt.Errorf("unknown collect mode '%s'", cOpt.Mode)
 	}
@@ -167,6 +189,7 @@ func (m *Manager) CollectClusterInfo(
 		resultDir:   resultDir,
 		tc:          tc,
 		tm:          tm,
+		tlsCfg:      tlsCfg,
 	})
 
 	// collect data from monitoring system
@@ -232,6 +255,7 @@ func (m *Manager) CollectClusterInfo(
 				resultDir:   resultDir,
 				fileStats:   make(map[string][]CollectStat),
 				compress:    cOpt.CompressScp,
+				tlsCfg:      tlsCfg,
 			})
 	}
 
@@ -242,7 +266,6 @@ func (m *Manager) CollectClusterInfo(
 		password := tui.PromptForPassword("please enter database password:")
 		collectors = append(collectors,
 			&SchemaCollectOptions{
-
 				BaseOptions: opt,
 				opt:         gOpt,
 				dbuser:      user,
@@ -260,6 +283,7 @@ func (m *Manager) CollectClusterInfo(
 				duration:    cOpt.PerfDuration,
 				resultDir:   resultDir,
 				fileStats:   make(map[string][]CollectStat),
+				tlsCfg:      tlsCfg,
 			})
 	}
 

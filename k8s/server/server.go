@@ -16,6 +16,7 @@ package server
 import (
 	"fmt"
 	"net/http"
+	"os"
 
 	"github.com/gin-gonic/gin"
 	"github.com/pingcap/diag/api"
@@ -23,6 +24,7 @@ import (
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
+	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/klog/v2"
 )
 
@@ -43,7 +45,16 @@ type DiagAPIServer struct {
 
 // NewServer creates a diag API server
 func NewServer(opt *Options) (*DiagAPIServer, error) {
-	cfg, err := rest.InClusterConfig()
+	var err error
+	var cfg *rest.Config
+
+	kubconfig := os.Getenv("KUBECONFIG")
+	if kubconfig != "" {
+		cfg, err = clientcmd.BuildConfigFromFlags("", kubconfig)
+	} else {
+		cfg, err = rest.InClusterConfig()
+	}
+
 	if err != nil {
 		return nil, fmt.Errorf("failed to get config: %v", err)
 	}
