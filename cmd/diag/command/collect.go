@@ -22,11 +22,13 @@ import (
 	"time"
 
 	"github.com/pingcap/diag/collector"
+	"github.com/pingcap/diag/pkg/telemetry"
+	"github.com/pingcap/diag/pkg/utils"
 	"github.com/pingcap/tiup/pkg/cluster/executor"
 	"github.com/pingcap/tiup/pkg/cluster/spec"
 	"github.com/pingcap/tiup/pkg/set"
 	"github.com/pingcap/tiup/pkg/tui"
-	"github.com/pingcap/tiup/pkg/utils"
+	tiuputils "github.com/pingcap/tiup/pkg/utils"
 	"github.com/spf13/cobra"
 )
 
@@ -35,7 +37,7 @@ func newCollectCmd() *cobra.Command {
 	var metricsConf string
 	opt := collector.BaseOptions{
 		SSH: &tui.SSHConnectionProps{
-			IdentityFile: path.Join(utils.UserHome(), ".ssh", "id_rsa"),
+			IdentityFile: path.Join(tiuputils.UserHome(), ".ssh", "id_rsa"),
 		},
 	}
 	cOpt := collector.CollectOptions{
@@ -60,7 +62,7 @@ func newCollectCmd() *cobra.Command {
 			cm := collector.NewManager("tidb", tidbSpec, log)
 
 			// natvie ssh has it's own logic to find the default identity_file
-			if gOpt.SSHType == executor.SSHTypeSystem && !utils.IsFlagSetByUser(cmd.Flags(), "identity_file") {
+			if gOpt.SSHType == executor.SSHTypeSystem && !tiuputils.IsFlagSetByUser(cmd.Flags(), "identity_file") {
 				opt.SSH.IdentityFile = ""
 			}
 
@@ -73,6 +75,8 @@ func newCollectCmd() *cobra.Command {
 				cOpt.Exclude = set.NewStringSet(ext...)
 			}
 			opt.Cluster = args[0]
+			clsID := scrubClusterName(opt.Cluster)
+			teleCommand = append(teleCommand, clsID)
 
 			if metricsConf != "" {
 				f, err := os.Open(metricsConf)
@@ -97,7 +101,33 @@ func newCollectCmd() *cobra.Command {
 				}
 			}
 			cOpt.Mode = collector.CollectModeTiUP
+
+			if reportEnabled {
+				teleReport.CommandInfo = &telemetry.CollectInfo{
+					ID:         clsID,
+					Mode:       collector.CollectModeTiUP,
+					ArgYes:     skipConfirm,
+					ArgLimit:   cOpt.Limit,
+					ArgInclude: cOpt.Include.Slice(),
+					ArgExclude: cOpt.Exclude.Slice(),
+				}
+			}
+
 			_, err := cm.CollectClusterInfo(&opt, &cOpt, &gOpt, nil, nil, skipConfirm)
+			// time is validated and updated during the collecting process
+			if reportEnabled {
+				st, errs := utils.ParseTime(opt.ScrapeBegin)
+				et, erre := utils.ParseTime(opt.ScrapeEnd)
+				if errs == nil && erre == nil {
+					teleReport.CommandInfo.(*telemetry.CollectInfo).
+						TimeSpan = int64(et.Sub(st))
+				}
+
+				if size, err := utils.DirSize(cOpt.Dir); err == nil {
+					teleReport.CommandInfo.(*telemetry.CollectInfo).
+						DataSize = size
+				}
+			}
 			return err
 		},
 	}

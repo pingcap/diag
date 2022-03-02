@@ -14,7 +14,11 @@
 package command
 
 import (
+	"os"
+
 	"github.com/pingcap/diag/pkg/packager"
+	"github.com/pingcap/diag/pkg/telemetry"
+	"github.com/pingcap/diag/pkg/utils"
 	"github.com/spf13/cobra"
 )
 
@@ -34,11 +38,26 @@ func newPackageCmd() *cobra.Command {
 				pOpt.InputDir = args[0]
 			}
 
+			if reportEnabled {
+				inputSize, _ := utils.DirSize(pOpt.InputDir)
+				teleReport.CommandInfo = &telemetry.PackageInfo{
+					OriginalSize: inputSize,
+				}
+			}
+
 			f, err := packager.PackageCollectedData(pOpt, skipConfirm)
 			if err != nil {
 				return err
 			}
 			log.Infof("packaged data set saved to %s", f)
+
+			if reportEnabled {
+				fi, err := os.Stat(f)
+				if err == nil {
+					teleReport.CommandInfo.(*telemetry.PackageInfo).
+						PackageSize = fi.Size()
+				}
+			}
 			return nil
 		},
 	}

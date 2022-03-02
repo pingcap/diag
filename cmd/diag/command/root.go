@@ -14,22 +14,28 @@
 package command
 
 import (
-	"encoding/json"
+	"context"
 	"fmt"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/fatih/color"
+	"github.com/google/uuid"
 	"github.com/joomcode/errorx"
+	json "github.com/json-iterator/go"
+	"github.com/pingcap/diag/pkg/telemetry"
 	"github.com/pingcap/diag/version"
 	"github.com/pingcap/tiup/pkg/cluster/executor"
 	operator "github.com/pingcap/tiup/pkg/cluster/operation"
 	"github.com/pingcap/tiup/pkg/cluster/spec"
+	"github.com/pingcap/tiup/pkg/environment"
 	tiupmeta "github.com/pingcap/tiup/pkg/environment"
 	"github.com/pingcap/tiup/pkg/localdata"
 	"github.com/pingcap/tiup/pkg/logger"
 	logprinter "github.com/pingcap/tiup/pkg/logger/printer"
 	"github.com/pingcap/tiup/pkg/repository"
+	tiuptelemetry "github.com/pingcap/tiup/pkg/telemetry"
 	"github.com/pingcap/tiup/pkg/tui"
 	"github.com/pingcap/tiup/pkg/utils"
 	"github.com/spf13/cobra"
@@ -37,11 +43,28 @@ import (
 )
 
 var (
-	rootCmd     *cobra.Command
-	gOpt        operator.Options
-	skipConfirm bool
-	log         = logprinter.NewLogger("")
+	rootCmd       *cobra.Command
+	gOpt          operator.Options
+	skipConfirm   bool
+	log           = logprinter.NewLogger("")
+	reportEnabled bool // is telemetry report enabled
+	teleReport    *telemetry.Report
+	teleCommand   []string
 )
+
+func getParentNames(cmd *cobra.Command) []string {
+	if cmd == nil {
+		return nil
+	}
+
+	p := cmd.Parent()
+	// always use 'diag' as the root command name
+	if cmd.Parent() == nil {
+		return []string{"diag"}
+	}
+
+	return append(getParentNames(p), cmd.Name())
+}
 
 func init() {
 	logger.InitGlobalLogger()
@@ -82,6 +105,8 @@ func init() {
 			tiupmeta.SetGlobalEnv(env)
 
 			logger.EnableAuditLog(spec.AuditDir())
+
+			teleCommand = getParentNames(cmd)
 
 			if gOpt.NativeSSH {
 				gOpt.SSHType = executor.SSHTypeSystem
@@ -185,6 +210,18 @@ func Execute() {
 	zap.L().Info("Execute command", zap.String("command", tui.OsArgs()))
 	zap.L().Debug("Environment variables", zap.Strings("env", os.Environ()))
 
+	teleReport = new(telemetry.Report)
+	reportEnabled = tiuptelemetry.Enabled()
+	if reportEnabled {
+		eventUUID := os.Getenv(localdata.EnvNameTelemetryEventUUID)
+		if eventUUID == "" {
+			eventUUID = uuid.New().String()
+		}
+		teleReport.UUID = eventUUID
+		teleReport.Version = telemetry.GetVersion()
+	}
+
+	start := time.Now()
 	code := 0
 	err := rootCmd.Execute()
 	if err != nil {
@@ -192,6 +229,37 @@ func Execute() {
 	}
 
 	zap.L().Info("Execute command finished", zap.Int("code", code), zap.Error(err))
+
+	if reportEnabled {
+		f := func() {
+			defer func() {
+				if r := recover(); r != nil {
+					if environment.DebugMode {
+						log.Debugf("Recovered in telemetry report: %v", r)
+					}
+				}
+			}()
+
+			teleReport.ExitCode = int32(code)
+			teleReport.ExecutionTime = uint64(time.Since(start).Milliseconds())
+			teleReport.Command = strings.Join(teleCommand, " ")
+			ctx, cancel := context.WithTimeout(context.Background(), time.Second*2)
+			tele := telemetry.NewTelemetry()
+			err := tele.Report(ctx, teleReport)
+			if environment.DebugMode {
+				if err != nil {
+					log.Infof("report failed: %v", err)
+				}
+				if data, err := json.Marshal(teleReport); err == nil {
+					log.Debugf("report: %s\n", string(data))
+					fmt.Println(string(data))
+				}
+			}
+			cancel()
+		}
+
+		f()
+	}
 
 	if err != nil {
 		switch strings.ToLower(gOpt.DisplayMode) {
@@ -237,4 +305,10 @@ func Execute() {
 	if code != 0 {
 		os.Exit(code)
 	}
+}
+
+func scrubClusterName(n string) string {
+	// prepend the telemetry secret to cluster name, so that two installations
+	// of tiup with the same cluster name produce different hashes
+	return "cluster_" + tiuptelemetry.SaltedHash(n)
 }
