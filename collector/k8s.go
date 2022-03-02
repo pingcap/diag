@@ -55,6 +55,10 @@ func (m *Manager) prepareArgsForK8sCluster(
 		}
 	}
 
+	if start.After(end) {
+		return "", fmt.Errorf("end time cannot be earlier than start time")
+	}
+
 	// update time strings in setting to ensure all collectors work properly
 	opt.ScrapeBegin = start.Format(time.RFC3339)
 	opt.ScrapeEnd = end.Format(time.RFC3339)
