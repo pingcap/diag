@@ -1,18 +1,18 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ .Values.diag.diagName }}
+  name: {{ .Values.diag.diagName | default "diag-collector" }}
   labels:
-    app.kubernetes.io/name: {{ .Values.diag.diagName }}
-    app: {{ .Values.diag.app }}
+    app.kubernetes.io/name: {{ .Values.diag.diagName | default "diag-collector" }}
+    app: {{ .Values.diag.app | default "pingcap-clinic" }}
 spec:
   ports:
   - name: {{ .Values.service.serviceName }}
-    port: {{ .Values.service.port }}
+    port: 4917
     protocol: {{ .Values.service.protocol }}
-    targetPort: {{ .Values.service.targetPort }}
+    targetPort: 4917
   selector:
-    app: {{ .Values.diag.app }}
+    app: {{ .Values.diag.app | default "pingcap-clinic" }}
   sessionAffinity: {{ .Values.service.sessionAffinity }}
   type: {{ .Values.service.type }}
 
