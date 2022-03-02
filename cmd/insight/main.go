@@ -14,10 +14,10 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"log"
 
+	json "github.com/json-iterator/go"
 	"github.com/pingcap/diag/collector/sysinfo"
 	"github.com/pingcap/diag/version"
 	"github.com/spf13/cobra"

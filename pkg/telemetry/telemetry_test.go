@@ -15,12 +15,12 @@ package telemetry
 
 import (
 	"context"
-	"encoding/json"
 	"io"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
+	json "github.com/json-iterator/go"
 	"github.com/pingcap/check"
 	"github.com/pingcap/tiup/pkg/utils"
 )
