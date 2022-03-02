@@ -53,6 +53,7 @@ type MetaCollectOptions struct {
 	resultDir  string
 	tc         *pingcapv1alpha1.TidbCluster
 	tm         *pingcapv1alpha1.TidbMonitor
+	tlsCfg     *tls.Config
 }
 
 type ClusterJSON struct {
@@ -116,11 +117,7 @@ func (c *MetaCollectOptions) Collect(m *Manager, topo *models.TiDBCluster) error
 	switch m.mode {
 	case CollectModeTiUP:
 		tiupTopo := topo.Attributes[CollectModeTiUP].(spec.Topology)
-		tlsCfg, err := tiupTopo.TLSConfig(m.specManager.Path(b.Cluster, spec.TLSCertKeyDir))
-		if err != nil {
-			return err
-		}
-		clusterID, _ = getTiUPClusterID(ctx, b.Cluster, tlsCfg)
+		clusterID, _ = getTiUPClusterID(ctx, b.Cluster, c.tlsCfg)
 		clusterType = tiupTopo.Type()
 	case CollectModeK8s:
 		var id int

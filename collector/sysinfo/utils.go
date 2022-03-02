@@ -14,7 +14,7 @@
 package sysinfo
 
 import (
-	"io/ioutil"
+	"os"
 	"strconv"
 	"strings"
 )
@@ -37,7 +37,7 @@ func GetProcPath(paths ...string) string {
 }
 
 func GetSysUptime() (float64, float64, error) {
-	contents, err := ioutil.ReadFile(GetProcPath("uptime"))
+	contents, err := os.ReadFile(GetProcPath("uptime"))
 	if err != nil {
 		return 0, 0, err
 	}
@@ -51,4 +51,13 @@ func GetSysUptime() (float64, float64, error) {
 		return 0, 0, err
 	}
 	return uptime, idleTime, err
+}
+
+// atoi converts a string to int, ignore any errors and return 0 on failure
+func atoi(s string) int {
+	i, err := strconv.Atoi(s)
+	if err != nil {
+		return 0
+	}
+	return i
 }
