@@ -75,7 +75,7 @@ images: k8s
 	docker build --tag "${DOCKER_REPO}/diag:${IMAGE_TAG}" -f k8s/images/diag/Dockerfile k8s/images/diag
 
 test:
-	$(GO) test ./...
+	$(GO) test -cover ./...
 
 check: fmt vet lint check-static
 
