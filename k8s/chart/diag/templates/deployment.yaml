@@ -19,7 +19,7 @@ spec:
       serviceAccountName: {{ .Values.diag.serviceAccountName | default "pingcap-clinic" }}
       containers:
       - name: collector
-        image: {{ .Values.image.diagImage }}
+        image: {{ .Values.image.diagImage }}:{{ .Values.image.imageTag | default "latest" }}
         imagePullPolicy: {{ .Values.image.imagePullPolicy | default "IfNotPresent" }}
         {{- if .Values.diag.resources }}
         resources:
