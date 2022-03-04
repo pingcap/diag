@@ -87,7 +87,7 @@ func (c *AuditLogCollectOptions) Prepare(m *Manager, _ *models.TiDBCluster) (map
 					auditLogCount := 0
 					for _, v := range files {
 						auditLogCount++
-						auditLogSize = auditLogSize + v
+						auditLogSize += v
 					}
 
 					c.fileStats["localhost"] = append(c.fileStats["localhost"], CollectStat{
