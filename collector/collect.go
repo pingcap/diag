@@ -43,6 +43,7 @@ const (
 	CollectTypeConfig  = "config"
 	CollectTypeSchema  = "db_vars"
 	CollectTypePerf    = "perf"
+	CollectTypeAudit   = "audit_log"
 
 	CollectModeTiUP = "tiup-cluster"  // collect from a tiup-cluster deployed cluster
 	CollectModeK8s  = "tidb-operator" // collect from a tidb-operator deployed cluster
@@ -54,6 +55,7 @@ var CollectDefaultSet = set.NewStringSet(
 	CollectTypeMonitor,
 	CollectTypeLog,
 	CollectTypeConfig,
+	CollectTypeAudit,
 )
 
 var CollectAdditionSet = set.NewStringSet(
@@ -168,6 +170,7 @@ func (m *Manager) CollectClusterInfo(
 		CollectTypeConfig:  false,
 		CollectTypeSchema:  false,
 		CollectTypePerf:    false,
+		CollectTypeAudit:   false,
 	}
 
 	for name := range collectorSet {
@@ -284,6 +287,21 @@ func (m *Manager) CollectClusterInfo(
 				resultDir:   resultDir,
 				fileStats:   make(map[string][]CollectStat),
 				tlsCfg:      tlsCfg,
+			})
+	}
+
+	if canCollect(cOpt, CollectTypeAudit) {
+		topoType := "cluster"
+		if m.sysName == "dm" {
+			topoType = m.sysName
+		}
+		collectors = append(collectors,
+			&AuditLogCollectOptions{
+				BaseOptions: opt,
+				opt:         gOpt,
+				resultDir:   resultDir,
+				fileStats:   make(map[string][]CollectStat),
+				topoType:    topoType,
 			})
 	}
 

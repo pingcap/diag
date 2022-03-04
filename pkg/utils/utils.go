@@ -14,8 +14,12 @@
 package utils
 
 import (
+	"io"
 	"io/fs"
+	"os"
 	"path/filepath"
+
+	"github.com/otiai10/copy"
 )
 
 // DirSize returns the total file size of a dir
@@ -33,4 +37,56 @@ func DirSize(dir string) (int64, error) {
 		return totalSize, err
 	}
 	return totalSize, nil
+}
+
+// Copy copies a file or directory from src to dst
+func Copy(src, dst string) error {
+	// check if src is a directory
+	fi, err := os.Stat(src)
+	if err != nil {
+		return err
+	}
+	if fi.IsDir() {
+		// use copy.Copy to copy a directory
+		return copy.Copy(src, dst)
+	}
+
+	// for regular files
+	in, err := os.Open(src)
+	if err != nil {
+		return err
+	}
+	defer in.Close()
+
+	out, err := os.Create(dst)
+	if err != nil {
+		return err
+	}
+	defer out.Close()
+
+	_, err = io.Copy(out, in)
+	if err != nil {
+		return err
+	}
+
+	err = out.Close()
+	if err != nil {
+		return err
+	}
+
+	err = os.Chmod(dst, fi.Mode())
+	if err != nil {
+		return err
+	}
+
+	// Make sure the created dst's modify time is newer (at least equal) than src
+	// this is used to workaround github action virtual filesystem
+	ofi, err := os.Stat(dst)
+	if err != nil {
+		return err
+	}
+	if fi.ModTime().After(ofi.ModTime()) {
+		return os.Chtimes(dst, fi.ModTime(), fi.ModTime())
+	}
+	return nil
 }
