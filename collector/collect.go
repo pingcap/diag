@@ -277,12 +277,13 @@ func (m *Manager) CollectClusterInfo(
 	}
 
 	if canCollect(cOpt, CollectTypePerf) {
-		if m.mode == CollectModeK8s {
-			cOpt.PerfDuration = 30
-		}
-
 		if cOpt.PerfDuration < 1 {
-			return "", errors.Errorf("perf-duration cannot be less than 1")
+			if m.mode == CollectModeK8s {
+				cOpt.PerfDuration = 30
+			} else {
+				return "", errors.Errorf("perf-duration cannot be less than 1")
+			}
+
 		}
 		collectors = append(collectors,
 			&PerfCollectOptions{
