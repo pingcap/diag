@@ -15,6 +15,7 @@ package packager
 
 import (
 	"bufio"
+	"bytes"
 	"context"
 	"crypto/tls"
 	"crypto/x509"
@@ -55,6 +56,12 @@ type ClientOptions struct {
 	Client   *http.Client
 }
 
+type preCreateBody struct {
+	Encryption int    `json:"encryption"`
+	Compress   int    `json:"compress"`
+	Meta       []byte `json:"meta"`
+}
+
 func Upload(ctx context.Context, opt *UploadOptions, skipConfirm bool) (string, error) {
 	logger := ctx.Value(logprinter.ContextKeyLogger).(*logprinter.Logger)
 	fileStat, err := os.Stat(opt.FilePath)
@@ -92,7 +99,17 @@ func Upload(ctx context.Context, opt *UploadOptions, skipConfirm bool) (string, 
 		uuid = fmt.Sprintf("%s-%s", uuid, fnvHash32(logger, opt.Alias))
 	}
 
-	presp, err := preCreate(uuid, fileStat.Size(), fileStat.Name(), opt)
+	f, err := os.Open(opt.FilePath)
+	if err != nil {
+		return "", err
+	}
+	defer f.Close()
+	meta, encryption, compress, offset, err := ParserD1agHeader(f)
+	if err != nil {
+		return "", err
+	}
+
+	presp, err := preCreate(uuid, fileStat.Size(), fileStat.Name(), meta, encryption, compress, opt)
 	if err != nil {
 		return "", err
 	}
@@ -106,7 +123,12 @@ func Upload(ctx context.Context, opt *UploadOptions, skipConfirm bool) (string, 
 			return UploadComplete(logger, uuid, opt)
 		},
 		func() (io.ReadSeekCloser, error) {
-			return os.Open(opt.FilePath)
+			rec, err := os.Open(opt.FilePath)
+			if err != nil {
+				return nil, err
+			}
+			rec.Seek(int64(offset), 0)
+			return rec, nil
 		},
 		func(serial, size int64, r io.Reader) error {
 			return uploadMultipartFile(uuid, serial, size, r, opt)
@@ -114,8 +136,13 @@ func Upload(ctx context.Context, opt *UploadOptions, skipConfirm bool) (string, 
 	)
 }
 
-func preCreate(uuid string, fileLen int64, originalName string, opt *UploadOptions) (*preCreateResponse, error) {
-	req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("%s/api/v1/precreate", opt.Endpoint), nil)
+func preCreate(uuid string, fileLen int64, originalName string, meta []byte, encryption, compress int, opt *UploadOptions) (*preCreateResponse, error) {
+	body, _ := json.Marshal(preCreateBody{
+		Encryption: encryption,
+		Compress:   compress,
+		Meta:       meta,
+	})
+	req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("%s/api/v1/precreate", opt.Endpoint), bytes.NewBuffer(body))
 	if err != nil {
 		return nil, err
 	}
@@ -226,7 +253,7 @@ func concurrentUploadFile(
 				}
 				defer f.Close()
 
-				f.Seek(i*presp.BlockBytes, 0)
+				f.Seek(i*presp.BlockBytes, 1)
 				partR := io.LimitReader(f, eachSize)
 
 				if logger.GetDisplayMode() == logprinter.DisplayModeDefault {

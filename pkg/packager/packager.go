@@ -15,8 +15,10 @@ package packager
 
 import (
 	"archive/tar"
+	"bytes"
 	"crypto/rsa"
 	"crypto/x509"
+	"encoding/json"
 	"encoding/pem"
 	"fmt"
 	"io"
@@ -34,6 +36,77 @@ type PackageOptions struct {
 	InputDir   string // source directory of collected data
 	OutputFile string // target file to store packaged data
 	CertPath   string // crt file to encrypt data
+	Compress   byte
+	Meta       map[string]interface{}
+}
+
+// meta not compress
+func GenerateD1agHeader(certPath, format string, meta map[string]interface{}) ([]byte, error) {
+	header := []byte("d1ag")
+	var packageType byte
+
+	switch format {
+	case "tar":
+		packageType = 0
+	case "tar.gz":
+		packageType = 01
+	case "tar.zst":
+		packageType = 02
+	}
+
+	var w io.Writer
+	metaBuf := new(bytes.Buffer)
+
+	if certPath == "" {
+		packageType |= 020
+		w = metaBuf
+	} else {
+		// encryption meta information
+		packageType |= 030
+		certString, err := os.ReadFile(certPath)
+		if err != nil {
+			return nil, err
+		}
+		block, _ := pem.Decode(certString)
+		cert, _ := x509.ParseCertificate(block.Bytes)
+		publicKey := cert.PublicKey.(*rsa.PublicKey)
+		w, _ = crypto.NewEncryptWriter(publicKey, metaBuf)
+	}
+
+	j, err := json.Marshal(meta)
+	if err != nil {
+		return nil, err
+	}
+	w.Write(j)
+
+	if metaBuf.Len() > 0777 {
+		return nil, fmt.Errorf("the meta is too big")
+	}
+	header = append(header, packageType, byte(metaBuf.Len()>>16), byte(metaBuf.Len()>>8), byte(metaBuf.Len()))
+	header = append(header, metaBuf.Bytes()...)
+	return header, nil
+}
+
+func ParserD1agHeader(file io.Reader) (meta []byte, encryption, compress, offset int, err error) {
+	buf := make([]byte, 8)
+	r := io.LimitReader(file, 8)
+	_, err = r.Read(buf)
+	if err != nil {
+		return nil, 0, 0, 0, err
+	}
+
+	if string(buf[0:4]) != "d1ag" {
+		// TBD: forbidden upload non-d1ag file
+		return nil, 030, 02, 0, nil
+	}
+
+	encryption = int(buf[4] & 070)
+	compress = int(buf[4] & 007)
+	metaLen := int(buf[5])*0x10000 + int(buf[6])*0x100 + int(buf[7])
+
+	meta = make([]byte, metaLen)
+	_, _ = r.Read(meta)
+	return meta, encryption, compress, metaLen + 8, nil
 }
 
 func PackageCollectedData(pOpt *PackageOptions, skipConfirm bool) (string, error) {
@@ -67,6 +140,23 @@ func PackageCollectedData(pOpt *PackageOptions, skipConfirm bool) (string, error
 	defer compressW.Close()
 	tarW := tar.NewWriter(compressW)
 	defer tarW.Close()
+
+	// read cluster name and id
+	body, err := os.ReadFile(filepath.Join(input, "cluster.json"))
+	if err != nil {
+		return "", err
+	}
+	clusterJSON := map[string]interface{}{}
+	err = json.Unmarshal(body, &clusterJSON)
+	if err != nil {
+		return "", err
+	}
+
+	meta := make(map[string]interface{})
+	meta["cluster_id"] = clusterJSON["cluster_id"]
+	meta["cluster_name"] = clusterJSON["cluster_name"]
+	header, _ := GenerateD1agHeader(certPath, "tar.zst", meta)
+	fileW.Write(header)
 
 	filepath.Walk(input, func(path string, info fs.FileInfo, err error) error {
 		if err != nil {
