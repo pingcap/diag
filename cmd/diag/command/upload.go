@@ -2,6 +2,7 @@ package command
 
 import (
 	"context"
+	"os"
 
 	"github.com/pingcap/diag/pkg/packager"
 	logprinter "github.com/pingcap/tiup/pkg/logger/printer"
@@ -18,6 +19,8 @@ func newUploadCommand() *cobra.Command {
 				return cmd.Help()
 			}
 			opt.FilePath = args[0]
+
+			opt.Token = os.Getenv("CLINIC_TOKEN")
 
 			if opt.UserName == "" || opt.Password == "" {
 				opt.UserName, opt.Password = packager.Credentials()

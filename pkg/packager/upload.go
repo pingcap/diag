@@ -53,13 +53,8 @@ type ClientOptions struct {
 	Endpoint string
 	UserName string
 	Password string
+	Token    string
 	Client   *http.Client
-}
-
-type preCreateBody struct {
-	Encryption byte   `json:"encryption"`
-	Compress   byte   `json:"compress"`
-	Meta       []byte `json:"meta"`
 }
 
 func Upload(ctx context.Context, opt *UploadOptions, skipConfirm bool) (string, error) {
@@ -136,16 +131,15 @@ func Upload(ctx context.Context, opt *UploadOptions, skipConfirm bool) (string, 
 	)
 }
 
-func preCreate(uuid string, fileLen int64, originalName string, meta []byte, encryption, compress byte, opt *UploadOptions) (*preCreateResponse, error) {
-	body, _ := json.Marshal(preCreateBody{
-		Encryption: encryption,
-		Compress:   compress,
-		Meta:       meta,
-	})
-	req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("%s/api/v1/precreate", opt.Endpoint), bytes.NewBuffer(body))
+func preCreate(uuid string, fileLen int64, originalName string, meta []byte, encryption, compress string, opt *UploadOptions) (*preCreateResponse, error) {
+	req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("%s/api/v1/precreate", opt.Endpoint), bytes.NewBuffer(meta))
 	if err != nil {
 		return nil, err
 	}
+	req.Header.Add("token", opt.Token)
+	req.Header.Add("encryption", encryption)
+	req.Header.Add("compress", compress)
+
 	q := req.URL.Query()
 	q.Add("uuid", uuid)
 	q.Add("fileLen", fmt.Sprintf("%d", fileLen))

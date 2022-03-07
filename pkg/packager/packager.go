@@ -86,22 +86,41 @@ func GenerateD1agHeader(meta map[string]interface{}, format byte, certPath strin
 	return header, nil
 }
 
-func ParserD1agHeader(r io.Reader) (meta []byte, encryption, compress byte, offset int, err error) {
+func ParserD1agHeader(r io.Reader) (meta []byte, encryption, compress string, offset int, err error) {
 	buf := make([]byte, 8)
 	_, err = r.Read(buf)
 	if err != nil {
-		return nil, 0, 0, 0, err
+		return nil, "", "", 0, err
 	}
 
 	if string(buf[0:4]) != "d1ag" {
 		// TBD: forbidden upload non-d1ag file
-		return nil, 030, 02, 0, nil
+		return nil, "v1", "tar.zst", 0, nil
 	}
 
-	encryption = buf[4] & 070 // byte 3~5
-	compress = buf[4] & 007   // byte 6~8
-	metaLen := int(buf[5])<<16 + int(buf[6])<<8 + int(buf[7])
+	// byte 3~5
+	switch buf[4] & 070 {
+	case TypeRaw:
+		encryption = "none"
+	case TypeEncryption:
+		encryption = "v1"
+	default:
+		return nil, "", "", 0, fmt.Errorf("unknown type: %x", buf[4])
+	}
 
+	// byte 6~8
+	switch buf[4] & 007 {
+	case TypeTar:
+		compress = "tar"
+	case TypeTarGZ:
+		compress = "tar.gz"
+	case TypeTarZST:
+		compress = "tar.zst"
+	default:
+		return nil, "", "", 0, fmt.Errorf("unknown type: %x", buf[4])
+	}
+
+	metaLen := int(buf[5])<<16 + int(buf[6])<<8 + int(buf[7])
 	meta = make([]byte, metaLen)
 	_, _ = r.Read(meta)
 	return meta, encryption, compress, metaLen + 8, nil
