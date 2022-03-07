@@ -40,29 +40,28 @@ type PackageOptions struct {
 	Meta       map[string]interface{}
 }
 
-// meta not compress
-func GenerateD1agHeader(certPath, format string, meta map[string]interface{}) ([]byte, error) {
-	header := []byte("d1ag")
-	var packageType byte
+const (
+	TypeTar        = 0
+	TypeTarGZ      = 01
+	TypeTarZST     = 02
+	TypeRaw        = 020
+	TypeEncryption = 030
+)
 
-	switch format {
-	case "tar":
-		packageType = 0
-	case "tar.gz":
-		packageType = 01
-	case "tar.zst":
-		packageType = 02
-	}
+// meta not compress
+func GenerateD1agHeader(meta map[string]interface{}, format byte, certPath string) ([]byte, error) {
+	header := []byte("d1ag")
+	packageType := format
 
 	var w io.Writer
 	metaBuf := new(bytes.Buffer)
 
 	if certPath == "" {
-		packageType |= 020
+		packageType |= TypeRaw
 		w = metaBuf
 	} else {
 		// encryption meta information
-		packageType |= 030
+		packageType |= TypeEncryption
 		certString, err := os.ReadFile(certPath)
 		if err != nil {
 			return nil, err
@@ -87,9 +86,8 @@ func GenerateD1agHeader(certPath, format string, meta map[string]interface{}) ([
 	return header, nil
 }
 
-func ParserD1agHeader(file io.Reader) (meta []byte, encryption, compress, offset int, err error) {
+func ParserD1agHeader(r io.Reader) (meta []byte, encryption, compress byte, offset int, err error) {
 	buf := make([]byte, 8)
-	r := io.LimitReader(file, 8)
 	_, err = r.Read(buf)
 	if err != nil {
 		return nil, 0, 0, 0, err
@@ -100,9 +98,9 @@ func ParserD1agHeader(file io.Reader) (meta []byte, encryption, compress, offset
 		return nil, 030, 02, 0, nil
 	}
 
-	encryption = int(buf[4] & 070)
-	compress = int(buf[4] & 007)
-	metaLen := int(buf[5])*0x10000 + int(buf[6])*0x100 + int(buf[7])
+	encryption = buf[4] & 070 // byte 3~5
+	compress = buf[4] & 007   // byte 6~8
+	metaLen := int(buf[5])<<16 + int(buf[6])<<8 + int(buf[7])
 
 	meta = make([]byte, metaLen)
 	_, _ = r.Read(meta)
@@ -153,9 +151,11 @@ func PackageCollectedData(pOpt *PackageOptions, skipConfirm bool) (string, error
 	}
 
 	meta := make(map[string]interface{})
-	meta["cluster_id"] = clusterJSON["cluster_id"]
-	meta["cluster_name"] = clusterJSON["cluster_name"]
-	header, _ := GenerateD1agHeader(certPath, "tar.zst", meta)
+	meta["cluster_id"], meta["cluster_type"], err = validateClusterID(clusterJSON)
+	if err != nil {
+		return "", err
+	}
+	header, _ := GenerateD1agHeader(meta, TypeTarZST, certPath)
 	fileW.Write(header)
 
 	filepath.Walk(input, func(path string, info fs.FileInfo, err error) error {
@@ -244,4 +244,19 @@ func selectCertFile(path string) (string, error) {
 		return "", fmt.Errorf("cannot find cert for encryption: %w", err)
 	}
 	return filepath.Abs(path)
+}
+
+func validateClusterID(clusterJSON map[string]interface{}) (clusterID, clusterType string, err error) {
+	clusterID, ok := clusterJSON["cluster_id"].(string)
+	if !ok {
+		return "", "", fmt.Errorf("cluster_id must exist in cluster.json")
+	}
+	clusterType, ok = clusterJSON["cluster_type"].(string)
+	if !ok {
+		return "", "", fmt.Errorf("cluster_type must exist in cluster.json")
+	}
+	if clusterType == "tidb-cluster" && clusterID == "0" {
+		return "", "", fmt.Errorf("cluster_id should not be 0 for tidb cluster, please check if PD is up when collect data")
+	}
+	return clusterID, clusterType, nil
 }

@@ -57,8 +57,8 @@ type ClientOptions struct {
 }
 
 type preCreateBody struct {
-	Encryption int    `json:"encryption"`
-	Compress   int    `json:"compress"`
+	Encryption byte   `json:"encryption"`
+	Compress   byte   `json:"compress"`
 	Meta       []byte `json:"meta"`
 }
 
@@ -136,7 +136,7 @@ func Upload(ctx context.Context, opt *UploadOptions, skipConfirm bool) (string, 
 	)
 }
 
-func preCreate(uuid string, fileLen int64, originalName string, meta []byte, encryption, compress int, opt *UploadOptions) (*preCreateResponse, error) {
+func preCreate(uuid string, fileLen int64, originalName string, meta []byte, encryption, compress byte, opt *UploadOptions) (*preCreateResponse, error) {
 	body, _ := json.Marshal(preCreateBody{
 		Encryption: encryption,
 		Compress:   compress,
