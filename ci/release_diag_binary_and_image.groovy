@@ -1,7 +1,7 @@
 def run_with_pod(Closure body) {
     def cloud = "kubernetes"
     def namespace = "jenkins-tidb"
-    def jnlp_docker_image = "jenkins/inbound-agent:4.3-4"
+    def jnlp_docker_image = "hub.pingcap.net/clinic/centos7_golang-1.17:latest"
     podTemplate(label: label,
             cloud: cloud,
             namespace: namespace,
@@ -10,7 +10,7 @@ def run_with_pod(Closure body) {
                     containerTemplate(
                             name: 'golang', alwaysPullImage: false,
                             image: "${pod_go_docker_image}", ttyEnabled: true,
-                            resourceRequestCpu: '6000m', resourceRequestMemory: '16Gi',
+                            resourceRequestCpu: '2000m', resourceRequestMemory: '4Gi',
                             command: '/bin/sh -c', args: 'cat',
                             envVars: [containerEnvVar(key: 'GOPATH', value: '/go')], 
                     ),
