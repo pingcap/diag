@@ -49,7 +49,7 @@ run_with_pod {
 						branches: [[name: "${BUILD_BRANCH}"]], 
 						url: "${BUILD_URL}",
 						userRemoteConfigs: [[credentialsId: 'github-sre-bot-ssh', refspec: specStr, url: "${BUILD_URL}"]]]
-				}   catch (info) {
+					}  catch (info) {
 						retry(2) {
 							echo "checkout failed, retry.."
 							sleep 5
@@ -58,9 +58,12 @@ run_with_pod {
 							}
 							checkout changelog: false, poll: false, scm: [$class: 'GitSCM', branches: [[name: 'master']], doGenerateSubmoduleConfigurations: false, extensions: [[$class: 'PruneStaleBranch'], [$class: 'CleanBeforeCheckout'], [$class: 'CloneOption', timeout: 10]], submoduleCfg: [], userRemoteConfigs: [[credentialsId: 'github-sre-bot-ssh', refspec: specStr, url: 'git@github.com/srstack/diag.git']]]
 						}
-				}
+					}
+			}
 
-			sh "pwd $$ ls -l"
+			container("golang") {
+                sh "pwd $$ ls -l"
+            }
         }
 
     
