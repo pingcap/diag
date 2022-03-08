@@ -1,0 +1,33 @@
+apiVersion: v2
+name: diag
+description: clinic diag Helm chart for Kubernetes
+
+# A chart can be either an 'application' or a 'library' chart.
+#
+# Application charts are a collection of templates that can be packaged into versioned archives
+# to be deployed.
+type: application
+
+# This is the chart version. This version number should be incremented each time you make changes
+# to the chart and its templates, including the app version.
+# Versions are expected to follow Semantic Versioning (https://semver.org/)
+version: 0.1.0
+
+# diag version
+appVersion: "0.6.0"
+
+
+home: https://github.com/pingcap/diag
+sources:
+  - https://github.com/pingcap/diag
+keywords:
+  - diag
+  - newsql
+  - htap
+  - database
+  - mysql
+  - raft
+  - clinic
+maintainers:
+- name: AstroProfundis
+  email: zhongbenli@pingcap.com
