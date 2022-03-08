@@ -26,9 +26,13 @@ def run_with_pod(Closure body) {
     }
 }
 
+specStr = "+refs/heads/*:refs/remotes/origin/*"
 
 run_with_pod { 
-    d WORKSPACE = pwd()
+    def WORKSPACE = pwd()
+	def BUILD_URL = "git@github.com/srstack/diag.git"
+	def BUILD_BRANCH = "${GIT_REF}"
+    def RELEASE_TAG = "${RELEASE_VER}"
 
     stage("Checkout") {
             container("golang") {
@@ -37,7 +41,7 @@ run_with_pod {
             // update code
             dir("${WORKSPACE}") {
 				deleteDir()
-				
+
 				try {
 					checkout changelog: false, poll: false, 
 					scm: [
