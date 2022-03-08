@@ -1,0 +1,61 @@
+kind: ServiceAccount
+apiVersion: v1
+metadata:
+  name: {{ .Values.diag.serviceAccount | default "pingcap-clinic" }}
+  labels:
+    app: {{ .Values.diag.app | default "pingcap-clinic" }}
+---
+kind: Role
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: {{ .Values.diag.clusterRole | default "pingcap-clinic" }}
+  labels:
+    app: {{ .Values.diag.app | default "pingcap-clinic" }}
+rules:
+  - apiGroups: [""]
+    resources: ["pods", "services", "secrets"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["pingcap.com"]
+    resources: ["tidbclusters", "tidbmonitors"]
+    verbs: ["get", "list"]
+---
+kind: RoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: {{ .Chart.Name }}
+subjects:
+- kind: ServiceAccount
+  namespace: {{ .Release.Namespace }}
+  name: {{ .Values.diag.serviceAccountName | default "pingcap-clinic" }}
+roleRef:
+  kind: Role
+  name: {{ .Values.diag.clusterRole | default "pingcap-clinic" }}
+  apiGroup: rbac.authorization.k8s.io
+---
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: {{ .Values.diag.serviceAccount | default "pingcap-clinic" }}
+  labels:
+    app: {{ .Values.diag.app | default "pingcap-clinic" }}
+rules:
+  - apiGroups: [""]
+    resources: ["pods", "services", "secrets"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["pingcap.com"]
+    resources: ["tidbclusters", "tidbmonitors"]
+    verbs: ["get", "list"]
+---
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: {{ .Chart.Name }}
+subjects:
+- kind: ServiceAccount
+  namespace: {{ .Release.Namespace }}
+  name: {{ .Values.diag.serviceAccountName  | default "pingcap-clinic" }}
+roleRef:
+  kind: ClusterRole
+  name: {{ .Values.diag.clusterRole | default "pingcap-clinic" }}
+  apiGroup: rbac.authorization.k8s.io
+

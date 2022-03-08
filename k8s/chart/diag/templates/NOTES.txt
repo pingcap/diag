@@ -1,0 +1,4 @@
+Make sure diag-collector components are running:
+
+    kubectl get pods --namespace {{ .Release.Namespace }} -l app.kubernetes.io/instance={{ .Release.Name }}
+    kubectl get svc --namespace {{ .Release.Namespace }} -l app.kubernetes.io/name={{ .Values.diag.diagName | default "diag-collector" }}

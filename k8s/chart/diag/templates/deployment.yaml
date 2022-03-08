@@ -1,0 +1,47 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.diag.diagName | default "diag-collector" }}
+  labels:
+    app: {{ .Values.diag.app | default "pingcap-clinic" }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{ .Values.diag.app | default "pingcap-clinic" }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.diag.app | default "pingcap-clinic" }}
+        app.kubernetes.io/instance: {{ .Release.Name }}
+    spec:
+      serviceAccount: {{ .Values.diag.serviceAccount | default "pingcap-clinic" }}
+      serviceAccountName: {{ .Values.diag.serviceAccountName | default "pingcap-clinic" }}
+      containers:
+      - name: collector
+        image: {{ .Values.image.diagImage }}:{{ .Values.image.imageTag | default "latest" }}
+        imagePullPolicy: {{ .Values.image.imagePullPolicy | default "IfNotPresent" }}
+        {{- if .Values.diag.resources }}
+        resources:
+{{ toYaml .Values.diag.resources | indent 12 }}
+        {{- end }}
+        command:
+        - /usr/local/bin/diag
+        volumeMounts:
+        - mountPath: "/var/lib/clinic-cert"
+          name: {{ .Values.diag.secretName | default "pingcap-clinic-cert" }}
+          readOnly: true
+        env:
+        - name: NAMESPACE
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.namespace
+        - name: CLINIC_USERNAME
+          value: "{{ .Values.diag.clinicUsername | default "Asktug" }}"
+        - name: CLINIC_PASSWORD
+          value: "{{ .Values.diag.clinicPassword | default "Asktug" }}"
+      volumes:
+      - name: {{ .Values.diag.secretName | default "pingcap-clinic-cert" }}
+        secret:
+          secretName: {{ .Values.diag.secretName | default "pingcap-clinic-cert" }}
