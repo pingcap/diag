@@ -31,13 +31,15 @@ require (
 	github.com/pingcap/check v0.0.0-20211026125417-57bd13f7b5f0
 	github.com/pingcap/errors v0.11.5-0.20201126102027-b0a155152ca3
 	github.com/pingcap/log v0.0.0-20211215031037-e024ba4eb0ee
-	github.com/pingcap/tiup v1.9.1
+	github.com/pingcap/tiup v1.10.0-dev.0.20220309055149-4fdb133e7d60
+	github.com/pkg/errors v0.9.1
 	github.com/prometheus/common v0.32.1
 	github.com/prometheus/prometheus v1.8.2
 	github.com/shirou/gopsutil v3.21.11+incompatible
 	github.com/sirupsen/logrus v1.8.1
 	github.com/spf13/cobra v1.3.0
 	github.com/stretchr/testify v1.7.0
+	github.com/tklauser/go-sysconf v0.3.10 // indirect
 	github.com/vishvananda/netlink v0.0.0-20210530105856-14e832ae1e8f
 	go.uber.org/zap v1.21.0
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
