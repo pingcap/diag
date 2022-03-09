@@ -136,15 +136,14 @@ func preCreate(uuid string, fileLen int64, originalName string, meta []byte, enc
 	if err != nil {
 		return nil, err
 	}
-	req.Header.Add("token", opt.Token)
-	req.Header.Add("encryption", encryption)
-	req.Header.Add("compress", compress)
 
 	q := req.URL.Query()
 	q.Add("uuid", uuid)
 	q.Add("fileLen", fmt.Sprintf("%d", fileLen))
 	q.Add("Alias", opt.Alias)
 	q.Add("orignalName", originalName)
+	q.Add("encryption", encryption)
+	q.Add("compression", compress)
 	req.URL.RawQuery = q.Encode()
 
 	appendClinicHeader(req)
@@ -458,7 +457,7 @@ func Credentials() (string, string) {
 }
 
 func requestWithAuth(opt *ClientOptions, req *http.Request) (*http.Response, error) {
-	req.SetBasicAuth(opt.UserName, opt.Password)
+	req.Header.Add("Authorization", "Bearer "+opt.Token)
 	resp, err := opt.Client.Do(req)
 	if err != nil {
 		return nil, err

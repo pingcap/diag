@@ -16,7 +16,6 @@ package packager
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -31,10 +30,6 @@ func TestGenerateAndParserD1agHeader(t *testing.T) {
 		"ext":          "To boldly go where no one has gone before",
 	}
 	file, err := GenerateD1agHeader(meta, TypeTar, "")
-	if err != nil {
-		fmt.Println("--------------")
-		fmt.Println(err)
-	}
 	assert.Nil(err)
 
 	metabyte, encryption, compress, offset, err := ParserD1agHeader(bytes.NewBuffer(file))

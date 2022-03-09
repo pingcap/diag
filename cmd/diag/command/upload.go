@@ -23,9 +23,6 @@ func newUploadCommand() *cobra.Command {
 
 			opt.Token = os.Getenv("CLINIC_TOKEN")
 
-			if opt.UserName == "" || opt.Password == "" {
-				opt.UserName, opt.Password = packager.Credentials()
-			}
 			opt.Client = packager.InitClient(opt.Endpoint)
 			opt.Concurrency = gOpt.Concurrency
 
