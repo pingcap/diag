@@ -15,14 +15,13 @@ package server
 
 import (
 	"fmt"
-	"io/fs"
 	"net/http"
 	"os"
-	"path/filepath"
 	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/pingcap/diag/api/types"
+	"github.com/pingcap/diag/pkg/utils"
 )
 
 // getDataList implements GET /data
@@ -162,16 +161,11 @@ func buildDataFromJob(job *types.CollectJob) (types.DataSet, error) {
 	dir := job.Dir
 
 	// calculate total file size of the data set
-	if err := filepath.Walk(dir, func(path string, info fs.FileInfo, err error) error {
-		if err != nil {
-			return err
-		}
-		if !info.IsDir() {
-			data.Size += info.Size()
-		}
-		return err
-	}); err != nil && !os.IsNotExist(err) {
+	size, err := utils.DirSize(dir)
+	if err != nil && !os.IsNotExist(err) {
 		return data, fmt.Errorf("failed to read data set: %s", err)
 	}
+	data.Size = size
+
 	return data, nil
 }

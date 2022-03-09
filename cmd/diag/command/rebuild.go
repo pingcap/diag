@@ -18,6 +18,8 @@ import (
 	"fmt"
 
 	"github.com/pingcap/diag/collector"
+	"github.com/pingcap/diag/pkg/telemetry"
+	"github.com/pingcap/diag/pkg/utils"
 	"github.com/spf13/cobra"
 )
 
@@ -47,6 +49,17 @@ the diagnostic collector, where the meta.yaml is available.
 			*/
 
 			opt.Concurrency = gOpt.Concurrency
+
+			if reportEnabled {
+				bInfo := &telemetry.RebuildInfo{
+					Local:       opt.Local,
+					Concurrency: opt.Concurrency,
+				}
+				if size, err := utils.DirSize(args[0]); err == nil {
+					bInfo.DataSize = size
+				}
+				teleReport.CommandInfo = bInfo
+			}
 
 			if opt.Host == "" || opt.Host == "localhost" {
 				fmt.Println("Host not set, using localhost(127.0.0.1) as default.")

@@ -24,9 +24,11 @@ import (
 	pingcapv1alpha1 "github.com/pingcap/diag/k8s/apis/pingcap/v1alpha1"
 	kubetls "github.com/pingcap/diag/k8s/apis/tls"
 	"github.com/pingcap/diag/pkg/models"
+	"github.com/pingcap/errors"
 	"github.com/pingcap/tiup/pkg/cluster/executor"
 	operator "github.com/pingcap/tiup/pkg/cluster/operation"
 	"github.com/pingcap/tiup/pkg/cluster/spec"
+	"github.com/pingcap/tiup/pkg/logger"
 	logprinter "github.com/pingcap/tiup/pkg/logger/printer"
 	"github.com/pingcap/tiup/pkg/set"
 	"github.com/pingcap/tiup/pkg/tui"
@@ -276,6 +278,14 @@ func (m *Manager) CollectClusterInfo(
 	}
 
 	if canCollect(cOpt, CollectTypePerf) {
+		if cOpt.PerfDuration < 1 {
+			if m.mode == CollectModeK8s {
+				cOpt.PerfDuration = 30
+			} else {
+				return "", errors.Errorf("perf-duration cannot be less than 1")
+			}
+
+		}
 		collectors = append(collectors,
 			&PerfCollectOptions{
 				BaseOptions: opt,
@@ -321,6 +331,8 @@ func (m *Manager) CollectClusterInfo(
 	if err != nil {
 		return "", err
 	}
+
+	defer logger.OutputAuditLogToFileIfEnabled(resultDir, "diag_audit.log")
 
 	// run collectors
 	collectErrs := make(map[string]error)

@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"github.com/pingcap/diag/pkg/packager"
+	"github.com/pingcap/diag/pkg/telemetry"
 	logprinter "github.com/pingcap/tiup/pkg/logger/printer"
 	"github.com/spf13/cobra"
 )
@@ -28,12 +29,22 @@ func newUploadCommand() *cobra.Command {
 			opt.Client = packager.InitClient(opt.Endpoint)
 			opt.Concurrency = gOpt.Concurrency
 
+			if reportEnabled {
+				teleReport.CommandInfo = &telemetry.UploadInfo{
+					Endpoint: opt.Endpoint,
+				}
+			}
+
 			ctx := context.WithValue(
 				context.Background(),
 				logprinter.ContextKeyLogger,
 				log,
 			)
 			_, err := packager.Upload(ctx, &opt, skipConfirm)
+
+			// TODO: add size info for upload (similar with `package`)
+			// if reportEnabled {}
+
 			return err
 		},
 	}
