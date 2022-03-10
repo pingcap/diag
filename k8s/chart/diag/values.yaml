@@ -10,7 +10,7 @@ image:
   diagImage: pingcap/diag:latest
   imageTag: latest
   
-  imagePullPolicy: Always
+  imagePullPolicy: IfNotPresent
 
 # diag-collector pod config
 diag:
