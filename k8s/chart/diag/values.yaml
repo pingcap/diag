@@ -7,7 +7,7 @@ timezone: UTC
 
 # diag image config
 image:
-  diagImage: hub.pingcap.net/zhongbenli/diag
+  diagImage: pingcap/diag:latest
   imageTag: latest
   
   imagePullPolicy: Always
