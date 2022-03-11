@@ -37,10 +37,8 @@ spec:
             fieldRef:
               apiVersion: v1
               fieldPath: metadata.namespace
-        - name: CLINIC_USERNAME
-          value: "{{ .Values.diag.clinicUsername | default "Asktug" }}"
-        - name: CLINIC_PASSWORD
-          value: "{{ .Values.diag.clinicPassword | default "Asktug" }}"
+        - name: CLINIC_TOKEN
+          value: "{{ .Values.diag.clinicToken | default "Replace token here" }}"
       volumes:
       - name: {{ .Values.diag.secretName | default "pingcap-clinic-cert" }}
         secret:

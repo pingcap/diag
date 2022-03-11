@@ -14,7 +14,6 @@
 package packager
 
 import (
-	"bufio"
 	"bytes"
 	"context"
 	"crypto/tls"
@@ -26,14 +25,12 @@ import (
 	"os"
 	"strings"
 	"sync"
-	"syscall"
 	"time"
 
 	json "github.com/json-iterator/go"
 	"github.com/pingcap/diag/version"
 	"github.com/pingcap/errors"
 	logprinter "github.com/pingcap/tiup/pkg/logger/printer"
-	"golang.org/x/term"
 )
 
 type preCreateResponse struct {
@@ -51,8 +48,6 @@ type UploadOptions struct {
 
 type ClientOptions struct {
 	Endpoint string
-	UserName string
-	Password string
 	Token    string
 	Client   *http.Client
 }
@@ -436,25 +431,6 @@ LcmsJWTyXnW0OMGuf1pGg+pRyrbxmRE1a6Vqe8YAsOf4vmSyrcjC8azjUeqkk+B5
 yOGBQMkKW+ESPMFgKuOXwIlCypTPRpgSabuY0MLTDXJLR27lk8QyKGOHQ+SwMj4K
 00u/I5sUKUErmgQfky3xxzlIPK1aEn8=
 -----END CERTIFICATE-----`
-
-func Credentials() (string, string) {
-	reader := bufio.NewReader(os.Stdin)
-
-	fmt.Print("Enter Username: ")
-	username, err := reader.ReadString('\n')
-	if err != nil {
-		panic(err)
-	}
-
-	fmt.Print("Enter Password: ")
-	bytePassword, err := term.ReadPassword(int(syscall.Stdin))
-	if err != nil {
-		panic(err)
-	}
-
-	Password := string(bytePassword)
-	return strings.TrimSpace(username), strings.TrimSpace(Password)
-}
 
 func requestWithAuth(opt *ClientOptions, req *http.Request) (*http.Response, error) {
 	req.Header.Add("Authorization", "Bearer "+opt.Token)

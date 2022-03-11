@@ -82,10 +82,9 @@ func runUploader(
 	// get credentials from environment variables
 	// this need to be changed to use proper client authentication method
 	// once the clinic server implemented so.
-	clinicUsername := os.Getenv("CLINIC_USERNAME")
-	clinicPassword := os.Getenv("CLINIC_PASSWORD")
-	if clinicUsername == "" || clinicPassword == "" {
-		klog.Error("failed to get CLINIC_USERNAME and CLINIC_PASSWORD env vars.")
+	clinicToken := os.Getenv("CLINIC_TOKEN")
+	if clinicToken == "" {
+		klog.Error("failed to get CLINIC_TOKEN env var.")
 		ctx.Lock()
 		defer ctx.Unlock()
 		worker.uploader.status = taskStatusError
@@ -129,8 +128,7 @@ func runUploader(
 			Concurrency: 5,
 			ClientOptions: packager.ClientOptions{
 				Endpoint: endpoint,
-				UserName: clinicUsername,
-				Password: clinicPassword,
+				Token:    clinicToken,
 				Client:   packager.InitClient(endpoint),
 			},
 		}
