@@ -7,10 +7,10 @@ timezone: UTC
 
 # diag image config
 image:
-  diagImage: hub.pingcap.net/zhongbenli/diag
+  diagImage: pingcap/diag
   imageTag: latest
   
-  imagePullPolicy: Always
+  imagePullPolicy: IfNotPresent
 
 # diag-collector pod config
 diag:

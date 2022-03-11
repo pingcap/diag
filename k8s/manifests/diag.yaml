@@ -18,7 +18,7 @@ spec:
       serviceAccountName: pingcap-clinic
       containers:
       - name: collector
-        image: hub.pingcap.net/zhongbenli/diag:latest
+        image: pingcap/diag:latest
         imagePullPolicy: Always
         command:
         - /usr/local/bin/diag
