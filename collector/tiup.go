@@ -253,7 +253,7 @@ func buildTopoForTiUPCluster(m *Manager, opt *BaseOptions) (*models.TiDBCluster,
 				ComponentSpec: models.ComponentSpec{
 					Host:       i.Host,
 					Port:       i.GetMainPort(),
-					StatusPort: 0,
+					StatusPort: i.GetMainPort(),
 					SSHPort:    i.SSHPort,
 					Attributes: map[string]interface{}{
 						"imported":   i.Imported,
