@@ -28,7 +28,6 @@ require (
 	github.com/lorenzosaino/go-sysctl v0.2.0
 	github.com/mohae/deepcopy v0.0.0-20170929034955-c48cc78d4826
 	github.com/onsi/gomega v1.17.0
-	github.com/otiai10/copy v1.7.0
 	github.com/pingcap/check v0.0.0-20211026125417-57bd13f7b5f0
 	github.com/pingcap/errors v0.11.5-0.20201126102027-b0a155152ca3
 	github.com/pingcap/log v0.0.0-20211215031037-e024ba4eb0ee
