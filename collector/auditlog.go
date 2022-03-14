@@ -28,6 +28,7 @@ import (
 	operator "github.com/pingcap/tiup/pkg/cluster/operation"
 	"github.com/pingcap/tiup/pkg/cluster/spec"
 	"github.com/pingcap/tiup/pkg/cluster/task"
+	tiuputil "github.com/pingcap/tiup/pkg/utils"
 )
 
 // AuditLogCollectOptions are options used collecting component logs
@@ -142,7 +143,7 @@ func (c *AuditLogCollectOptions) Collect(m *Manager, _ *models.TiDBCluster) erro
 					}
 
 					for f := range files {
-						utils.Copy(f, filepath.Join(c.resultDir, fmt.Sprintf("%s_audit", c.topoType), filepath.Base(f)))
+						tiuputil.Copy(f, filepath.Join(c.resultDir, fmt.Sprintf("%s_audit", c.topoType), filepath.Base(f)))
 					}
 				}
 				return nil
