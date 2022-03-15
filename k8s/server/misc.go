@@ -38,3 +38,8 @@ func sendErrMsg(c *gin.Context, status int, msg string) {
 		Message: msg,
 	})
 }
+
+// getStatus implements GET /status
+func getStatus(c *gin.Context) {
+	c.JSON(http.StatusOK, struct{}{})
+}
