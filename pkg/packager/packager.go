@@ -50,7 +50,7 @@ const (
 
 // meta not compress
 func GenerateD1agHeader(meta map[string]interface{}, format byte, certPath string) ([]byte, error) {
-	header := []byte("d1ag")
+	header := []byte("D1ag")
 	packageType := format
 
 	var w io.Writer
@@ -93,7 +93,7 @@ func ParserD1agHeader(r io.Reader) (meta []byte, encryption, compress string, of
 		return nil, "", "", 0, err
 	}
 
-	if string(buf[0:4]) != "d1ag" {
+	if string(buf[0:4]) != "D1ag" {
 		// TBD: forbidden upload non-d1ag file
 		return nil, "v1", "tar.zst", 0, nil
 	}
@@ -174,6 +174,7 @@ func PackageCollectedData(pOpt *PackageOptions, skipConfirm bool) (string, error
 	if err != nil {
 		return "", err
 	}
+	meta["begin_time"], meta["end_time"] = 	clusterJSON["begin_time"], clusterJSON["end_time"]
 	header, _ := GenerateD1agHeader(meta, TypeTarZST, certPath)
 	fileW.Write(header)
 
