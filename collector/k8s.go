@@ -17,6 +17,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strconv"
 	"time"
 
@@ -31,6 +32,12 @@ import (
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/klog"
+)
+
+// unified storage path
+var (
+	k8sBaseDir    = "/diag"
+	k8sPackageDir = filepath.Join(k8sBaseDir, "package")
 )
 
 // prepareArgsForK8sCluster parses arguments and create output dir for tiup-operator
@@ -62,6 +69,11 @@ func (m *Manager) prepareArgsForK8sCluster(
 	// update time strings in setting to ensure all collectors work properly
 	opt.ScrapeBegin = start.Format(time.RFC3339)
 	opt.ScrapeEnd = end.Format(time.RFC3339)
+
+	// set default k8s package dir
+	if cOpt.Dir == "" {
+		cOpt.Dir = filepath.Join(k8sPackageDir, "diag-"+m.session)
+	}
 
 	return m.getOutputDir(cOpt.Dir)
 }
