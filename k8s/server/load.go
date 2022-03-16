@@ -74,5 +74,5 @@ func loadJobWorker(ctx *context) {
 
 	}
 
-	klog.Infof("load worker from %s success", collectDir)
+	klog.Infof("finished loading workers from %s ", collectDir)
 }
