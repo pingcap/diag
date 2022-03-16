@@ -41,7 +41,6 @@ import (
 	"github.com/pingcap/tiup/pkg/localdata"
 	"github.com/pingcap/tiup/pkg/repository"
 	"github.com/pingcap/tiup/pkg/tui/progress"
-	"github.com/pingcap/tiup/pkg/utils"
 	tiuputil "github.com/pingcap/tiup/pkg/utils"
 	"golang.org/x/sync/errgroup"
 	"gopkg.in/yaml.v3"
@@ -152,7 +151,7 @@ func RunLocal(dumpDir string, opt *RebuildOptions) error {
 	atomic.StoreUint32(&booted, 1)
 
 	wg := sync.WaitGroup{}
-	timeoutOpt := utils.RetryOption{
+	timeoutOpt := tiuputil.RetryOption{
 		Attempts: 200,
 		Delay:    time.Millisecond * 300,
 		Timeout:  time.Second * 60,
@@ -170,7 +169,7 @@ func RunLocal(dumpDir string, opt *RebuildOptions) error {
 		mb.StartRenderLoop()
 
 		for comp, ins := range p.Proc {
-			if err := utils.Retry(func() error {
+			if err := tiuputil.Retry(func() error {
 				if ins.ready() {
 					bars[comp].UpdateDisplay(&progress.DisplayProps{
 						Prefix: fmt.Sprintf(" - Set up %s (%s)", comp, ins.addr()),
@@ -410,7 +409,7 @@ func (i *influxdb) start(ctx context.Context) error {
 
 func (i *influxdb) ready() bool {
 	url := fmt.Sprintf("http://%s:%d/health", i.Host, i.HTTPPort)
-	body, err := utils.NewHTTPClient(time.Second*2, &tls.Config{MinVersion: tls.VersionTLS12}).Get(context.TODO(), url)
+	body, err := tiuputil.NewHTTPClient(time.Second*2, &tls.Config{MinVersion: tls.VersionTLS12}).Get(context.TODO(), url)
 	if err != nil {
 		//fmt.Println("still waiting for influxdb to start...")
 		return false
