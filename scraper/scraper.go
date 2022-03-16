@@ -17,6 +17,7 @@ package scraper
 type Option struct {
 	LogPaths    []string // paths of log files
 	ConfigPaths []string // paths of config files
+	FilePaths   []string // paths of normal files
 	Start       string   // start time
 	End         string   // end time
 }
@@ -29,6 +30,7 @@ type FileStat map[string]int64
 type Sample struct {
 	Log    FileStat `json:"log_files,omitempty"`
 	Config FileStat `json:"config_files,omitempty"`
+	File   FileStat `json:"files,omitempty"`
 }
 
 // Scrapper is used to scrap a kind of files
