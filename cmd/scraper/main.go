@@ -28,6 +28,7 @@ var (
 	opt     = &scraper.Option{
 		LogPaths:    make([]string, 0),
 		ConfigPaths: make([]string, 0),
+		FilePaths:   make([]string, 0),
 	}
 )
 
@@ -54,6 +55,7 @@ func init() {
 
 	rootCmd.Flags().StringSliceVar(&opt.LogPaths, "log", nil, "paths of log files to scrap")
 	rootCmd.Flags().StringSliceVar(&opt.ConfigPaths, "config", nil, "paths of config files to scrap")
+	rootCmd.Flags().StringSliceVar(&opt.FilePaths, "file", nil, "paths of normal files to scrap")
 	rootCmd.Flags().StringVarP(&opt.Start, "from", "f", "", "start time of range to scrap, only apply to logs")
 	rootCmd.Flags().StringVarP(&opt.End, "to", "t", "", "start time of range to scrap, only apply to logs")
 
