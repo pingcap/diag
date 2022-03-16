@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"path/filepath"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -121,6 +122,7 @@ func runCollector(
 		Exclude:    set.NewStringSet(),
 		Mode:       collector.CollectModeK8s,
 		RawRequest: req,
+		Dir:        filepath.Join(collectDir, "diag-"+worker.job.ID), // set default k8s package dir
 	}
 
 	// populate logger for the collect job
