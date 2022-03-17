@@ -21,10 +21,15 @@ import (
 
 	"github.com/pingcap/diag/api/types"
 	"github.com/pingcap/diag/collector"
+	tiuputils "github.com/pingcap/tiup/pkg/utils"
 	"k8s.io/klog/v2"
 )
 
 func loadJobWorker(ctx *context) {
+
+	if tiuputils.IsNotExist(collectDir) {
+		os.MkdirAll(collectDir, 0755)
+	}
 
 	// get file list
 	fileList, err := filepath.Glob(filepath.Join(collectDir, "*"))

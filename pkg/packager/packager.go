@@ -28,6 +28,7 @@ import (
 	"github.com/klauspost/compress/zstd"
 	"github.com/pingcap/diag/pkg/crypto"
 	"github.com/pingcap/tiup/pkg/tui"
+	tiuputils "github.com/pingcap/tiup/pkg/utils"
 )
 
 type PackageOptions struct {
@@ -37,6 +38,11 @@ type PackageOptions struct {
 }
 
 func PackageCollectedData(pOpt *PackageOptions, skipConfirm bool) (string, error) {
+
+	if tiuputils.IsNotExist(filepath.Dir(pOpt.OutputFile)) {
+		os.MkdirAll(filepath.Dir(pOpt.OutputFile), 0755)
+	}
+
 	input, err := selectInputDir(pOpt.InputDir, skipConfirm)
 	if err != nil {
 		return "", err
@@ -60,7 +66,6 @@ func PackageCollectedData(pOpt *PackageOptions, skipConfirm bool) (string, error
 	cert, _ := x509.ParseCertificate(block.Bytes)
 	publicKey := cert.PublicKey.(*rsa.PublicKey)
 
-	os.MkdirAll(filepath.Dir(output), 0755)
 	fileW, _ := os.Create(output)
 	defer fileW.Close()
 	encryptW, _ := crypto.NewEncryptWriter(publicKey, fileW)

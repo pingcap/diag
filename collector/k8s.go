@@ -16,7 +16,6 @@ package collector
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -429,7 +428,7 @@ func buildTopoForK8sCluster(
 func GetClusterInfoFromFile(path string) (*ClusterJSON, error) {
 	c := &ClusterJSON{}
 
-	fbytes, err := ioutil.ReadFile(filepath.Join(path, FileNameClusterJSON))
+	fbytes, err := os.ReadFile(filepath.Join(path, FileNameClusterJSON))
 	if err != nil {
 		return c, err
 	}
