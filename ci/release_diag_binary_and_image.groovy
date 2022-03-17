@@ -42,8 +42,7 @@ def run_with_pod(Closure body) {
 	label = "clinic-diag"
     def cloud = "kubernetes"
     def namespace = "jenkins-tidb"
-	def jnlp_docker_image = "jenkins/inbound-agent:4.3-4"
-    def pod_go_docker_image = "hub.pingcap.net/clinic/centos7_golang-1.17:v0.0.3" 
+    def pod_go_docker_image = "hub.pingcap.net/clinic/centos7_golang-1.17:v0.0.2" 
     podTemplate(label: label,
             cloud: cloud,
             namespace: namespace,
@@ -85,7 +84,7 @@ def checkout_scm(BUILD_URL, BUILD_BRANCH) {
 				$class: 'GitSCM',
 				branches: [[name: "${BUILD_BRANCH}"]],
 				userRemoteConfigs: [[
-						credentialsId: 'qiushirui',
+						credentialsId: 'github-sre-bot',
 						refspec: specStr,
 						url: "${BUILD_URL}",
 				]]
@@ -98,7 +97,7 @@ def checkout_scm(BUILD_URL, BUILD_BRANCH) {
 					$class: 'GitSCM',
 					branches: [[name: "${BUILD_BRANCH}"]],
 					userRemoteConfigs: [[
-							credentialsId: 'qiushirui',
+							credentialsId: 'github-sre-bot',
 							refspec: specStr,
 							url: "${BUILD_URL}",
 					]]
@@ -112,7 +111,7 @@ def push_image(IMAGE_PATH, RELEASE_TAG) {
 	// registry list
 	// registryName : [ project,  credentialsId]
 	def Registrys  = [
-		"hub.pingcap.net": ["clinic","qiushiruiHub"], 
+		"hub.pingcap.net": ["clinic","harbor-pingcap"], 
 		"docker.io": ["pingcap", "dockerhub"],
 		"registry.cn-beijing.aliyuncs.com": ["tidb", "ACR_TIDB_ACCOUNT"],
 	]
@@ -233,7 +232,16 @@ def publish_diag_cli(RELEASE_TAG, TIUP_MIRROR) {
 
 	// set TiUP mirror address
 	sh "tiup mirror set ${TIUP_MIRROR}"
+
+	// set tiup private key
+	sh "mkdir -p /home/jenkins/.tiup/keys"
+	sh "ls -l /home/jenkins/.tiup/keys"
+	withCredentials([file(credentialsId: "tiup_private", variable: "tmp_private")]) {
+		sh "mv ${tmp_private} /home/jenkins/.tiup/keys/private.json"
+	}
+	sh "ls -l /home/jenkins/.tiup/keys"
 	
+
 	// build and publish
 	for ( os in OS_Arch.keySet() ) {
 		for ( arch in OS_Arch.get(os) ) {
@@ -296,6 +304,7 @@ run_with_pod {
 			echo "Start publish diag cli"
 			echo "RELEASE_TAG: ${env.RELEASE_TAG}"
 			echo "TIUP_MIRROR: ${env.TIUP_MIRROR}"
+
 
 			publish_diag_cli("${env.RELEASE_TAG}", "${env.TIUP_MIRROR}")
 
