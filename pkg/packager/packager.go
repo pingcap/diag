@@ -60,6 +60,7 @@ func PackageCollectedData(pOpt *PackageOptions, skipConfirm bool) (string, error
 	cert, _ := x509.ParseCertificate(block.Bytes)
 	publicKey := cert.PublicKey.(*rsa.PublicKey)
 
+	os.MkdirAll(filepath.Dir(output), 0755)
 	fileW, _ := os.Create(output)
 	defer fileW.Close()
 	encryptW, _ := crypto.NewEncryptWriter(publicKey, fileW)
