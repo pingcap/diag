@@ -25,6 +25,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 
 	"github.com/klauspost/compress/zstd"
@@ -163,8 +164,10 @@ func PackageCollectedData(pOpt *PackageOptions, skipConfirm bool) (string, error
 	if err != nil {
 		return "", err
 	}
-	clusterJSON := map[string]interface{}{}
-	err = json.Unmarshal(body, &clusterJSON)
+	clusterJSON := make(map[string]interface{})
+	d := json.NewDecoder(bytes.NewBuffer(body))
+	d.UseNumber()
+	err = d.Decode(&clusterJSON)
 	if err != nil {
 		return "", err
 	}
@@ -174,7 +177,7 @@ func PackageCollectedData(pOpt *PackageOptions, skipConfirm bool) (string, error
 	if err != nil {
 		return "", err
 	}
-	meta["begin_time"], meta["end_time"] = 	clusterJSON["begin_time"], clusterJSON["end_time"]
+	meta["begin_time"], meta["end_time"] = clusterJSON["begin_time"], clusterJSON["end_time"]
 	header, _ := GenerateD1agHeader(meta, TypeTarZST, certPath)
 	fileW.Write(header)
 
@@ -266,17 +269,18 @@ func selectCertFile(path string) (string, error) {
 	return filepath.Abs(path)
 }
 
-func validateClusterID(clusterJSON map[string]interface{}) (clusterID, clusterType string, err error) {
-	clusterID, ok := clusterJSON["cluster_id"].(string)
-	if !ok {
-		return "", "", fmt.Errorf("cluster_id must exist in cluster.json")
+func validateClusterID(clusterJSON map[string]interface{}) (clusterID uint64, clusterType string, err error) {
+	IDstr := clusterJSON["cluster_id"].(json.Number).String()
+	clusterID, err = strconv.ParseUint(IDstr, 10, 64)
+	if err != nil {
+		return 0, "", err
 	}
-	clusterType, ok = clusterJSON["cluster_type"].(string)
+	clusterType, ok := clusterJSON["cluster_type"].(string)
 	if !ok {
-		return "", "", fmt.Errorf("cluster_type must exist in cluster.json")
+		return 0, "", fmt.Errorf("cluster_type must exist in cluster.json")
 	}
-	if clusterType == "tidb-cluster" && clusterID == "0" {
-		return "", "", fmt.Errorf("cluster_id should not be 0 for tidb cluster, please check if PD is up when collect data")
+	if clusterType == "tidb-cluster" && clusterID == 0 {
+		return 0, "", fmt.Errorf("cluster_id should not be 0 for tidb cluster, please check if PD is up when collect data")
 	}
 	return clusterID, clusterType, nil
 }

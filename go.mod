@@ -31,7 +31,7 @@ require (
 	github.com/pingcap/check v0.0.0-20211026125417-57bd13f7b5f0
 	github.com/pingcap/errors v0.11.5-0.20201126102027-b0a155152ca3
 	github.com/pingcap/log v0.0.0-20211215031037-e024ba4eb0ee
-	github.com/pingcap/tiup v1.10.0-dev.0.20220309055149-4fdb133e7d60
+	github.com/pingcap/tiup v1.10.0-dev.0.20220317064832-857d4e08a9bd
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/common v0.32.1
 	github.com/prometheus/prometheus v1.8.2
@@ -44,7 +44,6 @@ require (
 	go.uber.org/zap v1.21.0
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
 	golang.org/x/sys v0.0.0-20220207234003-57398862261d
-	golang.org/x/term v0.0.0-20210927222741-03fcf44c2211
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b
 	k8s.io/api v0.22.4
 	k8s.io/apiextensions-apiserver v0.22.4
