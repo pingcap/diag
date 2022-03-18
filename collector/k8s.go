@@ -301,9 +301,8 @@ func buildTopoForK8sCluster(
 
 				cls.TiCDC = append(cls.TiCDC, &models.TiCDCSpec{
 					ComponentSpec: models.ComponentSpec{
-						Host:       pod.Status.PodIP,
-						Port:       8301,
-						StatusPort: 0,
+						Host: pod.Status.PodIP,
+						Port: 8301,
 						Attributes: map[string]interface{}{
 							"id":     ins.ID,
 							"pod":    ins.PodName,
