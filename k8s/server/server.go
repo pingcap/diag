@@ -135,6 +135,7 @@ func newEngine(ctx *context, opt *Options) *gin.Engine {
 
 	// - misc
 	apis.GET("/version", getVersion)
+	apis.GET("/status", getStatus)
 
 	return r
 }

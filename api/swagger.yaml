@@ -344,6 +344,14 @@ paths:
                 type: string
               go:
                 type: string
+  /status:
+    get:
+      operationId: getStatus
+      responses:
+        '200':
+          description: get server status (empty for now)
+          schema:
+            type: object
 definitions:
   DataSet:
     type: object
