@@ -467,9 +467,9 @@ func (s *TiCDCSpec) SSHPort() int { return s.ComponentSpec.SSHPort }
 // StatusURL implements Component interface
 func (s *TiCDCSpec) StatusURL() string {
 	if s.Domain() != "" {
-		return fmt.Sprintf("%s:%d", s.Domain(), s.StatusPort())
+		return fmt.Sprintf("%s:%d", s.Domain(), s.MainPort())
 	}
-	return fmt.Sprintf("%s:%d", s.Host(), s.StatusPort())
+	return fmt.Sprintf("%s:%d", s.Host(), s.MainPort())
 }
 
 // ConfigURL implements Component interface

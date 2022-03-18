@@ -303,7 +303,7 @@ func buildTopoForK8sCluster(
 					ComponentSpec: models.ComponentSpec{
 						Host:       pod.Status.PodIP,
 						Port:       8301,
-						StatusPort: 8301, // default statusPort is 8301
+						StatusPort: 0,
 						Attributes: map[string]interface{}{
 							"id":     ins.ID,
 							"pod":    ins.PodName,
