@@ -29,13 +29,13 @@ func TestGenerateAndParserD1agHeader(t *testing.T) {
 		"cluster_type": "tidb-cluster",
 		"ext":          "To boldly go where no one has gone before",
 	}
-	file, err := GenerateD1agHeader(meta, TypeTar, "")
+	file, err := GenerateD1agHeader(meta, TypeNoCompress, "")
 	assert.Nil(err)
 
-	metabyte, encryption, compress, offset, err := ParserD1agHeader(bytes.NewBuffer(file))
+	metabyte, format, compress, offset, err := ParserD1agHeader(bytes.NewBuffer(file))
 	assert.Nil(err)
-	assert.EqualValues("none", encryption)
-	assert.EqualValues("tar", compress)
+	assert.EqualValues("unknown", format)
+	assert.EqualValues("none", compress)
 	assert.EqualValues(len(file), offset)
 
 	meta2 := make(map[string]interface{})

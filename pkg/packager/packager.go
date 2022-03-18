@@ -42,17 +42,17 @@ type PackageOptions struct {
 }
 
 const (
-	TypeTar        = 0
-	TypeTarGZ      = 01
-	TypeTarZST     = 02
+	TypeNoCompress = 0
+	TypeGZ         = 01
+	TypeZST        = 02
 	TypeRaw        = 020
 	TypeEncryption = 030
 )
 
 // meta not compress
-func GenerateD1agHeader(meta map[string]interface{}, format byte, certPath string) ([]byte, error) {
+func GenerateD1agHeader(meta map[string]interface{}, compress byte, certPath string) ([]byte, error) {
 	header := []byte("D1ag")
-	packageType := format
+	packageType := compress & 070
 
 	var w io.Writer
 	metaBuf := new(bytes.Buffer)
@@ -87,7 +87,7 @@ func GenerateD1agHeader(meta map[string]interface{}, format byte, certPath strin
 	return header, nil
 }
 
-func ParserD1agHeader(r io.Reader) (meta []byte, encryption, compress string, offset int, err error) {
+func ParserD1agHeader(r io.Reader) (meta []byte, format, compress string, offset int, err error) {
 	buf := make([]byte, 8)
 	_, err = r.Read(buf)
 	if err != nil {
@@ -95,28 +95,28 @@ func ParserD1agHeader(r io.Reader) (meta []byte, encryption, compress string, of
 	}
 
 	if string(buf[0:4]) != "D1ag" {
-		// TBD: forbidden upload non-d1ag file
-		return nil, "v1", "tar.zst", 0, nil
+		// TBD: forbidden upload non-D1ag file
+		return nil, "legacy", "zstd", 0, nil
 	}
 
 	// byte 3~5
 	switch buf[4] & 070 {
 	case TypeRaw:
-		encryption = "none"
+		format = "unknown"
 	case TypeEncryption:
-		encryption = "v1"
+		format = "diag"
 	default:
 		return nil, "", "", 0, fmt.Errorf("unknown type: %x", buf[4])
 	}
 
 	// byte 6~8
 	switch buf[4] & 007 {
-	case TypeTar:
-		compress = "tar"
-	case TypeTarGZ:
-		compress = "tar.gz"
-	case TypeTarZST:
-		compress = "tar.zst"
+	case TypeNoCompress:
+		compress = "none"
+	case TypeGZ:
+		compress = "gzip"
+	case TypeZST:
+		compress = "zstd"
 	default:
 		return nil, "", "", 0, fmt.Errorf("unknown type: %x", buf[4])
 	}
@@ -124,7 +124,7 @@ func ParserD1agHeader(r io.Reader) (meta []byte, encryption, compress string, of
 	metaLen := int(buf[5])<<16 + int(buf[6])<<8 + int(buf[7])
 	meta = make([]byte, metaLen)
 	_, _ = r.Read(meta)
-	return meta, encryption, compress, metaLen + 8, nil
+	return meta, format, compress, metaLen + 8, nil
 }
 
 func PackageCollectedData(pOpt *PackageOptions, skipConfirm bool) (string, error) {
@@ -178,7 +178,7 @@ func PackageCollectedData(pOpt *PackageOptions, skipConfirm bool) (string, error
 		return "", err
 	}
 	meta["begin_time"], meta["end_time"] = clusterJSON["begin_time"], clusterJSON["end_time"]
-	header, _ := GenerateD1agHeader(meta, TypeTarZST, certPath)
+	header, _ := GenerateD1agHeader(meta, TypeZST, certPath)
 	fileW.Write(header)
 
 	filepath.Walk(input, func(path string, info fs.FileInfo, err error) error {
