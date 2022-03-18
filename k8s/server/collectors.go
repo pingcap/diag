@@ -35,12 +35,13 @@ import (
 
 // collect job status
 const (
-	taskStatusAccepted = "accepted"
-	taskStatusRunning  = "running"
-	taskStatusError    = "error"
-	taskStatusFinish   = "finished"
-	taskStatusCancel   = "cancelled"
-	taskStatusPurge    = "purged" // data set deleted
+	taskStatusAccepted  = "accepted"
+	taskStatusRunning   = "running"
+	taskStatusError     = "error"
+	taskStatusFinish    = "finished"
+	taskStatusCancel    = "cancelled"
+	taskStatusPurge     = "purged" // data set deleted
+	taskStatusInterrupt = "interrupt"
 )
 
 // collectData implements POST /collectors

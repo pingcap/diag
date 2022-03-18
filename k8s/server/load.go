@@ -57,13 +57,17 @@ func loadJobWorker(ctx *context) {
 		}
 
 		id := strings.Split(fname, "-")[1]
-		c, err := collector.GetClusterInfoFromFile(f)
 
 		status := taskStatusFinish
+		c, err := collector.GetClusterInfoFromFile(f)
 		if err != nil {
 			klog.Warningf("load worker [%s] failed: %v", id, err)
 			status = taskStatusError
 		}
+		if tiuputils.IsExist(filepath.Join(f, collector.CollectLockName)) {
+			status = taskStatusInterrupt
+		}
+
 		job := &types.CollectJob{
 			ID:          strings.Split(f, "-")[1],
 			Status:      status,
