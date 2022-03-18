@@ -87,7 +87,7 @@ func (c *PerfCollectOptions) prepareForTiUP(_ *Manager, topo *models.TiDBCluster
 
 	for _, inst := range instances {
 		switch inst.Type() {
-		case models.ComponentTypeTiDB, models.ComponentTypePD:
+		case models.ComponentTypeTiDB, models.ComponentTypePD, models.ComponentTypeTiCDC:
 
 			// cpu profile
 			fsize := (6 * 1024) * int64(c.duration)
@@ -195,7 +195,7 @@ func buildPerfCollectingTasks(ctx context.Context, inst models.Component, c *Per
 	}
 
 	switch inst.Type() {
-	case models.ComponentTypeTiDB, models.ComponentTypePD:
+	case models.ComponentTypeTiDB, models.ComponentTypePD, models.ComponentTypeTiCDC:
 		// cpu profile
 		perfInfos = append(perfInfos,
 			perfInfo{
