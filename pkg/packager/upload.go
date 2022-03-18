@@ -134,9 +134,9 @@ func preCreate(uuid string, fileLen int64, originalName string, meta []byte, enc
 
 	q := req.URL.Query()
 	q.Add("uuid", uuid)
-	q.Add("fileLen", fmt.Sprintf("%d", fileLen))
-	q.Add("Alias", opt.Alias)
-	q.Add("orignalName", originalName)
+	q.Add("length", fmt.Sprintf("%d", fileLen))
+	q.Add("alias", opt.Alias)
+	q.Add("filename", originalName)
 	q.Add("encryption", encryption)
 	q.Add("compression", compress)
 	req.URL.RawQuery = q.Encode()
@@ -331,8 +331,8 @@ func uploadMultipartFile(fileUUID string, serialNum, size int64, r io.Reader, op
 	}
 	q := req.URL.Query()
 	q.Add("uuid", fileUUID)
-	q.Add("partseq", fmt.Sprintf("%d", serialNum))
-	q.Add("partlen", fmt.Sprintf("%d", size))
+	q.Add("sequence", fmt.Sprintf("%d", serialNum))
+	q.Add("length", fmt.Sprintf("%d", size))
 	req.URL.RawQuery = q.Encode()
 
 	req.Header.Add("Content-Type", "application/octet-stream")
