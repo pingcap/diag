@@ -25,7 +25,6 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
-	"strconv"
 	"strings"
 
 	"github.com/klauspost/compress/zstd"
@@ -269,18 +268,21 @@ func selectCertFile(path string) (string, error) {
 	return filepath.Abs(path)
 }
 
-func validateClusterID(clusterJSON map[string]interface{}) (clusterID uint64, clusterType string, err error) {
-	IDstr := clusterJSON["cluster_id"].(json.Number).String()
-	clusterID, err = strconv.ParseUint(IDstr, 10, 64)
-	if err != nil {
-		return 0, "", err
-	}
-	clusterType, ok := clusterJSON["cluster_type"].(string)
+func validateClusterID(clusterJSON map[string]interface{}) (clusterID string, clusterType string, err error) {
+	clusterID, ok := clusterJSON["cluster_id"].(string)
 	if !ok {
-		return 0, "", fmt.Errorf("cluster_type must exist in cluster.json")
+		IDjson, ok := clusterJSON["cluster_id"].(json.Number)
+		if !ok {
+			return "", "", fmt.Errorf("cluster_id must exist in cluster.json")
+		}
+		clusterID = IDjson.String()
 	}
-	if clusterType == "tidb-cluster" && clusterID == 0 {
-		return 0, "", fmt.Errorf("cluster_id should not be 0 for tidb cluster, please check if PD is up when collect data")
+	clusterType, ok = clusterJSON["cluster_type"].(string)
+	if !ok {
+		return "", "", fmt.Errorf("cluster_type must exist in cluster.json")
+	}
+	if clusterType == "tidb-cluster" && clusterID == "" {
+		return "", "", fmt.Errorf("cluster_id should not be empty for tidb cluster, please check if PD is up when collect data")
 	}
 	return clusterID, clusterType, nil
 }
