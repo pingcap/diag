@@ -127,7 +127,7 @@ func Upload(ctx context.Context, opt *UploadOptions, skipConfirm bool) (string, 
 }
 
 func preCreate(uuid string, fileLen int64, originalName string, meta []byte, encryption, compress string, opt *UploadOptions) (*preCreateResponse, error) {
-	req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("%s/api/v1/precreate", opt.Endpoint), bytes.NewBuffer(meta))
+	req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("%s/clinic/api/v1/precreate", opt.Endpoint), bytes.NewBuffer(meta))
 	if err != nil {
 		return nil, err
 	}
@@ -272,7 +272,7 @@ func appendClinicHeader(req *http.Request) {
 
 func UploadComplete(logger *logprinter.Logger, fileUUID string, opt *UploadOptions) (string, error) {
 	fmt.Println("<>>>>>>>>>")
-	req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("%s/api/v1/flush", opt.Endpoint), nil)
+	req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("%s/clinic/api/v1/flush", opt.Endpoint), nil)
 	if err != nil {
 		return "", err
 	}
@@ -325,7 +325,7 @@ func fnvHash32(logger *logprinter.Logger, raw string) string {
 }
 
 func uploadMultipartFile(fileUUID string, serialNum, size int64, r io.Reader, opt *UploadOptions) error {
-	req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("%s/api/v1/upload", opt.Endpoint), r)
+	req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("%s/clinic/api/v1/upload", opt.Endpoint), r)
 	if err != nil {
 		return err
 	}
