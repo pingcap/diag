@@ -41,6 +41,7 @@ const (
 	FileNameK8sClusterCRD     = "tidbcluster.json" // tidb-operator crd
 	FileNameK8sClusterMonitor = "tidbmonitor.json" // tidb-operator crd
 	DirNameSchema             = "db_vars"
+	DirNameBind               = "sql_bind"
 )
 
 // MetaCollectOptions is the options collecting cluster meta
