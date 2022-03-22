@@ -176,7 +176,7 @@ func PackageCollectedData(pOpt *PackageOptions, skipConfirm bool) (string, error
 	if err != nil {
 		return "", err
 	}
-	meta["begin_time"], meta["end_time"] = clusterJSON["begin_time"], clusterJSON["end_time"]
+	meta["cluster_name"], meta["begin_time"], meta["end_time"] = clusterJSON["cluster_name"], clusterJSON["begin_time"], clusterJSON["end_time"]
 	header, _ := GenerateD1agHeader(meta, TypeZST, certPath)
 	fileW.Write(header)
 
