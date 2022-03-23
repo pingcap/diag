@@ -237,9 +237,11 @@ def publish_diag_cli(RELEASE_TAG, TIUP_MIRROR) {
 	sh "mkdir -p /home/jenkins/.tiup/keys"
 	sh "ls -l /home/jenkins/.tiup/keys"
 	withCredentials([file(credentialsId: "tiup_private", variable: "tmp_private")]) {
-		sh "mv ${tmp_private} bin/pingcap.crt"
+		sh "mv ${tmp_private}  /home/jenkins/.tiup/keys/private.json"
 	}
 	sh "ls -l /home/jenkins/.tiup/keys"
+
+	currDir = pwd()
 	
 
 	// build and publish
@@ -249,7 +251,7 @@ def publish_diag_cli(RELEASE_TAG, TIUP_MIRROR) {
 			sh "pwd && rm -rf bin/* && mkdir -p bin"
 
 			withCredentials([file(credentialsId: "diag_private", variable: "tmp_private")]) {
-				sh "mv ${tmp_private} /home/jenkins/.tiup/keys/private.json"
+				sh "mv ${tmp_private} ${currDir}/bin/pingcap.crt"
 			}
 
 			echo "	build diag-${os}/${arch}"
@@ -266,7 +268,7 @@ def publish_diag_cli(RELEASE_TAG, TIUP_MIRROR) {
 
 			// publish
 			sh """
-				tiup package bin/* --name=diag --release=${RELEASE_TAG} --entry=diag --os=${os} --arch=${arch} --desc="${DIAG_DESC}"
+				tiup package `ls bin` --name=diag --release=${RELEASE_TAG} --entry=diag --os=${os} --arch=${arch} --desc="${DIAG_DESC}"
 				tiup mirror publish diag ${RELEASE_TAG} package/diag-${RELEASE_TAG}-${os}-${arch}.tar.gz diag --arch ${arch} --os ${os} --desc="${DIAG_DESC}"
 			"""
 		}
