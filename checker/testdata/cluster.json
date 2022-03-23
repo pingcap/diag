@@ -1,6 +1,6 @@
 {
   "cluster_name": "m31",
-  "cluster_id": 7026979526203810949,
+  "cluster_id": "7026979526203810949",
   "deploy_type": "tidb-operator",
   "session": "fL6bF88y5Rt",
   "begin_time": "-4h",
