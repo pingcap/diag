@@ -41,7 +41,7 @@ const (
 	taskStatusFinish    = "finished"
 	taskStatusCancel    = "cancelled"
 	taskStatusPurge     = "purged" // data set deleted
-	taskStatusInterrupt = "interrupt"
+	taskStatusInterrupt = "interrupted"
 )
 
 // collectData implements POST /collectors
