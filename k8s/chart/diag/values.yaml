@@ -34,7 +34,7 @@ diag:
   volume: {}
   # if you do not want to lose the data collected by diag-collector due to service restart
   # you can configure the PVC. uncomment the following lines,
-  # adjust them as necessary, and remove the curly braces after 'volumeMount:'.
+  # adjust them as necessary, and remove the curly braces after 'volume:'.
   #  persistentVolumeClaim:
   #    claimName: local-storage-diag
 
