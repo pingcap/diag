@@ -1,4 +1,4 @@
-# docker build . -t hub.pingcap.net/clinic/centos7_golang-1.17:latest
+# docker build . -t hub.pingcap.net/clinic/centos7_golang-1.18:latest
 FROM hub.pingcap.net/jenkins/centos7_jenkins
 
 USER root
@@ -10,9 +10,9 @@ RUN yum install -y git222 python-pip python3-pip
 
 RUN pip install s3cmd requests && pip3 install requests &&  pip3 install qiniu
 
-ENV GOLANG_VERSION 1.17.7
-ENV GOLANG_DOWNLOAD_URL https://dl.google.com/go/go$GOLANG_VERSION.linux-amd64.tar.gz
-ENV GOLANG_DOWNLOAD_SHA256 02b111284bedbfa35a7e5b74a06082d18632eff824fd144312f6063943d49259
+ENV GOLANG_VERSION 1.18
+ENV GOLANG_DOWNLOAD_URL https://go.dev/dl/go1.18.linux-amd64.tar.gz
+ENV GOLANG_DOWNLOAD_SHA256 e85278e98f57cdb150fe8409e6e5df5343ecb13cebf03a5d5ff12bd55a80264f
 
 RUN curl -fsSL "$GOLANG_DOWNLOAD_URL" -o golang.tar.gz \
 	&& echo "$GOLANG_DOWNLOAD_SHA256  golang.tar.gz" | sha256sum -c - \

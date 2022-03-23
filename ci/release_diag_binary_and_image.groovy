@@ -42,7 +42,7 @@ def run_with_pod(Closure body) {
 	label = "clinic-diag"
     def cloud = "kubernetes"
     def namespace = "jenkins-tidb"
-    def pod_go_docker_image = "hub.pingcap.net/clinic/centos7_golang-1.17:v0.0.2" 
+    def pod_go_docker_image = "hub.pingcap.net/clinic/centos7_golang-1.18:latest" 
     podTemplate(label: label,
             cloud: cloud,
             namespace: namespace,
@@ -237,7 +237,7 @@ def publish_diag_cli(RELEASE_TAG, TIUP_MIRROR) {
 	sh "mkdir -p /home/jenkins/.tiup/keys"
 	sh "ls -l /home/jenkins/.tiup/keys"
 	withCredentials([file(credentialsId: "tiup_private", variable: "tmp_private")]) {
-		sh "mv ${tmp_private} /home/jenkins/.tiup/keys/private.json"
+		sh "mv ${tmp_private} bin/pingcap.crt"
 	}
 	sh "ls -l /home/jenkins/.tiup/keys"
 	
@@ -248,8 +248,12 @@ def publish_diag_cli(RELEASE_TAG, TIUP_MIRROR) {
 			// init 
 			sh "pwd && rm -rf bin/* && mkdir -p bin"
 
+			withCredentials([file(credentialsId: "diag_private", variable: "tmp_private")]) {
+				sh "mv ${tmp_private} /home/jenkins/.tiup/keys/private.json"
+			}
+
 			echo "	build diag-${os}/${arch}"
-			sh """BUILD_FLAGS="-trimpath -mod=readonly -modcacherw" GOOS="${os}" GOARCH="${arch}"  make build"""
+			sh """BUILD_FLAGS="-trimpath -mod=readonly -modcacherw -buildvcs=false" GOOS="${os}" GOARCH="${arch}"  make build"""
 			// check binary
 			sh "pwd && ls -l bin"
 		
@@ -262,7 +266,7 @@ def publish_diag_cli(RELEASE_TAG, TIUP_MIRROR) {
 
 			// publish
 			sh """
-				tiup package diag -C bin --name=diag --release=${RELEASE_TAG} --entry=diag --os=${os} --arch=${arch} --desc="${DIAG_DESC}"
+				tiup package bin/* --name=diag --release=${RELEASE_TAG} --entry=diag --os=${os} --arch=${arch} --desc="${DIAG_DESC}"
 				tiup mirror publish diag ${RELEASE_TAG} package/diag-${RELEASE_TAG}-${os}-${arch}.tar.gz diag --arch ${arch} --os ${os} --desc="${DIAG_DESC}"
 			"""
 		}
@@ -317,7 +321,7 @@ run_with_pod {
 
 		stage("Build k8s binary") {
 			// build 
-			sh """BUILD_FLAGS="-trimpath -mod=readonly -modcacherw" make k8s"""
+			sh """BUILD_FLAGS="-trimpath -mod=readonly -modcacherw -buildvcs=false" make k8s"""
 		}
 	}	
 
