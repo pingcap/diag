@@ -32,10 +32,8 @@ spec:
             fieldRef:
               apiVersion: v1
               fieldPath: metadata.namespace
-        - name: CLINIC_USERNAME
-          value: "Asktug"
-        - name: CLINIC_PASSWORD
-          value: "Asktug"
+        - name: CLINIC_TOKEN
+          value: "Replace token here"
       volumes:
       - name: pingcap-clinic-cert
         secret:

@@ -15,8 +15,7 @@ image:
 # diag-collector pod config
 diag:
   diagName: diag-collector
-  clinicUsername: "Asktug"
-  clinicPassword: "Asktug"
+  clinicToken: ""
 
   # replicaCount: 1
 

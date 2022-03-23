@@ -14,7 +14,7 @@
 package packager
 
 import (
-	"bufio"
+	"bytes"
 	"context"
 	"crypto/tls"
 	"crypto/x509"
@@ -25,14 +25,12 @@ import (
 	"os"
 	"strings"
 	"sync"
-	"syscall"
 	"time"
 
 	json "github.com/json-iterator/go"
 	"github.com/pingcap/diag/version"
 	"github.com/pingcap/errors"
 	logprinter "github.com/pingcap/tiup/pkg/logger/printer"
-	"golang.org/x/term"
 )
 
 type preCreateResponse struct {
@@ -50,8 +48,7 @@ type UploadOptions struct {
 
 type ClientOptions struct {
 	Endpoint string
-	UserName string
-	Password string
+	Token    string
 	Client   *http.Client
 }
 
@@ -92,7 +89,17 @@ func Upload(ctx context.Context, opt *UploadOptions, skipConfirm bool) (string, 
 		uuid = fmt.Sprintf("%s-%s", uuid, fnvHash32(logger, opt.Alias))
 	}
 
-	presp, err := preCreate(uuid, fileStat.Size(), fileStat.Name(), opt)
+	f, err := os.Open(opt.FilePath)
+	if err != nil {
+		return "", err
+	}
+	defer f.Close()
+	meta, encryption, compress, offset, err := ParserD1agHeader(f)
+	if err != nil {
+		return "", err
+	}
+
+	presp, err := preCreate(uuid, fileStat.Size()-int64(offset), fileStat.Name(), meta, encryption, compress, opt)
 	if err != nil {
 		return "", err
 	}
@@ -106,7 +113,12 @@ func Upload(ctx context.Context, opt *UploadOptions, skipConfirm bool) (string, 
 			return UploadComplete(logger, uuid, opt)
 		},
 		func() (io.ReadSeekCloser, error) {
-			return os.Open(opt.FilePath)
+			rec, err := os.Open(opt.FilePath)
+			if err != nil {
+				return nil, err
+			}
+			rec.Seek(int64(offset), 0)
+			return rec, nil
 		},
 		func(serial, size int64, r io.Reader) error {
 			return uploadMultipartFile(uuid, serial, size, r, opt)
@@ -114,16 +126,19 @@ func Upload(ctx context.Context, opt *UploadOptions, skipConfirm bool) (string, 
 	)
 }
 
-func preCreate(uuid string, fileLen int64, originalName string, opt *UploadOptions) (*preCreateResponse, error) {
-	req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("%s/api/v1/precreate", opt.Endpoint), nil)
+func preCreate(uuid string, fileLen int64, originalName string, meta []byte, encryption, compress string, opt *UploadOptions) (*preCreateResponse, error) {
+	req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("%s/clinic/api/v1/diag/precreate", opt.Endpoint), bytes.NewBuffer(meta))
 	if err != nil {
 		return nil, err
 	}
+
 	q := req.URL.Query()
 	q.Add("uuid", uuid)
-	q.Add("fileLen", fmt.Sprintf("%d", fileLen))
-	q.Add("Alias", opt.Alias)
-	q.Add("orignalName", originalName)
+	q.Add("length", fmt.Sprintf("%d", fileLen))
+	q.Add("alias", opt.Alias)
+	q.Add("filename", originalName)
+	q.Add("encryption", encryption)
+	q.Add("compression", compress)
 	req.URL.RawQuery = q.Encode()
 
 	appendClinicHeader(req)
@@ -226,7 +241,7 @@ func concurrentUploadFile(
 				}
 				defer f.Close()
 
-				f.Seek(i*presp.BlockBytes, 0)
+				f.Seek(i*presp.BlockBytes, 1)
 				partR := io.LimitReader(f, eachSize)
 
 				if logger.GetDisplayMode() == logprinter.DisplayModeDefault {
@@ -257,7 +272,7 @@ func appendClinicHeader(req *http.Request) {
 
 func UploadComplete(logger *logprinter.Logger, fileUUID string, opt *UploadOptions) (string, error) {
 	fmt.Println("<>>>>>>>>>")
-	req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("%s/api/v1/flush", opt.Endpoint), nil)
+	req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("%s/clinic/api/v1/diag/flush", opt.Endpoint), nil)
 	if err != nil {
 		return "", err
 	}
@@ -310,14 +325,14 @@ func fnvHash32(logger *logprinter.Logger, raw string) string {
 }
 
 func uploadMultipartFile(fileUUID string, serialNum, size int64, r io.Reader, opt *UploadOptions) error {
-	req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("%s/api/v1/upload", opt.Endpoint), r)
+	req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("%s/clinic/api/v1/diag/upload", opt.Endpoint), r)
 	if err != nil {
 		return err
 	}
 	q := req.URL.Query()
 	q.Add("uuid", fileUUID)
-	q.Add("partseq", fmt.Sprintf("%d", serialNum))
-	q.Add("partlen", fmt.Sprintf("%d", size))
+	q.Add("sequence", fmt.Sprintf("%d", serialNum))
+	q.Add("length", fmt.Sprintf("%d", size))
 	req.URL.RawQuery = q.Encode()
 
 	req.Header.Add("Content-Type", "application/octet-stream")
@@ -417,27 +432,8 @@ yOGBQMkKW+ESPMFgKuOXwIlCypTPRpgSabuY0MLTDXJLR27lk8QyKGOHQ+SwMj4K
 00u/I5sUKUErmgQfky3xxzlIPK1aEn8=
 -----END CERTIFICATE-----`
 
-func Credentials() (string, string) {
-	reader := bufio.NewReader(os.Stdin)
-
-	fmt.Print("Enter Username: ")
-	username, err := reader.ReadString('\n')
-	if err != nil {
-		panic(err)
-	}
-
-	fmt.Print("Enter Password: ")
-	bytePassword, err := term.ReadPassword(int(syscall.Stdin))
-	if err != nil {
-		panic(err)
-	}
-
-	Password := string(bytePassword)
-	return strings.TrimSpace(username), strings.TrimSpace(Password)
-}
-
 func requestWithAuth(opt *ClientOptions, req *http.Request) (*http.Response, error) {
-	req.SetBasicAuth(opt.UserName, opt.Password)
+	req.Header.Add("Authorization", "Bearer "+opt.Token)
 	resp, err := opt.Client.Do(req)
 	if err != nil {
 		return nil, err
