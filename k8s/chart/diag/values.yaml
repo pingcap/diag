@@ -15,7 +15,7 @@ image:
 # diag-collector pod config
 diag:
   diagName: diag-collector
-  clinicToken: "Replace token here"
+  clinicToken: ""
 
   # replicaCount: 1
 
