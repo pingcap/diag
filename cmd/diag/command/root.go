@@ -143,7 +143,6 @@ func init() {
 		newPackageCmd(),
 		newRebuildCmd(),
 		newUploadCommand(),
-		newDownloadCommand(),
 		newHistoryCommand(),
 		newCheckCmd(),
 		newAuditCmd(),

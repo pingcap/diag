@@ -59,7 +59,7 @@ type MetaCollectOptions struct {
 type ClusterJSON struct {
 	DiagVersion string              `json:"diag_version"`
 	ClusterName string              `json:"cluster_name"`
-	ClusterID   int64               `json:"cluster_id"`   // the id from pd
+	ClusterID   string              `json:"cluster_id"`   // the id from pd
 	ClusterType string              `json:"cluster_type"` // tidb-cluster or dm-cluster
 	DeployType  string              `json:"deploy_type"`  // deployment type
 	Session     string              `json:"session"`
@@ -104,7 +104,7 @@ func (c *MetaCollectOptions) Prepare(_ *Manager, _ *models.TiDBCluster) (map[str
 func (c *MetaCollectOptions) Collect(m *Manager, topo *models.TiDBCluster) error {
 	// write cluster.json
 	b := c.GetBaseOptions()
-	var clusterID int64
+	var clusterID string
 	var clusterType string
 	var err error
 
@@ -117,12 +117,13 @@ func (c *MetaCollectOptions) Collect(m *Manager, topo *models.TiDBCluster) error
 	switch m.mode {
 	case CollectModeTiUP:
 		tiupTopo := topo.Attributes[CollectModeTiUP].(spec.Topology)
-		clusterID, _ = getTiUPClusterID(ctx, b.Cluster, c.tlsCfg)
+		clusterID, err = getTiUPClusterID(ctx, b.Cluster, c.tlsCfg)
+		if err != nil {
+			return err
+		}
 		clusterType = tiupTopo.Type()
 	case CollectModeK8s:
-		var id int
-		id, _ = strconv.Atoi(c.tc.GetClusterID())
-		clusterID = int64(id)
+		clusterID = c.tc.GetClusterID()
 		clusterType = spec.TopoTypeTiDB
 	default:
 		// nothing
@@ -204,11 +205,11 @@ func (c *MetaCollectOptions) Collect(m *Manager, topo *models.TiDBCluster) error
 	return nil
 }
 
-func getTiUPClusterID(ctx context.Context, clusterName string, tlsCfg *tls.Config) (int64, error) {
+func getTiUPClusterID(ctx context.Context, clusterName string, tlsCfg *tls.Config) (string, error) {
 	metadata, err := spec.ClusterMetadata(clusterName)
 	if err != nil && !errors.Is(perrs.Cause(err), meta.ErrValidate) &&
 		!errors.Is(perrs.Cause(err), spec.ErrNoTiSparkMaster) {
-		return 0, err
+		return "", err
 	}
 
 	pdEndpoints := make([]string, 0)
@@ -217,5 +218,9 @@ func getTiUPClusterID(ctx context.Context, clusterName string, tlsCfg *tls.Confi
 	}
 
 	pdAPI := api.NewPDClient(ctx, pdEndpoints, 2*time.Second, tlsCfg)
-	return pdAPI.GetClusterID()
+	id, err := pdAPI.GetClusterID()
+	if err != nil {
+		return "", err
+	}
+	return strconv.FormatUint(id, 10), nil
 }
