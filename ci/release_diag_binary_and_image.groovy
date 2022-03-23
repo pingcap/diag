@@ -268,7 +268,7 @@ def publish_diag_cli(RELEASE_TAG, TIUP_MIRROR) {
 
 			// publish
 			sh """
-				tiup package `ls bin` --name=diag --release=${RELEASE_TAG} --entry=diag --os=${os} --arch=${arch} --desc="${DIAG_DESC}"
+				tiup package `ls bin` -C bin --name=diag --release=${RELEASE_TAG} --entry=diag --os=${os} --arch=${arch} --desc="${DIAG_DESC}"
 				tiup mirror publish diag ${RELEASE_TAG} package/diag-${RELEASE_TAG}-${os}-${arch}.tar.gz diag --arch ${arch} --os ${os} --desc="${DIAG_DESC}"
 			"""
 		}
