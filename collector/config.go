@@ -17,7 +17,6 @@ import (
 	"context"
 	"crypto/tls"
 	"fmt"
-	"os"
 	"path/filepath"
 	"strings"
 	"time"
@@ -31,7 +30,6 @@ import (
 	"github.com/pingcap/tiup/pkg/cluster/task"
 	logprinter "github.com/pingcap/tiup/pkg/logger/printer"
 	"github.com/pingcap/tiup/pkg/set"
-	"github.com/pingcap/tiup/pkg/utils"
 )
 
 // ConfigCollectOptions are options used collecting component logs
@@ -382,33 +380,8 @@ func (c *ConfigCollectOptions) collectForK8s(m *Manager, topo *models.TiDBCluste
 	return nil
 }
 
-type rtConfig struct {
-	filename string
-	url      string
-}
-
 func buildRealtimeConfigCollectingTasks(ctx context.Context, inst models.Component, resultDir string, tlsCfg *tls.Config) *task.StepDisplay {
-	var configs []rtConfig
-	scheme := "http"
-	if tlsCfg != nil {
-		scheme = "https"
-	}
-
-	switch inst.Type() {
-	case models.ComponentTypePD:
-		configs = append(configs, rtConfig{"config.json", inst.ConfigURL()})
-		configs = append(configs, rtConfig{"store.json", fmt.Sprintf("%s/pd/api/v1/stores", inst.StatusURL())})
-		configs = append(configs, rtConfig{"placement-rule.json", fmt.Sprintf("%s/pd/api/v1/config/placement-rule", inst.StatusURL())})
-	case models.ComponentTypeTiKV:
-		configs = append(configs, rtConfig{"config.json", fmt.Sprintf("%s?full=true", inst.ConfigURL())})
-	case models.ComponentTypeTiDB:
-		configs = append(configs, rtConfig{"config.json", inst.ConfigURL()})
-	case models.ComponentTypeTiFlash:
-		configs = append(configs, rtConfig{"config.json", inst.ConfigURL()})
-	default:
-		// not supported yet, just ignore
-		return nil
-	}
+	var requests []httpRequest
 
 	host := inst.Host()
 	instDir, ok := inst.Attributes()["deploy_dir"].(string)
@@ -420,29 +393,88 @@ func buildRealtimeConfigCollectingTasks(ctx context.Context, inst models.Compone
 		host = pod
 	}
 
+	switch inst.Type() {
+	case models.ComponentTypePD:
+		requests = append(requests,
+			newHTTPRequest(
+				"config.json",
+				filepath.Join(resultDir, host, instDir, "conf"),
+				inst.ConfigURL(),
+				time.Second*3,
+				tlsCfg,
+				nil,
+			),
+		)
+
+		requests = append(requests,
+			newHTTPRequest(
+				"store.json",
+				filepath.Join(resultDir, host, instDir, "conf"),
+				fmt.Sprintf("%s/pd/api/v1/stores", inst.StatusURL()),
+				time.Second*3,
+				tlsCfg,
+				nil,
+			),
+		)
+
+		requests = append(requests,
+			newHTTPRequest(
+				"placement-rule.json",
+				filepath.Join(resultDir, host, instDir, "conf"),
+				fmt.Sprintf("%s/pd/api/v1/config/placement-rule", inst.StatusURL()),
+				time.Second*3,
+				tlsCfg,
+				nil,
+			),
+		)
+
+	case models.ComponentTypeTiKV:
+		requests = append(requests,
+			newHTTPRequest(
+				"config.json",
+				filepath.Join(resultDir, host, instDir, "conf"),
+				fmt.Sprintf("%s?full=true", inst.ConfigURL()),
+				time.Second*3,
+				tlsCfg,
+				nil,
+			),
+		)
+
+	case models.ComponentTypeTiDB:
+		requests = append(requests,
+			newHTTPRequest(
+				"config.json",
+				filepath.Join(resultDir, host, instDir, "conf"),
+				inst.ConfigURL(),
+				time.Second*3,
+				tlsCfg,
+				nil,
+			),
+		)
+
+	case models.ComponentTypeTiFlash:
+		requests = append(requests,
+			newHTTPRequest(
+				"config.json",
+				filepath.Join(resultDir, host, instDir, "conf"),
+				inst.ConfigURL(),
+				time.Second*3,
+				tlsCfg,
+				nil,
+			),
+		)
+	default:
+		// not supported yet, just ignore
+		return nil
+	}
+
 	logger := ctx.Value(logprinter.ContextKeyLogger).(*logprinter.Logger)
 	t := task.NewBuilder(logger).
 		Func(
 			fmt.Sprintf("querying %s:%d", host, inst.MainPort()),
 			func(ctx context.Context) error {
-				c := utils.NewHTTPClient(time.Second*3, tlsCfg)
-				for _, config := range configs {
-					url := fmt.Sprintf("%s://%s", scheme, config.url)
-					resp, err := c.Get(ctx, url)
-					if err != nil {
-						logger.Warnf("fail querying %s: %s, continue", url, err)
-						return nil
-					}
-					fpath := filepath.Join(resultDir, host, instDir, "conf")
-					if err := utils.CreateDir(fpath); err != nil {
-						return err
-					}
-
-					err = os.WriteFile(
-						filepath.Join(resultDir, host, instDir, "conf", config.filename),
-						resp,
-						0600,
-					)
+				for _, r := range requests {
+					err := r.Do(ctx)
 					if err != nil {
 						return err
 					}

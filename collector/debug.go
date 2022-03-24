@@ -1,4 +1,4 @@
-// Copyright 2021 PingCAP, Inc.
+// Copyright 2022 PingCAP, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -30,43 +30,42 @@ import (
 	"github.com/pingcap/tiup/pkg/set"
 )
 
-// PerfCollectOptions are options used collecting pref info
-type PerfCollectOptions struct {
+// DebugCollectOptions are options used collecting debug info
+type DebugCollectOptions struct {
 	*BaseOptions
 	opt       *operator.Options // global operations from cli
-	duration  int               //seconds: profile time(s), default is 30s.
 	resultDir string
 	fileStats map[string][]CollectStat
 	tlsCfg    *tls.Config
 }
 
 // Desc implements the Collector interface
-func (c *PerfCollectOptions) Desc() string {
+func (c *DebugCollectOptions) Desc() string {
 	return "Pref info of components"
 }
 
 // GetBaseOptions implements the Collector interface
-func (c *PerfCollectOptions) GetBaseOptions() *BaseOptions {
+func (c *DebugCollectOptions) GetBaseOptions() *BaseOptions {
 	return c.BaseOptions
 }
 
 // SetBaseOptions implements the Collector interface
-func (c *PerfCollectOptions) SetBaseOptions(opt *BaseOptions) {
+func (c *DebugCollectOptions) SetBaseOptions(opt *BaseOptions) {
 	c.BaseOptions = opt
 }
 
 // SetGlobalOperations sets the global operation fileds
-func (c *PerfCollectOptions) SetGlobalOperations(opt *operator.Options) {
+func (c *DebugCollectOptions) SetGlobalOperations(opt *operator.Options) {
 	c.opt = opt
 }
 
 // SetDir sets the result directory path
-func (c *PerfCollectOptions) SetDir(dir string) {
+func (c *DebugCollectOptions) SetDir(dir string) {
 	c.resultDir = dir
 }
 
 // Prepare implements the Collector interface
-func (c *PerfCollectOptions) Prepare(m *Manager, topo *models.TiDBCluster) (map[string][]CollectStat, error) {
+func (c *DebugCollectOptions) Prepare(m *Manager, topo *models.TiDBCluster) (map[string][]CollectStat, error) {
 
 	switch m.mode {
 	case CollectModeTiUP:
@@ -76,7 +75,7 @@ func (c *PerfCollectOptions) Prepare(m *Manager, topo *models.TiDBCluster) (map[
 }
 
 // // prepareForTiUP implements preparation for tiup-cluster deployed clusters
-func (c *PerfCollectOptions) prepareForTiUP(_ *Manager, topo *models.TiDBCluster) (map[string][]CollectStat, error) {
+func (c *DebugCollectOptions) prepareForTiUP(_ *Manager, topo *models.TiDBCluster) (map[string][]CollectStat, error) {
 	// filter nodes or roles
 	roleFilter := set.NewStringSet(c.opt.Roles...)
 	nodeFilter := set.NewStringSet(c.opt.Nodes...)
@@ -86,37 +85,14 @@ func (c *PerfCollectOptions) prepareForTiUP(_ *Manager, topo *models.TiDBCluster
 
 	for _, inst := range instances {
 		switch inst.Type() {
-		case models.ComponentTypeTiDB, models.ComponentTypePD, models.ComponentTypeTiCDC:
-
-			// cpu profile
-			fsize := (6 * 1024) * int64(c.duration)
-
-			// mem Heap
-			fsize = fsize + 500*1024
-
-			// Goroutine
-			fsize = fsize + 100*1024
-
-			// mutex
-			fsize = fsize + 500*1024
-
-			if inst.Type() == models.ComponentTypePD {
-				fsize = fsize + 800*1024
-			}
+		case models.ComponentTypeTiCDC:
 
 			stat := CollectStat{
 				Target: fmt.Sprintf("%s:%d", inst.Host(), inst.MainPort()),
-				Size:   fsize,
+				Size:   1024 * 5 * 5,
 			}
 
 			c.fileStats[inst.Host()] = append(c.fileStats[inst.Host()], stat)
-
-		case models.ComponentTypeTiKV, models.ComponentTypeTiFlash:
-			// cpu profile
-			c.fileStats[inst.Host()] = append(c.fileStats[inst.Host()], CollectStat{
-				Target: fmt.Sprintf("%s:%d", inst.Host(), inst.MainPort()),
-				Size:   (18 * 1024) * int64(c.duration),
-			})
 		}
 
 	}
@@ -125,14 +101,14 @@ func (c *PerfCollectOptions) prepareForTiUP(_ *Manager, topo *models.TiDBCluster
 }
 
 // Collect implements the Collector interface
-func (c *PerfCollectOptions) Collect(m *Manager, topo *models.TiDBCluster) error {
+func (c *DebugCollectOptions) Collect(m *Manager, topo *models.TiDBCluster) error {
 	ctx := ctxt.New(
 		context.Background(),
 		c.opt.Concurrency,
 		m.logger,
 	)
 
-	collectePerfTasks := []*task.StepDisplay{}
+	collecteDebugTasks := []*task.StepDisplay{}
 
 	// filter nodes or roles
 	roleFilter := set.NewStringSet(c.opt.Roles...)
@@ -144,13 +120,13 @@ func (c *PerfCollectOptions) Collect(m *Manager, topo *models.TiDBCluster) error
 	// build tsaks
 	for _, inst := range instances {
 
-		if t := buildPerfCollectingTasks(ctx, inst, c); len(t) != 0 {
-			collectePerfTasks = append(collectePerfTasks, t...)
+		if t := buildDebugCollectingTasks(ctx, inst, c); len(t) != 0 {
+			collecteDebugTasks = append(collecteDebugTasks, t...)
 		}
 	}
 
 	t := task.NewBuilder(m.logger).
-		ParallelStep("+ Query profile info", false, collectePerfTasks...).Build()
+		ParallelStep("+ Query Debug info", false, collecteDebugTasks...).Build()
 
 	if err := t.Execute(ctx); err != nil {
 		if errorx.Cast(err) != nil {
@@ -163,11 +139,11 @@ func (c *PerfCollectOptions) Collect(m *Manager, topo *models.TiDBCluster) error
 	return nil
 }
 
-// buildPerfCollectingTasks build collect profile information tasks
-func buildPerfCollectingTasks(ctx context.Context, inst models.Component, c *PerfCollectOptions) []*task.StepDisplay {
+// buildDebugCollectingTasks build collect debug information tasks
+func buildDebugCollectingTasks(ctx context.Context, inst models.Component, c *DebugCollectOptions) []*task.StepDisplay {
 	var (
-		perfInfoTasks []*task.StepDisplay
-		requests      []httpRequest
+		debugTasks []*task.StepDisplay
+		requests   []httpRequest
 	)
 
 	host := inst.Host()
@@ -181,63 +157,64 @@ func buildPerfCollectingTasks(ctx context.Context, inst models.Component, c *Per
 	}
 
 	switch inst.Type() {
-	case models.ComponentTypeTiDB, models.ComponentTypePD, models.ComponentTypeTiCDC:
-		// cpu profile
+	case models.ComponentTypeTiCDC:
+		// /debug/info
 		requests = append(requests, newHTTPRequest(
-			"cpu_profile.proto",
-			filepath.Join(c.resultDir, host, instDir, CollectTypePerf),
-			fmt.Sprintf("%s/debug/pprof/profile?seconds=%d", inst.StatusURL(), c.duration),
-			time.Second*time.Duration(c.duration+3),
+			"info.txt",
+			filepath.Join(c.resultDir, host, instDir, CollectTypeDebug),
+			fmt.Sprintf("%s/debug/info", inst.StatusURL()),
+			time.Second*15,
 			c.tlsCfg,
 			nil,
 		))
 
-		// mem Heap
+		// /status
 		requests = append(requests, newHTTPRequest(
-			"mem_heap.proto",
-			filepath.Join(c.resultDir, host, instDir, CollectTypePerf),
-			fmt.Sprintf("%s/debug/pprof/heap", inst.StatusURL()),
-			time.Second*5,
+			"status.txt",
+			filepath.Join(c.resultDir, host, instDir, CollectTypeDebug),
+			fmt.Sprintf("%s/status", inst.StatusURL()),
+			time.Second*10,
 			c.tlsCfg,
 			nil,
 		))
 
-		// Goroutine
+		// changefeeds
 		requests = append(requests, newHTTPRequest(
-			"goroutine.txt",
-			filepath.Join(c.resultDir, host, instDir, CollectTypePerf),
-			fmt.Sprintf("%s/debug/pprof/goroutine?debug=1", inst.StatusURL()),
-			time.Second*5,
+			"changefeeds.txt",
+			filepath.Join(c.resultDir, host, instDir, CollectTypeDebug),
+			fmt.Sprintf("%s/api/v1/changefeeds", inst.StatusURL()),
+			time.Second*10,
 			c.tlsCfg,
 			nil,
 		))
 
-		// mutex
+		// captures
 		requests = append(requests, newHTTPRequest(
-			"mutex.txt",
-			filepath.Join(c.resultDir, host, instDir, CollectTypePerf),
-			fmt.Sprintf("%s/debug/pprof/mutex?debug=1", inst.StatusURL()),
-			time.Second*5,
+			"captures.txt",
+			filepath.Join(c.resultDir, host, instDir, CollectTypeDebug),
+			fmt.Sprintf("%s/api/v1/captures", inst.StatusURL()),
+			time.Second*10,
 			c.tlsCfg,
 			nil,
 		))
 
-	case models.ComponentTypeTiKV, models.ComponentTypeTiFlash:
-		// cpu profile
+		// processors
 		requests = append(requests, newHTTPRequest(
-			"cpu_profile.proto",
-			filepath.Join(c.resultDir, host, instDir, CollectTypePerf),
-			fmt.Sprintf("%s/debug/pprof/profile?seconds=%d", inst.StatusURL(), c.duration),
-			time.Second*time.Duration(c.duration+3),
+			"processors.txt",
+			filepath.Join(c.resultDir, host, instDir, CollectTypeDebug),
+			fmt.Sprintf("%s/api/v1/processors", inst.StatusURL()),
+			time.Second*10,
 			c.tlsCfg,
-			map[string]string{"Content-Type": "application/protobuf"},
+			nil,
 		))
+
 	default:
 		// not supported yet, just ignore
 		return nil
 	}
 
 	logger := ctx.Value(logprinter.ContextKeyLogger).(*logprinter.Logger)
+
 	t := task.NewBuilder(logger).
 		Func(
 			fmt.Sprintf("querying %s:%d", host, inst.MainPort()),
@@ -252,12 +229,12 @@ func buildPerfCollectingTasks(ctx context.Context, inst models.Component, c *Per
 			},
 		).
 		BuildAsStep(fmt.Sprintf(
-			"  - Querying profile info for %s %s:%d",
+			"  - Querying debug info for %s %s:%d",
 			inst.Type(),
 			inst.Host(),
 			inst.MainPort(),
 		))
-	perfInfoTasks = append(perfInfoTasks, t)
+	debugTasks = append(debugTasks, t)
 
-	return perfInfoTasks
+	return debugTasks
 }
