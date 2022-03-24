@@ -41,7 +41,7 @@ type DebugCollectOptions struct {
 
 // Desc implements the Collector interface
 func (c *DebugCollectOptions) Desc() string {
-	return "Pref info of components"
+	return "Debug info of components"
 }
 
 // GetBaseOptions implements the Collector interface
