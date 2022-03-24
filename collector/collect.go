@@ -39,13 +39,14 @@ import (
 
 // types of data to collect
 const (
-	CollectTypeSystem  = "system"
-	CollectTypeMonitor = "monitor"
-	CollectTypeLog     = "log"
-	CollectTypeConfig  = "config"
-	CollectTypeSchema  = "db_vars"
-	CollectTypePerf    = "perf"
-	CollectTypeAudit   = "audit_log"
+	CollectTypeSystem   = "system"
+	CollectTypeMonitor  = "monitor"
+	CollectTypeLog      = "log"
+	CollectTypeConfig   = "config"
+	CollectTypeSchema   = "db_vars"
+	CollectTypePerf     = "perf"
+	CollectTypeAudit    = "audit_log"
+	CollectTypeMetaData = "metadata"
 
 	CollectModeTiUP = "tiup-cluster"  // collect from a tiup-cluster deployed cluster
 	CollectModeK8s  = "tidb-operator" // collect from a tidb-operator deployed cluster
@@ -166,13 +167,14 @@ func (m *Manager) CollectClusterInfo(
 	}
 
 	collectorSet := map[string]bool{
-		CollectTypeSystem:  false,
-		CollectTypeMonitor: false,
-		CollectTypeLog:     false,
-		CollectTypeConfig:  false,
-		CollectTypeSchema:  false,
-		CollectTypePerf:    false,
-		CollectTypeAudit:   false,
+		CollectTypeSystem:   false,
+		CollectTypeMonitor:  false,
+		CollectTypeLog:      false,
+		CollectTypeConfig:   false,
+		CollectTypeSchema:   false,
+		CollectTypePerf:     false,
+		CollectTypeAudit:    false,
+		CollectTypeMetaData: false,
 	}
 
 	for name := range collectorSet {
