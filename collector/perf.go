@@ -105,7 +105,7 @@ func (c *PerfCollectOptions) prepareForTiUP(_ *Manager, topo *models.TiDBCluster
 			}
 
 			stat := CollectStat{
-				Target: fmt.Sprintf("%s:%d", inst.Host(), inst.MainPort()),
+				Target: fmt.Sprintf("%s:%d %s perf", inst.Host(), inst.MainPort(), inst.Type()),
 				Size:   fsize,
 			}
 
@@ -114,7 +114,7 @@ func (c *PerfCollectOptions) prepareForTiUP(_ *Manager, topo *models.TiDBCluster
 		case models.ComponentTypeTiKV, models.ComponentTypeTiFlash:
 			// cpu profile
 			c.fileStats[inst.Host()] = append(c.fileStats[inst.Host()], CollectStat{
-				Target: fmt.Sprintf("%s:%d", inst.Host(), inst.MainPort()),
+				Target: fmt.Sprintf("%s:%d %s perf", inst.Host(), inst.MainPort(), inst.Type()),
 				Size:   (18 * 1024) * int64(c.duration),
 			})
 		}

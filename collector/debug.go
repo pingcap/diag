@@ -88,7 +88,7 @@ func (c *DebugCollectOptions) prepareForTiUP(_ *Manager, topo *models.TiDBCluste
 		case models.ComponentTypeTiCDC:
 
 			stat := CollectStat{
-				Target: fmt.Sprintf("%s:%d", inst.Host(), inst.MainPort()),
+				Target: fmt.Sprintf("%s:%d %s debug", inst.Host(), inst.MainPort(), inst.Type()),
 				Size:   1024 * 5 * 5,
 			}
 
