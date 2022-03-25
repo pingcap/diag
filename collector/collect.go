@@ -317,6 +317,18 @@ func (m *Manager) CollectClusterInfo(
 			})
 	}
 
+	if canCollect(cOpt, CollectTypeMetaData) {
+		collectors = append(collectors,
+			&MetaDataCollectOptions{
+				BaseOptions: opt,
+				opt:         gOpt,
+				resultDir:   resultDir,
+				fileStats:   make(map[string][]CollectStat),
+				tlsCfg:      tlsCfg,
+				topo:        cls,
+			})
+	}
+
 	// prepare
 	// run collectors
 	prepareErrs := make(map[string]error)
