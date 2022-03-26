@@ -22,6 +22,7 @@ import (
 	"time"
 
 	"github.com/joomcode/errorx"
+	httpjob "github.com/pingcap/diag/pkg/http"
 	"github.com/pingcap/diag/pkg/models"
 	perrs "github.com/pingcap/errors"
 	"github.com/pingcap/tiup/pkg/cluster/ctxt"
@@ -381,7 +382,7 @@ func (c *ConfigCollectOptions) collectForK8s(m *Manager, topo *models.TiDBCluste
 }
 
 func buildRealtimeConfigCollectingTasks(ctx context.Context, inst models.Component, resultDir string, tlsCfg *tls.Config) *task.StepDisplay {
-	var requests []httpRequest
+	var httpJobs []httpjob.HttpCollectJob
 
 	host := inst.Host()
 	instDir, ok := inst.Attributes()["deploy_dir"].(string)
@@ -395,72 +396,62 @@ func buildRealtimeConfigCollectingTasks(ctx context.Context, inst models.Compone
 
 	switch inst.Type() {
 	case models.ComponentTypePD:
-		requests = append(requests,
-			newHTTPRequest(
-				"config.json",
-				filepath.Join(resultDir, host, instDir, "conf"),
+		httpJobs = append(httpJobs,
+			*httpjob.NewHttpJob(
+				filepath.Join(resultDir, host, instDir, "conf", "config.json"),
 				inst.ConfigURL(),
-				time.Second*3,
-				tlsCfg,
-				nil,
+				httpjob.WithTlsCfg(tlsCfg),
+				httpjob.WithTimeOut(3*time.Second),
 			),
 		)
 
-		requests = append(requests,
-			newHTTPRequest(
-				"store.json",
-				filepath.Join(resultDir, host, instDir, "conf"),
+		httpJobs = append(httpJobs,
+			*httpjob.NewHttpJob(
+				filepath.Join(resultDir, host, instDir, "conf", "store.json"),
 				fmt.Sprintf("%s/pd/api/v1/stores", inst.StatusURL()),
-				time.Second*3,
-				tlsCfg,
-				nil,
+				httpjob.WithTlsCfg(tlsCfg),
+				httpjob.WithTimeOut(3*time.Second),
 			),
 		)
 
-		requests = append(requests,
-			newHTTPRequest(
-				"placement-rule.json",
-				filepath.Join(resultDir, host, instDir, "conf"),
+		httpJobs = append(httpJobs,
+			*httpjob.NewHttpJob(
+				filepath.Join(resultDir, host, instDir, "conf", "placement-rule.json"),
 				fmt.Sprintf("%s/pd/api/v1/config/placement-rule", inst.StatusURL()),
-				time.Second*3,
-				tlsCfg,
-				nil,
+				httpjob.WithTlsCfg(tlsCfg),
+				httpjob.WithTimeOut(3*time.Second),
 			),
 		)
 
 	case models.ComponentTypeTiKV:
-		requests = append(requests,
-			newHTTPRequest(
-				"config.json",
-				filepath.Join(resultDir, host, instDir, "conf"),
+		httpJobs = append(httpJobs,
+			*httpjob.NewHttpJob(
+				filepath.Join(resultDir, host, instDir, "conf", "config.json"),
 				fmt.Sprintf("%s?full=true", inst.ConfigURL()),
-				time.Second*3,
-				tlsCfg,
-				nil,
+				httpjob.WithTlsCfg(tlsCfg),
+				httpjob.WithTimeOut(3*time.Second),
 			),
 		)
 
 	case models.ComponentTypeTiDB:
-		requests = append(requests,
-			newHTTPRequest(
-				"config.json",
-				filepath.Join(resultDir, host, instDir, "conf"),
+
+		httpJobs = append(httpJobs,
+			*httpjob.NewHttpJob(
+				filepath.Join(resultDir, host, instDir, "conf", "config.json"),
 				inst.ConfigURL(),
-				time.Second*3,
-				tlsCfg,
-				nil,
+				httpjob.WithTlsCfg(tlsCfg),
+				httpjob.WithTimeOut(3*time.Second),
 			),
 		)
 
 	case models.ComponentTypeTiFlash:
-		requests = append(requests,
-			newHTTPRequest(
-				"config.json",
-				filepath.Join(resultDir, host, instDir, "conf"),
+
+		httpJobs = append(httpJobs,
+			*httpjob.NewHttpJob(
+				filepath.Join(resultDir, host, instDir, "conf", "config.json"),
 				inst.ConfigURL(),
-				time.Second*3,
-				tlsCfg,
-				nil,
+				httpjob.WithTlsCfg(tlsCfg),
+				httpjob.WithTimeOut(3*time.Second),
 			),
 		)
 	default:
@@ -473,8 +464,8 @@ func buildRealtimeConfigCollectingTasks(ctx context.Context, inst models.Compone
 		Func(
 			fmt.Sprintf("querying %s:%d", host, inst.MainPort()),
 			func(ctx context.Context) error {
-				for _, r := range requests {
-					err := r.Do(ctx)
+				for _, job := range httpJobs {
+					err := job.Do(ctx)
 					if err != nil {
 						return err
 					}

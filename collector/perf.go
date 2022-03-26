@@ -21,6 +21,7 @@ import (
 	"time"
 
 	"github.com/joomcode/errorx"
+	httpjob "github.com/pingcap/diag/pkg/http"
 	"github.com/pingcap/diag/pkg/models"
 	perrs "github.com/pingcap/errors"
 	"github.com/pingcap/tiup/pkg/cluster/ctxt"
@@ -167,7 +168,7 @@ func (c *PerfCollectOptions) Collect(m *Manager, topo *models.TiDBCluster) error
 func buildPerfCollectingTasks(ctx context.Context, inst models.Component, c *PerfCollectOptions) []*task.StepDisplay {
 	var (
 		perfInfoTasks []*task.StepDisplay
-		requests      []httpRequest
+		httpJobs      []httpjob.HttpCollectJob
 	)
 
 	host := inst.Host()
@@ -183,55 +184,53 @@ func buildPerfCollectingTasks(ctx context.Context, inst models.Component, c *Per
 	switch inst.Type() {
 	case models.ComponentTypeTiDB, models.ComponentTypePD, models.ComponentTypeTiCDC:
 		// cpu profile
-		requests = append(requests, newHTTPRequest(
-			"cpu_profile.proto",
-			filepath.Join(c.resultDir, host, instDir, CollectTypePerf),
-			fmt.Sprintf("%s/debug/pprof/profile?seconds=%d", inst.StatusURL(), c.duration),
-			time.Second*time.Duration(c.duration+3),
-			c.tlsCfg,
-			nil,
-		))
+		httpJobs = append(httpJobs,
+			*httpjob.NewHttpJob(
+				filepath.Join(c.resultDir, host, instDir, CollectTypePerf, "cpu_profile.proto"),
+				fmt.Sprintf("%s/debug/pprof/profile?seconds=%d", inst.StatusURL(), c.duration),
+				httpjob.WithTlsCfg(c.tlsCfg),
+				httpjob.WithTimeOut(time.Second*time.Duration(c.duration+3)),
+			),
+		)
 
 		// mem Heap
-		requests = append(requests, newHTTPRequest(
-			"mem_heap.proto",
-			filepath.Join(c.resultDir, host, instDir, CollectTypePerf),
-			fmt.Sprintf("%s/debug/pprof/heap", inst.StatusURL()),
-			time.Second*5,
-			c.tlsCfg,
-			nil,
-		))
+		httpJobs = append(httpJobs,
+			*httpjob.NewHttpJob(
+				filepath.Join(c.resultDir, host, instDir, CollectTypePerf, "mem_heap.proto"),
+				fmt.Sprintf("%s/debug/pprof/heap", inst.StatusURL()),
+				httpjob.WithTlsCfg(c.tlsCfg),
+			),
+		)
 
 		// Goroutine
-		requests = append(requests, newHTTPRequest(
-			"goroutine.txt",
-			filepath.Join(c.resultDir, host, instDir, CollectTypePerf),
-			fmt.Sprintf("%s/debug/pprof/goroutine?debug=1", inst.StatusURL()),
-			time.Second*5,
-			c.tlsCfg,
-			nil,
-		))
+		httpJobs = append(httpJobs,
+			*httpjob.NewHttpJob(
+				filepath.Join(c.resultDir, host, instDir, CollectTypePerf, "goroutine.txt"),
+				fmt.Sprintf("%s/debug/pprof/goroutine?debug=1", inst.StatusURL()),
+				httpjob.WithTlsCfg(c.tlsCfg),
+			),
+		)
 
 		// mutex
-		requests = append(requests, newHTTPRequest(
-			"mutex.txt",
-			filepath.Join(c.resultDir, host, instDir, CollectTypePerf),
-			fmt.Sprintf("%s/debug/pprof/mutex?debug=1", inst.StatusURL()),
-			time.Second*5,
-			c.tlsCfg,
-			nil,
-		))
+		httpJobs = append(httpJobs,
+			*httpjob.NewHttpJob(
+				filepath.Join(c.resultDir, host, instDir, CollectTypePerf, "mutex.txt"),
+				fmt.Sprintf("%s/debug/pprof/mutex?debug=1", inst.StatusURL()),
+				httpjob.WithTlsCfg(c.tlsCfg),
+			),
+		)
 
 	case models.ComponentTypeTiKV, models.ComponentTypeTiFlash:
 		// cpu profile
-		requests = append(requests, newHTTPRequest(
-			"cpu_profile.proto",
-			filepath.Join(c.resultDir, host, instDir, CollectTypePerf),
-			fmt.Sprintf("%s/debug/pprof/profile?seconds=%d", inst.StatusURL(), c.duration),
-			time.Second*time.Duration(c.duration+3),
-			c.tlsCfg,
-			map[string]string{"Content-Type": "application/protobuf"},
-		))
+		httpJobs = append(httpJobs,
+			*httpjob.NewHttpJob(
+				filepath.Join(c.resultDir, host, instDir, CollectTypePerf, "cpu_profile.proto"),
+				fmt.Sprintf("%s/debug/pprof/profile?seconds=%d", inst.StatusURL(), c.duration),
+				httpjob.WithTlsCfg(c.tlsCfg),
+				httpjob.WithTimeOut(time.Second*time.Duration(c.duration+3)),
+				httpjob.WithHeader(map[string]string{"Content-Type": "application/protobuf"}),
+			),
+		)
 	default:
 		// not supported yet, just ignore
 		return nil
@@ -242,8 +241,8 @@ func buildPerfCollectingTasks(ctx context.Context, inst models.Component, c *Per
 		Func(
 			fmt.Sprintf("querying %s:%d", host, inst.MainPort()),
 			func(ctx context.Context) error {
-				for _, r := range requests {
-					err := r.Do(ctx)
+				for _, job := range httpJobs {
+					err := job.Do(ctx)
 					if err != nil {
 						return err
 					}

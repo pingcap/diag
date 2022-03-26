@@ -21,6 +21,7 @@ import (
 	"time"
 
 	"github.com/joomcode/errorx"
+	httpjob "github.com/pingcap/diag/pkg/http"
 	"github.com/pingcap/diag/pkg/models"
 	perrs "github.com/pingcap/errors"
 	"github.com/pingcap/tiup/pkg/cluster/ctxt"
@@ -143,7 +144,7 @@ func (c *DebugCollectOptions) Collect(m *Manager, topo *models.TiDBCluster) erro
 func buildDebugCollectingTasks(ctx context.Context, inst models.Component, c *DebugCollectOptions) []*task.StepDisplay {
 	var (
 		debugTasks []*task.StepDisplay
-		requests   []httpRequest
+		httpJobs   []httpjob.HttpCollectJob
 	)
 
 	host := inst.Host()
@@ -159,54 +160,50 @@ func buildDebugCollectingTasks(ctx context.Context, inst models.Component, c *De
 	switch inst.Type() {
 	case models.ComponentTypeTiCDC:
 		// /debug/info
-		requests = append(requests, newHTTPRequest(
-			"info.txt",
-			filepath.Join(c.resultDir, host, instDir, CollectTypeDebug),
-			fmt.Sprintf("%s/debug/info", inst.StatusURL()),
-			time.Second*15,
-			c.tlsCfg,
-			nil,
-		))
+		httpJobs = append(httpJobs,
+			*httpjob.NewHttpJob(
+				filepath.Join(c.resultDir, host, instDir, CollectTypeDebug, "info.txt"),
+				fmt.Sprintf("%s/debug/info", inst.StatusURL()),
+				httpjob.WithTlsCfg(c.tlsCfg),
+				httpjob.WithTimeOut(15*time.Second),
+			),
+		)
 
 		// /status
-		requests = append(requests, newHTTPRequest(
-			"status.txt",
-			filepath.Join(c.resultDir, host, instDir, CollectTypeDebug),
-			fmt.Sprintf("%s/status", inst.StatusURL()),
-			time.Second*10,
-			c.tlsCfg,
-			nil,
-		))
+		httpJobs = append(httpJobs,
+			*httpjob.NewHttpJob(
+				filepath.Join(c.resultDir, host, instDir, CollectTypeDebug, "status.txt"),
+				fmt.Sprintf("%s/status", inst.StatusURL()),
+				httpjob.WithTlsCfg(c.tlsCfg),
+			),
+		)
 
 		// changefeeds
-		requests = append(requests, newHTTPRequest(
-			"changefeeds.txt",
-			filepath.Join(c.resultDir, host, instDir, CollectTypeDebug),
-			fmt.Sprintf("%s/api/v1/changefeeds", inst.StatusURL()),
-			time.Second*10,
-			c.tlsCfg,
-			nil,
-		))
+		httpJobs = append(httpJobs,
+			*httpjob.NewHttpJob(
+				filepath.Join(c.resultDir, host, instDir, CollectTypeDebug, "changefeeds.txt"),
+				fmt.Sprintf("%s/api/v1/changefeeds", inst.StatusURL()),
+				httpjob.WithTlsCfg(c.tlsCfg),
+			),
+		)
 
 		// captures
-		requests = append(requests, newHTTPRequest(
-			"captures.txt",
-			filepath.Join(c.resultDir, host, instDir, CollectTypeDebug),
-			fmt.Sprintf("%s/api/v1/captures", inst.StatusURL()),
-			time.Second*10,
-			c.tlsCfg,
-			nil,
-		))
+		httpJobs = append(httpJobs,
+			*httpjob.NewHttpJob(
+				filepath.Join(c.resultDir, host, instDir, CollectTypeDebug, "captures.txt"),
+				fmt.Sprintf("%s/api/v1/captures", inst.StatusURL()),
+				httpjob.WithTlsCfg(c.tlsCfg),
+			),
+		)
 
 		// processors
-		requests = append(requests, newHTTPRequest(
-			"processors.txt",
-			filepath.Join(c.resultDir, host, instDir, CollectTypeDebug),
-			fmt.Sprintf("%s/api/v1/processors", inst.StatusURL()),
-			time.Second*10,
-			c.tlsCfg,
-			nil,
-		))
+		httpJobs = append(httpJobs,
+			*httpjob.NewHttpJob(
+				filepath.Join(c.resultDir, host, instDir, CollectTypeDebug, "processors.txt"),
+				fmt.Sprintf("%s/api/v1/processors", inst.StatusURL()),
+				httpjob.WithTlsCfg(c.tlsCfg),
+			),
+		)
 
 	default:
 		// not supported yet, just ignore
@@ -219,8 +216,8 @@ func buildDebugCollectingTasks(ctx context.Context, inst models.Component, c *De
 		Func(
 			fmt.Sprintf("querying %s:%d", host, inst.MainPort()),
 			func(ctx context.Context) error {
-				for _, r := range requests {
-					err := r.Do(ctx)
+				for _, job := range httpJobs {
+					err := job.Do(ctx)
 					if err != nil {
 						return err
 					}
