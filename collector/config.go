@@ -22,7 +22,7 @@ import (
 	"time"
 
 	"github.com/joomcode/errorx"
-	httpjob "github.com/pingcap/diag/pkg/http"
+	httptask "github.com/pingcap/diag/pkg/http"
 	"github.com/pingcap/diag/pkg/models"
 	perrs "github.com/pingcap/errors"
 	"github.com/pingcap/tiup/pkg/cluster/ctxt"
@@ -255,7 +255,7 @@ func (c *ConfigCollectOptions) collectForTiUP(m *Manager, cls *models.TiDBCluste
 
 		// query realtime configs for each instance if supported
 		// TODO: support TLS enabled clusters
-		if t3 := buildRealtimeConfigCollectingTasks(ctx, inst, c.resultDir, c.tlsCfg); t3 != nil {
+		if t3 := buildRealtimeConfigCollectingTasks(ctx, m, inst, c.resultDir); t3 != nil {
 			queryTasks = append(queryTasks, t3)
 		}
 	}
@@ -361,7 +361,7 @@ func (c *ConfigCollectOptions) collectForK8s(m *Manager, topo *models.TiDBCluste
 
 		// query realtime configs for each instance if supported
 		// TODO: support TLS enabled clusters
-		if t3 := buildRealtimeConfigCollectingTasks(ctx, inst, c.resultDir, c.tlsCfg); t3 != nil {
+		if t3 := buildRealtimeConfigCollectingTasks(ctx, m, inst, c.resultDir); t3 != nil {
 			queryTasks = append(queryTasks, t3)
 		}
 	}
@@ -381,8 +381,8 @@ func (c *ConfigCollectOptions) collectForK8s(m *Manager, topo *models.TiDBCluste
 	return nil
 }
 
-func buildRealtimeConfigCollectingTasks(ctx context.Context, inst models.Component, resultDir string, tlsCfg *tls.Config) *task.StepDisplay {
-	var httpJobs []httpjob.HttpCollectJob
+func buildRealtimeConfigCollectingTasks(ctx context.Context, m *Manager, inst models.Component, resultDir string) *task.StepDisplay {
+	var httpTasks []httptask.HTTPCollectTask
 
 	host := inst.Host()
 	instDir, ok := inst.Attributes()["deploy_dir"].(string)
@@ -396,62 +396,56 @@ func buildRealtimeConfigCollectingTasks(ctx context.Context, inst models.Compone
 
 	switch inst.Type() {
 	case models.ComponentTypePD:
-		httpJobs = append(httpJobs,
-			*httpjob.NewHttpJob(
+		httpTasks = append(httpTasks,
+			*m.httpTaskBuilder(
 				filepath.Join(resultDir, host, instDir, "conf", "config.json"),
 				inst.ConfigURL(),
-				httpjob.WithTlsCfg(tlsCfg),
-				httpjob.WithTimeOut(3*time.Second),
+				httptask.WithTimeOut(3*time.Second),
 			),
 		)
 
-		httpJobs = append(httpJobs,
-			*httpjob.NewHttpJob(
+		httpTasks = append(httpTasks,
+			*m.httpTaskBuilder(
 				filepath.Join(resultDir, host, instDir, "conf", "store.json"),
 				fmt.Sprintf("%s/pd/api/v1/stores", inst.StatusURL()),
-				httpjob.WithTlsCfg(tlsCfg),
-				httpjob.WithTimeOut(3*time.Second),
+				httptask.WithTimeOut(3*time.Second),
 			),
 		)
 
-		httpJobs = append(httpJobs,
-			*httpjob.NewHttpJob(
+		httpTasks = append(httpTasks,
+			*m.httpTaskBuilder(
 				filepath.Join(resultDir, host, instDir, "conf", "placement-rule.json"),
 				fmt.Sprintf("%s/pd/api/v1/config/placement-rule", inst.StatusURL()),
-				httpjob.WithTlsCfg(tlsCfg),
-				httpjob.WithTimeOut(3*time.Second),
+				httptask.WithTimeOut(3*time.Second),
 			),
 		)
 
 	case models.ComponentTypeTiKV:
-		httpJobs = append(httpJobs,
-			*httpjob.NewHttpJob(
+		httpTasks = append(httpTasks,
+			*m.httpTaskBuilder(
 				filepath.Join(resultDir, host, instDir, "conf", "config.json"),
 				fmt.Sprintf("%s?full=true", inst.ConfigURL()),
-				httpjob.WithTlsCfg(tlsCfg),
-				httpjob.WithTimeOut(3*time.Second),
+				httptask.WithTimeOut(3*time.Second),
 			),
 		)
 
 	case models.ComponentTypeTiDB:
 
-		httpJobs = append(httpJobs,
-			*httpjob.NewHttpJob(
+		httpTasks = append(httpTasks,
+			*m.httpTaskBuilder(
 				filepath.Join(resultDir, host, instDir, "conf", "config.json"),
 				inst.ConfigURL(),
-				httpjob.WithTlsCfg(tlsCfg),
-				httpjob.WithTimeOut(3*time.Second),
+				httptask.WithTimeOut(3*time.Second),
 			),
 		)
 
 	case models.ComponentTypeTiFlash:
 
-		httpJobs = append(httpJobs,
-			*httpjob.NewHttpJob(
+		httpTasks = append(httpTasks,
+			*m.httpTaskBuilder(
 				filepath.Join(resultDir, host, instDir, "conf", "config.json"),
 				inst.ConfigURL(),
-				httpjob.WithTlsCfg(tlsCfg),
-				httpjob.WithTimeOut(3*time.Second),
+				httptask.WithTimeOut(3*time.Second),
 			),
 		)
 	default:
@@ -464,8 +458,8 @@ func buildRealtimeConfigCollectingTasks(ctx context.Context, inst models.Compone
 		Func(
 			fmt.Sprintf("querying %s:%d", host, inst.MainPort()),
 			func(ctx context.Context) error {
-				for _, job := range httpJobs {
-					err := job.Do(ctx)
+				for _, task := range httpTasks {
+					err := task.Do(ctx)
 					if err != nil {
 						return err
 					}

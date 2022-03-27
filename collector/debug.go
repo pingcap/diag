@@ -15,13 +15,12 @@ package collector
 
 import (
 	"context"
-	"crypto/tls"
 	"fmt"
 	"path/filepath"
 	"time"
 
 	"github.com/joomcode/errorx"
-	httpjob "github.com/pingcap/diag/pkg/http"
+	httptask "github.com/pingcap/diag/pkg/http"
 	"github.com/pingcap/diag/pkg/models"
 	perrs "github.com/pingcap/errors"
 	"github.com/pingcap/tiup/pkg/cluster/ctxt"
@@ -37,7 +36,6 @@ type DebugCollectOptions struct {
 	opt       *operator.Options // global operations from cli
 	resultDir string
 	fileStats map[string][]CollectStat
-	tlsCfg    *tls.Config
 }
 
 // Desc implements the Collector interface
@@ -121,7 +119,7 @@ func (c *DebugCollectOptions) Collect(m *Manager, topo *models.TiDBCluster) erro
 	// build tsaks
 	for _, inst := range instances {
 
-		if t := buildDebugCollectingTasks(ctx, inst, c); len(t) != 0 {
+		if t := buildDebugCollectingTasks(ctx, m, inst, c); len(t) != 0 {
 			collecteDebugTasks = append(collecteDebugTasks, t...)
 		}
 	}
@@ -141,10 +139,10 @@ func (c *DebugCollectOptions) Collect(m *Manager, topo *models.TiDBCluster) erro
 }
 
 // buildDebugCollectingTasks build collect debug information tasks
-func buildDebugCollectingTasks(ctx context.Context, inst models.Component, c *DebugCollectOptions) []*task.StepDisplay {
+func buildDebugCollectingTasks(ctx context.Context, m *Manager, inst models.Component, c *DebugCollectOptions) []*task.StepDisplay {
 	var (
 		debugTasks []*task.StepDisplay
-		httpJobs   []httpjob.HttpCollectJob
+		httpTasks  []httptask.HTTPCollectTask
 	)
 
 	host := inst.Host()
@@ -160,48 +158,43 @@ func buildDebugCollectingTasks(ctx context.Context, inst models.Component, c *De
 	switch inst.Type() {
 	case models.ComponentTypeTiCDC:
 		// /debug/info
-		httpJobs = append(httpJobs,
-			*httpjob.NewHttpJob(
+		httpTasks = append(httpTasks,
+			*m.httpTaskBuilder(
 				filepath.Join(c.resultDir, host, instDir, CollectTypeDebug, "info.txt"),
 				fmt.Sprintf("%s/debug/info", inst.StatusURL()),
-				httpjob.WithTlsCfg(c.tlsCfg),
-				httpjob.WithTimeOut(15*time.Second),
+				httptask.WithTimeOut(15*time.Second),
 			),
 		)
 
 		// /status
-		httpJobs = append(httpJobs,
-			*httpjob.NewHttpJob(
+		httpTasks = append(httpTasks,
+			*m.httpTaskBuilder(
 				filepath.Join(c.resultDir, host, instDir, CollectTypeDebug, "status.txt"),
 				fmt.Sprintf("%s/status", inst.StatusURL()),
-				httpjob.WithTlsCfg(c.tlsCfg),
 			),
 		)
 
 		// changefeeds
-		httpJobs = append(httpJobs,
-			*httpjob.NewHttpJob(
+		httpTasks = append(httpTasks,
+			*m.httpTaskBuilder(
 				filepath.Join(c.resultDir, host, instDir, CollectTypeDebug, "changefeeds.txt"),
 				fmt.Sprintf("%s/api/v1/changefeeds", inst.StatusURL()),
-				httpjob.WithTlsCfg(c.tlsCfg),
 			),
 		)
 
 		// captures
-		httpJobs = append(httpJobs,
-			*httpjob.NewHttpJob(
+		httpTasks = append(httpTasks,
+			*m.httpTaskBuilder(
 				filepath.Join(c.resultDir, host, instDir, CollectTypeDebug, "captures.txt"),
 				fmt.Sprintf("%s/api/v1/captures", inst.StatusURL()),
-				httpjob.WithTlsCfg(c.tlsCfg),
 			),
 		)
 
 		// processors
-		httpJobs = append(httpJobs,
-			*httpjob.NewHttpJob(
+		httpTasks = append(httpTasks,
+			*m.httpTaskBuilder(
 				filepath.Join(c.resultDir, host, instDir, CollectTypeDebug, "processors.txt"),
 				fmt.Sprintf("%s/api/v1/processors", inst.StatusURL()),
-				httpjob.WithTlsCfg(c.tlsCfg),
 			),
 		)
 
@@ -216,8 +209,8 @@ func buildDebugCollectingTasks(ctx context.Context, inst models.Component, c *De
 		Func(
 			fmt.Sprintf("querying %s:%d", host, inst.MainPort()),
 			func(ctx context.Context) error {
-				for _, job := range httpJobs {
-					err := job.Do(ctx)
+				for _, task := range httpTasks {
+					err := task.Do(ctx)
 					if err != nil {
 						return err
 					}

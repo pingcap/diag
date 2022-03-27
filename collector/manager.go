@@ -14,8 +14,10 @@
 package collector
 
 import (
+	"crypto/tls"
 	"time"
 
+	httptask "github.com/pingcap/diag/pkg/http"
 	"github.com/pingcap/tiup/pkg/base52"
 	"github.com/pingcap/tiup/pkg/cluster/executor"
 	operator "github.com/pingcap/tiup/pkg/cluster/operation"
@@ -33,6 +35,7 @@ type Manager struct {
 	session     string // an unique ID of the collection
 	mode        string // tiup-cluster or tidb-operator
 	logger      *logprinter.Logger
+	tlsCfg      *tls.Config // cluster tls config
 }
 
 // NewManager create a Manager.
@@ -90,4 +93,14 @@ func (m *Manager) sshTaskBuilder(name string, topo spec.Topology, user string, o
 			opts.SSHType,
 			topo.BaseTopo().GlobalOptions.SSHType,
 		), nil
+}
+
+func (m *Manager) httpTaskBuilder(filePath, url string, opts ...httptask.HTTPOption) *httptask.HTTPCollectTask {
+
+	// set clusetr tlsCfg
+	// if you set tlsCfg by yourself , will overwrite clusetr tls conf
+	opts = append([]httptask.HTTPOption{httptask.WithTLSCfg(m.tlsCfg)}, opts...)
+
+	return httptask.NewHTTPTask(filePath, url, opts...)
+
 }

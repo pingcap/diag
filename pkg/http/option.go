@@ -19,43 +19,43 @@ import (
 	"time"
 )
 
-type httpOption func(job *HttpCollectJob)
+type HTTPOption func(task *HTTPCollectTask)
 
 // WithTimeOut  set http request timeout
-func WithTimeOut(timeout time.Duration) httpOption {
-	return func(job *HttpCollectJob) {
+func WithTimeOut(timeout time.Duration) HTTPOption {
+	return func(task *HTTPCollectTask) {
 		if timeout <= 0 {
-			job.timeout = 10 * time.Second * 10
+			task.timeout = 10 * time.Second * 10
 			return
 		}
-		job.timeout = timeout
+		task.timeout = timeout
 	}
 }
 
 // WithHeader set http request head
-func WithHeader(header map[string]string) httpOption {
-	return func(job *HttpCollectJob) {
-		job.header = header
+func WithHeader(header map[string]string) HTTPOption {
+	return func(task *HTTPCollectTask) {
+		task.header = header
 	}
 }
 
-// WithTlsCfg set http request tls config
-func WithTlsCfg(tlsCfg *tls.Config) httpOption {
-	return func(job *HttpCollectJob) {
-		job.tlsCfg = tlsCfg
+// WithTLSCfg  set http request tls config
+func WithTLSCfg(tlsCfg *tls.Config) HTTPOption {
+	return func(task *HTTPCollectTask) {
+		task.tlsCfg = tlsCfg
 	}
 }
 
 // WithMethod set http request method
-func WithMethod(method string) httpOption {
-	return func(job *HttpCollectJob) {
+func WithMethod(method string) HTTPOption {
+	return func(task *HTTPCollectTask) {
 		switch strings.ToUpper(method) {
 		case "GET":
-			job.method = method
+			task.method = method
 		case "POST":
-			job.method = method
+			task.method = method
 		default:
-			job.method = "GET"
+			task.method = "GET"
 		}
 	}
 }

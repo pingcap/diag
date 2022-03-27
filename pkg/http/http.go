@@ -24,8 +24,8 @@ import (
 	"github.com/pingcap/tiup/pkg/utils"
 )
 
-// HttpCollectJob  collect data via http request
-type HttpCollectJob struct {
+// HTTPCollectTask  collect data via http request
+type HTTPCollectTask struct {
 	filePath string
 	url      string
 	header   map[string]string
@@ -34,9 +34,9 @@ type HttpCollectJob struct {
 	method   string
 }
 
-// NewHttpJob
-func NewHttpJob(filePath, url string, opts ...httpOption) *HttpCollectJob {
-	job := &HttpCollectJob{
+// NewHTTPTask
+func NewHTTPTask(filePath, url string, opts ...HTTPOption) *HTTPCollectTask {
+	job := &HTTPCollectTask{
 		filePath: filePath,
 		url:      url,
 		method:   "GET", // default method is GET
@@ -52,32 +52,38 @@ func NewHttpJob(filePath, url string, opts ...httpOption) *HttpCollectJob {
 }
 
 // Do  sent http request to url and save response
-func (job *HttpCollectJob) Do(ctx context.Context) error {
+func (task *HTTPCollectTask) Do(ctx context.Context) error {
 
 	scheme := "http"
-	if job.tlsCfg != nil {
+	if task.tlsCfg != nil {
 		scheme = "https"
 	}
 
 	// new http client
-	httpClient := utils.NewHTTPClient(job.timeout, job.tlsCfg)
+	httpClient := utils.NewHTTPClient(task.timeout, task.tlsCfg)
 
-	if job.header != nil {
-		for k, v := range job.header {
+	if task.header != nil {
+		for k, v := range task.header {
 			httpClient.SetRequestHeader(k, v)
 		}
 	}
 
-	url := fmt.Sprintf("%s://%s", scheme, job.url)
-	if err := utils.CreateDir(filepath.Dir(job.filePath)); err != nil {
+	url := fmt.Sprintf("%s://%s", scheme, task.url)
+	if err := utils.CreateDir(filepath.Dir(task.filePath)); err != nil {
 		return err
 	}
 
-	if strings.ToUpper(job.method) == "GET" {
-		err := httpClient.Download(ctx, url, job.filePath)
+	switch strings.ToUpper(task.method) {
+	case "GET":
+		err := httpClient.Download(ctx, url, task.filePath)
 		if err != nil {
 			return err
 		}
+	case "POST":
+		return nil
+
+	default:
+		return fmt.Errorf("unknown http request method %s", task.method)
 	}
 
 	return nil

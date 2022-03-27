@@ -135,6 +135,7 @@ func (m *Manager) CollectClusterInfo(
 		if err != nil {
 			return "", err
 		}
+		m.tlsCfg = tlsCfg
 	case CollectModeK8s:
 		cls, tc, tm, err = buildTopoForK8sCluster(m, opt, kubeCli, dynCli)
 		if err != nil {
@@ -142,6 +143,7 @@ func (m *Manager) CollectClusterInfo(
 		}
 		if tc.Spec.TLSCluster.Enabled {
 			tlsCfg, err = kubetls.GetClusterClientTLSConfig(kubeCli, opt.Namespace, opt.Cluster, time.Duration(gOpt.APITimeout))
+			m.tlsCfg = tlsCfg
 			klog.Infof("get tls config from secrets success")
 		}
 	default:
@@ -197,7 +199,6 @@ func (m *Manager) CollectClusterInfo(
 		resultDir:   resultDir,
 		tc:          tc,
 		tm:          tm,
-		tlsCfg:      tlsCfg,
 	})
 
 	// collect data from monitoring system
@@ -299,7 +300,6 @@ func (m *Manager) CollectClusterInfo(
 				duration:    cOpt.PerfDuration,
 				resultDir:   resultDir,
 				fileStats:   make(map[string][]CollectStat),
-				tlsCfg:      tlsCfg,
 			})
 	}
 
@@ -326,7 +326,6 @@ func (m *Manager) CollectClusterInfo(
 				opt:         gOpt,
 				resultDir:   resultDir,
 				fileStats:   make(map[string][]CollectStat),
-				tlsCfg:      tlsCfg,
 			})
 	}
 
