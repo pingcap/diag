@@ -75,7 +75,7 @@ func loadJobWorker(ctx *context) {
 			Collectors:  c.Collectors,
 			From:        c.BeginTime,
 			To:          c.EndTime,
-			Date:        time.Now().Format(time.RFC3339),
+			Date:        collector.GetCollectTimeFromFile(f).Format(time.RFC3339),
 			Dir:         f,
 		}
 		ctx.insertCollectJob(job)
