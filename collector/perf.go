@@ -15,12 +15,12 @@ package collector
 
 import (
 	"context"
+	"crypto/tls"
 	"fmt"
 	"path/filepath"
 	"time"
 
 	"github.com/joomcode/errorx"
-	httptask "github.com/pingcap/diag/pkg/http"
 	"github.com/pingcap/diag/pkg/models"
 	perrs "github.com/pingcap/errors"
 	"github.com/pingcap/tiup/pkg/cluster/ctxt"
@@ -28,6 +28,7 @@ import (
 	"github.com/pingcap/tiup/pkg/cluster/task"
 	logprinter "github.com/pingcap/tiup/pkg/logger/printer"
 	"github.com/pingcap/tiup/pkg/set"
+	"github.com/pingcap/tiup/pkg/utils"
 )
 
 // PerfCollectOptions are options used collecting pref info
@@ -37,6 +38,7 @@ type PerfCollectOptions struct {
 	duration  int               //seconds: profile time(s), default is 30s.
 	resultDir string
 	fileStats map[string][]CollectStat
+	tlsCfg    *tls.Config
 }
 
 // Desc implements the Collector interface
@@ -143,7 +145,7 @@ func (c *PerfCollectOptions) Collect(m *Manager, topo *models.TiDBCluster) error
 	// build tsaks
 	for _, inst := range instances {
 
-		if t := buildPerfCollectingTasks(ctx, m, inst, c); len(t) != 0 {
+		if t := buildPerfCollectingTasks(ctx, inst, c); len(t) != 0 {
 			collectePerfTasks = append(collectePerfTasks, t...)
 		}
 	}
@@ -162,11 +164,18 @@ func (c *PerfCollectOptions) Collect(m *Manager, topo *models.TiDBCluster) error
 	return nil
 }
 
+type perfConfig struct {
+	filepath string
+	url      string
+	timeout  time.Duration
+	header   map[string]string
+}
+
 // buildPerfCollectingTasks build collect profile information tasks
-func buildPerfCollectingTasks(ctx context.Context, m *Manager, inst models.Component, c *PerfCollectOptions) []*task.StepDisplay {
+func buildPerfCollectingTasks(ctx context.Context, inst models.Component, c *PerfCollectOptions) []*task.StepDisplay {
 	var (
 		perfInfoTasks []*task.StepDisplay
-		httpTasks     []httptask.HTTPCollectTask
+		perfConfigs   []perfConfig
 	)
 
 	host := inst.Host()
@@ -182,51 +191,55 @@ func buildPerfCollectingTasks(ctx context.Context, m *Manager, inst models.Compo
 	switch inst.Type() {
 	case models.ComponentTypeTiDB, models.ComponentTypePD, models.ComponentTypeTiCDC:
 		// cpu profile
-		httpTasks = append(httpTasks,
-			*m.httpTaskBuilder(
-				filepath.Join(c.resultDir, host, instDir, CollectTypePerf, "cpu_profile.proto"),
-				fmt.Sprintf("%s/debug/pprof/profile?seconds=%d", inst.StatusURL(), c.duration),
-				httptask.WithTimeOut(time.Second*time.Duration(c.duration+3)),
-			),
-		)
+		perfConfigs = append(perfConfigs,
+			perfConfig{
+				filepath: filepath.Join(c.resultDir, host, instDir, CollectTypePerf, "cpu_profile.proto"),
+				url:      fmt.Sprintf("%s/debug/pprof/profile?seconds=%d", inst.StatusURL(), c.duration),
+				timeout:  time.Second * time.Duration(c.duration+3),
+			})
 
 		// mem Heap
-		httpTasks = append(httpTasks,
-			*m.httpTaskBuilder(
-				filepath.Join(c.resultDir, host, instDir, CollectTypePerf, "mem_heap.proto"),
-				fmt.Sprintf("%s/debug/pprof/heap", inst.StatusURL()),
-			),
-		)
+		perfConfigs = append(perfConfigs,
+			perfConfig{
+				filepath: filepath.Join(c.resultDir, host, instDir, CollectTypePerf, "mem_heap.proto"),
+				url:      fmt.Sprintf("%s/debug/pprof/heap", inst.StatusURL()),
+				timeout:  time.Second * time.Duration(c.duration),
+			})
 
 		// Goroutine
-		httpTasks = append(httpTasks,
-			*m.httpTaskBuilder(
-				filepath.Join(c.resultDir, host, instDir, CollectTypePerf, "goroutine.txt"),
-				fmt.Sprintf("%s/debug/pprof/goroutine?debug=1", inst.StatusURL()),
-			),
-		)
+		perfConfigs = append(perfConfigs,
+			perfConfig{
+				filepath: filepath.Join(c.resultDir, host, instDir, CollectTypePerf, "goroutine.txt"),
+				url:      fmt.Sprintf("%s/debug/pprof/goroutine?debug=1", inst.StatusURL()),
+				timeout:  time.Second * time.Duration(c.duration),
+			})
 
 		// mutex
-		httpTasks = append(httpTasks,
-			*m.httpTaskBuilder(
-				filepath.Join(c.resultDir, host, instDir, CollectTypePerf, "mutex.txt"),
-				fmt.Sprintf("%s/debug/pprof/mutex?debug=1", inst.StatusURL()),
-			),
-		)
+		perfConfigs = append(perfConfigs,
+			perfConfig{
+				filepath: filepath.Join(c.resultDir, host, instDir, CollectTypePerf, "mutex.txt"),
+				url:      fmt.Sprintf("%s/debug/pprof/mutex?debug=1", inst.StatusURL()),
+				timeout:  time.Second * time.Duration(c.duration),
+			})
 
 	case models.ComponentTypeTiKV, models.ComponentTypeTiFlash:
 		// cpu profile
-		httpTasks = append(httpTasks,
-			*m.httpTaskBuilder(
-				filepath.Join(c.resultDir, host, instDir, CollectTypePerf, "cpu_profile.proto"),
-				fmt.Sprintf("%s/debug/pprof/profile?seconds=%d", inst.StatusURL(), c.duration),
-				httptask.WithTimeOut(time.Second*time.Duration(c.duration+3)),
-				httptask.WithHeader(map[string]string{"Content-Type": "application/protobuf"}),
-			),
-		)
+		perfConfigs = append(perfConfigs,
+			perfConfig{
+				filepath: filepath.Join(c.resultDir, host, instDir, CollectTypePerf, "cpu_profile.proto"),
+				url:      fmt.Sprintf("%s/debug/pprof/profile?seconds=%d", inst.StatusURL(), c.duration),
+				timeout:  time.Second * time.Duration(c.duration+3),
+				header:   map[string]string{"Content-Type": "application/protobuf"},
+			})
+
 	default:
 		// not supported yet, just ignore
 		return nil
+	}
+
+	scheme := "http"
+	if c.tlsCfg != nil {
+		scheme = "https"
 	}
 
 	logger := ctx.Value(logprinter.ContextKeyLogger).(*logprinter.Logger)
@@ -234,11 +247,19 @@ func buildPerfCollectingTasks(ctx context.Context, m *Manager, inst models.Compo
 		Func(
 			fmt.Sprintf("querying %s:%d", host, inst.MainPort()),
 			func(ctx context.Context) error {
-				for _, task := range httpTasks {
-					err := task.Do(ctx)
+				for _, config := range perfConfigs {
+					c := utils.NewHTTPClient(config.timeout, c.tlsCfg)
+					if config.header != nil {
+						for k, v := range config.header {
+							c.SetRequestHeader(k, v)
+						}
+					}
+					url := fmt.Sprintf("%s://%s", scheme, config.url)
+					err := c.Download(ctx, url, config.filepath)
 					if err != nil {
 						return err
 					}
+
 				}
 				return nil
 			},

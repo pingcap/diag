@@ -15,12 +15,12 @@ package collector
 
 import (
 	"context"
+	"crypto/tls"
 	"fmt"
 	"path/filepath"
 	"time"
 
 	"github.com/joomcode/errorx"
-	httptask "github.com/pingcap/diag/pkg/http"
 	"github.com/pingcap/diag/pkg/models"
 	perrs "github.com/pingcap/errors"
 	"github.com/pingcap/tiup/pkg/cluster/ctxt"
@@ -28,6 +28,7 @@ import (
 	"github.com/pingcap/tiup/pkg/cluster/task"
 	logprinter "github.com/pingcap/tiup/pkg/logger/printer"
 	"github.com/pingcap/tiup/pkg/set"
+	"github.com/pingcap/tiup/pkg/utils"
 )
 
 // DebugCollectOptions are options used collecting debug info
@@ -36,6 +37,7 @@ type DebugCollectOptions struct {
 	opt       *operator.Options // global operations from cli
 	resultDir string
 	fileStats map[string][]CollectStat
+	tlsCfg    *tls.Config
 }
 
 // Desc implements the Collector interface
@@ -119,7 +121,7 @@ func (c *DebugCollectOptions) Collect(m *Manager, topo *models.TiDBCluster) erro
 	// build tsaks
 	for _, inst := range instances {
 
-		if t := buildDebugCollectingTasks(ctx, m, inst, c); len(t) != 0 {
+		if t := buildDebugCollectingTasks(ctx, inst, c); len(t) != 0 {
 			collecteDebugTasks = append(collecteDebugTasks, t...)
 		}
 	}
@@ -138,11 +140,16 @@ func (c *DebugCollectOptions) Collect(m *Manager, topo *models.TiDBCluster) erro
 	return nil
 }
 
+type debugConfig struct {
+	filepath string
+	url      string
+}
+
 // buildDebugCollectingTasks build collect debug information tasks
-func buildDebugCollectingTasks(ctx context.Context, m *Manager, inst models.Component, c *DebugCollectOptions) []*task.StepDisplay {
+func buildDebugCollectingTasks(ctx context.Context, inst models.Component, c *DebugCollectOptions) []*task.StepDisplay {
 	var (
-		debugTasks []*task.StepDisplay
-		httpTasks  []httptask.HTTPCollectTask
+		debugTasks   []*task.StepDisplay
+		debugConfigs []debugConfig
 	)
 
 	host := inst.Host()
@@ -158,49 +165,48 @@ func buildDebugCollectingTasks(ctx context.Context, m *Manager, inst models.Comp
 	switch inst.Type() {
 	case models.ComponentTypeTiCDC:
 		// /debug/info
-		httpTasks = append(httpTasks,
-			*m.httpTaskBuilder(
-				filepath.Join(c.resultDir, host, instDir, CollectTypeDebug, "info.txt"),
-				fmt.Sprintf("%s/debug/info", inst.StatusURL()),
-				httptask.WithTimeOut(15*time.Second),
-			),
-		)
+		debugConfigs = append(debugConfigs,
+			debugConfig{
+				filepath: filepath.Join(c.resultDir, host, instDir, CollectTypeDebug, "info.txt"),
+				url:      fmt.Sprintf("%s/debug/info", inst.StatusURL()),
+			})
 
 		// /status
-		httpTasks = append(httpTasks,
-			*m.httpTaskBuilder(
-				filepath.Join(c.resultDir, host, instDir, CollectTypeDebug, "status.txt"),
-				fmt.Sprintf("%s/status", inst.StatusURL()),
-			),
-		)
+		debugConfigs = append(debugConfigs,
+			debugConfig{
+				filepath: filepath.Join(c.resultDir, host, instDir, CollectTypeDebug, "status.txt"),
+				url:      fmt.Sprintf("%s/status", inst.StatusURL()),
+			})
 
 		// changefeeds
-		httpTasks = append(httpTasks,
-			*m.httpTaskBuilder(
-				filepath.Join(c.resultDir, host, instDir, CollectTypeDebug, "changefeeds.txt"),
-				fmt.Sprintf("%s/api/v1/changefeeds", inst.StatusURL()),
-			),
-		)
+		debugConfigs = append(debugConfigs,
+			debugConfig{
+				filepath: filepath.Join(c.resultDir, host, instDir, CollectTypeDebug, "changefeeds.txt"),
+				url:      fmt.Sprintf("%s/api/v1/changefeeds", inst.StatusURL()),
+			})
 
 		// captures
-		httpTasks = append(httpTasks,
-			*m.httpTaskBuilder(
-				filepath.Join(c.resultDir, host, instDir, CollectTypeDebug, "captures.txt"),
-				fmt.Sprintf("%s/api/v1/captures", inst.StatusURL()),
-			),
-		)
+		debugConfigs = append(debugConfigs,
+			debugConfig{
+				filepath: filepath.Join(c.resultDir, host, instDir, CollectTypeDebug, "captures.txt"),
+				url:      fmt.Sprintf("%s/api/v1/captures", inst.StatusURL()),
+			})
 
 		// processors
-		httpTasks = append(httpTasks,
-			*m.httpTaskBuilder(
-				filepath.Join(c.resultDir, host, instDir, CollectTypeDebug, "processors.txt"),
-				fmt.Sprintf("%s/api/v1/processors", inst.StatusURL()),
-			),
-		)
+		debugConfigs = append(debugConfigs,
+			debugConfig{
+				filepath: filepath.Join(c.resultDir, host, instDir, CollectTypeDebug, "processors.txt"),
+				url:      fmt.Sprintf("%s/api/v1/processors", inst.StatusURL()),
+			})
 
 	default:
 		// not supported yet, just ignore
 		return nil
+	}
+
+	scheme := "http"
+	if c.tlsCfg != nil {
+		scheme = "https"
 	}
 
 	logger := ctx.Value(logprinter.ContextKeyLogger).(*logprinter.Logger)
@@ -209,8 +215,10 @@ func buildDebugCollectingTasks(ctx context.Context, m *Manager, inst models.Comp
 		Func(
 			fmt.Sprintf("querying %s:%d", host, inst.MainPort()),
 			func(ctx context.Context) error {
-				for _, task := range httpTasks {
-					err := task.Do(ctx)
+				c := utils.NewHTTPClient(time.Second*15, c.tlsCfg)
+				for _, config := range debugConfigs {
+					url := fmt.Sprintf("%s://%s", scheme, config.url)
+					err := c.Download(ctx, url, config.filepath)
 					if err != nil {
 						return err
 					}

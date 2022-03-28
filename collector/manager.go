@@ -14,12 +14,10 @@
 package collector
 
 import (
-	"crypto/tls"
 	"os"
 	"path/filepath"
 	"time"
 
-	httptask "github.com/pingcap/diag/pkg/http"
 	"github.com/pingcap/tiup/pkg/base52"
 	"github.com/pingcap/tiup/pkg/cluster/executor"
 	operator "github.com/pingcap/tiup/pkg/cluster/operation"
@@ -37,7 +35,6 @@ type Manager struct {
 	session     string // an unique ID of the collection
 	mode        string // tiup-cluster or tidb-operator
 	logger      *logprinter.Logger
-	tlsCfg      *tls.Config // cluster tls config
 }
 
 // NewManager create a Manager.
@@ -110,13 +107,4 @@ func (m *Manager) collectLock(resultDir string) {
 // collectUnlock when the acquisition ends, remove the file lock
 func (m *Manager) collectUnlock(resultDir string) {
 	os.Remove(filepath.Join(resultDir, CollectLockName))
-}
-
-func (m *Manager) httpTaskBuilder(filePath, url string, opts ...httptask.HTTPOption) *httptask.HTTPCollectTask {
-
-	// set clusetr tlsCfg
-	// if you set tlsCfg by yourself , will overwrite clusetr tls conf
-	opts = append([]httptask.HTTPOption{httptask.WithTLSCfg(m.tlsCfg)}, opts...)
-
-	return httptask.NewHTTPTask(filePath, url, opts...)
 }

@@ -22,7 +22,6 @@ import (
 	"time"
 
 	"github.com/joomcode/errorx"
-	httptask "github.com/pingcap/diag/pkg/http"
 	"github.com/pingcap/diag/pkg/models"
 	perrs "github.com/pingcap/errors"
 	"github.com/pingcap/tiup/pkg/cluster/ctxt"
@@ -31,6 +30,7 @@ import (
 	"github.com/pingcap/tiup/pkg/cluster/task"
 	logprinter "github.com/pingcap/tiup/pkg/logger/printer"
 	"github.com/pingcap/tiup/pkg/set"
+	"github.com/pingcap/tiup/pkg/utils"
 )
 
 // ConfigCollectOptions are options used collecting component logs
@@ -254,7 +254,7 @@ func (c *ConfigCollectOptions) collectForTiUP(m *Manager, cls *models.TiDBCluste
 		}
 
 		// query realtime configs for each instance if supported
-		if t3 := buildRealtimeConfigCollectingTasks(ctx, m, inst, c.resultDir); t3 != nil {
+		if t3 := buildRealtimeConfigCollectingTasks(ctx, inst, c.resultDir, c.tlsCfg); t3 != nil {
 			queryTasks = append(queryTasks, t3)
 		}
 	}
@@ -359,7 +359,8 @@ func (c *ConfigCollectOptions) collectForK8s(m *Manager, topo *models.TiDBCluste
 		}
 
 		// query realtime configs for each instance if supported
-		if t3 := buildRealtimeConfigCollectingTasks(ctx, m, inst, c.resultDir); t3 != nil {
+		// TODO: support TLS enabled clusters
+		if t3 := buildRealtimeConfigCollectingTasks(ctx, inst, c.resultDir, c.tlsCfg); t3 != nil {
 			queryTasks = append(queryTasks, t3)
 		}
 	}
@@ -379,8 +380,33 @@ func (c *ConfigCollectOptions) collectForK8s(m *Manager, topo *models.TiDBCluste
 	return nil
 }
 
-func buildRealtimeConfigCollectingTasks(ctx context.Context, m *Manager, inst models.Component, resultDir string) *task.StepDisplay {
-	var httpTasks []httptask.HTTPCollectTask
+type rtConfig struct {
+	filename string
+	url      string
+}
+
+func buildRealtimeConfigCollectingTasks(ctx context.Context, inst models.Component, resultDir string, tlsCfg *tls.Config) *task.StepDisplay {
+	var configs []rtConfig
+	scheme := "http"
+	if tlsCfg != nil {
+		scheme = "https"
+	}
+
+	switch inst.Type() {
+	case models.ComponentTypePD:
+		configs = append(configs, rtConfig{"config.json", inst.ConfigURL()})
+		configs = append(configs, rtConfig{"store.json", fmt.Sprintf("%s/pd/api/v1/stores", inst.StatusURL())})
+		configs = append(configs, rtConfig{"placement-rule.json", fmt.Sprintf("%s/pd/api/v1/config/placement-rule", inst.StatusURL())})
+	case models.ComponentTypeTiKV:
+		configs = append(configs, rtConfig{"config.json", fmt.Sprintf("%s?full=true", inst.ConfigURL())})
+	case models.ComponentTypeTiDB:
+		configs = append(configs, rtConfig{"config.json", inst.ConfigURL()})
+	case models.ComponentTypeTiFlash:
+		configs = append(configs, rtConfig{"config.json", inst.ConfigURL()})
+	default:
+		// not supported yet, just ignore
+		return nil
+	}
 
 	host := inst.Host()
 	instDir, ok := inst.Attributes()["deploy_dir"].(string)
@@ -392,72 +418,15 @@ func buildRealtimeConfigCollectingTasks(ctx context.Context, m *Manager, inst mo
 		host = pod
 	}
 
-	switch inst.Type() {
-	case models.ComponentTypePD:
-		httpTasks = append(httpTasks,
-			*m.httpTaskBuilder(
-				filepath.Join(resultDir, host, instDir, "conf", "config.json"),
-				inst.ConfigURL(),
-				httptask.WithTimeOut(3*time.Second),
-			),
-		)
-
-		httpTasks = append(httpTasks,
-			*m.httpTaskBuilder(
-				filepath.Join(resultDir, host, instDir, "conf", "store.json"),
-				fmt.Sprintf("%s/pd/api/v1/stores", inst.StatusURL()),
-				httptask.WithTimeOut(3*time.Second),
-			),
-		)
-
-		httpTasks = append(httpTasks,
-			*m.httpTaskBuilder(
-				filepath.Join(resultDir, host, instDir, "conf", "placement-rule.json"),
-				fmt.Sprintf("%s/pd/api/v1/config/placement-rule", inst.StatusURL()),
-				httptask.WithTimeOut(3*time.Second),
-			),
-		)
-
-	case models.ComponentTypeTiKV:
-		httpTasks = append(httpTasks,
-			*m.httpTaskBuilder(
-				filepath.Join(resultDir, host, instDir, "conf", "config.json"),
-				fmt.Sprintf("%s?full=true", inst.ConfigURL()),
-				httptask.WithTimeOut(3*time.Second),
-			),
-		)
-
-	case models.ComponentTypeTiDB:
-
-		httpTasks = append(httpTasks,
-			*m.httpTaskBuilder(
-				filepath.Join(resultDir, host, instDir, "conf", "config.json"),
-				inst.ConfigURL(),
-				httptask.WithTimeOut(3*time.Second),
-			),
-		)
-
-	case models.ComponentTypeTiFlash:
-
-		httpTasks = append(httpTasks,
-			*m.httpTaskBuilder(
-				filepath.Join(resultDir, host, instDir, "conf", "config.json"),
-				inst.ConfigURL(),
-				httptask.WithTimeOut(3*time.Second),
-			),
-		)
-	default:
-		// not supported yet, just ignore
-		return nil
-	}
-
 	logger := ctx.Value(logprinter.ContextKeyLogger).(*logprinter.Logger)
 	t := task.NewBuilder(logger).
 		Func(
 			fmt.Sprintf("querying %s:%d", host, inst.MainPort()),
 			func(ctx context.Context) error {
-				for _, task := range httpTasks {
-					err := task.Do(ctx)
+				c := utils.NewHTTPClient(time.Second*3, tlsCfg)
+				for _, config := range configs {
+					url := fmt.Sprintf("%s://%s", scheme, config.url)
+					err := c.Download(ctx, url, filepath.Join(resultDir, host, instDir, "conf", config.filename))
 					if err != nil {
 						return err
 					}
