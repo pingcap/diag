@@ -19,6 +19,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -109,8 +110,9 @@ func runUploader(
 
 		// package the data set
 		pOpt := &packager.PackageOptions{
-			InputDir: worker.job.Dir,
-			CertPath: "/var/lib/clinic-cert/pingcap.crt", // mounted via secret
+			InputDir:   worker.job.Dir,
+			OutputFile: filepath.Join(packageDir, fmt.Sprintf("diag-%s.diag", worker.job.ID)),
+			CertPath:   "/var/lib/clinic-cert/pingcap.crt", // mounted via secret
 		}
 		pf, err := packager.PackageCollectedData(pOpt, true)
 		outW.Close()

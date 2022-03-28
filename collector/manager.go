@@ -14,6 +14,8 @@
 package collector
 
 import (
+	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/pingcap/tiup/pkg/base52"
@@ -90,4 +92,19 @@ func (m *Manager) sshTaskBuilder(name string, topo spec.Topology, user string, o
 			opts.SSHType,
 			topo.BaseTopo().GlobalOptions.SSHType,
 		), nil
+}
+
+const CollectLockName = ".collect.lock"
+
+// collectLock when collecting data, add a file lock to mark that the collected data is incomplete
+func (m *Manager) collectLock(resultDir string) {
+	os.MkdirAll(resultDir, 0755)
+	lockFile := filepath.Join(resultDir, CollectLockName)
+	os.Create(lockFile)
+
+}
+
+// collectUnlock when the acquisition ends, remove the file lock
+func (m *Manager) collectUnlock(resultDir string) {
+	os.Remove(filepath.Join(resultDir, CollectLockName))
 }

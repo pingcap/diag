@@ -17,6 +17,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strconv"
 	"time"
 
@@ -421,4 +422,21 @@ func buildTopoForK8sCluster(
 	}
 
 	return cls, cluster, &matchedMon, nil
+}
+
+// GetClusterInfoFromFile
+func GetClusterInfoFromFile(path string) (*ClusterJSON, error) {
+	c := &ClusterJSON{}
+
+	fbytes, err := os.ReadFile(filepath.Join(path, FileNameClusterJSON))
+	if err != nil {
+		return c, err
+	}
+
+	err = json.Unmarshal(fbytes, c)
+	if err != nil {
+		return c, err
+	}
+
+	return c, nil
 }

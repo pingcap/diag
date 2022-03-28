@@ -23,14 +23,18 @@ spec:
         imagePullPolicy: {{ .Values.image.imagePullPolicy | default "IfNotPresent" }}
         {{- if .Values.diag.resources }}
         resources:
-{{ toYaml .Values.diag.resources | indent 12 }}
+{{ toYaml .Values.diag.resources | indent 10 }}
         {{- end }}
         command:
         - /usr/local/bin/diag
         volumeMounts:
         - mountPath: "/var/lib/clinic-cert"
-          name: {{ .Values.diag.secretName | default "pingcap-clinic-cert" }}
+          name: pingcap-clinic-cert
           readOnly: true
+        {{- if .Values.diag.volume }}
+        - mountPath: "/diag"
+          name: "diag-storage"
+        {{- end }}
         env:
         - name: NAMESPACE
           valueFrom:
@@ -40,6 +44,10 @@ spec:
         - name: CLINIC_TOKEN
           value: {{ required "Please set your Token. You can get your token after signing in to Clinic Server 'https://clinic.pingcap.com'" .Values.diag.clinicToken }}
       volumes:
-      - name: {{ .Values.diag.secretName | default "pingcap-clinic-cert" }}
+      - name: pingcap-clinic-cert
         secret:
           secretName: {{ .Values.diag.secretName | default "pingcap-clinic-cert" }}
+      {{- if .Values.diag.volume }}
+      - name: diag-storage
+{{ toYaml .Values.diag.volume | indent 8 }}
+      {{- end }}

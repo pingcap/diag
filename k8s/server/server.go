@@ -17,6 +17,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"path/filepath"
 
 	"github.com/gin-gonic/gin"
 	"github.com/pingcap/diag/api"
@@ -29,6 +30,13 @@ import (
 )
 
 const apiPrefix = "api/v1"
+
+// unified storage path
+var (
+	baseDir    = "/diag"
+	collectDir = filepath.Join(baseDir, "collector")
+	packageDir = filepath.Join(baseDir, "package")
+)
 
 // Options is the option set for diag API server
 type Options struct {
@@ -94,6 +102,7 @@ func newEngine(ctx *context, opt *Options) *gin.Engine {
 	// add middleware here if needed
 	r.Use(ginLogger())
 	r.Use(ctx.middleware())
+	loadJobWorker(ctx)
 
 	// register routes
 	r.NoRoute(func(c *gin.Context) {
