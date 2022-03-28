@@ -24,15 +24,16 @@ import (
 
 // CollectLog collects logs
 func CollectLog(collector, home, user, instanceID, inspectionID string, begin, end time.Time) error {
-	cmd := exec.Command(
-		collector,
+
+	args := []string{
 		fmt.Sprintf("--home=%s", home),
 		fmt.Sprintf("--instance-id=%s", instanceID),
 		fmt.Sprintf("--inspection-id=%s", inspectionID),
 		"--items=log",
 		fmt.Sprintf("--begin=%s", begin.Format(time.RFC3339)),
 		fmt.Sprintf("--end=%s", end.Format(time.RFC3339)),
-	)
+	}
+	cmd := exec.Command(collector, args...)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	cmd.Env = append(
