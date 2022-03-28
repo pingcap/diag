@@ -15,6 +15,8 @@ package collector
 
 import (
 	"crypto/tls"
+	"os"
+	"path/filepath"
 	"time"
 
 	httptask "github.com/pingcap/diag/pkg/http"
@@ -95,6 +97,21 @@ func (m *Manager) sshTaskBuilder(name string, topo spec.Topology, user string, o
 		), nil
 }
 
+const CollectLockName = ".collect.lock"
+
+// collectLock when collecting data, add a file lock to mark that the collected data is incomplete
+func (m *Manager) collectLock(resultDir string) {
+	os.MkdirAll(resultDir, 0755)
+	lockFile := filepath.Join(resultDir, CollectLockName)
+	os.Create(lockFile)
+
+}
+
+// collectUnlock when the acquisition ends, remove the file lock
+func (m *Manager) collectUnlock(resultDir string) {
+	os.Remove(filepath.Join(resultDir, CollectLockName))
+}
+
 func (m *Manager) httpTaskBuilder(filePath, url string, opts ...httptask.HTTPOption) *httptask.HTTPCollectTask {
 
 	// set clusetr tlsCfg
@@ -102,5 +119,4 @@ func (m *Manager) httpTaskBuilder(filePath, url string, opts ...httptask.HTTPOpt
 	opts = append([]httptask.HTTPOption{httptask.WithTLSCfg(m.tlsCfg)}, opts...)
 
 	return httptask.NewHTTPTask(filePath, url, opts...)
-
 }

@@ -30,6 +30,7 @@ import (
 	"github.com/klauspost/compress/zstd"
 	"github.com/pingcap/diag/pkg/crypto"
 	"github.com/pingcap/tiup/pkg/tui"
+	tiuputils "github.com/pingcap/tiup/pkg/utils"
 )
 
 type PackageOptions struct {
@@ -127,6 +128,11 @@ func ParserD1agHeader(r io.Reader) (meta []byte, format, compress string, offset
 }
 
 func PackageCollectedData(pOpt *PackageOptions, skipConfirm bool) (string, error) {
+
+	if tiuputils.IsNotExist(filepath.Dir(pOpt.OutputFile)) {
+		os.MkdirAll(filepath.Dir(pOpt.OutputFile), 0755)
+	}
+
 	input, err := selectInputDir(pOpt.InputDir, skipConfirm)
 	if err != nil {
 		return "", err

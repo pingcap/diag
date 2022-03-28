@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"path/filepath"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -34,12 +35,13 @@ import (
 
 // collect job status
 const (
-	taskStatusAccepted = "accepted"
-	taskStatusRunning  = "running"
-	taskStatusError    = "error"
-	taskStatusFinish   = "finished"
-	taskStatusCancel   = "cancelled"
-	taskStatusPurge    = "purged" // data set deleted
+	taskStatusAccepted  = "accepted"
+	taskStatusRunning   = "running"
+	taskStatusError     = "error"
+	taskStatusFinish    = "finished"
+	taskStatusCancel    = "cancelled"
+	taskStatusPurge     = "purged" // data set deleted
+	taskStatusInterrupt = "interrupted"
 )
 
 // collectData implements POST /collectors
@@ -121,6 +123,7 @@ func runCollector(
 		Exclude:    set.NewStringSet(),
 		Mode:       collector.CollectModeK8s,
 		RawRequest: req,
+		Dir:        filepath.Join(collectDir, "diag-"+worker.job.ID), // set default k8s package dir
 	}
 
 	// populate logger for the collect job

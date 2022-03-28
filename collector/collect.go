@@ -364,6 +364,8 @@ func (m *Manager) CollectClusterInfo(
 		return "", err
 	}
 
+	m.collectLock(resultDir)
+
 	defer logger.OutputAuditLogToFileIfEnabled(resultDir, "diag_audit.log")
 
 	// run collectors
@@ -395,6 +397,9 @@ func (m *Manager) CollectClusterInfo(
 			m.logger.Errorf("%s:\t%s\n", k, v)
 		}
 	}
+
+	m.collectUnlock(resultDir)
+
 	dir := resultDir
 	if m.logger.GetDisplayMode() == logprinter.DisplayModeDefault {
 		dir = color.CyanString(resultDir)
