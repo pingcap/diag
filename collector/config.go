@@ -255,7 +255,6 @@ func (c *ConfigCollectOptions) collectForTiUP(m *Manager, cls *models.TiDBCluste
 		}
 
 		// query realtime configs for each instance if supported
-		// TODO: support TLS enabled clusters
 		if t3 := buildRealtimeConfigCollectingTasks(ctx, inst, c.resultDir, c.tlsCfg); t3 != nil {
 			queryTasks = append(queryTasks, t3)
 		}

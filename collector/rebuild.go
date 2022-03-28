@@ -41,7 +41,7 @@ import (
 	"github.com/pingcap/tiup/pkg/localdata"
 	"github.com/pingcap/tiup/pkg/repository"
 	"github.com/pingcap/tiup/pkg/tui/progress"
-	tiuputil "github.com/pingcap/tiup/pkg/utils"
+	tiuputils "github.com/pingcap/tiup/pkg/utils"
 	"golang.org/x/sync/errgroup"
 	"gopkg.in/yaml.v3"
 )
@@ -151,7 +151,7 @@ func RunLocal(dumpDir string, opt *RebuildOptions) error {
 	atomic.StoreUint32(&booted, 1)
 
 	wg := sync.WaitGroup{}
-	timeoutOpt := tiuputil.RetryOption{
+	timeoutOpt := tiuputils.RetryOption{
 		Attempts: 200,
 		Delay:    time.Millisecond * 300,
 		Timeout:  time.Second * 60,
@@ -169,7 +169,7 @@ func RunLocal(dumpDir string, opt *RebuildOptions) error {
 		mb.StartRenderLoop()
 
 		for comp, ins := range p.Proc {
-			if err := tiuputil.Retry(func() error {
+			if err := tiuputils.Retry(func() error {
 				if ins.ready() {
 					bars[comp].UpdateDisplay(&progress.DisplayProps{
 						Prefix: fmt.Sprintf(" - Set up %s (%s)", comp, ins.addr()),
@@ -275,7 +275,7 @@ func (b *rebuilder) boot(ctx context.Context, opt *RebuildOptions, dataDir, clsV
 		return err
 	}
 	grafanaDir := filepath.Join(dataDir, "grafana")
-	installPath, err := b.env.Profile().ComponentInstalledPath("grafana", tiuputil.Version(clsVer))
+	installPath, err := b.env.Profile().ComponentInstalledPath("grafana", tiuputils.Version(clsVer))
 	if err != nil {
 		return err
 	}
@@ -395,7 +395,7 @@ func (i *influxdb) start(ctx context.Context) error {
 	}
 
 	os.Setenv("INFLUXD_CONFIG_PATH", i.Dir)
-	binPath, err := tiupexec.PrepareBinary("influxdb", tiuputil.Version(i.version), "")
+	binPath, err := tiupexec.PrepareBinary("influxdb", tiuputils.Version(i.version), "")
 	if err != nil {
 		return nil
 	}
@@ -409,7 +409,7 @@ func (i *influxdb) start(ctx context.Context) error {
 
 func (i *influxdb) ready() bool {
 	url := fmt.Sprintf("http://%s:%d/health", i.Host, i.HTTPPort)
-	body, err := tiuputil.NewHTTPClient(time.Second*2, &tls.Config{MinVersion: tls.VersionTLS12}).Get(context.TODO(), url)
+	body, err := tiuputils.NewHTTPClient(time.Second*2, &tls.Config{MinVersion: tls.VersionTLS12}).Get(context.TODO(), url)
 	if err != nil {
 		//fmt.Println("still waiting for influxdb to start...")
 		return false
@@ -454,11 +454,11 @@ func newInfluxdb(host, version, dir string) (*influxdb, error) {
 		return nil, errors.AddStack(err)
 	}
 
-	bindPort, err := tiuputil.GetFreePort(host, 8088)
+	bindPort, err := tiuputils.GetFreePort(host, 8088)
 	if err != nil {
 		return nil, err
 	}
-	httpPort, err := tiuputil.GetFreePort(host, 8086)
+	httpPort, err := tiuputils.GetFreePort(host, 8086)
 	if err != nil {
 		return nil, err
 	}
@@ -537,7 +537,7 @@ func (m *prometheus) start(ctx context.Context) error {
 		fmt.Sprintf("--storage.tsdb.path=%s", filepath.Join(m.dir, "data")),
 	}
 
-	binPath, err := tiupexec.PrepareBinary("prometheus", tiuputil.Version(m.version), "")
+	binPath, err := tiupexec.PrepareBinary("prometheus", tiuputils.Version(m.version), "")
 	if err != nil {
 		return nil
 	}
@@ -577,7 +577,7 @@ func newPrometheus(host, version, dir, influx string) (*prometheus, error) {
 		return nil, errors.AddStack(err)
 	}
 
-	port, err := tiuputil.GetFreePort(host, 9090)
+	port, err := tiuputils.GetFreePort(host, 9090)
 	if err != nil {
 		return nil, err
 	}
@@ -658,7 +658,7 @@ func newGrafana(host, version, dir, clusterName, prom string) (*grafana, error) 
 	}
 
 	var err error
-	g.Port, err = tiuputil.GetFreePort(g.Host, 3000)
+	g.Port, err = tiuputils.GetFreePort(g.Host, 3000)
 	if err != nil {
 		return nil, err
 	}
@@ -811,7 +811,7 @@ func (g *grafana) start(ctx context.Context) (err error) {
 		fmt.Sprintf("cfg:default.paths.plugins=%s", path.Join(g.DataDir, "plugins")),
 	}
 
-	binPath, err := tiupexec.PrepareBinary("grafana", tiuputil.Version(g.Version), "")
+	binPath, err := tiupexec.PrepareBinary("grafana", tiuputils.Version(g.Version), "")
 	if err != nil {
 		return nil
 	}
