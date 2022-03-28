@@ -31,8 +31,8 @@ import (
 	tiuputils "github.com/pingcap/tiup/pkg/utils"
 )
 
-// MetaDataCollectOptions are options used collecting component logs
-type MetaDataCollectOptions struct {
+// ComponentMetaCollectOptions are options used collecting component logs
+type ComponentMetaCollectOptions struct {
 	*BaseOptions
 	opt       *operator.Options // global operations from cli         // scp rate limit
 	resultDir string
@@ -42,32 +42,32 @@ type MetaDataCollectOptions struct {
 }
 
 // Desc implements the Collector interface
-func (c *MetaDataCollectOptions) Desc() string {
-	return "matedata of components"
+func (c *ComponentMetaCollectOptions) Desc() string {
+	return "Component matedata of components"
 }
 
 // GetBaseOptions implements the Collector interface
-func (c *MetaDataCollectOptions) GetBaseOptions() *BaseOptions {
+func (c *ComponentMetaCollectOptions) GetBaseOptions() *BaseOptions {
 	return c.BaseOptions
 }
 
 // SetBaseOptions implements the Collector interface
-func (c *MetaDataCollectOptions) SetBaseOptions(opt *BaseOptions) {
+func (c *ComponentMetaCollectOptions) SetBaseOptions(opt *BaseOptions) {
 	c.BaseOptions = opt
 }
 
 // SetGlobalOperations sets the global operation fileds
-func (c *MetaDataCollectOptions) SetGlobalOperations(opt *operator.Options) {
+func (c *ComponentMetaCollectOptions) SetGlobalOperations(opt *operator.Options) {
 	c.opt = opt
 }
 
 // SetDir sets the result directory path
-func (c *MetaDataCollectOptions) SetDir(dir string) {
+func (c *ComponentMetaCollectOptions) SetDir(dir string) {
 	c.resultDir = dir
 }
 
 // Prepare implements the Collector interface
-func (c *MetaDataCollectOptions) Prepare(m *Manager, topo *models.TiDBCluster) (map[string][]CollectStat, error) {
+func (c *ComponentMetaCollectOptions) Prepare(m *Manager, topo *models.TiDBCluster) (map[string][]CollectStat, error) {
 
 	if m.mode != CollectModeTiUP {
 		return nil, nil
@@ -84,7 +84,7 @@ func (c *MetaDataCollectOptions) Prepare(m *Manager, topo *models.TiDBCluster) (
 		switch inst.Type() {
 		case models.ComponentTypeTiCDC:
 			c.fileStats[inst.Host()] = append(c.fileStats[inst.Host()], CollectStat{
-				Target: fmt.Sprintf("%s:%d %s metadata", inst.Host(), inst.MainPort(), inst.Type()),
+				Target: fmt.Sprintf("%s:%d %s component_meta", inst.Host(), inst.MainPort(), inst.Type()),
 				Size:   (10 * 1024),
 			})
 		}
@@ -94,7 +94,7 @@ func (c *MetaDataCollectOptions) Prepare(m *Manager, topo *models.TiDBCluster) (
 }
 
 // Collect implements the Collector interface
-func (c *MetaDataCollectOptions) Collect(m *Manager, topo *models.TiDBCluster) error {
+func (c *ComponentMetaCollectOptions) Collect(m *Manager, topo *models.TiDBCluster) error {
 	ctx := ctxt.New(
 		context.Background(),
 		c.opt.Concurrency,
@@ -119,7 +119,7 @@ func (c *MetaDataCollectOptions) Collect(m *Manager, topo *models.TiDBCluster) e
 	}
 
 	t := task.NewBuilder(m.logger).
-		ParallelStep("+ Collect metadata", false, collecteMetaDateTasks...).Build()
+		ParallelStep("+ Collect component metadata", false, collecteMetaDateTasks...).Build()
 
 	if err := t.Execute(ctx); err != nil {
 		if errorx.Cast(err) != nil {
@@ -133,7 +133,7 @@ func (c *MetaDataCollectOptions) Collect(m *Manager, topo *models.TiDBCluster) e
 }
 
 // buildMateCollectingTasks build collect matedata information tasks
-func buildMateCollectingTasks(ctx context.Context, c *MetaDataCollectOptions, inst models.Component) []*task.StepDisplay {
+func buildMateCollectingTasks(ctx context.Context, c *ComponentMetaCollectOptions, inst models.Component) []*task.StepDisplay {
 
 	logger := ctx.Value(logprinter.ContextKeyLogger).(*logprinter.Logger)
 
@@ -141,7 +141,7 @@ func buildMateCollectingTasks(ctx context.Context, c *MetaDataCollectOptions, in
 	case models.ComponentTypeTiCDC:
 		tasks, err := buildTiCDCMateCollectTask(ctx, c, inst)
 		if err != nil {
-			logger.Warnf("fail collect TiCDC matedata: %s, continue", err)
+			logger.Warnf("fail collect TiCDC component matedata: %s, continue", err)
 		}
 		return tasks
 	default:
@@ -150,7 +150,7 @@ func buildMateCollectingTasks(ctx context.Context, c *MetaDataCollectOptions, in
 	}
 }
 
-func buildTiCDCMateCollectTask(ctx context.Context, c *MetaDataCollectOptions, inst models.Component) ([]*task.StepDisplay, error) {
+func buildTiCDCMateCollectTask(ctx context.Context, c *ComponentMetaCollectOptions, inst models.Component) ([]*task.StepDisplay, error) {
 
 	var debugTasks []*task.StepDisplay
 	logger := ctx.Value(logprinter.ContextKeyLogger).(*logprinter.Logger)
@@ -173,7 +173,7 @@ func buildTiCDCMateCollectTask(ctx context.Context, c *MetaDataCollectOptions, i
 				if err != nil {
 					return err
 				}
-				dir := filepath.Join(c.resultDir, host, instDir, "metadata")
+				dir := filepath.Join(c.resultDir, host, instDir, "component_meta")
 				if tiuputils.IsNotExist(dir) {
 					err := os.MkdirAll(dir, 0755)
 					if err != nil {
@@ -198,7 +198,7 @@ func buildTiCDCMateCollectTask(ctx context.Context, c *MetaDataCollectOptions, i
 			},
 		).
 		BuildAsStep(fmt.Sprintf(
-			"  - Querying metadata for %s %s:%d",
+			"  - Querying component metadata for %s %s:%d",
 			inst.Type(),
 			inst.Host(),
 			inst.MainPort(),

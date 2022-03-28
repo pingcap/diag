@@ -39,14 +39,14 @@ import (
 
 // types of data to collect
 const (
-	CollectTypeSystem   = "system"
-	CollectTypeMonitor  = "monitor"
-	CollectTypeLog      = "log"
-	CollectTypeConfig   = "config"
-	CollectTypeSchema   = "db_vars"
-	CollectTypePerf     = "perf"
-	CollectTypeAudit    = "audit_log"
-	CollectTypeMetaData = "metadata"
+	CollectTypeSystem        = "system"
+	CollectTypeMonitor       = "monitor"
+	CollectTypeLog           = "log"
+	CollectTypeConfig        = "config"
+	CollectTypeSchema        = "db_vars"
+	CollectTypePerf          = "perf"
+	CollectTypeAudit         = "audit_log"
+	CollectTypeComponentMeta = "component_meta"
 
 	CollectModeTiUP = "tiup-cluster"  // collect from a tiup-cluster deployed cluster
 	CollectModeK8s  = "tidb-operator" // collect from a tidb-operator deployed cluster
@@ -167,14 +167,14 @@ func (m *Manager) CollectClusterInfo(
 	}
 
 	collectorSet := map[string]bool{
-		CollectTypeSystem:   false,
-		CollectTypeMonitor:  false,
-		CollectTypeLog:      false,
-		CollectTypeConfig:   false,
-		CollectTypeSchema:   false,
-		CollectTypePerf:     false,
-		CollectTypeAudit:    false,
-		CollectTypeMetaData: false,
+		CollectTypeSystem:        false,
+		CollectTypeMonitor:       false,
+		CollectTypeLog:           false,
+		CollectTypeConfig:        false,
+		CollectTypeSchema:        false,
+		CollectTypePerf:          false,
+		CollectTypeAudit:         false,
+		CollectTypeComponentMeta: false,
 	}
 
 	for name := range collectorSet {
@@ -317,9 +317,9 @@ func (m *Manager) CollectClusterInfo(
 			})
 	}
 
-	if canCollect(cOpt, CollectTypeMetaData) {
+	if canCollect(cOpt, CollectTypeComponentMeta) {
 		collectors = append(collectors,
-			&MetaDataCollectOptions{
+			&ComponentMetaCollectOptions{
 				BaseOptions: opt,
 				opt:         gOpt,
 				resultDir:   resultDir,
