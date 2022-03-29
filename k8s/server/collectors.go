@@ -327,18 +327,21 @@ func recollectData(c *gin.Context) {
 		return
 	}
 
-	currTime := time.Now()
-
-	// build collect job
-	worker := diagCtx.getCollectWorker(id)
-
-	if worker.job.Status != taskStatusInterrupt {
-		msg := fmt.Sprintf(" collect job %s status is %s, can't retry", id, worker.job.Status)
-		sendErrMsg(c, http.StatusBadRequest, msg)
+	cluster, err := collector.GetClusterInfoFromFile(filepath.Join(collectDir, id))
+	if err != nil {
+		msg := "can't get cluster metadata."
+		sendErrMsg(c, http.StatusInternalServerError, msg)
 		return
 	}
 
-	worker.job.Date = currTime.Format(time.RFC3339)
+	// get worker from id
+	worker := diagCtx.getCollectWorker(id)
+
+	if worker.job.Status != taskStatusInterrupt {
+		msg := fmt.Sprintf(" collect job %s status is %s, can't retry.", id, worker.job.Status)
+		sendErrMsg(c, http.StatusBadRequest, msg)
+		return
+	}
 
 	nscluster := strings.Split(worker.job.ClusterName, "/")
 	opt := collector.BaseOptions{
@@ -349,7 +352,7 @@ func recollectData(c *gin.Context) {
 	}
 
 	// run collector
-	go runCollector(diagCtx, &opt, worker, nil)
+	go runCollector(diagCtx, &opt, worker, cluster.RawRequest)
 
 	c.JSON(http.StatusAccepted, worker.job)
 }
