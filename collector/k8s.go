@@ -440,19 +440,3 @@ func GetClusterInfoFromFile(path string) (*ClusterJSON, error) {
 
 	return c, nil
 }
-
-// GetCollectTimeFromFile use the modiftime of cluster.json as the collection time
-func GetCollectTimeFromFile(path string) time.Time {
-
-	f, err := os.Open(filepath.Join(path, FileNameClusterJSON))
-	if err != nil {
-		return time.Now()
-	}
-
-	fi, err := f.Stat()
-	if err != nil {
-		return time.Now()
-	}
-
-	return fi.ModTime()
-}
