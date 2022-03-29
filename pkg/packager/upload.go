@@ -43,6 +43,7 @@ type UploadOptions struct {
 	Alias       string
 	Issue       string
 	Concurrency int
+	Rebuild     bool
 	ClientOptions
 }
 
@@ -68,6 +69,7 @@ func Upload(ctx context.Context, opt *UploadOptions, skipConfirm bool) (string, 
 				InputDir:   dataDir,
 				OutputFile: opt.FilePath,
 				CertPath:   "", // use default cert in install path
+				Rebuild:    opt.Rebuild,
 			}, skipConfirm)
 			if err != nil {
 				return "", err
