@@ -128,6 +128,8 @@ func newEngine(ctx *context, opt *Options) *gin.Engine {
 
 	apis.GET("/collectors/:id/logs", getCollectLogs)
 
+	apis.POST("/collectors/:id/retry", recollectData)
+
 	// - data
 	apis.GET("/data", getDataList)
 

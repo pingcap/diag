@@ -112,6 +112,23 @@ paths:
           description: server side error
           schema:
             $ref: '#/definitions/ResponseMsg'
+  /collectors/{id}/retry:
+    get:
+      operationId: reCollectData
+      parameters:
+        - name: id
+          in: path
+          type: string
+          required: true
+      responses:
+        '202':
+          description: collector started
+          schema:
+            $ref: '#/definitions/CollectJob'
+        '500':
+          description: server side error
+          schema:
+            $ref: '#/definitions/ResponseMsg'
   /data:
     get:
       operationId: getDataList

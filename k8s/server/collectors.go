@@ -19,6 +19,7 @@ import (
 	"io"
 	"net/http"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -307,4 +308,48 @@ func getCollectLogs(c *gin.Context) {
 	}
 
 	c.String(http.StatusOK, output)
+}
+
+// recollectData implements POST /collectors/:id/retry
+func recollectData(c *gin.Context) {
+	id := c.Param("id")
+
+	ctx, ok := c.Get(diagAPICtxKey)
+	if !ok {
+		msg := "failed to read server config."
+		sendErrMsg(c, http.StatusInternalServerError, msg)
+		return
+	}
+	diagCtx, ok := ctx.(*context)
+	if !ok {
+		msg := "server config is in wrong type."
+		sendErrMsg(c, http.StatusInternalServerError, msg)
+		return
+	}
+
+	currTime := time.Now()
+
+	// build collect job
+	worker := diagCtx.getCollectWorker(id)
+
+	if worker.job.Status != taskStatusInterrupt {
+		msg := fmt.Sprintf(" collect job %s status is %s, can't retry", id, worker.job.Status)
+		sendErrMsg(c, http.StatusBadRequest, msg)
+		return
+	}
+
+	worker.job.Date = currTime.Format(time.RFC3339)
+
+	nscluster := strings.Split(worker.job.ClusterName, "/")
+	opt := collector.BaseOptions{
+		Cluster:     nscluster[1],
+		Namespace:   nscluster[0],
+		ScrapeBegin: worker.job.From,
+		ScrapeEnd:   worker.job.To,
+	}
+
+	// run collector
+	go runCollector(diagCtx, &opt, worker, nil)
+
+	c.JSON(http.StatusAccepted, worker.job)
 }
