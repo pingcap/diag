@@ -50,6 +50,7 @@ var (
 	reportEnabled bool // is telemetry report enabled
 	teleReport    *telemetry.Report
 	teleCommand   []string
+	diagConfig    DiagConfig
 )
 
 func getParentNames(cmd *cobra.Command) []string {
@@ -114,7 +115,7 @@ func init() {
 					zap.String(localdata.EnvNameNativeSSHClient, os.Getenv(localdata.EnvNameNativeSSHClient)))
 				fmt.Println("The --native-ssh flag has been deprecated, please use --ssh=system")
 			}
-
+			diagConfig.Load()
 			return nil
 		},
 		PersistentPostRunE: func(cmd *cobra.Command, args []string) error {
@@ -146,6 +147,7 @@ func init() {
 		newHistoryCommand(),
 		newCheckCmd(),
 		newAuditCmd(),
+		newConfigCmd(),
 	)
 }
 

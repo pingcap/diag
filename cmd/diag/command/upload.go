@@ -2,6 +2,7 @@ package command
 
 import (
 	"context"
+	"fmt"
 	"os"
 
 	"github.com/pingcap/diag/pkg/packager"
@@ -22,6 +23,12 @@ func newUploadCommand() *cobra.Command {
 			opt.FilePath = args[0]
 
 			opt.Token = os.Getenv("CLINIC_TOKEN")
+			if opt.Token == "" {
+				opt.Token = diagConfig.Clinic.Token
+			}
+			if opt.Token == "" {
+				return fmt.Errorf("please use `diag config` to set token first")
+			}
 
 			opt.Client = packager.InitClient(opt.Endpoint)
 			opt.Concurrency = gOpt.Concurrency
