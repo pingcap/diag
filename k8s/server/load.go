@@ -21,6 +21,7 @@ import (
 
 	"github.com/pingcap/diag/api/types"
 	"github.com/pingcap/diag/collector"
+	"github.com/pingcap/tiup/pkg/base52"
 	tiuputils "github.com/pingcap/tiup/pkg/utils"
 	"k8s.io/klog/v2"
 )
@@ -75,7 +76,7 @@ func loadJobWorker(ctx *context) {
 			Collectors:  c.Collectors,
 			From:        c.BeginTime,
 			To:          c.EndTime,
-			Date:        time.Now().Format(time.RFC3339),
+			Date:        decodeSession(c.Session).Format(time.RFC3339),
 			Dir:         f,
 		}
 		ctx.insertCollectJob(job)
@@ -84,4 +85,18 @@ func loadJobWorker(ctx *context) {
 	}
 
 	klog.Infof("finished loading workers from %s ", collectDir)
+}
+
+// decodeSession decodes session to unix timestamp
+func decodeSession(session string) time.Time {
+	ts, err := base52.Decode(session)
+	if err != nil {
+		return time.Now()
+	}
+	// compatible with old second based ts
+	if ts>>32 > 0 {
+		ts /= 1e9
+	}
+	t := time.Unix(ts, 0)
+	return t
 }
