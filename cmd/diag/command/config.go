@@ -16,18 +16,18 @@ package command
 import (
 	"fmt"
 	"os"
-	"path/filepath"
 	"reflect"
 	"strings"
 
 	"github.com/BurntSushi/toml"
+	"github.com/pingcap/tiup/pkg/cluster/spec"
 	"github.com/spf13/cobra"
 )
 
 type ClinicConfig struct {
-//	Endpoint string `toml:"endpoint,omitempty"`
-//	Cert     string `toml:"cert,omitempty"`
-	Token    string `toml:"token,omitempty"`
+	//	Endpoint string `toml:"endpoint,omitempty"`
+	//	Cert     string `toml:"cert,omitempty"`
+	Token string `toml:"token,omitempty"`
 }
 
 type DiagConfig struct {
@@ -36,14 +36,17 @@ type DiagConfig struct {
 
 func newConfigCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "config [<options>]",
-		Short: "config diag",
+		Use:   "config <key> <value>",
+		Short: "set an individual value in diag configuration file",
+		Long:  `set an individual value in diag configuration file, like
+  "diag config clinic.token xxxxxxxxxx"
+if not specify key nor value, an interactive interface will be used to set necessary configuration`,
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
 			switch len(args) {
 			case 0:
 				diagConfig.interactiveSet()
 			case 2:
-				err:= diagConfig.Set(args[0], args[1])
+				err := diagConfig.Set(args[0], args[1])
 				if err != nil {
 					return err
 				}
@@ -58,45 +61,27 @@ func newConfigCmd() *cobra.Command {
 }
 
 func (c *DiagConfig) Load() error {
-	confPath := os.Getenv("TIUP_COMPONENT_DATA_DIR")
-	if confPath == "" {
-		homeDir, _ := os.UserHomeDir()
-		if homeDir == "" {
-			return fmt.Errorf("cannot get configure path")
-		}
-		confPath = filepath.Join(homeDir, ".tiup", "storage", "diag")
-	}
-	confPath = filepath.Join(confPath, "diag.toml")
+	confPath := spec.ProfilePath("diag.toml")
 	_, err := toml.DecodeFile(confPath, c)
 	return err
-	
 }
 
 func (c *DiagConfig) Save() error {
-	confPath := os.Getenv("TIUP_COMPONENT_DATA_DIR")
-	if confPath == "" {
-		homeDir, _ := os.UserHomeDir()
-		if homeDir == "" {
-			return fmt.Errorf("cannot get configure path")
-		}
-		confPath = filepath.Join(homeDir, ".tiup", "storage", "diag")
-	}
-	confPath = filepath.Join(confPath, "diag.toml")
+	confPath := spec.ProfilePath("diag.toml")
 	f, err := os.OpenFile(confPath, os.O_RDWR|os.O_CREATE|os.O_TRUNC, os.ModePerm)
 	if err != nil {
 		return err
 	}
 	enc := toml.NewEncoder(f)
 	return enc.Encode(c)
-	
 }
 
-func (c *DiagConfig) Set(key, value string) error{
+func (c *DiagConfig) Set(key, value string) error {
 	reflectV := reflect.ValueOf(&diagConfig).Elem()
 	keys := strings.Split(key, ".")
 	for _, k := range keys {
 		if reflectV.Kind() != reflect.Struct {
-			return fmt.Errorf("%s is not a valid diag configure key", key)
+			return fmt.Errorf("%s is not a valid diag configuration key", key)
 		}
 		num := reflectV.NumField()
 		var i int
@@ -107,13 +92,13 @@ func (c *DiagConfig) Set(key, value string) error{
 			}
 		}
 		if i == num {
-			return fmt.Errorf("%s is not a valid diag configure key", key)
+			return fmt.Errorf("%s is not a valid diag configuration key", key)
 		}
 	}
-	if reflectV.CanSet() && reflectV.Kind() != reflect.Struct{
+	if reflectV.CanSet() && reflectV.Kind() != reflect.Struct {
 		reflectV.SetString(value)
 	} else {
-		return fmt.Errorf("%s is not a valid diag configure key", key)
+		return fmt.Errorf("%s is not a valid diag configuration", key)
 	}
 	return nil
 }
