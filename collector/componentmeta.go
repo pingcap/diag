@@ -34,7 +34,7 @@ import (
 // ComponentMetaCollectOptions are options used collecting component metadata
 type ComponentMetaCollectOptions struct {
 	*BaseOptions
-	opt       *operator.Options // global operations from cli  
+	opt       *operator.Options // global operations from cli
 	resultDir string
 	fileStats map[string][]CollectStat
 	tlsCfg    *tls.Config
@@ -141,7 +141,7 @@ func buildMateCollectingTasks(ctx context.Context, c *ComponentMetaCollectOption
 	case models.ComponentTypeTiCDC:
 		tasks, err := buildTiCDCMateCollectTask(ctx, c, inst)
 		if err != nil {
-			logger.Warnf("fail collect TiCDC component matedata: %s, continue", err)
+			logger.Warnf("failed to collect TiCDC component metadata: %s, continue", err)
 		}
 		return tasks
 	default:
@@ -190,7 +190,7 @@ func buildTiCDCMateCollectTask(ctx context.Context, c *ComponentMetaCollectOptio
 				for _, kv := range kvs {
 					_, err = f.WriteString(fmt.Sprintf("Key: %s, Value: %s\n", string(kv.Key), string(kv.Value)))
 					if err != nil {
-						logger.Warnf("fail collect TiCDC matedata: %s, continue", err)
+						logger.Warnf("failed to collect TiCDC metadata: %s, continue", err)
 					}
 				}
 
