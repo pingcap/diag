@@ -18,7 +18,7 @@ import (
 	"reflect"
 
 	"github.com/pingcap/diag/k8s/apis/util/config"
-	"github.com/pingcap/diag/k8s/apis/util/toml"
+	"github.com/pingcap/diag/pkg/utils/toml"
 	"github.com/pingcap/errors"
 	"k8s.io/apimachinery/pkg/util/json"
 )

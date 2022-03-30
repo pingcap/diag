@@ -20,7 +20,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/pingcap/diag/k8s/apis/util/toml"
+	"github.com/pingcap/diag/pkg/utils/toml"
 	"github.com/pingcap/tiup/pkg/cluster/spec"
 	logprinter "github.com/pingcap/tiup/pkg/logger/printer"
 )
