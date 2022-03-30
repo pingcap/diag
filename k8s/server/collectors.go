@@ -310,8 +310,8 @@ func getCollectLogs(c *gin.Context) {
 	c.String(http.StatusOK, output)
 }
 
-// recollectData implements POST /collectors/:id/retry
-func recollectData(c *gin.Context) {
+// reCollectData implements POST /collectors/:id/retry
+func reCollectData(c *gin.Context) {
 	id := c.Param("id")
 
 	ctx, ok := c.Get(diagAPICtxKey)
@@ -327,15 +327,16 @@ func recollectData(c *gin.Context) {
 		return
 	}
 
+	// get worker from id
+	worker := diagCtx.getCollectWorker(id)
+
 	cluster, err := collector.GetClusterInfoFromFile(filepath.Join(collectDir, id))
 	if err != nil {
+		diagCtx.setJobStatus(worker.job.ID, taskStatusError)
 		msg := "can't get cluster metadata."
 		sendErrMsg(c, http.StatusInternalServerError, msg)
 		return
 	}
-
-	// get worker from id
-	worker := diagCtx.getCollectWorker(id)
 
 	if worker.job.Status != taskStatusInterrupt {
 		msg := fmt.Sprintf(" collect job %s status is %s, can't retry.", id, worker.job.Status)
