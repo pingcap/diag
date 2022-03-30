@@ -60,7 +60,7 @@ func readProfile(name string) (*CollectProfile, error) {
 	return nil, fmt.Errorf("no valid collect profile with filename %s.toml found", name)
 }
 
-// readProfileFromDataDir tries to load a pre-installed profile file
+// readProfileFromDataDir tries to load a user defined profile file
 func readProfileFromDataDir(name string) (*CollectProfile, error) {
 	// try ~/.tiup/storage/diag/profiles/<name>.toml
 	fp := spec.ProfilePath(

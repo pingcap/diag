@@ -79,7 +79,7 @@ func newCollectCmd() *cobra.Command {
 			teleCommand = append(teleCommand, clsID)
 
 			if metricsConf != "" {
-				f, err := os.Open(path.Join("metrics", metricsConf))
+				f, err := os.Open(metricsConf)
 				if err != nil {
 					return err
 				}
