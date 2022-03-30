@@ -21,7 +21,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	fuzz "github.com/google/gofuzz"
 	. "github.com/onsi/gomega"
-	"github.com/pingcap/diag/k8s/apis/util/toml"
+	"github.com/pingcap/diag/pkg/utils/toml"
 )
 
 func TestDMConfigWraper(t *testing.T) {

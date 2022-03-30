@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/fatih/color"
@@ -92,6 +93,7 @@ type BaseOptions struct {
 type CollectOptions struct {
 	RawRequest    interface{}   // raw collect command or request
 	Mode          string        // the cluster is deployed with what type of tool
+	ProfileName   string        // the name of a pre-defined collecting profile
 	Include       set.StringSet // types of data to collect
 	Exclude       set.StringSet // types of data not to collect
 	MetricsFilter []string      // prefix of metrics to collect"
@@ -169,6 +171,7 @@ func (m *Manager) CollectClusterInfo(
 		return "", err
 	}
 
+	// prepare collector list
 	collectorSet := map[string]bool{
 
 		CollectTypeSystem:        false,
@@ -180,6 +183,27 @@ func (m *Manager) CollectClusterInfo(
 		CollectTypeAudit:         false,
 		CollectTypeDebug:         false,
 		CollectTypeComponentMeta: false,
+	}
+
+	if cOpt.ProfileName != "" {
+		cp, err := readProfile(cOpt.ProfileName)
+		if err != nil {
+			return "", errors.Annotate(err, "failed to load profile from file")
+		}
+		msg := fmt.Sprintf(
+			"Apply configs from profile %s(%s) %s",
+			cp.Name, cOpt.ProfileName, cp.Version,
+		)
+		if len(cp.Maintainers) > 0 {
+			msg = fmt.Sprintf("%s by %s", msg, strings.Join(cp.Maintainers, ","))
+		}
+		logprinter.Infof(msg)
+
+		for _, c := range cp.Collectors {
+			cOpt.Include.Insert(c)
+		}
+		gOpt.Roles = append(gOpt.Roles, cp.Roles...)
+		cOpt.MetricsFilter = append(cOpt.MetricsFilter, cp.MetricFilters...)
 	}
 
 	for name := range collectorSet {

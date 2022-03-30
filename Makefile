@@ -1,7 +1,7 @@
 PROJECT=diag
 
 
-.PHONY: all collector scraper k8s fmt vet lint check build default metricsconfig
+.PHONY: all collector scraper k8s fmt vet lint check build default collectprofiles metricfilters
 
 default: all
 
@@ -50,7 +50,7 @@ CHECK_LDFLAGS += $(LDFLAGS)
 
 all: check build
 
-build: diag insight scraper metricsconfig
+build: diag insight scraper collectprofiles metricfilters
 
 clean:
 	@rm -rf bin
@@ -65,8 +65,11 @@ insight:
 scraper:
 	$(GOBUILD) $(RACE_FLAG) -ldflags '$(LDFLAGS) $(CHECK_FLAG)' -o bin/scraper cmd/scraper/*.go
 
-metricsconfig:
-	cp metricsconfig/* bin/
+metricfilters:
+	cp -r configs/metrics bin/
+
+collectprofiles:
+	cp -r configs/profiles bin/
 
 k8s:
 	$(GOBUILD) $(RACE_FLAG) -ldflags '$(LDFLAGS) $(CHECK_FLAG)' -o k8s/images/diag/bin/k8s-pod cmd/k8s/*.go
