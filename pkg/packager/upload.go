@@ -446,7 +446,7 @@ func requestWithAuth(opt *ClientOptions, req *http.Request) (*http.Response, err
 	}
 
 	if resp.StatusCode == http.StatusForbidden {
-		return nil, errors.New("403 Clinic server forbid to upload, please check your permission")
+		return nil, errors.New("403 Upload rejected by the Clinic server, please check your permission")
 	}
 
 	if resp.StatusCode == http.StatusBadRequest {
