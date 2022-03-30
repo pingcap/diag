@@ -199,6 +199,7 @@ func (m *Manager) CollectClusterInfo(
 			cOpt.Include.Insert(c)
 		}
 		gOpt.Roles = append(gOpt.Roles, cp.Roles...)
+		cOpt.MetricsFilter = append(cOpt.MetricsFilter, cp.MetricFilters...)
 	}
 
 	for name := range collectorSet {

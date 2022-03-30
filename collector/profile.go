@@ -30,12 +30,13 @@ const ProfileDirectoryName = "profiles"
 
 // CollectProfile is a pre-defined configuration of collecting jobs
 type CollectProfile struct {
-	Name        string   `toml:"name"` // name of the profile
-	Version     string   `toml:"version"`
-	Maintainers []string `toml:"maintainers,omitempty"`
-	Description string   `toml:"description,omitempty"`
-	Collectors  []string `toml:"collectors,omitempty"`
-	Roles       []string `toml:"roles,omitempty"`
+	Name          string   `toml:"name"` // name of the profile
+	Version       string   `toml:"version"`
+	Maintainers   []string `toml:"maintainers,omitempty"`
+	Description   string   `toml:"description,omitempty"`
+	Collectors    []string `toml:"collectors,omitempty"`
+	Roles         []string `toml:"roles,omitempty"`
+	MetricFilters []string `toml:"metric_filters,omitempty"`
 }
 
 // readProfile tries to load a CollectProfile from file
