@@ -46,7 +46,7 @@ func newCollectCmd() *cobra.Command {
 	}
 	inc := make([]string, 0)
 	ext := make([]string, 0)
-
+	sce := make([]string, 0)
 	cmd := &cobra.Command{
 		Use:   "collect <cluster-name>",
 		Short: "Collect information and metrics from the cluster.",
@@ -73,6 +73,9 @@ func newCollectCmd() *cobra.Command {
 			}
 			if len(ext) > 0 {
 				cOpt.Exclude = set.NewStringSet(ext...)
+			}
+			if len(sce) > 0 {
+				cOpt.Scenario = set.NewStringSet(sce...)
 			}
 			opt.Cluster = args[0]
 			clsID := scrubClusterName(opt.Cluster)
@@ -139,6 +142,7 @@ func newCollectCmd() *cobra.Command {
 	cmd.Flags().BoolVar(&collectAll, "all", false, "Collect all data")
 	cmd.Flags().StringSliceVar(&inc, "include", nil, fmt.Sprintf("types of data to collect: default[%s] non-default[%s]", strings.Join(collector.CollectDefaultSet.Slice(), ","), strings.Join(collector.CollectAdditionSet.Slice(), ",")))
 	cmd.Flags().StringSliceVar(&ext, "exclude", nil, "types of data not to collect")
+	cmd.Flags().StringSliceVar(&sce, "scenario", nil, "types of collection scenario")
 	cmd.Flags().StringSliceVar(&cOpt.MetricsFilter, "metricsfilter", nil, "prefix of metrics to collect")
 	cmd.Flags().StringVar(&metricsConf, "metricsconfig", "", "config file of metricsfilter")
 	cmd.Flags().StringVarP(&cOpt.Dir, "output", "o", "", "output directory of collected data")

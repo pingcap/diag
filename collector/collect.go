@@ -46,6 +46,7 @@ const (
 	CollectTypeSchema  = "db_vars"
 	CollectTypePerf    = "perf"
 	CollectTypeAudit   = "audit_log"
+	CollectTypeBind    = "sql_bind"
 
 	CollectModeTiUP = "tiup-cluster"  // collect from a tiup-cluster deployed cluster
 	CollectModeK8s  = "tidb-operator" // collect from a tidb-operator deployed cluster
@@ -63,6 +64,12 @@ var CollectDefaultSet = set.NewStringSet(
 var CollectAdditionSet = set.NewStringSet(
 	CollectTypeSchema,
 	CollectTypePerf,
+	CollectTypeBind,
+)
+
+var CollectNeedDBKey = set.NewStringSet(
+	CollectTypeBind,
+	CollectTypeSchema,
 )
 
 // Collector is the configuration defining an collecting job
@@ -91,6 +98,7 @@ type CollectOptions struct {
 	Mode          string        // the cluster is deployed with what type of tool
 	Include       set.StringSet // types of data to collect
 	Exclude       set.StringSet // types of data not to collect
+	Scenario      set.StringSet // types of collection scenario
 	MetricsFilter []string      // prefix of metrics to collect"
 	Dir           string        // target directory to store collected data
 	Limit         int           // rate limit of SCP
@@ -173,6 +181,7 @@ func (m *Manager) CollectClusterInfo(
 		CollectTypeSchema:  false,
 		CollectTypePerf:    false,
 		CollectTypeAudit:   false,
+		CollectTypeBind:    false,
 	}
 
 	for name := range collectorSet {
@@ -264,17 +273,32 @@ func (m *Manager) CollectClusterInfo(
 			})
 	}
 
-	if canCollect(cOpt, CollectTypeSchema) {
-		var user string
+	var dbUser, dbPassword string
+	if needDBKey(cOpt) {
 		fmt.Print("please enter database username:")
-		fmt.Scanln(&user)
-		password := tui.PromptForPassword("please enter database password:")
+		fmt.Scanln(&dbUser)
+		dbPassword = tui.PromptForPassword("please enter database password:")
+	}
+
+	if canCollect(cOpt, CollectTypeSchema) {
 		collectors = append(collectors,
 			&SchemaCollectOptions{
 				BaseOptions: opt,
 				opt:         gOpt,
-				dbuser:      user,
-				dbpasswd:    password,
+				dbuser:      dbUser,
+				dbpasswd:    dbPassword,
+				resultDir:   resultDir,
+				fileStats:   make(map[string][]CollectStat),
+			})
+	}
+
+	if canCollect(cOpt, CollectTypeBind) {
+		collectors = append(collectors,
+			&BindCollectOptions{
+				BaseOptions: opt,
+				opt:         gOpt,
+				dbuser:      dbUser,
+				dbpasswd:    dbPassword,
 				resultDir:   resultDir,
 				fileStats:   make(map[string][]CollectStat),
 			})
@@ -469,4 +493,13 @@ func readableSize(b int64) string {
 
 func canCollect(cOpt *CollectOptions, cType string) bool {
 	return cOpt.Include.Exist(cType) && !cOpt.Exclude.Exist(cType)
+}
+
+func needDBKey(cOpt *CollectOptions) bool {
+	for _, t := range CollectNeedDBKey.Slice() {
+		if canCollect(cOpt, t) {
+			return true
+		}
+	}
+	return false
 }
