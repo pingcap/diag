@@ -428,6 +428,7 @@ func buildRealtimeConfigCollectingTasks(ctx context.Context, inst models.Compone
 					url := fmt.Sprintf("%s://%s", scheme, config.url)
 					err := c.Download(ctx, url, filepath.Join(resultDir, host, instDir, "conf", config.filename))
 					if err != nil {
+						logger.Warnf("fail querying config %s: %s, continue", url, err)
 						return err
 					}
 				}

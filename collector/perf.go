@@ -257,6 +257,7 @@ func buildPerfCollectingTasks(ctx context.Context, inst models.Component, c *Per
 					url := fmt.Sprintf("%s://%s", scheme, config.url)
 					err := c.Download(ctx, url, config.filepath)
 					if err != nil {
+						logger.Warnf("fail querying perf info %s: %s, continue", url, err)
 						return err
 					}
 

@@ -220,6 +220,7 @@ func buildDebugCollectingTasks(ctx context.Context, inst models.Component, c *De
 					url := fmt.Sprintf("%s://%s", scheme, config.url)
 					err := c.Download(ctx, url, config.filepath)
 					if err != nil {
+						logger.Warnf("fail querying debug info %s: %s, continue", url, err)
 						return err
 					}
 				}
