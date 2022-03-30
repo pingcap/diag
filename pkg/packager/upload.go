@@ -465,7 +465,7 @@ func requestWithAuth(opt *ClientOptions, req *http.Request) (*http.Response, err
 	}
 
 	if resp.StatusCode == http.StatusProcessing {
-		return nil, errors.New("102 the resource is processing, please again later")
+		return nil, errors.New("102 the resource is processing, please try again later")
 	}
 
 	return resp, nil
