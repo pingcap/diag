@@ -46,6 +46,7 @@ const (
 	CollectTypeSchema        = "db_vars"
 	CollectTypePerf          = "perf"
 	CollectTypeAudit         = "audit_log"
+	CollectTypeDebug         = "debug"
 	CollectTypeComponentMeta = "component_meta"
 
 	CollectModeTiUP = "tiup-cluster"  // collect from a tiup-cluster deployed cluster
@@ -64,6 +65,7 @@ var CollectDefaultSet = set.NewStringSet(
 var CollectAdditionSet = set.NewStringSet(
 	CollectTypeSchema,
 	CollectTypePerf,
+	CollectTypeDebug,
 )
 
 // Collector is the configuration defining an collecting job
@@ -168,6 +170,7 @@ func (m *Manager) CollectClusterInfo(
 	}
 
 	collectorSet := map[string]bool{
+
 		CollectTypeSystem:        false,
 		CollectTypeMonitor:       false,
 		CollectTypeLog:           false,
@@ -175,6 +178,7 @@ func (m *Manager) CollectClusterInfo(
 		CollectTypeSchema:        false,
 		CollectTypePerf:          false,
 		CollectTypeAudit:         false,
+		CollectTypeDebug:         false,
 		CollectTypeComponentMeta: false,
 	}
 
@@ -328,6 +332,17 @@ func (m *Manager) CollectClusterInfo(
 				fileStats:   make(map[string][]CollectStat),
 				tlsCfg:      tlsCfg,
 				topo:        cls,
+			})
+	}
+	if canCollect(cOpt, CollectTypeDebug) {
+
+		collectors = append(collectors,
+			&DebugCollectOptions{
+				BaseOptions: opt,
+				opt:         gOpt,
+				resultDir:   resultDir,
+				fileStats:   make(map[string][]CollectStat),
+				tlsCfg:      tlsCfg,
 			})
 	}
 

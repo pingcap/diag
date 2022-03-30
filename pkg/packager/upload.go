@@ -43,6 +43,7 @@ type UploadOptions struct {
 	Alias       string
 	Issue       string
 	Concurrency int
+	Rebuild     bool
 	ClientOptions
 }
 
@@ -68,6 +69,7 @@ func Upload(ctx context.Context, opt *UploadOptions, skipConfirm bool) (string, 
 				InputDir:   dataDir,
 				OutputFile: opt.FilePath,
 				CertPath:   "", // use default cert in install path
+				Rebuild:    opt.Rebuild,
 			}, skipConfirm)
 			if err != nil {
 				return "", err
@@ -440,11 +442,11 @@ func requestWithAuth(opt *ClientOptions, req *http.Request) (*http.Response, err
 	}
 
 	if resp.StatusCode == http.StatusUnauthorized {
-		return nil, errors.New("Unauthorized")
+		return nil, errors.New("401 Unauthorized")
 	}
 
 	if resp.StatusCode == http.StatusForbidden {
-		return nil, errors.New("Some requests can only be used on the Internal network")
+		return nil, errors.New("403 Upload rejected by the Clinic server, please check your permission")
 	}
 
 	if resp.StatusCode == http.StatusBadRequest {
@@ -452,18 +454,18 @@ func requestWithAuth(opt *ClientOptions, req *http.Request) (*http.Response, err
 
 		data, err := io.ReadAll(resp.Body)
 		if err != nil {
-			return nil, errors.New(" Bad Request")
+			return nil, errors.New("400 Bad Request")
 		}
 
 		errmsg := resp.Status
 		if string(data) != "" {
 			errmsg = fmt.Sprintf("%s. %s", errmsg, string(data))
 		}
-		return nil, errors.Errorf(" Bad Request, msg=%s", errmsg)
+		return nil, errors.Errorf("400 Bad Request, msg=%s", errmsg)
 	}
 
 	if resp.StatusCode == http.StatusProcessing {
-		return nil, errors.New("the resource is processing, please again later")
+		return nil, errors.New("102 the resource is processing, please try again later")
 	}
 
 	return resp, nil

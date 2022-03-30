@@ -106,7 +106,7 @@ func (c *PerfCollectOptions) prepareForTiUP(_ *Manager, topo *models.TiDBCluster
 			}
 
 			stat := CollectStat{
-				Target: fmt.Sprintf("%s:%d", inst.Host(), inst.MainPort()),
+				Target: fmt.Sprintf("%s:%d %s perf", inst.Host(), inst.MainPort(), inst.Type()),
 				Size:   fsize,
 			}
 
@@ -115,7 +115,7 @@ func (c *PerfCollectOptions) prepareForTiUP(_ *Manager, topo *models.TiDBCluster
 		case models.ComponentTypeTiKV, models.ComponentTypeTiFlash:
 			// cpu profile
 			c.fileStats[inst.Host()] = append(c.fileStats[inst.Host()], CollectStat{
-				Target: fmt.Sprintf("%s:%d", inst.Host(), inst.MainPort()),
+				Target: fmt.Sprintf("%s:%d %s perf", inst.Host(), inst.MainPort(), inst.Type()),
 				Size:   (18 * 1024) * int64(c.duration),
 			})
 		}
@@ -164,25 +164,19 @@ func (c *PerfCollectOptions) Collect(m *Manager, topo *models.TiDBCluster) error
 	return nil
 }
 
-// perfInfo  profile information
-type perfInfo struct {
-	filename string
-	perfType string
+type perfConfig struct {
+	filepath string
 	url      string
-	header   map[string]string
 	timeout  time.Duration
+	header   map[string]string
 }
 
 // buildPerfCollectingTasks build collect profile information tasks
 func buildPerfCollectingTasks(ctx context.Context, inst models.Component, c *PerfCollectOptions) []*task.StepDisplay {
 	var (
 		perfInfoTasks []*task.StepDisplay
-		perfInfos     []perfInfo
+		perfConfigs   []perfConfig
 	)
-	scheme := "http"
-	if c.tlsCfg != nil {
-		scheme = "https"
-	}
 
 	host := inst.Host()
 	instDir, ok := inst.Attributes()["deploy_dir"].(string)
@@ -197,92 +191,87 @@ func buildPerfCollectingTasks(ctx context.Context, inst models.Component, c *Per
 	switch inst.Type() {
 	case models.ComponentTypeTiDB, models.ComponentTypePD, models.ComponentTypeTiCDC:
 		// cpu profile
-		perfInfos = append(perfInfos,
-			perfInfo{
-				filename: "cpu_profile.proto",
-				perfType: "cpu_profile",
+		perfConfigs = append(perfConfigs,
+			perfConfig{
+				filepath: filepath.Join(c.resultDir, host, instDir, CollectTypePerf, "cpu_profile.proto"),
 				url:      fmt.Sprintf("%s/debug/pprof/profile?seconds=%d", inst.StatusURL(), c.duration),
 				timeout:  time.Second * time.Duration(c.duration+3),
 			})
+
 		// mem Heap
-		perfInfos = append(perfInfos,
-			perfInfo{
-				filename: "mem_heap.proto",
-				perfType: "mem_heap",
+		perfConfigs = append(perfConfigs,
+			perfConfig{
+				filepath: filepath.Join(c.resultDir, host, instDir, CollectTypePerf, "mem_heap.proto"),
 				url:      fmt.Sprintf("%s/debug/pprof/heap", inst.StatusURL()),
-				timeout:  time.Second * 3,
+				timeout:  time.Second * time.Duration(c.duration),
 			})
+
 		// Goroutine
-		perfInfos = append(perfInfos,
-			perfInfo{
-				filename: "goroutine.txt",
-				perfType: "goroutine",
+		perfConfigs = append(perfConfigs,
+			perfConfig{
+				filepath: filepath.Join(c.resultDir, host, instDir, CollectTypePerf, "goroutine.txt"),
 				url:      fmt.Sprintf("%s/debug/pprof/goroutine?debug=1", inst.StatusURL()),
-				timeout:  time.Second * 3,
+				timeout:  time.Second * time.Duration(c.duration),
 			})
+
 		// mutex
-		perfInfos = append(perfInfos,
-			perfInfo{
-				filename: "mutex.txt",
-				perfType: "mutex",
+		perfConfigs = append(perfConfigs,
+			perfConfig{
+				filepath: filepath.Join(c.resultDir, host, instDir, CollectTypePerf, "mutex.txt"),
 				url:      fmt.Sprintf("%s/debug/pprof/mutex?debug=1", inst.StatusURL()),
-				timeout:  time.Second * 3,
+				timeout:  time.Second * time.Duration(c.duration),
 			})
+
 	case models.ComponentTypeTiKV, models.ComponentTypeTiFlash:
 		// cpu profile
-		perfInfos = append(perfInfos,
-			perfInfo{
-				filename: "cpu_profile.proto",
-				perfType: "cpu_profile",
-				header:   map[string]string{"Content-Type": "application/protobuf"},
+		perfConfigs = append(perfConfigs,
+			perfConfig{
+				filepath: filepath.Join(c.resultDir, host, instDir, CollectTypePerf, "cpu_profile.proto"),
 				url:      fmt.Sprintf("%s/debug/pprof/profile?seconds=%d", inst.StatusURL(), c.duration),
 				timeout:  time.Second * time.Duration(c.duration+3),
+				header:   map[string]string{"Content-Type": "application/protobuf"},
 			})
+
 	default:
 		// not supported yet, just ignore
 		return nil
 	}
 
-	logger := ctx.Value(logprinter.ContextKeyLogger).(*logprinter.Logger)
-	for _, perfInfo := range perfInfos {
-		perfInfo := perfInfo
-		t := task.NewBuilder(logger).
-			Func(
-				fmt.Sprintf("querying %s %s:%d", perfInfo.perfType, host, inst.MainPort()),
-				func(ctx context.Context) error {
-					httpClient := utils.NewHTTPClient(perfInfo.timeout, c.tlsCfg)
+	scheme := "http"
+	if c.tlsCfg != nil {
+		scheme = "https"
+	}
 
-					if perfInfo.header != nil {
-						for k, v := range perfInfo.header {
-							httpClient.SetRequestHeader(k, v)
+	logger := ctx.Value(logprinter.ContextKeyLogger).(*logprinter.Logger)
+	t := task.NewBuilder(logger).
+		Func(
+			fmt.Sprintf("querying %s:%d", host, inst.MainPort()),
+			func(ctx context.Context) error {
+				for _, config := range perfConfigs {
+					c := utils.NewHTTPClient(config.timeout, c.tlsCfg)
+					if config.header != nil {
+						for k, v := range config.header {
+							c.SetRequestHeader(k, v)
 						}
 					}
-
-					url := fmt.Sprintf("%s://%s", scheme, perfInfo.url)
-					fpath := filepath.Join(c.resultDir, host, instDir, "perf")
-					fFile := filepath.Join(c.resultDir, host, instDir, "perf", perfInfo.filename)
-					if err := utils.CreateDir(fpath); err != nil {
-						return err
-					}
-
-					err := httpClient.Download(ctx, url, fFile)
+					url := fmt.Sprintf("%s://%s", scheme, config.url)
+					err := c.Download(ctx, url, config.filepath)
 					if err != nil {
-						logger.Warnf("fail querying %s: %s, continue", url, err)
+						logger.Warnf("fail querying perf info %s: %s, continue", url, err)
 						return err
 					}
 
-					return nil
-				},
-			).
-			BuildAsStep(fmt.Sprintf(
-				"  - Querying %s for %s %s:%d",
-				perfInfo.perfType,
-				inst.Type(),
-				inst.Host(),
-				inst.MainPort(),
-			))
-		perfInfoTasks = append(perfInfoTasks, t)
-	}
+				}
+				return nil
+			},
+		).
+		BuildAsStep(fmt.Sprintf(
+			"  - Querying profile info for %s %s:%d",
+			inst.Type(),
+			inst.Host(),
+			inst.MainPort(),
+		))
+	perfInfoTasks = append(perfInfoTasks, t)
 
 	return perfInfoTasks
 }

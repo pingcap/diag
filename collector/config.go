@@ -17,7 +17,6 @@ import (
 	"context"
 	"crypto/tls"
 	"fmt"
-	"os"
 	"path/filepath"
 	"strings"
 	"time"
@@ -427,22 +426,9 @@ func buildRealtimeConfigCollectingTasks(ctx context.Context, inst models.Compone
 				c := utils.NewHTTPClient(time.Second*3, tlsCfg)
 				for _, config := range configs {
 					url := fmt.Sprintf("%s://%s", scheme, config.url)
-					resp, err := c.Get(ctx, url)
+					err := c.Download(ctx, url, filepath.Join(resultDir, host, instDir, "conf", config.filename))
 					if err != nil {
-						logger.Warnf("fail querying %s: %s, continue", url, err)
-						return nil
-					}
-					fpath := filepath.Join(resultDir, host, instDir, "conf")
-					if err := utils.CreateDir(fpath); err != nil {
-						return err
-					}
-
-					err = os.WriteFile(
-						filepath.Join(resultDir, host, instDir, "conf", config.filename),
-						resp,
-						0600,
-					)
-					if err != nil {
+						logger.Warnf("fail querying config %s: %s, continue", url, err)
 						return err
 					}
 				}

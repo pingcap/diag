@@ -37,7 +37,7 @@ type PackageOptions struct {
 	InputDir   string // source directory of collected data
 	OutputFile string // target file to store packaged data
 	CertPath   string // crt file to encrypt data
-	Compress   byte
+	Rebuild    bool
 	Meta       map[string]interface{}
 }
 
@@ -183,6 +183,7 @@ func PackageCollectedData(pOpt *PackageOptions, skipConfirm bool) (string, error
 		return "", err
 	}
 	meta["cluster_name"], meta["begin_time"], meta["end_time"] = clusterJSON["cluster_name"], clusterJSON["begin_time"], clusterJSON["end_time"]
+	meta["rebuild"] = pOpt.Rebuild
 	header, _ := GenerateD1agHeader(meta, TypeZST, certPath)
 	fileW.Write(header)
 
