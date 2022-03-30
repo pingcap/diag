@@ -31,7 +31,7 @@ import (
 	"github.com/pingcap/tiup/pkg/cluster/task"
 )
 
-// SchemaCollectOptions are options used collecting component logs
+// SchemaCollectOptions are options used collecting tidb scheme
 type SchemaCollectOptions struct {
 	*BaseOptions
 	opt       *operator.Options // global operations from cli

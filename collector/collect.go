@@ -462,7 +462,7 @@ func confirmStats(stats []map[string][]CollectStat, resultDir string, sensitiveT
 	tui.PrintTable(statTable, true)
 
 	if sensitiveTag {
-		fmt.Printf(color.HiRedString("This collect action may contain sensitive data, please do not use it in production environment\n"))
+		fmt.Println(color.HiRedString("This collect action may contain sensitive data, please do not use it in production environment"))
 	}
 
 	fmt.Printf("These data will be stored in %s\n", color.CyanString(resultDir))

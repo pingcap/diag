@@ -34,7 +34,7 @@ import (
 	"github.com/pingcap/tiup/pkg/utils"
 )
 
-// ConfigCollectOptions are options used collecting component logs
+// ConfigCollectOptions are options used collecting component config
 type ConfigCollectOptions struct {
 	*BaseOptions
 	opt       *operator.Options // global operations from cli

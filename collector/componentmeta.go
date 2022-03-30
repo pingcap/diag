@@ -31,10 +31,10 @@ import (
 	tiuputils "github.com/pingcap/tiup/pkg/utils"
 )
 
-// ComponentMetaCollectOptions are options used collecting component logs
+// ComponentMetaCollectOptions are options used collecting component metadata
 type ComponentMetaCollectOptions struct {
 	*BaseOptions
-	opt       *operator.Options // global operations from cli         // scp rate limit
+	opt       *operator.Options // global operations from cli  
 	resultDir string
 	fileStats map[string][]CollectStat
 	tlsCfg    *tls.Config
@@ -43,7 +43,7 @@ type ComponentMetaCollectOptions struct {
 
 // Desc implements the Collector interface
 func (c *ComponentMetaCollectOptions) Desc() string {
-	return "Component matedata of components"
+	return "Metadata of components"
 }
 
 // GetBaseOptions implements the Collector interface
