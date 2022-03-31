@@ -14,10 +14,14 @@
 package models
 
 import (
+	"context"
+	"crypto/tls"
 	"fmt"
 
 	"github.com/pingcap/tiup/pkg/cluster/spec"
 	"github.com/pingcap/tiup/pkg/set"
+	mvccpb "go.etcd.io/etcd/api/v3/mvccpb"
+	clientv3 "go.etcd.io/etcd/client/v3"
 )
 
 // ComponentType are types of a component
@@ -665,4 +669,40 @@ func FilterInstance(instances []Component, nodes set.StringSet) (res []Component
 	}
 
 	return
+}
+
+// GetEtcdClient loads EtcdClient of current cluster
+func (c *TiDBCluster) GetEtcdClient(tlsCfg *tls.Config) (*clientv3.Client, error) {
+
+	var pdList []string
+
+	for _, pd := range c.PD {
+		if pd.Domain() != "" {
+			pdList = append(pdList, fmt.Sprintf("%s:%d", pd.Domain(), pd.StatusPort()))
+		}
+		pdList = append(pdList, fmt.Sprintf("%s:%d", pd.Host(), pd.StatusPort()))
+	}
+
+	return clientv3.New(clientv3.Config{
+		Endpoints: pdList,
+		TLS:       tlsCfg,
+	})
+}
+
+const ticdcEtcdKeyBase string = "/tidb/cdc"
+
+// getAllCDCInfo get all keys created by CDC
+func (c *TiDBCluster) GetAllCDCInfo(ctx context.Context, tlsCfg *tls.Config) ([]*mvccpb.KeyValue, error) {
+
+	etcdClient, err := c.GetEtcdClient(tlsCfg)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := etcdClient.Get(ctx, ticdcEtcdKeyBase, clientv3.WithPrefix())
+	if err != nil {
+		return nil, err
+	}
+
+	return resp.Kvs, nil
 }
