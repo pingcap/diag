@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/fatih/color"
@@ -39,13 +40,15 @@ import (
 
 // types of data to collect
 const (
-	CollectTypeSystem  = "system"
-	CollectTypeMonitor = "monitor"
-	CollectTypeLog     = "log"
-	CollectTypeConfig  = "config"
-	CollectTypeSchema  = "db_vars"
-	CollectTypePerf    = "perf"
-	CollectTypeAudit   = "audit_log"
+	CollectTypeSystem        = "system"
+	CollectTypeMonitor       = "monitor"
+	CollectTypeLog           = "log"
+	CollectTypeConfig        = "config"
+	CollectTypeSchema        = "db_vars"
+	CollectTypePerf          = "perf"
+	CollectTypeAudit         = "audit_log"
+	CollectTypeDebug         = "debug"
+	CollectTypeComponentMeta = "component_meta"
 
 	CollectModeTiUP = "tiup-cluster"  // collect from a tiup-cluster deployed cluster
 	CollectModeK8s  = "tidb-operator" // collect from a tidb-operator deployed cluster
@@ -63,6 +66,7 @@ var CollectDefaultSet = set.NewStringSet(
 var CollectAdditionSet = set.NewStringSet(
 	CollectTypeSchema,
 	CollectTypePerf,
+	CollectTypeDebug,
 )
 
 // Collector is the configuration defining an collecting job
@@ -89,6 +93,7 @@ type BaseOptions struct {
 type CollectOptions struct {
 	RawRequest    interface{}   // raw collect command or request
 	Mode          string        // the cluster is deployed with what type of tool
+	ProfileName   string        // the name of a pre-defined collecting profile
 	Include       set.StringSet // types of data to collect
 	Exclude       set.StringSet // types of data not to collect
 	MetricsFilter []string      // prefix of metrics to collect"
@@ -116,6 +121,7 @@ func (m *Manager) CollectClusterInfo(
 ) (string, error) {
 	m.mode = cOpt.Mode
 
+	var sensitiveTag bool
 	var cls *models.TiDBCluster
 	var tc *pingcapv1alpha1.TidbCluster
 	var tm *pingcapv1alpha1.TidbMonitor
@@ -165,14 +171,39 @@ func (m *Manager) CollectClusterInfo(
 		return "", err
 	}
 
+	// prepare collector list
 	collectorSet := map[string]bool{
-		CollectTypeSystem:  false,
-		CollectTypeMonitor: false,
-		CollectTypeLog:     false,
-		CollectTypeConfig:  false,
-		CollectTypeSchema:  false,
-		CollectTypePerf:    false,
-		CollectTypeAudit:   false,
+
+		CollectTypeSystem:        false,
+		CollectTypeMonitor:       false,
+		CollectTypeLog:           false,
+		CollectTypeConfig:        false,
+		CollectTypeSchema:        false,
+		CollectTypePerf:          false,
+		CollectTypeAudit:         false,
+		CollectTypeDebug:         false,
+		CollectTypeComponentMeta: false,
+	}
+
+	if cOpt.ProfileName != "" {
+		cp, err := readProfile(cOpt.ProfileName)
+		if err != nil {
+			return "", errors.Annotate(err, "failed to load profile from file")
+		}
+		msg := fmt.Sprintf(
+			"Apply configs from profile %s(%s) %s",
+			cp.Name, cOpt.ProfileName, cp.Version,
+		)
+		if len(cp.Maintainers) > 0 {
+			msg = fmt.Sprintf("%s by %s", msg, strings.Join(cp.Maintainers, ","))
+		}
+		logprinter.Infof(msg)
+
+		for _, c := range cp.Collectors {
+			cOpt.Include.Insert(c)
+		}
+		gOpt.Roles = append(gOpt.Roles, cp.Roles...)
+		cOpt.MetricsFilter = append(cOpt.MetricsFilter, cp.MetricFilters...)
 	}
 
 	for name := range collectorSet {
@@ -315,6 +346,30 @@ func (m *Manager) CollectClusterInfo(
 			})
 	}
 
+	if canCollect(cOpt, CollectTypeComponentMeta) {
+		sensitiveTag = true
+		collectors = append(collectors,
+			&ComponentMetaCollectOptions{
+				BaseOptions: opt,
+				opt:         gOpt,
+				resultDir:   resultDir,
+				fileStats:   make(map[string][]CollectStat),
+				tlsCfg:      tlsCfg,
+				topo:        cls,
+			})
+	}
+	if canCollect(cOpt, CollectTypeDebug) {
+
+		collectors = append(collectors,
+			&DebugCollectOptions{
+				BaseOptions: opt,
+				opt:         gOpt,
+				resultDir:   resultDir,
+				fileStats:   make(map[string][]CollectStat),
+				tlsCfg:      tlsCfg,
+			})
+	}
+
 	// prepare
 	// run collectors
 	prepareErrs := make(map[string]error)
@@ -340,7 +395,7 @@ func (m *Manager) CollectClusterInfo(
 	// confirm before really collect
 	if m.mode == CollectModeTiUP {
 		fmt.Println(prompt)
-		if err := confirmStats(stats, resultDir, skipConfirm); err != nil {
+		if err := confirmStats(stats, resultDir, sensitiveTag, skipConfirm); err != nil {
 			return "", err
 		}
 	}
@@ -424,7 +479,7 @@ func (m *Manager) getOutputDir(dir string) (string, error) {
 	return dir, fmt.Errorf("%s is not a directory", dir)
 }
 
-func confirmStats(stats []map[string][]CollectStat, resultDir string, skipConfirm bool) error {
+func confirmStats(stats []map[string][]CollectStat, resultDir string, sensitiveTag, skipConfirm bool) error {
 	fmt.Printf("Estimated size of data to collect:\n")
 	var total int64
 	statTable := [][]string{{"Host", "Size", "Target"}}
@@ -444,6 +499,10 @@ func confirmStats(stats []map[string][]CollectStat, resultDir string, skipConfir
 	}
 	statTable = append(statTable, []string{"Total", color.YellowString(readableSize(total)), "(inaccurate)"})
 	tui.PrintTable(statTable, true)
+
+	if sensitiveTag {
+		fmt.Println(color.HiRedString("This collect action may contain sensitive data, please do not use it in production environment"))
+	}
 
 	fmt.Printf("These data will be stored in %s\n", color.CyanString(resultDir))
 

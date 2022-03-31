@@ -2,6 +2,7 @@ package command
 
 import (
 	"context"
+	"fmt"
 	"os"
 
 	"github.com/pingcap/diag/pkg/packager"
@@ -22,6 +23,12 @@ func newUploadCommand() *cobra.Command {
 			opt.FilePath = args[0]
 
 			opt.Token = os.Getenv("CLINIC_TOKEN")
+			if opt.Token == "" {
+				opt.Token = diagConfig.Clinic.Token
+			}
+			if opt.Token == "" {
+				return fmt.Errorf("please use `diag config` to set token first")
+			}
 
 			opt.Client = packager.InitClient(opt.Endpoint)
 			opt.Concurrency = gOpt.Concurrency
@@ -49,6 +56,7 @@ func newUploadCommand() *cobra.Command {
 	cmd.Flags().StringVarP(&opt.Alias, "alias", "", "", "the Alias of upload file.")
 	cmd.Flags().StringVarP(&opt.Endpoint, "endpoint", "", "https://clinic.pingcap.com", "the clinic service Endpoint.")
 	cmd.Flags().StringVarP(&opt.Issue, "issue", "", "", "related jira oncall Issue, example: ONCALL-1131")
+	cmd.Flags().BoolVar(&opt.Rebuild, "rebuild", true, "rebuild package immediately after upload")
 
 	return cmd
 }

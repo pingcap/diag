@@ -31,7 +31,7 @@ import (
 	tiuputils "github.com/pingcap/tiup/pkg/utils"
 )
 
-// AuditLogCollectOptions are options used collecting component logs
+// AuditLogCollectOptions are options used collecting tiup cluster/dm audit log
 type AuditLogCollectOptions struct {
 	*BaseOptions
 	opt       *operator.Options // global operations from cli

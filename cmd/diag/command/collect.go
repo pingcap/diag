@@ -132,6 +132,7 @@ func newCollectCmd() *cobra.Command {
 		},
 	}
 
+	cmd.Flags().StringVar(&cOpt.ProfileName, "profile", "", "File name of a pre-defined collecting profile")
 	cmd.Flags().StringSliceVarP(&gOpt.Roles, "role", "R", nil, "Only collect data from specified roles")
 	cmd.Flags().StringSliceVarP(&gOpt.Nodes, "node", "N", nil, "Only collect data from specified nodes")
 	cmd.Flags().StringVarP(&opt.ScrapeBegin, "from", "f", time.Now().Add(time.Hour*-2).Format(time.RFC3339), "start timepoint when collecting timeseries data")
