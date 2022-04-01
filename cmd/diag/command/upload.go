@@ -54,7 +54,7 @@ func newUploadCommand() *cobra.Command {
 	}
 
 	cmd.Flags().StringVarP(&opt.Alias, "alias", "", "", "the Alias of upload file.")
-	cmd.Flags().StringVarP(&opt.Endpoint, "endpoint", "", "https://clinic.pingcap.com", "the clinic service Endpoint.")
+	cmd.Flags().StringVarP(&opt.Endpoint, "endpoint", "", "https://clinic.pingcap.com.cn", "the clinic service Endpoint.")
 	cmd.Flags().StringVarP(&opt.Issue, "issue", "", "", "related jira oncall Issue, example: ONCALL-1131")
 	cmd.Flags().BoolVar(&opt.Rebuild, "rebuild", true, "rebuild package immediately after upload")
 

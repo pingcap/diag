@@ -104,7 +104,7 @@ func (c *DiagConfig) Set(key, value string) error {
 }
 
 func (c *DiagConfig) interactiveSet() {
-	fmt.Println("diag upload need token which you could get from https://clinic.pingcap.com")
+	fmt.Println("diag upload need token which you could get from https://clinic.pingcap.com.cn")
 	fmt.Print("please input your token:")
 	fmt.Scanf("%s", &c.Clinic.Token)
 }
