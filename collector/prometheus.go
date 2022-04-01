@@ -167,9 +167,13 @@ func (c *MetricCollectOptions) SetDir(dir string) {
 }
 
 // Prepare implements the Collector interface
-func (c *MetricCollectOptions) Prepare(_ *Manager, topo *models.TiDBCluster) (map[string][]CollectStat, error) {
+func (c *MetricCollectOptions) Prepare(m *Manager, topo *models.TiDBCluster) (map[string][]CollectStat, error) {
 	if len(topo.Monitors) < 1 {
-		fmt.Println("No Prometheus node found in topology, skip.")
+		if m.logger.GetDisplayMode() == logprinter.DisplayModeDefault {
+			fmt.Println("No Prometheus node found in topology, skip.")
+		} else {
+			m.logger.Warnf("No Prometheus node found in topology, skip.")
+		}
 		return nil, nil
 	}
 
@@ -213,7 +217,11 @@ func (c *MetricCollectOptions) Prepare(_ *Manager, topo *models.TiDBCluster) (ma
 // Collect implements the Collector interface
 func (c *MetricCollectOptions) Collect(m *Manager, topo *models.TiDBCluster) error {
 	if len(topo.Monitors) < 1 {
-		fmt.Println("No Prometheus node found in topology, skip.")
+		if m.logger.GetDisplayMode() == logprinter.DisplayModeDefault {
+			fmt.Println("No Prometheus node found in topology, skip.")
+		} else {
+			m.logger.Warnf("No Prometheus node found in topology, skip.")
+		}
 		return nil
 	}
 
