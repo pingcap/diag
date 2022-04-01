@@ -54,7 +54,7 @@ func newCollectCmd() *cobra.Command {
 			if len(args) != 1 {
 				return cmd.Help()
 			}
-			cOpt.RawRequest = strings.Join(os.Args, " ")
+			cOpt.RawRequest = "diag " + strings.Join(os.Args[1:], " ")
 
 			log.SetDisplayModeFromString(gOpt.DisplayMode)
 			spec.Initialize("cluster")
