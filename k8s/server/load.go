@@ -14,6 +14,7 @@
 package server
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -68,11 +69,11 @@ func loadJobWorker(ctx *context) {
 		if tiuputils.IsExist(filepath.Join(f, collector.CollectLockName)) {
 			status = taskStatusInterrupt
 		}
-
+		// c.ClusterName
 		job := &types.CollectJob{
 			ID:          strings.Split(f, "-")[1],
 			Status:      status,
-			ClusterName: c.ClusterName,
+			ClusterName: fmt.Sprintf("%s/%s", c.Topology.Namespace, c.ClusterName),
 			Collectors:  c.Collectors,
 			From:        c.BeginTime,
 			To:          c.EndTime,
