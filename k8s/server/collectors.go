@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
 	"path/filepath"
 	"time"
 
@@ -160,11 +161,14 @@ func runCollector(
 
 	doneChan := make(chan struct{}, 1)
 	errChan := make(chan error, 1)
+	var resultDir string
 	go func() {
 		ctx.setJobStatus(worker.job.ID, taskStatusRunning)
-		resultDir, err := cm.CollectClusterInfo(opt, &cOpt, &gOpt, ctx.kubeCli, ctx.dynCli, true)
+		var err error
+		resultDir, err = cm.CollectClusterInfo(opt, &cOpt, &gOpt, ctx.kubeCli, ctx.dynCli, true)
 		outW.Close()
 		errW.Close()
+
 		if err != nil {
 			errChan <- err
 			return
@@ -188,6 +192,18 @@ func runCollector(
 	case <-doneChan:
 		klog.Infof("collect job %s finished.", worker.job.ID)
 		ctx.setJobStatus(worker.job.ID, taskStatusFinish)
+	}
+
+	// save collect log
+	fname := filepath.Join(resultDir, fmt.Sprintf("%s_diag_audit.log", worker.job.ID))
+	f, err := os.Create(fname)
+	if err != nil {
+		klog.Warningf("error create audit log: %v", err)
+	}
+	defer f.Close()
+
+	if _, err := f.Write(worker.stdout); err != nil {
+		klog.Warningf("error write audit log: %v", err)
 	}
 }
 
