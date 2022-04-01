@@ -360,7 +360,6 @@ func buildTopoForK8sCluster(
 	}
 
 	if !tcsMatched {
-		klog.Errorf("the cluster %s which we want to collect was not found in %s", opt.Cluster, opt.Namespace)
 		return nil, nil, nil, fmt.Errorf("the cluster %s which we want to collect was not found in %s", opt.Cluster, opt.Namespace)
 	}
 
