@@ -170,11 +170,9 @@ func runCollector(
 
 	doneChan := make(chan struct{}, 1)
 	errChan := make(chan error, 1)
-	var resultDir string
 	go func() {
 		ctx.setJobStatus(worker.job.ID, taskStatusRunning)
-		var err error
-		resultDir, err = cm.CollectClusterInfo(opt, &cOpt, &gOpt, ctx.kubeCli, ctx.dynCli, true)
+		resultDir, err := cm.CollectClusterInfo(opt, &cOpt, &gOpt, ctx.kubeCli, ctx.dynCli, true)
 		outW.Close()
 		errW.Close()
 
