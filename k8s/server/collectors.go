@@ -18,7 +18,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"os"
 	"path/filepath"
 	"time"
 
@@ -27,6 +26,7 @@ import (
 	"github.com/pingcap/diag/api/types"
 	"github.com/pingcap/diag/collector"
 	"github.com/pingcap/tiup/pkg/base52"
+	"github.com/pingcap/tiup/pkg/cluster/audit"
 	operator "github.com/pingcap/tiup/pkg/cluster/operation"
 	"github.com/pingcap/tiup/pkg/crypto/rand"
 	logprinter "github.com/pingcap/tiup/pkg/logger/printer"
@@ -135,6 +135,15 @@ func runCollector(
 	cLogger.SetStdout(outW)
 	cLogger.SetStderr(errW)
 
+	// get request body
+	rbytes, err := json.Marshal(req)
+	if err != nil {
+		klog.Error("error getting request of collect job %s: %s", worker.job.ID, err)
+	} else {
+		worker.stdout = append(worker.stdout, rbytes...)
+		worker.stdout = append(worker.stdout, '\n')
+	}
+
 	// pipe the outputs
 	go func() {
 		s := bufio.NewScanner(outR)
@@ -169,6 +178,10 @@ func runCollector(
 		outW.Close()
 		errW.Close()
 
+		if resultDir != "" {
+			defer audit.OutputAuditLog(resultDir, "diag_audit.log", worker.stdout)
+		}
+
 		if err != nil {
 			errChan <- err
 			return
@@ -194,17 +207,6 @@ func runCollector(
 		ctx.setJobStatus(worker.job.ID, taskStatusFinish)
 	}
 
-	// save collect log
-	fname := filepath.Join(resultDir, fmt.Sprintf("%s_diag_audit.log", worker.job.ID))
-	f, err := os.Create(fname)
-	if err != nil {
-		klog.Warningf("error create audit log: %v", err)
-	}
-	defer f.Close()
-
-	if _, err := f.Write(worker.stdout); err != nil {
-		klog.Warningf("error write audit log: %v", err)
-	}
 }
 
 // collectData implements GET /collectors
