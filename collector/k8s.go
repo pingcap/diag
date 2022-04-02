@@ -123,9 +123,8 @@ func buildTopoForK8sCluster(
 
 	if len(tcs.Items) == 0 {
 		return nil, nil, nil, fmt.Errorf("no tidbclusters found in namespace '%s'", ns)
-	} else {
-		klog.Infof("found %d tidbclusters in namespace '%s'", len(tcs.Items), ns)
 	}
+	klog.Infof("found %d tidbclusters in namespace '%s'", len(tcs.Items), ns)
 
 	monList, err := dynCli.Resource(gvrMonitor).Namespace(ns).List(context.TODO(), metav1.ListOptions{})
 	if err != nil {
