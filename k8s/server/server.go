@@ -128,7 +128,7 @@ func newEngine(ctx *context, opt *Options) *gin.Engine {
 	apis.DELETE("/collectors/:id", cancelCollectJob)
 
 	apis.GET("/collectors/:id/logs", getCollectLogs)
-   
+
 	// - data
 	apis.GET("/data", getDataList)
 
