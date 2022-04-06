@@ -28,6 +28,7 @@ import (
 	"github.com/pingcap/diag/api/types"
 	"github.com/pingcap/diag/collector"
 	"github.com/pingcap/tiup/pkg/base52"
+	"github.com/pingcap/tiup/pkg/cluster/audit"
 	operator "github.com/pingcap/tiup/pkg/cluster/operation"
 	"github.com/pingcap/tiup/pkg/crypto/rand"
 	logprinter "github.com/pingcap/tiup/pkg/logger/printer"
@@ -136,6 +137,15 @@ func runCollector(
 	cLogger.SetStdout(outW)
 	cLogger.SetStderr(errW)
 
+	// get request body
+	rbytes, err := json.Marshal(req)
+	if err != nil {
+		klog.Error("error getting request of collect job %s: %s", worker.job.ID, err)
+	} else {
+		worker.stdout = append(worker.stdout, rbytes...)
+		worker.stdout = append(worker.stdout, '\n')
+	}
+
 	// pipe the outputs
 	go func() {
 		s := bufio.NewScanner(outR)
@@ -167,6 +177,11 @@ func runCollector(
 		resultDir, err := cm.CollectClusterInfo(opt, &cOpt, &gOpt, ctx.kubeCli, ctx.dynCli, true)
 		outW.Close()
 		errW.Close()
+
+		if resultDir != "" {
+			defer audit.OutputAuditLog(resultDir, "diag_audit.log", worker.stdout)
+		}
+
 		if err != nil {
 			errChan <- err
 			return
@@ -191,6 +206,7 @@ func runCollector(
 		klog.Infof("collect job %s finished.", worker.job.ID)
 		ctx.setJobStatus(worker.job.ID, taskStatusFinish)
 	}
+
 }
 
 // collectData implements GET /collectors
