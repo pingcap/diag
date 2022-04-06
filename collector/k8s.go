@@ -121,6 +121,9 @@ func buildTopoForK8sCluster(
 		return nil, nil, nil, fmt.Errorf(msg)
 	}
 
+	if len(tcs.Items) == 0 {
+		return nil, nil, nil, fmt.Errorf("no tidbclusters found in namespace '%s'", ns)
+	}
 	klog.Infof("found %d tidbclusters in namespace '%s'", len(tcs.Items), ns)
 
 	monList, err := dynCli.Resource(gvrMonitor).Namespace(ns).List(context.TODO(), metav1.ListOptions{})
@@ -141,12 +144,15 @@ func buildTopoForK8sCluster(
 		klog.Errorf(msg)
 		return nil, nil, nil, fmt.Errorf(msg)
 	}
-
-	klog.Infof("found %d tidbmonitors in namespace '%s'", len(mon.Items), ns)
+	if len(mon.Items) == 0 {
+		klog.Warningf("no tidbmonitors found in namespace '%s'", ns)
+	} else {
+		klog.Infof("found %d tidbmonitors in namespace '%s'", len(mon.Items), ns)
+	}
 
 	cls := &models.TiDBCluster{Namespace: ns}
 	var cluster *pingcapv1alpha1.TidbCluster
-
+	tcsMatched := false
 	for i, tc := range tcs.Items {
 		clsName := tc.ObjectMeta.Name
 		if clsName != opt.Cluster {
@@ -160,6 +166,8 @@ func buildTopoForK8sCluster(
 			clsName, tc.Spec.Version, status, cTime)
 		cluster = &tc //#nosec G601
 		cls.Version = tc.Spec.Version
+		tcsMatched = true
+		klog.Infof("find the cluster %s is the one we want to collect.", clsName)
 
 		for _, ins := range tc.Status.PD.Members {
 			if len(cls.PD) < 1 {
@@ -169,6 +177,7 @@ func buildTopoForK8sCluster(
 			pod, err := kubeCli.CoreV1().Pods(ns).Get(context.TODO(), ins.Name, metav1.GetOptions{})
 			if err != nil {
 				klog.Errorf("error getting pod '%s' in '%s': %v", ins.Name, ns, err)
+				continue
 			}
 			if pod.Status.Phase != corev1.PodRunning {
 				klog.Warningf("pod '%s' is in '%s' status, skip it", ins.Name, pod.Status.Phase)
@@ -200,6 +209,7 @@ func buildTopoForK8sCluster(
 				pod, err := kubeCli.CoreV1().Pods(ns).Get(context.TODO(), ins.Name, metav1.GetOptions{})
 				if err != nil {
 					klog.Errorf("error getting pod '%s' in '%s': %v", ins.Name, ns, err)
+					continue
 				}
 				if pod.Status.Phase != corev1.PodRunning {
 					klog.Warningf("pod '%s' is in '%s' status, skip it", ins.Name, pod.Status.Phase)
@@ -230,6 +240,7 @@ func buildTopoForK8sCluster(
 				pod, err := kubeCli.CoreV1().Pods(ns).Get(context.TODO(), ins.PodName, metav1.GetOptions{})
 				if err != nil {
 					klog.Errorf("error getting pod '%s' in '%s': %v", ins.PodName, ns, err)
+					continue
 				}
 				if pod.Status.Phase != corev1.PodRunning {
 					klog.Warningf("pod '%s' is in '%s' status, skip it", ins.PodName, pod.Status.Phase)
@@ -262,6 +273,7 @@ func buildTopoForK8sCluster(
 				pod, err := kubeCli.CoreV1().Pods(ns).Get(context.TODO(), ins.PodName, metav1.GetOptions{})
 				if err != nil {
 					klog.Errorf("error getting pod '%s' in '%s': %v", ins.PodName, ns, err)
+					continue
 				}
 				if pod.Status.Phase != corev1.PodRunning {
 					klog.Warningf("pod '%s' is in '%s' status, skip it", ins.PodName, pod.Status.Phase)
@@ -294,6 +306,7 @@ func buildTopoForK8sCluster(
 				pod, err := kubeCli.CoreV1().Pods(ns).Get(context.TODO(), ins.PodName, metav1.GetOptions{})
 				if err != nil {
 					klog.Errorf("error getting pod '%s' in '%s': %v", ins.PodName, ns, err)
+					continue
 				}
 				if pod.Status.Phase != corev1.PodRunning {
 					klog.Warningf("pod '%s' is in '%s' status, skip it", ins.PodName, pod.Status.Phase)
@@ -322,6 +335,7 @@ func buildTopoForK8sCluster(
 				pod, err := kubeCli.CoreV1().Pods(ns).Get(context.TODO(), ins.Host, metav1.GetOptions{})
 				if err != nil {
 					klog.Errorf("error getting pod '%s' in '%s': %v", ins.Host, ns, err)
+					continue
 				}
 				if pod.Status.Phase != corev1.PodRunning {
 					klog.Warningf("pod '%s' is in '%s' status, skip it", ins.Host, pod.Status.Phase)
@@ -341,20 +355,25 @@ func buildTopoForK8sCluster(
 				})
 			}
 		}
+		break
+	}
+
+	if !tcsMatched {
+		return nil, nil, nil, fmt.Errorf("the cluster %s which we want to collect was not found in %s", opt.Cluster, opt.Namespace)
 	}
 
 	// find monitor pod
 	var matchedMon pingcapv1alpha1.TidbMonitor
+	monMatched := false
 	for i, m := range mon.Items {
 		monName := m.ObjectMeta.Name
-		matched := false
 		for _, clsRef := range m.Spec.Clusters {
 			if clsRef.Name == opt.Cluster {
-				matched = true
+				monMatched = true
 				break
 			}
 		}
-		if !matched {
+		if !monMatched {
 			klog.Infof("monitor %d ('%s') is not the one we want to collect ('%s'), skip.", i, monName, opt.Cluster)
 			continue
 		}
@@ -365,60 +384,67 @@ func buildTopoForK8sCluster(
 		break
 	}
 
-	labels := &metav1.LabelSelector{
-		MatchLabels: map[string]string{
-			label.ManagedByLabelKey: "tidb-operator",
-			label.NameLabelKey:      "tidb-cluster",
-			label.ComponentLabelKey: "monitor",
-			label.InstanceLabelKey:  matchedMon.Name,
-			label.UsedByLabelKey:    "prometheus",
-		},
-	}
-	selector, err := metav1.LabelSelectorAsSelector(labels)
-	if err != nil {
-		klog.Error(err)
-		return nil, nil, nil, err
-	}
-	svcs, err := kubeCli.CoreV1().Services(ns).List(context.TODO(), metav1.ListOptions{
-		LabelSelector: selector.String(),
-	})
-	if err != nil {
-		klog.Errorf("error listing services of '%s' in '%s': %v", matchedMon.Name, ns, err)
-	}
-
-	klog.Infof("found %d services in '%s/%s'", len(svcs.Items), ns, matchedMon.Name)
-
-	for _, svc := range svcs.Items {
-		// svc.Spec.ClusterIPs is not available on k8s v1.19.x
-		if svc.Spec.ClusterIP == "" {
-			klog.Errorf("service %s does not have any clusterIP, skip", svc.Name)
-			continue
-		}
-		ip := svc.Spec.ClusterIP
-		port := 0
-
-		for _, p := range svc.Spec.Ports {
-			if p.Name == "http-prometheus" {
-				port = int(p.Port)
-			}
-			break
-		}
-		if port == 0 {
-			continue
-		}
-
-		if len(cls.Monitors) < 1 {
-			cls.Monitors = make([]*models.MonitorSpec, 0)
-		}
-		cls.Monitors = append(cls.Monitors, &models.MonitorSpec{
-			ComponentSpec: models.ComponentSpec{
-				Host: ip,
-				Port: port,
-				Attributes: map[string]interface{}{
-					"service": svc.Name,
-				},
+	// get monitor pod
+	if monMatched {
+		labels := &metav1.LabelSelector{
+			MatchLabels: map[string]string{
+				label.ManagedByLabelKey: "tidb-operator",
+				label.NameLabelKey:      "tidb-cluster",
+				label.ComponentLabelKey: "monitor",
+				label.InstanceLabelKey:  matchedMon.Name,
+				label.UsedByLabelKey:    "prometheus",
 			},
+		}
+		selector, err := metav1.LabelSelectorAsSelector(labels)
+		if err != nil {
+			klog.Error(err)
+			return nil, nil, nil, err
+		}
+		svcs, err := kubeCli.CoreV1().Services(ns).List(context.TODO(), metav1.ListOptions{
+			LabelSelector: selector.String(),
 		})
+		if err != nil {
+			klog.Errorf("error listing services of '%s' in '%s': %v", matchedMon.Name, ns, err)
+		}
+
+		if len(mon.Items) == 0 {
+			klog.Warningf("no services found in '%s/%s'", ns, matchedMon.Name)
+		} else {
+			klog.Infof("found %d services in '%s/%s'", len(svcs.Items), ns, matchedMon.Name)
+		}
+
+		for _, svc := range svcs.Items {
+			// svc.Spec.ClusterIPs is not available on k8s v1.19.x
+			if svc.Spec.ClusterIP == "" {
+				klog.Errorf("service %s does not have any clusterIP, skip", svc.Name)
+				continue
+			}
+			ip := svc.Spec.ClusterIP
+			port := 0
+
+			for _, p := range svc.Spec.Ports {
+				if p.Name == "http-prometheus" {
+					port = int(p.Port)
+				}
+				break
+			}
+			if port == 0 {
+				continue
+			}
+
+			if len(cls.Monitors) < 1 {
+				cls.Monitors = make([]*models.MonitorSpec, 0)
+			}
+			cls.Monitors = append(cls.Monitors, &models.MonitorSpec{
+				ComponentSpec: models.ComponentSpec{
+					Host: ip,
+					Port: port,
+					Attributes: map[string]interface{}{
+						"service": svc.Name,
+					},
+				},
+			})
+		}
 	}
 
 	return cls, cluster, &matchedMon, nil
