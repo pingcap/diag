@@ -18,7 +18,9 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -307,4 +309,85 @@ func getCollectLogs(c *gin.Context) {
 	}
 
 	c.String(http.StatusOK, output)
+}
+
+// operateCollectJob implements POST /collectors/:id
+func operateCollectJob(c *gin.Context) {
+	id := c.Param("id")
+
+	// parse argument from POST body
+	var req types.OperateJobRequest
+	if err := json.NewDecoder(c.Request.Body).Decode(&req); err != nil {
+		msg := fmt.Sprintf("invalid request: %s", err)
+		sendErrMsg(c, http.StatusBadRequest, msg)
+		return
+	}
+
+	ctx, ok := c.Get(diagAPICtxKey)
+	if !ok {
+		msg := "failed to read server config."
+		sendErrMsg(c, http.StatusInternalServerError, msg)
+		return
+	}
+	diagCtx, ok := ctx.(*context)
+	if !ok {
+		msg := "server config is in wrong type."
+		sendErrMsg(c, http.StatusInternalServerError, msg)
+		return
+	}
+
+	switch req.Operation {
+	case "retry":
+		reCollectData(c, diagCtx, id)
+		return
+	}
+
+	msg := "unknown operation."
+	sendErrMsg(c, http.StatusMethodNotAllowed, msg)
+	return
+
+}
+
+func reCollectData(c *gin.Context, diagCtx *context, id string) {
+	// get worker from id
+	worker := diagCtx.getCollectWorker(id)
+	if worker == nil || worker.job == nil ||
+		worker.job.Dir == "" || worker.job.Status == taskStatusPurge {
+		msg := fmt.Sprintf("data set for collect job '%s' not found", id)
+		sendErrMsg(c, http.StatusNotFound, msg)
+		return
+	}
+
+	if worker.job.Status != taskStatusInterrupt {
+		msg := fmt.Sprintf(" collect job %s status is %s, can't retry.", id, worker.job.Status)
+		sendErrMsg(c, http.StatusNotAcceptable, msg)
+		return
+	}
+
+	requestDir := filepath.Join(collectDir, "diag-"+id)
+	cluster, err := collector.GetClusterInfoFromFile(requestDir)
+	if err != nil {
+		diagCtx.setJobStatus(worker.job.ID, taskStatusError)
+		msg := "can't get cluster metadata."
+		sendErrMsg(c, http.StatusInternalServerError, msg)
+		return
+	}
+
+	nscluster := strings.Split(worker.job.ClusterName, "/")
+	klog.Infof("%v", nscluster)
+	opt := collector.BaseOptions{
+		Cluster:     nscluster[1],
+		Namespace:   nscluster[0],
+		ScrapeBegin: worker.job.From,
+		ScrapeEnd:   worker.job.To,
+	}
+
+	// clean data
+	os.RemoveAll(requestDir)
+
+	// run collector
+	go runCollector(diagCtx, &opt, worker, cluster.RawRequest)
+	diagCtx.setJobStatus(worker.job.ID, taskStatusRunning)
+
+	c.JSON(http.StatusAccepted, worker.job)
 }

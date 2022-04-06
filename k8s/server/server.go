@@ -124,10 +124,11 @@ func newEngine(ctx *context, opt *Options) *gin.Engine {
 	apis.POST("/collectors", collectData)
 
 	apis.GET("/collectors/:id", getCollectJob)
+	apis.POST("/collectors/:id", operateCollectJob)
 	apis.DELETE("/collectors/:id", cancelCollectJob)
 
 	apis.GET("/collectors/:id/logs", getCollectLogs)
-
+   
 	// - data
 	apis.GET("/data", getDataList)
 
