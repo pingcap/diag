@@ -69,7 +69,7 @@ func loadJobWorker(ctx *context) {
 		if tiuputils.IsExist(filepath.Join(f, collector.CollectLockName)) {
 			status = taskStatusInterrupt
 		}
-		
+
 		job := &types.CollectJob{
 			ID:          strings.Split(f, "-")[1],
 			Status:      status,
