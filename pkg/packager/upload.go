@@ -34,8 +34,12 @@ import (
 )
 
 type preCreateResponse struct {
-	Partseq    int
-	BlockBytes int64
+	Partseq    int   `json:"sequence"`
+	BlockBytes int64 `json:"blockbytes"`
+}
+
+type FlushResponse struct {
+	ResultURL string `json:"result"`
 }
 
 type UploadOptions struct {
@@ -281,7 +285,7 @@ func UploadComplete(logger *logprinter.Logger, fileUUID string, opt *UploadOptio
 
 	q := req.URL.Query()
 	q.Add("uuid", fileUUID)
-	q.Add("Issue", opt.Issue)
+	q.Add("issue", opt.Issue)
 	req.URL.RawQuery = q.Encode()
 
 	appendClinicHeader(req)
@@ -291,21 +295,26 @@ func UploadComplete(logger *logprinter.Logger, fileUUID string, opt *UploadOptio
 	}
 	defer resp.Body.Close()
 
-	body, _ := io.ReadAll(resp.Body)
 	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
 		return "", errors.Errorf("upload file failed, msg=%v", string(body))
 	}
 
-	url := string(body)
+	var result FlushResponse
+	dc := json.NewDecoder(resp.Body)
+	err = dc.Decode(&result)
+	if err != nil {
+		return "", err
+	}
 	logger.Infof("Completed!")
-	logger.Infof("Download URL: %s\n", url)
+	logger.Infof("Download URL: %s\n", result.ResultURL)
 
 	if his, err := LoadHistroy(); err == nil {
-		his.Push(url)
+		his.Push(result.ResultURL)
 		his.Store()
 	}
 
-	return url, nil
+	return result.ResultURL, nil
 }
 
 func fnvHash(logger *logprinter.Logger, raw string) string {
