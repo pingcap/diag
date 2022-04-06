@@ -16,6 +16,7 @@ image:
 diag:
   diagName: diag-collector
   clinicToken: ""
+  clinicEndpoint: "https://clinic.pingcap.com.cn"
 
   # replicaCount: 1
 
