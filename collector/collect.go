@@ -145,7 +145,7 @@ func (m *Manager) CollectClusterInfo(
 			return "", err
 		}
 		if tc != nil && tc.Spec.TLSCluster.Enabled {
-			tlsCfg, err = kubetls.GetClusterClientTLSConfig(kubeCli, opt.Namespace, opt.Cluster, time.Duration(gOpt.APITimeout))
+			tlsCfg, err = kubetls.GetClusterClientTLSConfig(kubeCli, opt.Namespace, opt.Cluster, time.Second*time.Duration(gOpt.APITimeout))
 			klog.Infof("get tls config from secrets success")
 		}
 	default:
