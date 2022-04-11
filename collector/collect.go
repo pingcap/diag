@@ -103,7 +103,6 @@ type CollectOptions struct {
 	ProfileName   string        // the name of a pre-defined collecting profile
 	Include       set.StringSet // types of data to collect
 	Exclude       set.StringSet // types of data not to collect
-	Scenario      set.StringSet // types of collection scenario
 	MetricsFilter []string      // prefix of metrics to collect"
 	Dir           string        // target directory to store collected data
 	Limit         int           // rate limit of SCP
