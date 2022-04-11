@@ -1,22 +1,22 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ .Values.diag.diagName | default "diag-collector" }}
+  name: {{ .Chart.Name | default "pingcap-clinic" }}
   labels:
-    app: {{ .Values.diag.app | default "pingcap-clinic" }}
+    app: pingcap-clinic
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: {{ .Values.diag.app | default "pingcap-clinic" }}
+      app: pingcap-clinic
   template:
     metadata:
       labels:
-        app: {{ .Values.diag.app | default "pingcap-clinic" }}
+        app: pingcap-clinic
         app.kubernetes.io/instance: {{ .Release.Name }}
     spec:
       serviceAccount: {{ .Values.diag.serviceAccount | default "pingcap-clinic" }}
-      serviceAccountName: {{ .Values.diag.serviceAccountName | default "pingcap-clinic" }}
+      serviceAccountName: {{ .Values.diag.serviceAccount | default "pingcap-clinic" }}
       containers:
       - name: collector
         image: {{ .Values.image.diagImage }}:{{ .Values.image.imageTag | default "latest" }}
