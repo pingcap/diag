@@ -83,16 +83,24 @@ func (c *AlertCollectOptions) Prepare(_ *Manager, _ *models.TiDBCluster) (map[st
 
 // Collect implements the Collector interface
 func (c *AlertCollectOptions) Collect(m *Manager, topo *models.TiDBCluster) error {
-	if len(topo.Monitors) < 1 {
+	if m.mode != CollectModeManual && len(topo.Monitors) < 1 {
 		fmt.Println("No monitoring node (prometheus) found in topology, skip.")
 		return nil
 	}
 
+	monitors := make([]string, 0)
+	if eps, found := topo.Attributes[AttrKeyPromEndpoint]; found {
+		monitors = append(monitors, eps.([]string)...)
+	} else {
+		for _, prom := range topo.Monitors {
+			monitors = append(monitors, fmt.Sprintf("%s:%d", prom.Host(), prom.MainPort()))
+		}
+	}
+
 	var queryOK bool
 	var queryErr error
-	for _, prom := range topo.Monitors {
-		promAddr := fmt.Sprintf("%s:%d", prom.Host(), prom.MainPort())
-		if err := ensureMonitorDir(c.resultDir, subdirAlerts, fmt.Sprintf("%s-%d", prom.Host(), prom.MainPort())); err != nil {
+	for _, promAddr := range monitors {
+		if err := ensureMonitorDir(c.resultDir, subdirAlerts, strings.ReplaceAll(promAddr, ":", "-")); err != nil {
 			return err
 		}
 
@@ -103,7 +111,7 @@ func (c *AlertCollectOptions) Collect(m *Manager, topo *models.TiDBCluster) erro
 		}
 		defer resp.Body.Close()
 
-		f, err := os.Create(filepath.Join(c.resultDir, subdirMonitor, subdirAlerts, fmt.Sprintf("%s-%d", prom.Host(), prom.MainPort()), "alerts.json"))
+		f, err := os.Create(filepath.Join(c.resultDir, subdirMonitor, subdirAlerts, strings.ReplaceAll(promAddr, ":", "-"), "alerts.json"))
 		if err == nil {
 			queryOK = queryOK || true
 		} else {
@@ -168,7 +176,7 @@ func (c *MetricCollectOptions) SetDir(dir string) {
 
 // Prepare implements the Collector interface
 func (c *MetricCollectOptions) Prepare(m *Manager, topo *models.TiDBCluster) (map[string][]CollectStat, error) {
-	if len(topo.Monitors) < 1 {
+	if m.mode != CollectModeManual && len(topo.Monitors) < 1 {
 		if m.logger.GetDisplayMode() == logprinter.DisplayModeDefault {
 			fmt.Println("No Prometheus node found in topology, skip.")
 		} else {
@@ -182,11 +190,19 @@ func (c *MetricCollectOptions) Prepare(m *Manager, topo *models.TiDBCluster) (ma
 		return nil, err
 	}
 	c.timeSteps = ts
+	monitors := make([]string, 0)
+	if eps, found := topo.Attributes[AttrKeyPromEndpoint]; found {
+		monitors = append(monitors, eps.([]string)...)
+	} else {
+		for _, prom := range topo.Monitors {
+			monitors = append(monitors, fmt.Sprintf("%s:%d", prom.Host(), prom.MainPort()))
+		}
+	}
 
 	var queryErr error
 	var promAddr string
-	for _, prom := range topo.Monitors {
-		promAddr = fmt.Sprintf("%s:%d", prom.Host(), prom.MainPort())
+	for _, prom := range monitors {
+		promAddr = prom
 		client := &http.Client{Timeout: time.Second * 10}
 		c.metrics, queryErr = getMetricList(client, promAddr)
 		if queryErr == nil {
@@ -216,7 +232,7 @@ func (c *MetricCollectOptions) Prepare(m *Manager, topo *models.TiDBCluster) (ma
 
 // Collect implements the Collector interface
 func (c *MetricCollectOptions) Collect(m *Manager, topo *models.TiDBCluster) error {
-	if len(topo.Monitors) < 1 {
+	if m.mode != CollectModeManual && len(topo.Monitors) < 1 {
 		if m.logger.GetDisplayMode() == logprinter.DisplayModeDefault {
 			fmt.Println("No Prometheus node found in topology, skip.")
 		} else {
@@ -225,17 +241,28 @@ func (c *MetricCollectOptions) Collect(m *Manager, topo *models.TiDBCluster) err
 		return nil
 	}
 
+	monitors := make([]string, 0)
+	if eps, found := topo.Attributes[AttrKeyPromEndpoint]; found {
+		monitors = append(monitors, eps.([]string)...)
+	} else {
+		for _, prom := range topo.Monitors {
+			monitors = append(monitors, fmt.Sprintf("%s:%d", prom.Host(), prom.MainPort()))
+		}
+	}
+
 	mb := progress.NewMultiBar("+ Dumping metrics")
 	bars := make(map[string]*progress.MultiBarItem)
 	total := len(c.metrics)
 	mu := sync.Mutex{}
-	for _, prom := range topo.Monitors {
-		key := fmt.Sprintf("%s:%d", prom.Host(), prom.MainPort())
+	for _, prom := range monitors {
+		key := prom
 		if _, ok := bars[key]; !ok {
 			bars[key] = mb.AddBar(fmt.Sprintf("  - Querying server %s", key))
 		}
 	}
-	if m.mode == CollectModeTiUP {
+	switch m.mode {
+	case CollectModeTiUP,
+		CollectModeManual:
 		mb.StartRenderLoop()
 		defer mb.StopRenderLoop()
 	}
@@ -246,11 +273,12 @@ func (c *MetricCollectOptions) Collect(m *Manager, topo *models.TiDBCluster) err
 		qLimit = cpuCnt
 	}
 	tl := utils.NewTokenLimiter(uint(qLimit))
-	for _, prom := range topo.Monitors {
-		key := fmt.Sprintf("%s:%d", prom.Host(), prom.MainPort())
+
+	for _, prom := range monitors {
+		key := prom
 		done := 1
 
-		if err := ensureMonitorDir(c.resultDir, subdirMetrics, fmt.Sprintf("%s-%d", prom.Host(), prom.MainPort())); err != nil {
+		if err := ensureMonitorDir(c.resultDir, subdirMetrics, strings.ReplaceAll(prom, ":", "-")); err != nil {
 			bars[key].UpdateDisplay(&progress.DisplayProps{
 				Prefix: fmt.Sprintf("  - Query server %s: %s", key, err),
 				Mode:   progress.ModeError,
@@ -308,13 +336,11 @@ func getMetricList(c *http.Client, prom string) ([]string, error) {
 func collectMetric(
 	l *logprinter.Logger,
 	c *http.Client,
-	prom *models.MonitorSpec,
+	promAddr string,
 	ts []string,
 	mtc, resultDir string,
 ) {
 	l.Debugf("Dumping metric %s...", mtc)
-
-	promAddr := fmt.Sprintf("%s:%d", prom.Host(), prom.MainPort())
 
 	for i := 0; i < len(ts)-1; i++ {
 		if err := tiuputils.Retry(
@@ -336,7 +362,7 @@ func collectMetric(
 
 				dst, err := os.Create(
 					filepath.Join(
-						resultDir, subdirMonitor, subdirMetrics, fmt.Sprintf("%s-%d", prom.Host(), prom.MainPort()),
+						resultDir, subdirMonitor, subdirMetrics, strings.ReplaceAll(promAddr, ":", "-"),
 						fmt.Sprintf("%s_%s_%s.json", mtc, ts[i], ts[i+1]),
 					),
 				)
