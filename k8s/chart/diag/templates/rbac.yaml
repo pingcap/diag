@@ -14,7 +14,7 @@ metadata:
 rules:
   - apiGroups: [""]
     resources: ["pods", "services", "secrets"]
-    verbs: ["get", "list", "watch"]
+    verbs: ["get", "list"]
   - apiGroups: ["pingcap.com"]
     resources: ["tidbclusters", "tidbmonitors"]
     verbs: ["get", "list"]
@@ -42,7 +42,7 @@ metadata:
 rules:
   - apiGroups: [""]
     resources: ["pods", "services", "secrets"]
-    verbs: ["get", "list", "watch"]
+    verbs: ["get", "list"]
   - apiGroups: ["pingcap.com"]
     resources: ["tidbclusters", "tidbmonitors"]
     verbs: ["get", "list"]
