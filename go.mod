@@ -29,8 +29,9 @@ require (
 	github.com/mohae/deepcopy v0.0.0-20170929034955-c48cc78d4826
 	github.com/onsi/gomega v1.17.0
 	github.com/pingcap/check v0.0.0-20211026125417-57bd13f7b5f0
-	github.com/pingcap/errors v0.11.5-0.20201126102027-b0a155152ca3
+	github.com/pingcap/errors v0.11.5-0.20210425183316-da1aaba5fb63
 	github.com/pingcap/log v0.0.0-20211215031037-e024ba4eb0ee
+	github.com/pingcap/tidb/parser v0.0.0-20211124132551-4a1b2e9fe5b5
 	github.com/pingcap/tiup v1.10.0-dev.0.20220317064832-857d4e08a9bd
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/common v0.32.1
