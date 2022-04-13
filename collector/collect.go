@@ -145,14 +145,14 @@ func (m *Manager) CollectClusterInfo(
 			return "", err
 		}
 		if tc != nil && tc.Spec.TLSCluster.Enabled {
-			tlsCfg, err = kubetls.GetClusterClientTLSConfig(kubeCli, opt.Namespace, opt.Cluster, time.Duration(gOpt.APITimeout))
+			tlsCfg, err = kubetls.GetClusterClientTLSConfig(kubeCli, opt.Namespace, opt.Cluster, time.Second*time.Duration(gOpt.APITimeout))
+			if err != nil {
+				return "", err
+			}
 			klog.Infof("get tls config from secrets success")
 		}
 	default:
 		return "", fmt.Errorf("unknown collect mode '%s'", cOpt.Mode)
-	}
-	if err != nil {
-		return "", err
 	}
 	if cls == nil {
 		return "", fmt.Errorf("no valid cluster topology parsed")
