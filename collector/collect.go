@@ -51,9 +51,15 @@ const (
 	CollectTypeComponentMeta = "component_meta"
 	CollectTypeBind          = "sql_bind"
 
-	CollectModeTiUP = "tiup-cluster"  // collect from a tiup-cluster deployed cluster
-	CollectModeK8s  = "tidb-operator" // collect from a tidb-operator deployed cluster
+	CollectModeTiUP   = "tiup-cluster"  // collect from a tiup-cluster deployed cluster
+	CollectModeK8s    = "tidb-operator" // collect from a tidb-operator deployed cluster
+	CollectModeManual = "manual"        // collect from a manually deployed cluster
 
+	AttrKeyPromEndpoint = "prometheus-endpoint"
+	AttrKeyPDEndpoint   = "pd-endpoint"
+	AttrKeyTLSCAFile    = "tls-ca-file"
+	AttrKeyTLSCertFile  = "tls-cert-file"
+	AttrKeyTLSKeyFile   = "tls-privkey-file"
 )
 
 var CollectDefaultSet = set.NewStringSet(
@@ -98,17 +104,18 @@ type BaseOptions struct {
 
 // CollectOptions contains the options defining which type of data to collect
 type CollectOptions struct {
-	RawRequest    interface{}   // raw collect command or request
-	Mode          string        // the cluster is deployed with what type of tool
-	ProfileName   string        // the name of a pre-defined collecting profile
-	Include       set.StringSet // types of data to collect
-	Exclude       set.StringSet // types of data not to collect
-	MetricsFilter []string      // prefix of metrics to collect"
-	Dir           string        // target directory to store collected data
-	Limit         int           // rate limit of SCP
-	PerfDuration  int           //seconds: profile time(s), default is 30s.
-	CompressScp   bool          // compress of files during collecting
-	ExitOnError   bool          // break the process and exit when an error occur
+	RawRequest    interface{}       // raw collect command or request
+	Mode          string            // the cluster is deployed with what type of tool
+	ProfileName   string            // the name of a pre-defined collecting profile
+	Include       set.StringSet     // types of data to collect
+	Exclude       set.StringSet     // types of data not to collect
+	MetricsFilter []string          // prefix of metrics to collect"
+	Dir           string            // target directory to store collected data
+	Limit         int               // rate limit of SCP
+	PerfDuration  int               //seconds: profile time(s), default is 30s.
+	CompressScp   bool              // compress of files during collecting
+	ExitOnError   bool              // break the process and exit when an error occur
+	ExtendedAttrs map[string]string // extended attributes used for manual collecting mode
 }
 
 // CollectStat is estimated size stats of data to be collected
@@ -158,6 +165,19 @@ func (m *Manager) CollectClusterInfo(
 			}
 			klog.Infof("get tls config from secrets success")
 		}
+	case CollectModeManual:
+		cls, err = buildTopoForManualCluster(cOpt)
+		if err != nil {
+			return "", err
+		}
+		tlsCfg, err = tlsConfig(
+			cOpt.ExtendedAttrs[AttrKeyTLSCAFile],
+			cOpt.ExtendedAttrs[AttrKeyTLSCertFile],
+			cOpt.ExtendedAttrs[AttrKeyTLSKeyFile],
+		)
+		if err != nil {
+			return "", err
+		}
 	default:
 		return "", fmt.Errorf("unknown collect mode '%s'", cOpt.Mode)
 	}
@@ -169,7 +189,8 @@ func (m *Manager) CollectClusterInfo(
 	var resultDir string
 	var prompt string
 	switch cOpt.Mode {
-	case CollectModeTiUP:
+	case CollectModeTiUP,
+		CollectModeManual:
 		prompt, resultDir, err = m.prepareArgsForTiUPCluster(opt, cOpt)
 	case CollectModeK8s:
 		resultDir, err = m.prepareArgsForK8sCluster(opt, cOpt)
@@ -254,9 +275,10 @@ func (m *Manager) CollectClusterInfo(
 	}
 
 	// populate SSH credentials if needed
-	if m.mode == CollectModeTiUP && (canCollect(cOpt, CollectTypeSystem) ||
-		canCollect(cOpt, CollectTypeLog) ||
-		canCollect(cOpt, CollectTypeConfig)) {
+	if (m.mode == CollectModeTiUP || m.mode == CollectModeManual) &&
+		(canCollect(cOpt, CollectTypeSystem) ||
+			canCollect(cOpt, CollectTypeLog) ||
+			canCollect(cOpt, CollectTypeConfig)) {
 		// collect data from remote servers
 		var sshConnProps *tui.SSHConnectionProps = &tui.SSHConnectionProps{}
 		if gOpt.SSHType != executor.SSHTypeNone {
@@ -416,7 +438,9 @@ func (m *Manager) CollectClusterInfo(
 	}
 
 	// confirm before really collect
-	if m.mode == CollectModeTiUP {
+	switch m.mode {
+	case CollectModeTiUP,
+		CollectModeManual:
 		fmt.Println(prompt)
 		if err := confirmStats(stats, resultDir, sensitiveTag, skipConfirm); err != nil {
 			return "", err
