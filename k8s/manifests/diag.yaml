@@ -34,6 +34,8 @@ spec:
               fieldPath: metadata.namespace
         - name: CLINIC_TOKEN
           value: "Replace token here"
+        - name: CLINIC_ENDPOINT
+          value: "https://clinic.pingcap.com.cn"
       volumes:
       - name: pingcap-clinic-cert
         secret:

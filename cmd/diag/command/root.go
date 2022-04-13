@@ -148,6 +148,7 @@ func init() {
 		newCheckCmd(),
 		newAuditCmd(),
 		newConfigCmd(),
+		newUtilCmd(),
 	)
 }
 

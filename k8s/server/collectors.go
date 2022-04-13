@@ -120,7 +120,10 @@ func runCollector(
 	worker *collectJobWorker,
 	req interface{},
 ) {
-	gOpt := operator.Options{Concurrency: 2}
+	gOpt := operator.Options{
+		Concurrency: 2,
+		APITimeout:  10,
+	}
 	cOpt := collector.CollectOptions{
 		Include:    set.NewStringSet(worker.job.Collectors...),
 		Exclude:    set.NewStringSet(),
