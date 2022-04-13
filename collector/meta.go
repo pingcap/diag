@@ -125,6 +125,13 @@ func (c *MetaCollectOptions) Collect(m *Manager, topo *models.TiDBCluster) error
 	case CollectModeK8s:
 		clusterID = c.tc.GetClusterID()
 		clusterType = spec.TopoTypeTiDB
+	case CollectModeManual:
+		endpoints := topo.Attributes[AttrKeyPDEndpoint].([]string)
+		clusterID, err = getClusterIDFromPD(ctx, endpoints, c.tlsCfg)
+		if err != nil {
+			return err
+		}
+		clusterType = spec.TopoTypeTiDB
 	default:
 		// nothing
 	}
@@ -205,6 +212,15 @@ func (c *MetaCollectOptions) Collect(m *Manager, topo *models.TiDBCluster) error
 	return nil
 }
 
+func getClusterIDFromPD(ctx context.Context, endpoints []string, tlsCfg *tls.Config) (string, error) {
+	pdAPI := api.NewPDClient(ctx, endpoints, 2*time.Second, tlsCfg)
+	id, err := pdAPI.GetClusterID()
+	if err != nil {
+		return "", err
+	}
+	return strconv.FormatUint(id, 10), nil
+}
+
 func getTiUPClusterID(ctx context.Context, clusterName string, tlsCfg *tls.Config) (string, error) {
 	metadata, err := spec.ClusterMetadata(clusterName)
 	if err != nil && !errors.Is(perrs.Cause(err), meta.ErrValidate) &&
@@ -217,10 +233,5 @@ func getTiUPClusterID(ctx context.Context, clusterName string, tlsCfg *tls.Confi
 		pdEndpoints = append(pdEndpoints, fmt.Sprintf("%s:%d", pd.Host, pd.ClientPort))
 	}
 
-	pdAPI := api.NewPDClient(ctx, pdEndpoints, 2*time.Second, tlsCfg)
-	id, err := pdAPI.GetClusterID()
-	if err != nil {
-		return "", err
-	}
-	return strconv.FormatUint(id, 10), nil
+	return getClusterIDFromPD(ctx, pdEndpoints, tlsCfg)
 }
