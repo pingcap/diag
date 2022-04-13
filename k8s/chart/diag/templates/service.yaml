@@ -3,7 +3,7 @@ kind: Service
 metadata:
   name: {{ .Chart.Name   | default "diag-collector" }}
   labels:
-    app.kubernetes.io/name: {{ .Chart.Name  | default "diag-collector" }}
+    app.kubernetes.io/name: {{ .Release.Name | default "diag-collector" }}
     app: pingcap-clinic
 spec:
   ports:
