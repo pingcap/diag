@@ -13,11 +13,16 @@ metadata:
     app: pingcap-clinic
 rules:
   - apiGroups: [""]
-    resources: ["pods", "services", "secrets"]
+    resources: ["pods", "services"]
     verbs: ["get", "list"]
   - apiGroups: ["pingcap.com"]
     resources: ["tidbclusters", "tidbmonitors"]
     verbs: ["get", "list"]
+  {{- if eq .Values.diag.tlsEnabled true}}
+  - apiGroups: [""]
+    resources: ["secrets"]
+    verbs: ["get", "list"]
+  {{- end }}
 ---
 kind: RoleBinding
 apiVersion: rbac.authorization.k8s.io/v1
@@ -41,11 +46,16 @@ metadata:
     app: pingcap-clinic
 rules:
   - apiGroups: [""]
-    resources: ["pods", "services", "secrets"]
+    resources: ["pods", "services"]
     verbs: ["get", "list"]
   - apiGroups: ["pingcap.com"]
     resources: ["tidbclusters", "tidbmonitors"]
     verbs: ["get", "list"]
+  {{- if eq .Values.diag.tlsEnabled true}}
+  - apiGroups: [""]
+    resources: ["secrets"]
+    verbs: ["get", "list"]
+  {{- end }}
 ---
 kind: ClusterRoleBinding
 apiVersion: rbac.authorization.k8s.io/v1

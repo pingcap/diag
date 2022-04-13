@@ -43,6 +43,8 @@ spec:
               fieldPath: metadata.namespace
         - name: CLINIC_TOKEN
           value: {{ required "Please set your Token. You can get your token after signing in to Clinic Server 'https://clinic.pingcap.com.cn'" .Values.diag.clinicToken }}
+        - name: CLINIC_ENDPOINT
+          value: {{ .Values.diag.clinicEndpoint | default "https://clinic.pingcap.com.cn" }}
       volumes:
       - name: pingcap-clinic-cert
         secret:

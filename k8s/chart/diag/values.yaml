@@ -15,9 +15,9 @@ image:
 # diag-collector pod config
 diag:
   clinicToken: ""
+  clinicEndpoint: "https://clinic.pingcap.com.cn"
 
-
-
+  tlsEnabled: true
   clusterRoleEnabled: true
 
   clinicRole: pingcap-clinic
@@ -67,17 +67,6 @@ service:
   # PodAnnotations will set template.metadata.annotations
   # Refer to https://kubernetes.io/docs/concepts/overview/working-with-objects/annotations/
   podAnnotations: {}
-
-
-
-
-
-autoscaling:
-  enabled: false
-  minReplicas: 1
-  maxReplicas: 1
-  targetCPUUtilizationPercentage: 80
-  # targetMemoryUtilizationPercentage: 80
 
 nodeSelector: {}
 

@@ -24,34 +24,34 @@ import (
 )
 
 // GetDmClientTLSConfig return *tls.Config for given DM clinet
-func GetDmClientTLSConfig(c kubernetes.Interface, namespace, dcName string, resync time.Duration) (*tls.Config, error) {
-	return getTLSConfig(c, namespace, dmClientTLSSecretName(dcName), resync)
+func GetDmClientTLSConfig(c kubernetes.Interface, namespace, dcName string, timemot time.Duration) (*tls.Config, error) {
+	return getTLSConfig(c, namespace, dmClientTLSSecretName(dcName), timemot)
 }
 
 // GetClusterClientClientTLSConfig  GetDmClientTLSConfig return *tls.Config for given tidb cluster clinet
-func GetClusterClientTLSConfig(c kubernetes.Interface, namespace, tcName string, resync time.Duration) (*tls.Config, error) {
-	return getTLSConfig(c, namespace, clusterClientTLSSecretName(tcName), resync)
+func GetClusterClientTLSConfig(c kubernetes.Interface, namespace, tcName string, timemot time.Duration) (*tls.Config, error) {
+	return getTLSConfig(c, namespace, clusterClientTLSSecretName(tcName), timemot)
 }
 
 // GetClusterTLSConfig  GetDmClientTLSConfig return *tls.Config for given tidb cluster
-func GetClusterTLSConfig(c kubernetes.Interface, namespace, tcName, component string, resync time.Duration) (*tls.Config, error) {
-	return getTLSConfig(c, namespace, clusterTLSSecretName(tcName, component), resync)
+func GetClusterTLSConfig(c kubernetes.Interface, namespace, tcName, component string, timemot time.Duration) (*tls.Config, error) {
+	return getTLSConfig(c, namespace, clusterTLSSecretName(tcName, component), timemot)
 }
 
 // GetTiDBClientTLSConfig  GetDmClientTLSConfig return *tls.Config for given tidb client
-func GetTiDBClientTLSConfig(c kubernetes.Interface, namespace, tcName string, resync time.Duration) (*tls.Config, error) {
-	return getTLSConfig(c, namespace, tiDBClientTLSSecretName(tcName), resync)
+func GetTiDBClientTLSConfig(c kubernetes.Interface, namespace, tcName string, timemot time.Duration) (*tls.Config, error) {
+	return getTLSConfig(c, namespace, tiDBClientTLSSecretName(tcName), timemot)
 }
 
 // GetTiDBServerTLSConfig  GetDmClientTLSConfig return *tls.Config for given tidb client
-func GetTiDBServerTLSConfig(c kubernetes.Interface, namespace, tcName string, resync time.Duration) (*tls.Config, error) {
-	return getTLSConfig(c, namespace, tiDBServerTLSSecretName(tcName), resync)
+func GetTiDBServerTLSConfig(c kubernetes.Interface, namespace, tcName string, timemot time.Duration) (*tls.Config, error) {
+	return getTLSConfig(c, namespace, tiDBServerTLSSecretName(tcName), timemot)
 }
 
 // getTLSConfig  return *tls.Config for given TiDB cluster on kube
-func getTLSConfig(c kubernetes.Interface, namespace, secretName string, resync time.Duration) (*tls.Config, error) {
-
-	ctx, cancel := context.WithCancel(context.Background())
+func getTLSConfig(c kubernetes.Interface, namespace, secretName string, timemot time.Duration) (*tls.Config, error) {
+	// set timemot
+	ctx, cancel := context.WithTimeout(context.Background(), timemot)
 	defer cancel()
 
 	secret, err := c.CoreV1().Secrets(namespace).Get(ctx, secretName, metav1.GetOptions{})
