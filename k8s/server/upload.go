@@ -124,7 +124,11 @@ func runUploader(
 		klog.Infof("data set of collect job %s packaged as %s", worker.job.ID, pf)
 
 		// upload the packaged data set
-		endpoint := "https://clinic.pingcap.com.cn"
+		endpoint := os.Getenv("CLINIC_ENDPOINT")
+		if endpoint == "" {
+			endpoint = "https://clinic.pingcap.com.cn"
+		}
+
 		uOpt := &packager.UploadOptions{
 			FilePath:    pf,
 			Concurrency: 5,
