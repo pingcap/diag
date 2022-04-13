@@ -38,7 +38,7 @@ func newConfigCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "config <key> <value>",
 		Short: "set an individual value in diag configuration file",
-		Long:  `set an individual value in diag configuration file, like
+		Long: `set an individual value in diag configuration file, like
   "diag config clinic.token xxxxxxxxxx"
 if not specify key nor value, an interactive interface will be used to set necessary configuration`,
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
