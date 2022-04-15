@@ -1,7 +1,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ .Chart.Name | default "pingcap-clinic" }}
+  name: {{ .Chart.Name   | default "diag-collector" }}
   labels:
     app: pingcap-clinic
 spec:
