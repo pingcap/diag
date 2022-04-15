@@ -163,7 +163,7 @@ func buildTopoForK8sCluster(
 		cTime := tc.ObjectMeta.CreationTimestamp
 
 		if len(tc.Status.Conditions) < 1 {
-			return nil, nil, nil, fmt.Errorf("find the cluster %s is the one we want to collect, but the cluster state is unknown.", clsName)
+			return nil, nil, nil, fmt.Errorf("find the cluster %s is the one we want to collect, but the cluster status is unknown.", clsName)
 		}
 
 		status := tc.Status.Conditions[0].Type
