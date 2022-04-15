@@ -19,9 +19,8 @@ import (
 	"fmt"
 	"time"
 
-	kubeinformers "k8s.io/client-go/informers"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/tools/cache"
 )
 
 // GetDmClientTLSConfig return *tls.Config for given DM clinet
@@ -51,21 +50,13 @@ func GetTiDBServerTLSConfig(c kubernetes.Interface, namespace, tcName string, ti
 
 // getTLSConfig  return *tls.Config for given TiDB cluster on kube
 func getTLSConfig(c kubernetes.Interface, namespace, secretName string, timemot time.Duration) (*tls.Config, error) {
-	kubeInformerFactory := kubeinformers.NewSharedInformerFactory(c, 1*time.Second)
-	secretInformer := kubeInformerFactory.Core().V1().Secrets()
-
 	// set timemot
 	ctx, cancel := context.WithTimeout(context.Background(), timemot)
 	defer cancel()
-	go kubeInformerFactory.Start(ctx.Done())
 
-	// waiting for the shared informer's store has synced.
-	cache.WaitForCacheSync(ctx.Done(), secretInformer.Informer().HasSynced)
-
-	secret, err := secretInformer.Lister().Secrets(namespace).Get(secretName)
+	secret, err := c.CoreV1().Secrets(namespace).Get(ctx, secretName, metav1.GetOptions{})
 	if err != nil {
 		return nil, fmt.Errorf("unable to load certificates from secret %s/%s: %v", namespace, secretName, err)
 	}
-
 	return LoadTlsConfigFromSecret(secret)
 }
