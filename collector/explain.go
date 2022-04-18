@@ -110,7 +110,7 @@ func (c *ExplainCollectorOptions) Collect(m *Manager, topo *models.TiDBCluster) 
 						errs = append(errs, err.Error())
 						continue
 					}
-					err = sqltocsv.WriteFile(filepath.Join(c.resultDir, DirNameExplain, fileName), rows)
+					err = sqltocsv.WriteFile(fileName, rows)
 					if err != nil {
 						errs = append(errs, err.Error())
 						continue
