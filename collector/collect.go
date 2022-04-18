@@ -51,6 +51,7 @@ const (
 	CollectTypeComponentMeta = "component_meta"
 	CollectTypeBind          = "sql_bind"
 	CollectTypeStatistics    = "statistics"
+	CollectTypeExplainSQLs   = "explain"
 
 	CollectModeTiUP   = "tiup-cluster"  // collect from a tiup-cluster deployed cluster
 	CollectModeK8s    = "tidb-operator" // collect from a tidb-operator deployed cluster
@@ -246,8 +247,14 @@ func (m *Manager) CollectClusterInfo(
 		}
 		explainSqls = strings.Split(string(b), ";")
 		cOpt.Include.Insert(CollectTypeStatistics)
-	} else if cOpt.Include.Exist(CollectTypeStatistics) {
-		return "", errors.New("explain-sql should be set if statistics is included")
+		cOpt.Include.Insert(CollectTypeExplainSQLs)
+	} else {
+		if cOpt.Include.Exist(CollectTypeStatistics) {
+			return "", errors.New("explain-sql should be set if statistics is included")
+		}
+		if cOpt.Include.Exist(CollectTypeExplainSQLs) {
+			return "", errors.New("explain-sql should be set if explain is included")
+		}
 	}
 
 	for name := range collectorSet {
@@ -440,6 +447,18 @@ func (m *Manager) CollectClusterInfo(
 				resultDir:   resultDir,
 				sqls:        explainSqls,
 				tlsCfg:      tlsCfg,
+			})
+	}
+
+	if canCollect(cOpt, CollectTypeExplainSQLs) {
+		collectors = append(collectors,
+			&ExplainCollectorOptions{
+				BaseOptions: opt,
+				opt:         gOpt,
+				dbuser:      dbUser,
+				dbpasswd:    dbPassword,
+				resultDir:   resultDir,
+				sqls:        explainSqls,
 			})
 	}
 

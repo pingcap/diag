@@ -43,6 +43,7 @@ const (
 	DirNameSchema             = "db_vars"
 	DirNameBind               = "sql_bind"
 	DirStatistics             = "statistics"
+	DirNameExplain            = "explain"
 )
 
 // MetaCollectOptions is the options collecting cluster meta
