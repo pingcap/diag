@@ -127,7 +127,11 @@ func (c *StatisticsCollectorOptions) Collect(m *Manager, topo *models.TiDBCluste
 						if err != nil {
 							return err
 						}
-						path := filepath.Join(c.resultDir, DirNameBind, fmt.Sprintf("%s.%s.json", table.dbName, table.tableName))
+						path := filepath.Join(c.resultDir, DirStatistics, fmt.Sprintf("%s.%s.json", table.dbName, table.tableName))
+						_, err = os.Create(path)
+						if err != nil {
+							return err
+						}
 						err = os.WriteFile(path, response, 0600)
 						if err != nil {
 							return err
