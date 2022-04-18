@@ -105,7 +105,7 @@ func newCollectCmd() *cobra.Command {
 			if reportEnabled {
 				teleReport.CommandInfo = &telemetry.CollectInfo{
 					ID:         clsID,
-					Mode:       collector.CollectModeTiUP,
+					Mode:       cOpt.Mode,
 					ArgYes:     skipConfirm,
 					ArgLimit:   cOpt.Limit,
 					ArgInclude: cOpt.Include.Slice(),
