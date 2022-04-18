@@ -115,10 +115,14 @@ func (c *StatisticsCollectorOptions) Collect(m *Manager, topo *models.TiDBCluste
 					return fmt.Errorf("cannot connect to any TiDB instance")
 				}
 				client := utils.NewHTTPClient(time.Second*15, c.tlsCfg)
+				scheme := "http"
+				if c.tlsCfg != nil {
+					scheme = "https"
+				}
 				var errs []string
 				for _, table := range c.tables {
 					err := func() error {
-						url := fmt.Sprintf("%s/stats/dump/%s/%s", db.StatusURL(), table.dbName, table.tableName)
+						url := fmt.Sprintf("%s://%s/stats/dump/%s/%s", scheme, db.StatusURL(), table.dbName, table.tableName)
 						response, err := client.Get(ctx, url)
 						if err != nil {
 							return err
