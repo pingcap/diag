@@ -22,6 +22,7 @@ import (
 	"time"
 
 	"github.com/fatih/color"
+	"github.com/pingcap/diag/api/types"
 	pingcapv1alpha1 "github.com/pingcap/diag/k8s/apis/pingcap/v1alpha1"
 	kubetls "github.com/pingcap/diag/k8s/apis/tls"
 	"github.com/pingcap/diag/pkg/models"
@@ -239,7 +240,11 @@ func (m *Manager) CollectClusterInfo(
 	}
 
 	var explainSqls []string
-	if len(cOpt.ExplainSQLPath) > 0 {
+	creq, ok := cOpt.RawRequest.(types.CollectJobRequest)
+	if ok {
+		explainSqls = creq.ExplainSqls
+		cOpt.Include.Insert(CollectTypeStatistics)
+	} else if len(cOpt.ExplainSQLPath) > 0 {
 		b, err := os.ReadFile(cOpt.ExplainSQLPath)
 		if err != nil {
 			return "", err
