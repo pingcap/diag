@@ -17,61 +17,49 @@ import (
 	"github.com/pingcap/tiup/pkg/cluster/task"
 )
 
-// BindCollectOptions are options used collecting component sql bind
-type BindCollectOptions struct {
+// ExplainCollectorOptions collects tables statistics
+type ExplainCollectorOptions struct {
 	*BaseOptions
 	opt       *operator.Options // global operations from cli
 	dbuser    string
 	dbpasswd  string
+	sqls      []string
 	resultDir string
-	fileStats map[string][]CollectStat
-}
-
-type bindStruct struct {
-	filename string
-	sql      string
-}
-
-var collectedBind = []bindStruct{
-	{
-		"global_bind.csv",
-		"select * from mysql.bind_info;",
-	},
 }
 
 // Desc implements the Collector interface
-func (c *BindCollectOptions) Desc() string {
-	return "Bind of components"
+func (c *ExplainCollectorOptions) Desc() string {
+	return "table statistics of components"
 }
 
 // GetBaseOptions implements the Collector interface
-func (c *BindCollectOptions) GetBaseOptions() *BaseOptions {
+func (c *ExplainCollectorOptions) GetBaseOptions() *BaseOptions {
 	return c.BaseOptions
 }
 
 // SetBaseOptions implements the Collector interface
-func (c *BindCollectOptions) SetBaseOptions(opt *BaseOptions) {
+func (c *ExplainCollectorOptions) SetBaseOptions(opt *BaseOptions) {
 	c.BaseOptions = opt
 }
 
 // SetGlobalOperations implements the Collector interface
-func (c *BindCollectOptions) SetGlobalOperations(opt *operator.Options) {
+func (c *ExplainCollectorOptions) SetGlobalOperations(opt *operator.Options) {
 	c.opt = opt
 }
 
 // SetDir sets the result directory path
-func (c *BindCollectOptions) SetDir(dir string) {
+func (c *ExplainCollectorOptions) SetDir(dir string) {
 	c.resultDir = dir
 }
 
 // Prepare implements the Collector interface
-func (c *BindCollectOptions) Prepare(_ *Manager, _ *models.TiDBCluster) (map[string][]CollectStat, error) {
+func (c *ExplainCollectorOptions) Prepare(_ *Manager, _ *models.TiDBCluster) (map[string][]CollectStat, error) {
 	return nil, nil
 }
 
 // Collect implements the Collector interface
-func (c *BindCollectOptions) Collect(m *Manager, topo *models.TiDBCluster) error {
-	err := os.Mkdir(filepath.Join(c.resultDir, DirNameBind), 0755)
+func (c *ExplainCollectorOptions) Collect(m *Manager, topo *models.TiDBCluster) error {
+	err := os.Mkdir(filepath.Join(c.resultDir, DirNameExplain), 0755)
 	if err != nil {
 		return err
 	}
@@ -80,12 +68,11 @@ func (c *BindCollectOptions) Collect(m *Manager, topo *models.TiDBCluster) error
 		c.opt.Concurrency,
 		m.logger,
 	)
-
 	tidbInstants := topo.TiDB
 
 	t := task.NewBuilder(m.logger).
 		Func(
-			"collect sql_bind",
+			"collect explain sqls",
 			func(ctx context.Context) error {
 				var db *sql.DB
 				for _, inst := range tidbInstants {
@@ -110,17 +97,23 @@ func (c *BindCollectOptions) Collect(m *Manager, topo *models.TiDBCluster) error
 					return fmt.Errorf("cannot connect to any TiDB instance")
 				}
 				defer db.Close()
-
 				var errs []string
-				for _, s := range collectedBind {
-					rows, err := db.Query(s.sql)
+				for index, sql := range c.sqls {
+					rows, err := db.Query(fmt.Sprintf("explain %s", sql))
 					if err != nil {
 						errs = append(errs, err.Error())
 						continue
 					}
-					err = sqltocsv.WriteFile(filepath.Join(c.resultDir, DirNameBind, s.filename), rows)
+					fileName := filepath.Join(c.resultDir, DirNameExplain, fmt.Sprintf("sql%d", index))
+					_, err = os.Create(fileName)
 					if err != nil {
-						return err
+						errs = append(errs, err.Error())
+						continue
+					}
+					err = sqltocsv.WriteFile(fileName, rows)
+					if err != nil {
+						errs = append(errs, err.Error())
+						continue
 					}
 				}
 				if len(errs) > 0 {
@@ -129,7 +122,7 @@ func (c *BindCollectOptions) Collect(m *Manager, topo *models.TiDBCluster) error
 				return nil
 			},
 		).
-		BuildAsStep("  - Querying sql_bind")
+		BuildAsStep("  - Querying Explain SQLs")
 
 	if err := t.Execute(ctx); err != nil {
 		if errorx.Cast(err) != nil {
