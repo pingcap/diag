@@ -161,8 +161,13 @@ func buildTopoForK8sCluster(
 		}
 
 		cTime := tc.ObjectMeta.CreationTimestamp
-		status := tc.Status.Conditions[0].Type
-		klog.Infof("found cluster '%s': %s, %s, created at %s",
+
+		var status pingcapv1alpha1.TidbClusterConditionType = "unknown"
+		if len(tc.Status.Conditions) > 0 {
+			status = tc.Status.Conditions[0].Type
+		}
+
+		klog.Infof("found cluster '%s': %s, status: %s, created at %s",
 			clsName, tc.Spec.Version, status, cTime)
 		cluster = &tc //#nosec G601
 		cls.Version = tc.Spec.Version
