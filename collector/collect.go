@@ -50,6 +50,7 @@ const (
 	CollectTypeDebug         = "debug"
 	CollectTypeComponentMeta = "component_meta"
 	CollectTypeBind          = "sql_bind"
+	CollectTypeStatistics    = "statistics"
 
 	CollectModeTiUP   = "tiup-cluster"  // collect from a tiup-cluster deployed cluster
 	CollectModeK8s    = "tidb-operator" // collect from a tidb-operator deployed cluster
@@ -80,6 +81,7 @@ var CollectAdditionSet = set.NewStringSet(
 var CollectNeedDBKey = set.NewStringSet(
 	CollectTypeBind,
 	CollectTypeSchema,
+	CollectTypeStatistics,
 )
 
 // Collector is the configuration defining an collecting job
@@ -104,18 +106,19 @@ type BaseOptions struct {
 
 // CollectOptions contains the options defining which type of data to collect
 type CollectOptions struct {
-	RawRequest    interface{}       // raw collect command or request
-	Mode          string            // the cluster is deployed with what type of tool
-	ProfileName   string            // the name of a pre-defined collecting profile
-	Include       set.StringSet     // types of data to collect
-	Exclude       set.StringSet     // types of data not to collect
-	MetricsFilter []string          // prefix of metrics to collect"
-	Dir           string            // target directory to store collected data
-	Limit         int               // rate limit of SCP
-	PerfDuration  int               //seconds: profile time(s), default is 30s.
-	CompressScp   bool              // compress of files during collecting
-	ExitOnError   bool              // break the process and exit when an error occur
-	ExtendedAttrs map[string]string // extended attributes used for manual collecting mode
+	RawRequest     interface{}       // raw collect command or request
+	Mode           string            // the cluster is deployed with what type of tool
+	ProfileName    string            // the name of a pre-defined collecting profile
+	Include        set.StringSet     // types of data to collect
+	Exclude        set.StringSet     // types of data not to collect
+	MetricsFilter  []string          // prefix of metrics to collect"
+	Dir            string            // target directory to store collected data
+	Limit          int               // rate limit of SCP
+	PerfDuration   int               //seconds: profile time(s), default is 30s.
+	CompressScp    bool              // compress of files during collecting
+	ExitOnError    bool              // break the process and exit when an error occur
+	ExtendedAttrs  map[string]string // extended attributes used for manual collecting mode
+	ExplainSQLPath string            // File path for explain sql
 }
 
 // CollectStat is estimated size stats of data to be collected
@@ -233,6 +236,18 @@ func (m *Manager) CollectClusterInfo(
 		}
 		gOpt.Roles = append(gOpt.Roles, cp.Roles...)
 		cOpt.MetricsFilter = append(cOpt.MetricsFilter, cp.MetricFilters...)
+	}
+
+	var explainSqls []string
+	if len(cOpt.ExplainSQLPath) > 0 {
+		b, err := os.ReadFile(cOpt.ExplainSQLPath)
+		if err != nil {
+			return "", err
+		}
+		explainSqls = strings.Split(string(b), ";")
+		cOpt.Include.Insert(CollectTypeStatistics)
+	} else if cOpt.Include.Exist(CollectTypeStatistics) {
+		return "", errors.New("explain-sql should be set if statistics is included")
 	}
 
 	for name := range collectorSet {
@@ -411,6 +426,19 @@ func (m *Manager) CollectClusterInfo(
 				opt:         gOpt,
 				resultDir:   resultDir,
 				fileStats:   make(map[string][]CollectStat),
+				tlsCfg:      tlsCfg,
+			})
+	}
+
+	if canCollect(cOpt, CollectTypeStatistics) {
+		collectors = append(collectors,
+			&StatisticsCollectorOptions{
+				BaseOptions: opt,
+				opt:         gOpt,
+				dbuser:      dbUser,
+				dbpasswd:    dbPassword,
+				resultDir:   resultDir,
+				sqls:        explainSqls,
 				tlsCfg:      tlsCfg,
 			})
 	}
