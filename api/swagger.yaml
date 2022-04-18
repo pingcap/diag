@@ -414,10 +414,6 @@ definitions:
       to:
         type: string
         format: dateTime
-      explainSqls:
-        type: array
-        items:
-          type: string
   CollectJob:
     type: object
     properties:
