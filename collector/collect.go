@@ -16,7 +16,6 @@ package collector
 import (
 	"crypto/tls"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -241,7 +240,7 @@ func (m *Manager) CollectClusterInfo(
 
 	var explainSqls []string
 	if len(cOpt.ExplainSQLPath) > 0 {
-		b, err := ioutil.ReadFile(cOpt.ExplainSQLPath)
+		b, err := os.ReadFile(cOpt.ExplainSQLPath)
 		if err != nil {
 			return "", err
 		}

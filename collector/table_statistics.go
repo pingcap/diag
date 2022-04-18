@@ -5,7 +5,6 @@ import (
 	"crypto/tls"
 	"database/sql"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -125,7 +124,7 @@ func (c *StatisticsCollectorOptions) Collect(m *Manager, topo *models.TiDBCluste
 							return err
 						}
 						path := filepath.Join(c.resultDir, DirNameBind, fmt.Sprintf("%s.%s.json", table.dbName, table.tableName))
-						err = ioutil.WriteFile(path, response, 0644)
+						err = os.WriteFile(path, response, 0600)
 						if err != nil {
 							return err
 						}
