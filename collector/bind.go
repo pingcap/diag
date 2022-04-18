@@ -91,12 +91,12 @@ func (c *BindCollectOptions) Collect(m *Manager, topo *models.TiDBCluster) error
 				for _, inst := range tidbInstants {
 					cdb, err := func() (*sql.DB, error) {
 						trydb, err := sql.Open("mysql", fmt.Sprintf("%s:%s@tcp(%s:%d)/", c.dbuser, c.dbpasswd, inst.Host(), inst.MainPort()))
-						defer trydb.Close()
 						if err != nil {
 							return nil, err
 						}
 						err = trydb.Ping()
 						if err != nil {
+							defer trydb.Close()
 							return nil, err
 						}
 						return trydb, nil
@@ -109,6 +109,7 @@ func (c *BindCollectOptions) Collect(m *Manager, topo *models.TiDBCluster) error
 				if db == nil {
 					return fmt.Errorf("cannot connect to any TiDB instance")
 				}
+				defer db.Close()
 
 				var errs []string
 				for _, s := range collectedBind {
