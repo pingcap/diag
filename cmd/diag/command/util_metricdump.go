@@ -76,6 +76,17 @@ func newMetricDumpCmd() *cobra.Command {
 				}
 			}
 
+			if reportEnabled {
+				clsID := scrubClusterName(opt.Cluster)
+				teleCommand = append(teleCommand, clsID)
+				teleReport.CommandInfo = &telemetry.CollectInfo{
+					ID:       clsID,
+					Mode:     cOpt.Mode,
+					ArgYes:   skipConfirm,
+					ArgLimit: cOpt.Limit,
+				}
+			}
+
 			_, err := cm.CollectClusterInfo(&opt, &cOpt, &gOpt, nil, nil, skipConfirm)
 			// time is validated and updated during the collecting process
 			if reportEnabled {
