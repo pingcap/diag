@@ -104,8 +104,13 @@ func (c *ExplainCollectorOptions) Collect(m *Manager, topo *models.TiDBCluster) 
 						errs = append(errs, err.Error())
 						continue
 					}
-					filePath := filepath.Join(c.resultDir, DirNameExplain, fmt.Sprintf("sql%d", index))
-					err = sqltocsv.WriteFile(filepath.Join(c.resultDir, DirNameExplain, filePath), rows)
+					fileName := filepath.Join(c.resultDir, DirNameExplain, fmt.Sprintf("sql%d", index))
+					_, err = os.Create(fileName)
+					if err != nil {
+						errs = append(errs, err.Error())
+						continue
+					}
+					err = sqltocsv.WriteFile(filepath.Join(c.resultDir, DirNameExplain, fileName), rows)
 					if err != nil {
 						errs = append(errs, err.Error())
 						continue
