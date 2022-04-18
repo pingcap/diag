@@ -246,6 +246,8 @@ func (m *Manager) CollectClusterInfo(
 		}
 		explainSqls = strings.Split(string(b), ";")
 		cOpt.Include.Insert(CollectTypeStatistics)
+	} else if cOpt.Include.Exist(CollectTypeStatistics) {
+		return "", errors.New("explain-sql should be set if statistics is included")
 	}
 
 	for name := range collectorSet {
