@@ -327,8 +327,6 @@ run_with_pod {
 		}
 	}	
 
-	
-
 	container("docker") {
 		
 		stage("Build and Push docker image") {
@@ -338,9 +336,11 @@ run_with_pod {
 			echo "RELEASE_TAG: ${env.RELEASE_TAG}"
 
 			// check k8s images
-			sh "pwd && ls -l k8s/images"
-			sh "docker build --tag ${IMAGE_PATH}:${env.RELEASE_TAG} -f k8s/images/diag/Dockerfile k8s/images/diag"
-			sh "docker image list"
+			docker.withRegistry("", "dockerhub") {
+			    sh("pwd && ls -l k8s/images")
+			    sh("docker build --tag ${IMAGE_PATH}:${env.RELEASE_TAG} -f k8s/images/diag/Dockerfile k8s/images/diag")
+			    sh("docker image list")
+			}
 
 			push_image("${IMAGE_PATH}", "${env.RELEASE_TAG}")
 
