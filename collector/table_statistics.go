@@ -15,6 +15,8 @@ import (
 	perrs "github.com/pingcap/errors"
 	"github.com/pingcap/tidb/parser"
 	"github.com/pingcap/tidb/parser/ast"
+
+	// Register some standard stuff
 	_ "github.com/pingcap/tidb/parser/test_driver"
 	"github.com/pingcap/tiup/pkg/cluster/ctxt"
 	operator "github.com/pingcap/tiup/pkg/cluster/operation"
