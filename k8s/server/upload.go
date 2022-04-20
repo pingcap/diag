@@ -33,6 +33,13 @@ import (
 func uploadDataSet(c *gin.Context) {
 	id := c.Param("id")
 
+	var rebuild bool
+	if c.Query("rebuild") == "false" {
+		rebuild = false
+	} else {
+		rebuild = true
+	}
+
 	ctx, ok := c.Get(diagAPICtxKey)
 	if !ok {
 		msg := "failed to read server config."
@@ -71,7 +78,7 @@ func uploadDataSet(c *gin.Context) {
 	}
 
 	// run uploader
-	go runUploader(diagCtx, worker)
+	go runUploader(diagCtx, worker, rebuild)
 
 	c.JSON(http.StatusAccepted, task)
 }
@@ -79,6 +86,7 @@ func uploadDataSet(c *gin.Context) {
 func runUploader(
 	ctx *context,
 	worker *collectJobWorker,
+	rebuild bool,
 ) {
 	// get credentials from environment variables
 	// this need to be changed to use proper client authentication method
@@ -113,6 +121,7 @@ func runUploader(
 			InputDir:   worker.job.Dir,
 			OutputFile: filepath.Join(packageDir, fmt.Sprintf("diag-%s.diag", worker.job.ID)),
 			CertPath:   "/var/lib/clinic-cert/pingcap.crt", // mounted via secret
+			Rebuild:    rebuild,
 		}
 		pf, err := packager.PackageCollectedData(pOpt, true)
 		outW.Close()
