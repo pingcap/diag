@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 #
 #  Copyright 2017 Otto Seiskari
 #  Licensed under the Apache License, Version 2.0.

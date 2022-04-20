@@ -239,6 +239,10 @@ paths:
           in: path
           type: string
           required: true
+        - name: rebuild
+          in: query
+          type: boolean
+          required: false
       responses:
         '202':
           description: package and upload a data set to the clinic server
