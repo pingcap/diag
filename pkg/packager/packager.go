@@ -184,7 +184,7 @@ func PackageCollectedData(pOpt *PackageOptions, skipConfirm bool) (string, error
 	}
 	meta["cluster_name"], meta["begin_time"], meta["end_time"] = clusterJSON["cluster_name"], clusterJSON["begin_time"], clusterJSON["end_time"]
 	if topo, ok := clusterJSON["topology"].(map[string]interface{}); ok {
-		meta["k8s _namespace"] = topo["namespace"]
+		meta["k8s_namespace"] = topo["namespace"]
 	}
 	meta["rebuild"] = pOpt.Rebuild
 	header, _ := GenerateD1agHeader(meta, TypeZST, certPath)
