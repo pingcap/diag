@@ -358,6 +358,10 @@ func collectMetric(
 					l.Errorf("failed query metric %s: %s, retry...", mtc, err)
 					return err
 				}
+				// Prometheus API response format is JSON. Every successful API request returns a 2xx status code.
+				if resp.StatusCode/100 != 2 {
+					l.Errorf("failed query metric %s: Status Code %d, retry...", mtc, resp.StatusCode)
+				}
 				defer resp.Body.Close()
 
 				dst, err := os.Create(
@@ -429,7 +433,7 @@ func parseTimeRange(scrapeStart, scrapeEnd string) ([]string, int64, error) {
 	// split time into smaller ranges to avoid querying too many data
 	// in one request
 	ts := []string{tsStart.Format(time.RFC3339)}
-	block := time.Second * 3600 * 2
+	block := time.Second * 3600
 	cursor := tsStart
 	for {
 		if cursor.After(tsEnd) {
