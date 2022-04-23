@@ -154,7 +154,7 @@ def publish_chart(RELEASE_TAG) {
 	sh """
 		sed -i "s/version:.*/version: ${RELEASE_TAG}/g"  k8s/chart/diag/Chart.yaml
 		sed -i "s/appVersion:.*/appVersion: ${RELEASE_TAG}/g" k8s/chart/diag/Chart.yaml
-		sed -i "s/imageTag:.*/imageTag:: ${RELEASE_TAG}/g" k8s/chart/diag/values.yaml		
+		sed -i "s/imageTag:.*/imageTag: ${RELEASE_TAG}/g" k8s/chart/diag/values.yaml		
 	"""
 	sh "cat k8s/chart/diag/Chart.yaml"
 	sh "cat k8s/chart/diag/values.yaml"

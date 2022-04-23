@@ -14,6 +14,10 @@ spec:
       labels:
         app: pingcap-clinic
         app.kubernetes.io/instance: {{ .Release.Name }}
+{{- if .Values.diag.podAnnotations }}
+      annotations:
+{{ toYaml .Values.diag.podAnnotations | indent 8 }}
+{{ end }}
     spec:
       serviceAccount: {{ .Values.diag.serviceAccount | default "pingcap-clinic" }}
       serviceAccountName: {{ .Values.diag.serviceAccount | default "pingcap-clinic" }}
@@ -53,3 +57,19 @@ spec:
       - name: diag-storage
 {{ toYaml .Values.diag.volume | indent 8 }}
       {{- end }}
+      {{- with .Values.diag.nodeSelector }}
+      nodeSelector:
+{{ toYaml . | indent 8 }}
+      {{- end }}
+      {{- with .Values.diag.affinity }}
+      affinity:
+{{ toYaml . | indent 8 }}
+      {{- end }}
+      {{- with .Values.diag.tolerations }}
+      tolerations:
+{{ toYaml . | indent 8 }}
+      {{- end }}
+      {{- with .Values.diag.securityContext }}
+      securityContext:
+{{ toYaml . | indent 8 }}
+      {{- end}}

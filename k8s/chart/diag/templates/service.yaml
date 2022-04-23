@@ -9,7 +9,7 @@ spec:
   ports:
   - name: {{ .Values.service.serviceName }}
     port: 4917
-    protocol: {{ .Values.service.protocol }}
+    protocol: TCP
     targetPort: 4917
   selector:
     app: pingcap-clinic
