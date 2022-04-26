@@ -153,10 +153,16 @@ func PackageCollectedData(pOpt *PackageOptions, skipConfirm bool) (string, error
 		return "", err
 	}
 	block, _ := pem.Decode(certString)
-	cert, _ := x509.ParseCertificate(block.Bytes)
+	cert, err := x509.ParseCertificate(block.Bytes)
+	if err != nil {
+		return "", err
+	}
 	publicKey := cert.PublicKey.(*rsa.PublicKey)
 
-	fileW, _ := os.Create(output)
+	fileW, err := os.Create(output)
+	if err != nil {
+		return "", err
+	}
 	defer fileW.Close()
 	encryptW, _ := crypto.NewEncryptWriter(publicKey, fileW)
 	compressW, _ := zstd.NewWriter(encryptW)
@@ -190,7 +196,7 @@ func PackageCollectedData(pOpt *PackageOptions, skipConfirm bool) (string, error
 	header, _ := GenerateD1agHeader(meta, TypeZST, certPath)
 	fileW.Write(header)
 
-	filepath.Walk(input, func(path string, info fs.FileInfo, err error) error {
+	err = filepath.Walk(input, func(path string, info fs.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
@@ -205,16 +211,20 @@ func PackageCollectedData(pOpt *PackageOptions, skipConfirm bool) (string, error
 		if err != nil {
 			return err
 		}
-		fd, err := os.Open(path)
-		if err != nil {
+
+		if !info.IsDir() {
+			fd, err := os.Open(path)
+			if err != nil {
+				return err
+			}
+			defer fd.Close()
+			_, err = io.Copy(tarW, fd)
 			return err
 		}
-		defer fd.Close()
-		io.Copy(tarW, fd)
 		return nil
 	})
 
-	return output, nil
+	return output, err
 }
 
 func selectInputDir(dir string, skipConfirm bool) (string, error) {
