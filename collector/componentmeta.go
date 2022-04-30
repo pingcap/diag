@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/joomcode/errorx"
 	"github.com/pingcap/diag/pkg/models"
@@ -169,7 +170,7 @@ func buildTiCDCMateCollectTask(ctx context.Context, c *ComponentMetaCollectOptio
 		Func(
 			fmt.Sprintf("collect metadata for %s", inst.Type()),
 			func(ctx context.Context) error {
-				kvs, err := c.topo.GetAllCDCInfo(ctx, c.tlsCfg)
+				kvs, err := c.topo.GetAllCDCInfo(ctx, 5*time.Second, c.tlsCfg)
 				if err != nil {
 					return err
 				}
