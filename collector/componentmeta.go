@@ -170,7 +170,7 @@ func buildTiCDCMateCollectTask(ctx context.Context, c *ComponentMetaCollectOptio
 		Func(
 			fmt.Sprintf("collect metadata for %s", inst.Type()),
 			func(ctx context.Context) error {
-				kvs, err := c.topo.GetAllCDCInfo(ctx, 5*time.Second, c.tlsCfg)
+				kvs, err := c.topo.GetAllCDCInfo(ctx, time.Duration(c.opt.APITimeout)*time.Second, c.tlsCfg)
 				if err != nil {
 					return err
 				}
