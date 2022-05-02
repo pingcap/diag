@@ -704,7 +704,8 @@ func (c *TiDBCluster) GetAllCDCInfo(ctx context.Context, timeout time.Duration, 
 		return nil, err
 	}
 
-	ctx, _ = context.WithTimeout(ctx, timeout)
+	ctx, f := context.WithTimeout(ctx, timeout)
+	defer f()
 	resp, err := etcdClient.Get(ctx, ticdcEtcdKeyBase, clientv3.WithPrefix())
 	if err != nil {
 		return nil, err
