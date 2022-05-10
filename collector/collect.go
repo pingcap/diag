@@ -245,7 +245,12 @@ func (m *Manager) CollectClusterInfo(
 		if err != nil {
 			return "", err
 		}
-		explainSqls = strings.Split(string(b), ";")
+		sqls := strings.Split(string(b), ";")
+		for _, sql := range sqls {
+			if len(sql) > 0 {
+				explainSqls = append(explainSqls, sql)
+			}
+		}
 		cOpt.Include.Insert(CollectTypeStatistics)
 		cOpt.Include.Insert(CollectTypeExplainSQLs)
 	} else {

@@ -5,6 +5,7 @@ import (
 	"crypto/tls"
 	"database/sql"
 	"fmt"
+	"github.com/joho/sqltocsv"
 	"os"
 	"path/filepath"
 	"strings"
@@ -95,17 +96,20 @@ func (c *StatisticsCollectorOptions) Collect(m *Manager, topo *models.TiDBCluste
 			"collect table statistics",
 			func(ctx context.Context) error {
 				var db *models.TiDBSpec
+				var sqldb *sql.DB
 				for _, inst := range tidbInstants {
 					err := func() error {
 						trydb, err := sql.Open("mysql", fmt.Sprintf("%s:%s@tcp(%s:%d)/", c.dbuser, c.dbpasswd, inst.Host(), inst.MainPort()))
-						defer trydb.Close()
 						if err != nil {
+							defer trydb.Close()
 							return err
 						}
 						err = trydb.Ping()
 						if err != nil {
+							defer trydb.Close()
 							return err
 						}
+						sqldb = trydb
 						db = inst
 						return nil
 					}()
@@ -113,7 +117,7 @@ func (c *StatisticsCollectorOptions) Collect(m *Manager, topo *models.TiDBCluste
 						break
 					}
 				}
-				if db == nil {
+				if db == nil || sqldb == nil {
 					return fmt.Errorf("cannot connect to any TiDB instance")
 				}
 				client := utils.NewHTTPClient(time.Second*15, c.tlsCfg)
@@ -121,29 +125,11 @@ func (c *StatisticsCollectorOptions) Collect(m *Manager, topo *models.TiDBCluste
 				if c.tlsCfg != nil {
 					scheme = "https"
 				}
-				var errs []string
-				for _, table := range c.tables {
-					err := func() error {
-						url := fmt.Sprintf("%s://%s/stats/dump/%s/%s", scheme, db.StatusURL(), table.dbName, table.tableName)
-						response, err := client.Get(ctx, url)
-						if err != nil {
-							return err
-						}
-						path := filepath.Join(c.resultDir, DirStatistics, fmt.Sprintf("%s.%s.json", table.dbName, table.tableName))
-						_, err = os.Create(path)
-						if err != nil {
-							return err
-						}
-						err = os.WriteFile(path, response, 0600)
-						if err != nil {
-							return err
-						}
-						return nil
-					}()
-					if err != nil {
-						errs = append(errs, err.Error())
-					}
+				errs := c.collectTableStatistics(ctx, client, scheme, db)
+				if len(errs) > 0 {
+					return fmt.Errorf(strings.Join(errs, "\n"))
 				}
+				errs = c.collectTableStructures(sqldb)
 				if len(errs) > 0 {
 					return fmt.Errorf(strings.Join(errs, "\n"))
 				}
@@ -160,6 +146,51 @@ func (c *StatisticsCollectorOptions) Collect(m *Manager, topo *models.TiDBCluste
 	}
 
 	return nil
+}
+
+func (c *StatisticsCollectorOptions) collectTableStatistics(ctx context.Context,
+	client *utils.HTTPClient, scheme string, db *models.TiDBSpec) (errs []string) {
+	for _, table := range c.tables {
+		err := func() error {
+			url := fmt.Sprintf("%s://%s/stats/dump/%s/%s", scheme, db.StatusURL(), table.dbName, table.tableName)
+			response, err := client.Get(ctx, url)
+			if err != nil {
+				return err
+			}
+			path := filepath.Join(c.resultDir, DirStatistics, fmt.Sprintf("%s.%s.json", table.dbName, table.tableName))
+			_, err = os.Create(path)
+			if err != nil {
+				return err
+			}
+			return os.WriteFile(path, response, 0600)
+		}()
+		if err != nil {
+			errs = append(errs, err.Error())
+		}
+	}
+	return errs
+}
+
+func (c *StatisticsCollectorOptions) collectTableStructures(db *sql.DB) (errs []string) {
+	defer db.Close()
+	for _, table := range c.tables {
+		err := func() error {
+			rows, err := db.Query(fmt.Sprintf("show create table %s.%s", table.dbName, table.tableName))
+			if err != nil {
+				return err
+			}
+			fileName := filepath.Join(c.resultDir, DirStatistics, fmt.Sprintf("%s.%s.schema", table.dbName, table.tableName))
+			_, err = os.Create(fileName)
+			if err != nil {
+				return err
+			}
+			return sqltocsv.WriteFile(fileName, rows)
+		}()
+		if err != nil {
+			errs = append(errs, err.Error())
+		}
+	}
+	return errs
 }
 
 func (c *StatisticsCollectorOptions) collectTables() []string {
