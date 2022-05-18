@@ -85,6 +85,19 @@ var CollectNeedDBKey = set.NewStringSet(
 	CollectTypeStatistics,
 )
 
+var CollectSQLReplayerScenario = set.NewStringSet(
+	CollectTypeSystem,
+	CollectTypeStatistics,
+	CollectTypeConfig,
+	CollectTypeSchema,
+	CollectTypeBind,
+	CollectTypeExplainSQLs,
+)
+
+var (
+	replayerScenario = "sql_replayer"
+)
+
 // Collector is the configuration defining an collecting job
 type Collector interface {
 	Prepare(*Manager, *models.TiDBCluster) (map[string][]CollectStat, error)
@@ -120,6 +133,7 @@ type CollectOptions struct {
 	ExitOnError    bool              // break the process and exit when an error occur
 	ExtendedAttrs  map[string]string // extended attributes used for manual collecting mode
 	ExplainSQLPath string            // File path for explain sql
+	Scenario       string            // scenario for diag
 }
 
 // CollectStat is estimated size stats of data to be collected
@@ -237,6 +251,15 @@ func (m *Manager) CollectClusterInfo(
 		}
 		gOpt.Roles = append(gOpt.Roles, cp.Roles...)
 		cOpt.MetricsFilter = append(cOpt.MetricsFilter, cp.MetricFilters...)
+	}
+
+	if strings.ToLower(cOpt.Scenario) == replayerScenario {
+		if len(cOpt.ExplainSQLPath) < 1 {
+			return "", errors.New("explain-sql should be set if scenario is sql_replayer")
+		}
+		for _, s := range CollectSQLReplayerScenario.Slice() {
+			cOpt.Include.Insert(s)
+		}
 	}
 
 	var explainSqls []string
