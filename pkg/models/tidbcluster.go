@@ -17,6 +17,7 @@ import (
 	"context"
 	"crypto/tls"
 	"fmt"
+	"time"
 
 	"github.com/pingcap/tiup/pkg/cluster/spec"
 	"github.com/pingcap/tiup/pkg/set"
@@ -692,13 +693,19 @@ func (c *TiDBCluster) GetEtcdClient(tlsCfg *tls.Config) (*clientv3.Client, error
 const ticdcEtcdKeyBase string = "/tidb/cdc"
 
 // getAllCDCInfo get all keys created by CDC
-func (c *TiDBCluster) GetAllCDCInfo(ctx context.Context, tlsCfg *tls.Config) ([]*mvccpb.KeyValue, error) {
+func (c *TiDBCluster) GetAllCDCInfo(ctx context.Context, timeout time.Duration, tlsCfg *tls.Config) ([]*mvccpb.KeyValue, error) {
+
+	if timeout < time.Second {
+		timeout = 5 * time.Second
+	}
 
 	etcdClient, err := c.GetEtcdClient(tlsCfg)
 	if err != nil {
 		return nil, err
 	}
 
+	ctx, f := context.WithTimeout(ctx, timeout)
+	defer f()
 	resp, err := etcdClient.Get(ctx, ticdcEtcdKeyBase, clientv3.WithPrefix())
 	if err != nil {
 		return nil, err
