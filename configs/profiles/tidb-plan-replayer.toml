@@ -1,0 +1,20 @@
+name = "tidb-plan-replayer"
+version = "0.0.1"
+maintainers = [
+    "pingcap"
+]
+
+# list of data types to collect
+collectors = [
+    "log",
+    "config",
+    "db_vars",
+    "sql_bind",
+    "statistics",
+    "explain"
+]
+
+# list of component roles to collect
+roles = [
+    "tidb"
+]
