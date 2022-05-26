@@ -14,9 +14,10 @@
 package proto
 
 import (
-	"github.com/pingcap/tiup/pkg/cluster/spec"
 	"reflect"
 	"strings"
+
+	"github.com/pingcap/tiup/pkg/cluster/spec"
 
 	"github.com/pingcap/diag/pkg/models"
 	"github.com/pingcap/diag/pkg/utils"
@@ -175,6 +176,7 @@ type RaftStoreConfig struct {
 	SnapMgrGcTickInterval            string  `toml:"snap-mgr-gc-tick-interval" json:"snap-mgr-gc-tick-interval"`
 	SnapGcTimeout                    string  `toml:"snap-gc-timeout" json:"snap-gc-timeout"`
 	LockCfCompactInterval            string  `toml:"lock-cf-compact-interval" json:"lock-cf-compact-interval"`
+	SnapGeneratorPoolSize            int     `toml:"snap-generator-pool-size" json:"snap-generator-pool-size"`
 	LockCfCompactBytesThreshold      string  `toml:"lock-cf-compact-bytes-threshold" json:"lock-cf-compact-bytes-threshold"`
 	NotifyCapacity                   int     `toml:"notify-capacity" json:"notify-capacity"`
 	MessagesPerTick                  int     `toml:"messages-per-tick" json:"messages-per-tick"`
@@ -290,6 +292,7 @@ type CFConfig struct {
 // TikvConfigData is the struct represent TiKV config
 // print from TiKV v5.0.2
 type TikvConfig struct {
+	Log                          Log            `toml:"log" json:"log"`
 	LogLevel                     string         `toml:"log-level" json:"log-level"`
 	LogFile                      string         `toml:"log-file" json:"log-file"`
 	LogFormat                    string         `toml:"log-format" json:"log-format"`
@@ -425,9 +428,10 @@ type TikvConfig struct {
 		ImportModeTimeout   string `toml:"import-mode-timeout" json:"import-mode-timeout"`
 	} `toml:"import" json:"import"`
 	Backup struct {
-		NumThreads int    `toml:"num-threads" json:"num-threads"`
-		BatchSize  int    `toml:"batch-size" json:"batch-size"`
-		SstMaxSize string `toml:"sst-max-size" json:"sst-max-size"`
+		NumThreads     int    `toml:"num-threads" json:"num-threads"`
+		BatchSize      int    `toml:"batch-size" json:"batch-size"`
+		SstMaxSize     string `toml:"sst-max-size" json:"sst-max-size"`
+		EnableAutoTune bool   `toml:"enable-auto-tune" json:"enable-auto-tune"`
 	} `toml:"backup" json:"backup"`
 	PessimisticTxn struct {
 		WaitForLockTimeout  string `toml:"wait-for-lock-timeout" json:"wait-for-lock-timeout"`
