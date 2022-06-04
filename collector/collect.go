@@ -33,6 +33,7 @@ import (
 	logprinter "github.com/pingcap/tiup/pkg/logger/printer"
 	"github.com/pingcap/tiup/pkg/set"
 	"github.com/pingcap/tiup/pkg/tui"
+	"golang.org/x/mod/semver"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/klog"
@@ -205,7 +206,6 @@ func (m *Manager) CollectClusterInfo(
 
 	// prepare collector list
 	collectorSet := map[string]bool{
-
 		CollectTypeSystem:        false,
 		CollectTypeMonitor:       false,
 		CollectTypeLog:           false,
@@ -384,6 +384,14 @@ func (m *Manager) CollectClusterInfo(
 	}
 
 	if canCollect(cOpt, CollectTypePerf) {
+
+		if len(cls.TiKV) > 0 {
+			// maybe it's better to use tiup/pkg/tidbver
+			if !(semver.Compare(cls.Version, "v5.0.0") >= 0 || strings.Contains(cls.Version, "nightly")) {
+				return "", errors.Errorf("cannot collect perf information of Tikv whose version is less than v5.0.0")
+			}
+		}
+
 		if cOpt.PerfDuration < 1 {
 			if m.mode == CollectModeK8s {
 				cOpt.PerfDuration = 30
