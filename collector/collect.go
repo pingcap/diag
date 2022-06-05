@@ -112,7 +112,8 @@ type CollectOptions struct {
 	ProfileName    string            // the name of a pre-defined collecting profile
 	Include        set.StringSet     // types of data to collect
 	Exclude        set.StringSet     // types of data not to collect
-	MetricsFilter  []string          // prefix of metrics to collect"
+	MetricsFilter  []string          // prefix of metrics to collect
+	MetricsLimit   int               // query limit of one request
 	Dir            string            // target directory to store collected data
 	Limit          int               // rate limit of SCP
 	PerfDuration   int               //seconds: profile time(s), default is 30s.
@@ -297,6 +298,7 @@ func (m *Manager) CollectClusterInfo(
 				opt:         gOpt,
 				resultDir:   resultDir,
 				filter:      cOpt.MetricsFilter,
+				limit:       cOpt.MetricsLimit,
 			},
 		)
 	}

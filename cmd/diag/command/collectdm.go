@@ -140,6 +140,7 @@ func newCollectDMCmd() *cobra.Command {
 	cmd.Flags().StringSliceVar(&inc, "include", nil, fmt.Sprintf("types of data to collect: default[%s]", strings.Join(collector.CollectDefaultSet.Slice(), ",")))
 	cmd.Flags().StringSliceVar(&ext, "exclude", nil, "types of data not to collect")
 	cmd.Flags().StringSliceVar(&cOpt.MetricsFilter, "metricsfilter", nil, "prefix of metrics to collect")
+	cmd.Flags().IntVar(&cOpt.MetricsLimit, "monitor.metricslimit", 500000, "metrics size limit of single request, specified in series*min per request")
 	cmd.Flags().StringVar(&metricsConf, "metricsconfig", "", "config file of metricsfilter")
 	cmd.Flags().StringVarP(&cOpt.Dir, "output", "o", "", "output directory of collected data")
 	cmd.Flags().IntVarP(&cOpt.Limit, "limit", "l", -1, "Limits the used bandwidth, specified in Kbit/s")
