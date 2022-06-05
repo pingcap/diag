@@ -455,45 +455,6 @@ func ensureMonitorDir(base string, sub ...string) error {
 	return os.MkdirAll(dir, 0755)
 }
 
-func parseTimeRange(scrapeStart, scrapeEnd string) ([]string, int64, error) {
-	currTime := time.Now()
-
-	end := scrapeEnd
-	if end == "" {
-		end = currTime.Format(time.RFC3339)
-	}
-	tsEnd, err := utils.ParseTime(end)
-	if err != nil {
-		return nil, 0, err
-	}
-
-	begin := scrapeStart
-	if begin == "" {
-		begin = tsEnd.Add(time.Duration(-1) * time.Hour).Format(time.RFC3339)
-	}
-	tsStart, err := utils.ParseTime(begin)
-	if err != nil {
-		return nil, 0, err
-	}
-
-	// split time into smaller ranges to avoid querying too many data
-	// in one request
-	ts := []string{tsStart.Format(time.RFC3339)}
-	block := time.Second * 3600
-	cursor := tsStart
-	for {
-		cursor = cursor.Add(block)
-		if cursor.Before(tsEnd) {
-			ts = append(ts, cursor.Format(time.RFC3339))
-		} else {
-			ts = append(ts, tsEnd.Format(time.RFC3339))
-			break
-		}
-	}
-
-	return ts, tsEnd.Unix() - tsStart.Unix(), nil
-}
-
 func filterMetrics(src, filter []string) []string {
 	if filter == nil {
 		return src
