@@ -22,7 +22,6 @@ import (
 	"path"
 	"path/filepath"
 	"runtime"
-	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -41,7 +40,8 @@ const (
 	subdirMonitor = "monitor"
 	subdirAlerts  = "alerts"
 	subdirMetrics = "metrics"
-	metricStep    = 15 // use 15s step
+	maxQueryRange = 120 // 120min
+	minQueryRange = 5   // 5min
 )
 
 // AlertCollectOptions is the options collecting alerts
@@ -144,9 +144,9 @@ type MetricCollectOptions struct {
 	*BaseOptions
 	opt       *operator.Options // global operations from cli
 	resultDir string
-	timeSteps []string
 	metrics   []string // metric list
 	filter    []string
+	limit     int // series*min per query
 }
 
 // Desc implements the Collector interface
@@ -185,11 +185,10 @@ func (c *MetricCollectOptions) Prepare(m *Manager, topo *models.TiDBCluster) (ma
 		return nil, nil
 	}
 
-	ts, nsec, err := parseTimeRange(c.GetBaseOptions().ScrapeBegin, c.GetBaseOptions().ScrapeEnd)
-	if err != nil {
-		return nil, err
-	}
-	c.timeSteps = ts
+	tsEnd, _ := utils.ParseTime(c.GetBaseOptions().ScrapeEnd)
+	tsStart, _ := utils.ParseTime(c.GetBaseOptions().ScrapeBegin)
+	nsec := tsEnd.Unix() - tsStart.Unix()
+
 	monitors := make([]string, 0)
 	if eps, found := topo.Attributes[AttrKeyPromEndpoint]; found {
 		monitors = append(monitors, eps.([]string)...)
@@ -295,7 +294,9 @@ func (c *MetricCollectOptions) Collect(m *Manager, topo *models.TiDBCluster) err
 					Suffix: fmt.Sprintf("%d/%d querying %s ...", done, total, mtc),
 				})
 
-				collectMetric(m.logger, client, prom, c.timeSteps, mtc, c.resultDir)
+				tsEnd, _ := utils.ParseTime(c.GetBaseOptions().ScrapeEnd)
+				tsStart, _ := utils.ParseTime(c.GetBaseOptions().ScrapeBegin)
+				collectMetric(m.logger, client, prom, tsStart, tsEnd, mtc, c.resultDir, c.limit)
 
 				mu.Lock()
 				done++
@@ -333,25 +334,70 @@ func getMetricList(c *http.Client, prom string) ([]string, error) {
 	return r.Metrics, nil
 }
 
+func getSeriesNum(c *http.Client, promAddr, metric string) (int, error) {
+	resp, err := c.PostForm(
+		fmt.Sprintf("http://%s/api/v1/series", promAddr),
+		url.Values{
+			"match[]": {metric},
+		},
+	)
+	if err != nil {
+		return 0, err
+	}
+	if resp.StatusCode/100 != 2 {
+		return 0, fmt.Errorf("fail to get series. Status Code %d", resp.StatusCode)
+	}
+	defer resp.Body.Close()
+
+	r := struct {
+		Series []interface{} `json:"data"`
+	}{}
+	if err := json.NewDecoder(resp.Body).Decode(&r); err != nil {
+		return 0, err
+	}
+	return len(r.Series), nil
+}
+
 func collectMetric(
 	l *logprinter.Logger,
 	c *http.Client,
 	promAddr string,
-	ts []string,
+	beginTime, endTime time.Time,
 	mtc, resultDir string,
+	speedlimit int,
 ) {
-	l.Debugf("Dumping metric %s...", mtc)
+	l.Debugf("Querying series of %s...", mtc)
+	series, err := getSeriesNum(c, promAddr, mtc)
+	if err != nil {
+		l.Errorf("%s", err)
+		return
+	}
 
-	for i := 0; i < len(ts)-1; i++ {
+	// split time into smaller ranges to avoid querying too many data
+	// in one request
+	block := speedlimit / series
+	if block > maxQueryRange {
+		block = maxQueryRange
+	}
+	if block < minQueryRange {
+		block = minQueryRange
+	}
+
+	l.Debugf("Dumping metric %s...", mtc)
+	for queryEnd := endTime; queryEnd.After(beginTime); queryEnd = queryEnd.Add(time.Duration(-block) * time.Minute) {
+		querySec := block * 60
+		queryBegin := queryEnd.Add(time.Duration(-block) * time.Minute)
+		if queryBegin.Before(beginTime) {
+			querySec = int(queryEnd.Sub(beginTime).Seconds())
+			queryBegin = beginTime
+		}
 		if err := tiuputils.Retry(
 			func() error {
 				resp, err := c.PostForm(
-					fmt.Sprintf("http://%s/api/v1/query_range", promAddr),
+					fmt.Sprintf("http://%s/api/v1/query", promAddr),
 					url.Values{
-						"query": {mtc},
-						"start": {ts[i]},
-						"end":   {ts[i+1]},
-						"step":  {strconv.Itoa(metricStep)},
+						"query": {fmt.Sprintf("%s[%ds]", mtc, querySec)},
+						"time":  {endTime.Format(time.RFC3339)},
 					},
 				)
 				if err != nil {
@@ -367,7 +413,7 @@ func collectMetric(
 				dst, err := os.Create(
 					filepath.Join(
 						resultDir, subdirMonitor, subdirMetrics, strings.ReplaceAll(promAddr, ":", "-"),
-						fmt.Sprintf("%s_%s_%s.json", mtc, ts[i], ts[i+1]),
+						fmt.Sprintf("%s_%s_%s.json", mtc, queryBegin.Format(time.RFC3339), queryEnd.Format(time.RFC3339)),
 					),
 				)
 				if err != nil {
@@ -388,7 +434,7 @@ func collectMetric(
 					l.Errorf("failed writing metric %s to file: %s, retry...\n", mtc, err)
 					return err
 				}
-				l.Debugf(" Dumped metric %s from %s to %s (%d bytes)", mtc, ts[i], ts[i+1], n)
+				l.Debugf(" Dumped metric %s from %s to %s (%d bytes)", mtc, queryBegin.Format(time.RFC3339), queryEnd.Format(time.RFC3339), n)
 				return nil
 			},
 			tiuputils.RetryOption{
@@ -407,50 +453,6 @@ func ensureMonitorDir(base string, sub ...string) error {
 	e = append(e, sub...)
 	dir := path.Join(e...)
 	return os.MkdirAll(dir, 0755)
-}
-
-func parseTimeRange(scrapeStart, scrapeEnd string) ([]string, int64, error) {
-	currTime := time.Now()
-
-	end := scrapeEnd
-	if end == "" {
-		end = currTime.Format(time.RFC3339)
-	}
-	tsEnd, err := utils.ParseTime(end)
-	if err != nil {
-		return nil, 0, err
-	}
-
-	begin := scrapeStart
-	if begin == "" {
-		begin = tsEnd.Add(time.Duration(-1) * time.Hour).Format(time.RFC3339)
-	}
-	tsStart, err := utils.ParseTime(begin)
-	if err != nil {
-		return nil, 0, err
-	}
-
-	// split time into smaller ranges to avoid querying too many data
-	// in one request
-	ts := []string{tsStart.Format(time.RFC3339)}
-	block := time.Second * 3600
-	cursor := tsStart
-	for {
-		if cursor.After(tsEnd) {
-			ts = append(ts, tsEnd.Format(time.RFC3339))
-			break
-		}
-		next := cursor.Add(block)
-		if next.Before(tsEnd) {
-			ts = append(ts, cursor.Format(time.RFC3339))
-		} else {
-			ts = append(ts, tsEnd.Format(time.RFC3339))
-			break
-		}
-		cursor = next
-	}
-
-	return ts, tsEnd.Unix() - tsStart.Unix(), nil
 }
 
 func filterMetrics(src, filter []string) []string {
