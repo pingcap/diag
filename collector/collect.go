@@ -74,7 +74,6 @@ var CollectDefaultSet = set.NewStringSet(
 
 var CollectAdditionSet = set.NewStringSet(
 	CollectTypeSchema,
-	CollectTypePerf,
 	CollectTypeDebug,
 	CollectTypeBind,
 )
@@ -206,7 +205,6 @@ func (m *Manager) CollectClusterInfo(
 
 	// prepare collector list
 	collectorSet := map[string]bool{
-
 		CollectTypeSystem:        false,
 		CollectTypeMonitor:       false,
 		CollectTypeLog:           false,
@@ -385,25 +383,34 @@ func (m *Manager) CollectClusterInfo(
 			})
 	}
 
-	if canCollect(cOpt, CollectTypePerf) {
-		if cOpt.PerfDuration < 1 {
-			if m.mode == CollectModeK8s {
-				cOpt.PerfDuration = 30
-			} else {
-				return "", errors.Errorf("perf-duration cannot be less than 1")
-			}
+	// hide perf
+	// if canCollect(cOpt, CollectTypePerf) {
 
-		}
-		collectors = append(collectors,
-			&PerfCollectOptions{
-				BaseOptions: opt,
-				opt:         gOpt,
-				duration:    cOpt.PerfDuration,
-				resultDir:   resultDir,
-				fileStats:   make(map[string][]CollectStat),
-				tlsCfg:      tlsCfg,
-			})
-	}
+	// 	if len(cls.TiKV) > 0 {
+	// 		// maybe it's better to use tiup/pkg/tidbver
+	// 		if !(semver.Compare(cls.Version, "v5.0.0") >= 0 || strings.Contains(cls.Version, "nightly")) {
+	// 			return "", errors.Errorf("cannot collect perf information of Tikv whose version is less than v5.0.0")
+	// 		}
+	// 	}
+
+	// 	if cOpt.PerfDuration < 1 {
+	// 		if m.mode == CollectModeK8s {
+	// 			cOpt.PerfDuration = 30
+	// 		} else {
+	// 			return "", errors.Errorf("perf-duration cannot be less than 1")
+	// 		}
+
+	// 	}
+	// 	collectors = append(collectors,
+	// 		&PerfCollectOptions{
+	// 			BaseOptions: opt,
+	// 			opt:         gOpt,
+	// 			duration:    cOpt.PerfDuration,
+	// 			resultDir:   resultDir,
+	// 			fileStats:   make(map[string][]CollectStat),
+	// 			tlsCfg:      tlsCfg,
+	// 		})
+	// }
 
 	if canCollect(cOpt, CollectTypeAudit) {
 		topoType := "cluster"
