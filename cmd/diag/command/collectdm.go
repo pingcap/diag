@@ -15,9 +15,9 @@ package command
 
 import (
 	"bufio"
-	"fmt"
 	"os"
 	"path"
+	"reflect"
 	"strings"
 	"time"
 
@@ -27,7 +27,6 @@ import (
 	dmspec "github.com/pingcap/tiup/components/dm/spec"
 	"github.com/pingcap/tiup/pkg/cluster/executor"
 	"github.com/pingcap/tiup/pkg/cluster/spec"
-	"github.com/pingcap/tiup/pkg/set"
 	"github.com/pingcap/tiup/pkg/tui"
 	tiuputils "github.com/pingcap/tiup/pkg/utils"
 	"github.com/spf13/cobra"
@@ -41,10 +40,7 @@ func newCollectDMCmd() *cobra.Command {
 			IdentityFile: path.Join(tiuputils.UserHome(), ".ssh", "id_rsa"),
 		},
 	}
-	cOpt := collector.CollectOptions{
-		Include: collector.CollectDefaultSet,
-		Exclude: set.NewStringSet(),
-	}
+	var cOpt  collector.CollectOptions
 	inc := make([]string, 0)
 	ext := make([]string, 0)
 
@@ -68,13 +64,11 @@ func newCollectDMCmd() *cobra.Command {
 			}
 
 			if collectAll {
-				cOpt.Include.Join(collector.CollectAdditionSet)
-			} else if len(inc) > 0 {
-				cOpt.Include = set.NewStringSet(inc...)
+				utils.RecursiveSetBoolValue(reflect.ValueOf(&cOpt.Collectors).Elem(), true)
+			} else {
+				cOpt.Collectors, _ = collector.ParseCollectTree(inc, ext)
 			}
-			if len(ext) > 0 {
-				cOpt.Exclude = set.NewStringSet(ext...)
-			}
+
 			opt.Cluster = args[0]
 			clsID := scrubClusterName(opt.Cluster)
 			teleCommand = append(teleCommand, clsID)
@@ -109,8 +103,8 @@ func newCollectDMCmd() *cobra.Command {
 					Mode:       collector.CollectModeTiUP,
 					ArgYes:     skipConfirm,
 					ArgLimit:   cOpt.Limit,
-					ArgInclude: cOpt.Include.Slice(),
-					ArgExclude: cOpt.Exclude.Slice(),
+					ArgInclude: inc,
+					ArgExclude: ext,
 				}
 			}
 			_, err := cm.CollectClusterInfo(&opt, &cOpt, &gOpt, nil, nil, skipConfirm)
@@ -137,7 +131,7 @@ func newCollectDMCmd() *cobra.Command {
 	cmd.Flags().StringVarP(&opt.ScrapeBegin, "from", "f", time.Now().Add(time.Hour*-2).Format(time.RFC3339), "start timepoint when collecting timeseries data")
 	cmd.Flags().StringVarP(&opt.ScrapeEnd, "to", "t", time.Now().Format(time.RFC3339), "stop timepoint when collecting timeseries data")
 	cmd.Flags().BoolVar(&collectAll, "all", false, "Collect all data")
-	cmd.Flags().StringSliceVar(&inc, "include", nil, fmt.Sprintf("types of data to collect: default[%s]", strings.Join(collector.CollectDefaultSet.Slice(), ",")))
+	cmd.Flags().StringSliceVar(&inc, "include", nil, "types of data to collect")
 	cmd.Flags().StringSliceVar(&ext, "exclude", nil, "types of data not to collect")
 	cmd.Flags().StringSliceVar(&cOpt.MetricsFilter, "metricsfilter", nil, "prefix of metrics to collect")
 	cmd.Flags().IntVar(&cOpt.MetricsLimit, "monitor.metricslimit", 500000, "metrics size limit of single request, specified in series*min per request")

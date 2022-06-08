@@ -32,7 +32,6 @@ import (
 	operator "github.com/pingcap/tiup/pkg/cluster/operation"
 	"github.com/pingcap/tiup/pkg/crypto/rand"
 	logprinter "github.com/pingcap/tiup/pkg/logger/printer"
-	"github.com/pingcap/tiup/pkg/set"
 	"k8s.io/klog/v2"
 )
 
@@ -124,9 +123,15 @@ func runCollector(
 		Concurrency: 2,
 		APITimeout:  10,
 	}
+	collectors, err := collector.ParseCollectTree(worker.job.Collectors, nil)
+	if err != nil {
+		klog.Errorf("collect job %s failed with error: %s", worker.job.ID, err)
+		ctx.setJobStatus(worker.job.ID, taskStatusError)
+		ctx.setJobStderr(worker.job.ID, err.Error())
+		return
+	}
 	cOpt := collector.CollectOptions{
-		Include:    set.NewStringSet(worker.job.Collectors...),
-		Exclude:    set.NewStringSet(),
+		Collectors: collectors,
 		Mode:       collector.CollectModeK8s,
 		RawRequest: req,
 		Dir:        filepath.Join(collectDir, "diag-"+worker.job.ID), // set default k8s package dir

@@ -33,6 +33,11 @@ import (
 	"github.com/pingcap/tiup/pkg/utils"
 )
 
+type collectConfig struct {
+	File    bool
+	Runtime bool
+}
+
 // ConfigCollectOptions are options used collecting component config
 type ConfigCollectOptions struct {
 	*BaseOptions

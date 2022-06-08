@@ -52,7 +52,7 @@ type MetaCollectOptions struct {
 	rawRequest interface{}       // raw collect request or command
 	opt        *operator.Options // global operations from cli
 	session    string            // an unique session ID of the collection
-	collectors map[string]bool
+	collectors CollectTree
 	resultDir  string
 	tc         *pingcapv1alpha1.TidbCluster
 	tm         *pingcapv1alpha1.TidbMonitor
@@ -139,13 +139,6 @@ func (c *MetaCollectOptions) Collect(m *Manager, topo *models.TiDBCluster) error
 		// nothing
 	}
 
-	collectors := []string{}
-	for name, enabled := range c.collectors {
-		if enabled {
-			collectors = append(collectors, name)
-		}
-	}
-
 	jsonbyte, _ := json.MarshalIndent(ClusterJSON{
 		DiagVersion: version.ShortVer(),
 		ClusterName: b.Cluster,
@@ -153,7 +146,7 @@ func (c *MetaCollectOptions) Collect(m *Manager, topo *models.TiDBCluster) error
 		ClusterType: clusterType,
 		DeployType:  m.mode,
 		Session:     c.session,
-		Collectors:  collectors,
+		Collectors:  c.collectors.List(),
 		BeginTime:   b.ScrapeBegin,
 		EndTime:     b.ScrapeEnd,
 		RawRequest:  c.rawRequest,

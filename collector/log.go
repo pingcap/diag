@@ -37,6 +37,13 @@ const (
 	componentDiagCollector = "diag"
 )
 
+type collectLog struct {
+	Std   bool
+	Slow  bool
+	Other bool
+	// Ops   bool
+}
+
 // LogCollectOptions are options used collecting component logs
 type LogCollectOptions struct {
 	*BaseOptions

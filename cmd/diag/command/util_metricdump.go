@@ -23,16 +23,13 @@ import (
 	"github.com/pingcap/diag/pkg/telemetry"
 	"github.com/pingcap/diag/pkg/utils"
 	"github.com/pingcap/tiup/pkg/cluster/spec"
-	"github.com/pingcap/tiup/pkg/set"
 	"github.com/spf13/cobra"
 )
 
 func newMetricDumpCmd() *cobra.Command {
 	opt := collector.BaseOptions{}
-	cOpt := collector.CollectOptions{
-		Include: set.NewStringSet(collector.CollectTypeMonitor),
-		Exclude: set.NewStringSet(),
-	}
+	cOpt := collector.CollectOptions{}
+	cOpt.Collectors, _ = collector.ParseCollectTree([]string{"monitor"}, nil)
 	var (
 		clsName      string
 		promEndpoint string
