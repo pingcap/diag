@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/pingcap/diag/pkg/packager"
 	"github.com/pingcap/diag/pkg/telemetry"
@@ -30,6 +31,7 @@ func newUploadCommand() *cobra.Command {
 				return fmt.Errorf("please use `diag config` to set token first")
 			}
 
+			opt.Endpoint = strings.Trim(opt.Endpoint, "/")
 			opt.Client = packager.InitClient(opt.Endpoint)
 			opt.Concurrency = gOpt.Concurrency
 
