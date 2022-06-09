@@ -146,11 +146,13 @@ func preCreate(uuid string, fileLen int64, originalName string, meta []byte, enc
 	q.Add("encryption", encryption)
 	q.Add("compression", compress)
 	req.URL.RawQuery = q.Encode()
+	req.Header.Add("Authorization", "Bearer "+opt.Token)
 
 	appendClinicHeader(req)
-	resp, err := requestWithAuth(&opt.ClientOptions, req)
+
+	resp, err := opt.Client.Do(req)
 	if err != nil {
-		return nil, err
+		return nil, errors.Errorf("preupload file failed, error is %s", err)
 	}
 	defer resp.Body.Close()
 
@@ -160,7 +162,7 @@ func preCreate(uuid string, fileLen int64, originalName string, meta []byte, enc
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, errors.Errorf("preupload file failed, msg=%s", string(data))
+		return nil, errors.Errorf("preupload file failed, status code is %d,msg=\n%v", resp.StatusCode, string(data))
 	}
 
 	var presp preCreateResponse
@@ -206,8 +208,7 @@ func UploadFile(
 	// catch errors
 	// errChan is not closed or the error can be obtained, exit
 	if err, ok := <-errChan; ok {
-		logger.Errorf("cat: upload file failed: %s\n", err)
-		return "", fmt.Errorf("upload file failed: %s", err)
+		return "", fmt.Errorf("upload failed: %s", err)
 	}
 
 	return flush()
@@ -287,17 +288,18 @@ func UploadComplete(logger *logprinter.Logger, fileUUID string, opt *UploadOptio
 	q.Add("uuid", fileUUID)
 	q.Add("issue", opt.Issue)
 	req.URL.RawQuery = q.Encode()
+	req.Header.Add("Authorization", "Bearer "+opt.Token)
 
 	appendClinicHeader(req)
-	resp, err := requestWithAuth(&opt.ClientOptions, req)
+	resp, err := opt.Client.Do(req)
 	if err != nil {
-		return "", err
+		return "", errors.Errorf("flush file failed, error is %s", err)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
-		return "", errors.Errorf("upload file failed, msg=%v", string(body))
+		return "", errors.Errorf("flush file failed, status code is %d, msg=\n%v", resp.StatusCode, string(body))
 	}
 
 	var result FlushResponse
@@ -347,17 +349,18 @@ func uploadMultipartFile(fileUUID string, serialNum, size int64, r io.Reader, op
 	req.URL.RawQuery = q.Encode()
 
 	req.Header.Add("Content-Type", "application/octet-stream")
+	req.Header.Add("Authorization", "Bearer "+opt.Token)
 
 	appendClinicHeader(req)
-	resp, err := requestWithAuth(&opt.ClientOptions, req)
+	resp, err := opt.Client.Do(req)
 	if err != nil {
-		return err
+		return errors.Errorf("upload part failed, error is %s", err)
 	}
 	defer resp.Body.Close()
 
 	body, _ := io.ReadAll(resp.Body)
 	if resp.StatusCode != http.StatusOK {
-		return errors.Errorf("upload file failed, msg=%v", string(body))
+		return errors.Errorf("upload part failed, status code is %d, msg=\n%v", resp.StatusCode, string(body))
 	}
 
 	return nil
@@ -442,40 +445,3 @@ LcmsJWTyXnW0OMGuf1pGg+pRyrbxmRE1a6Vqe8YAsOf4vmSyrcjC8azjUeqkk+B5
 yOGBQMkKW+ESPMFgKuOXwIlCypTPRpgSabuY0MLTDXJLR27lk8QyKGOHQ+SwMj4K
 00u/I5sUKUErmgQfky3xxzlIPK1aEn8=
 -----END CERTIFICATE-----`
-
-func requestWithAuth(opt *ClientOptions, req *http.Request) (*http.Response, error) {
-	req.Header.Add("Authorization", "Bearer "+opt.Token)
-	resp, err := opt.Client.Do(req)
-	if err != nil {
-		return nil, err
-	}
-
-	if resp.StatusCode == http.StatusUnauthorized {
-		return nil, errors.New("401 Unauthorized")
-	}
-
-	if resp.StatusCode == http.StatusForbidden {
-		return nil, errors.New("403 Upload rejected by the Clinic server, please check your permission")
-	}
-
-	if resp.StatusCode == http.StatusBadRequest {
-		defer resp.Body.Close()
-
-		data, err := io.ReadAll(resp.Body)
-		if err != nil {
-			return nil, errors.New("400 Bad Request")
-		}
-
-		errmsg := resp.Status
-		if string(data) != "" {
-			errmsg = fmt.Sprintf("%s. %s", errmsg, string(data))
-		}
-		return nil, errors.Errorf("400 Bad Request, msg=%s", errmsg)
-	}
-
-	if resp.StatusCode == http.StatusProcessing {
-		return nil, errors.New("102 the resource is processing, please try again later")
-	}
-
-	return resp, nil
-}
