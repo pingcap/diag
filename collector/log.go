@@ -41,7 +41,7 @@ type collectLog struct {
 	Std     bool
 	Slow    bool
 	Unknown bool
-	// Ops   bool
+	Ops     bool
 }
 
 // LogCollectOptions are options used collecting component logs

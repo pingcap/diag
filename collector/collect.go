@@ -395,7 +395,8 @@ func (m *Manager) CollectClusterInfo(
 	// 		})
 	// }
 
-	if canCollect(&cOpt.Collectors.Audit_log) {
+	// todo: rename dir name to ops and move functions to log.go
+	if canCollect(&cOpt.Collectors.Audit_log) || canCollect(&cOpt.Collectors.Log.Ops) {
 		topoType := "cluster"
 		if m.sysName == "dm" {
 			topoType = m.sysName
