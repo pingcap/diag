@@ -29,7 +29,10 @@ func Scrap(opt *scraper.Option) (*scraper.Sample, error) {
 		scrapers = append(scrapers, scraper.NewConfigFileScraper(opt.ConfigPaths))
 	}
 	if len(opt.LogPaths) > 0 {
-		s := scraper.NewLogScraper(opt.LogPaths)
+		s := &scraper.LogScraper{
+			Paths: opt.LogPaths,
+			Types: opt.LogTypes,
+		}
 		var err error
 		if s.Start, err = utils.ParseTime(opt.Start); err != nil {
 			return nil, err

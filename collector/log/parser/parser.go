@@ -24,3 +24,14 @@ func List() []Parser {
 		&TiKVLogV2Parser{},
 	}
 }
+
+// ListStd return all std log parsers this package has
+func ListStd() []Parser {
+	return []Parser{
+		&UnifiedJSONLogParser{},
+		&UnifiedLogParser{},
+		&TiFlashErrLogParser{},
+		&PDLogV2Parser{},
+		&TiKVLogV2Parser{},
+	}
+}

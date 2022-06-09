@@ -20,6 +20,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"syscall"
 	"time"
 
 	"github.com/pingcap/diag/collector/log/parser"
@@ -31,18 +32,10 @@ const (
 
 // LogScraper scraps log files of components
 type LogScraper struct {
-	Paths []string  // paths of log files
-	Start time.Time // start time
-	End   time.Time // end time
-}
-
-// NewLogScraper creates a new LogScraper
-func NewLogScraper(l []string) *LogScraper {
-	s := &LogScraper{
-		Paths: make([]string, 0),
-	}
-	s.Paths = append(s.Paths, l...)
-	return s
+	Paths []string        // paths of log files
+	Types map[string]bool // log type
+	Start time.Time       // start time
+	End   time.Time       // end time
 }
 
 // Scrap implements the Scraper interface
@@ -69,23 +62,14 @@ func (s *LogScraper) Scrap(result *Sample) error {
 				continue
 			}
 
-			// collect stderr log despite time range
-			if strings.Contains(fi.Name(), "stderr") {
+			logtype, in, err := getLogStatus(fp, fi, s.Start, s.End)
+			if s.Types[logtype] && in {
 				result.Log[fp] = fi.Size()
-				continue
 			}
-
-			// check log content to filter by scrap time range
-			in, err := logInRange(fp, fi, s.Start, s.End)
 			if err != nil {
-				fmt.Fprintf(os.Stderr, "error parsing %s: %s\n", fi.Name(), err)
-				continue
-			}
-			if !in {
-				continue
+				fmt.Fprintf(os.Stderr, "error checking %s: %s\n", fi.Name(), err)
 			}
 
-			result.Log[fp] = fi.Size()
 		} else {
 			fmt.Fprintf(os.Stderr, "error checking %s: %s\n", fi.Name(), err)
 		}
@@ -94,35 +78,50 @@ func (s *LogScraper) Scrap(result *Sample) error {
 	return nil
 }
 
-func logInRange(fname string, fi fs.FileInfo, start, end time.Time) (bool, error) {
-	f, err := os.Open(fname)
+func getLogStatus(fpath string, fi fs.FileInfo, start, end time.Time) (logtype string, inrange bool, err error) {
+	// collect stderr log despite time range
+	if strings.Contains(filepath.Base(fpath), "stderr") {
+		return "std", true, nil
+	}
+
+	f, err := os.Open(fpath)
 	if err != nil {
-		return false, err
+		return "", false, err
 	}
 	defer f.Close()
 
 	bufr := bufio.NewReader(f)
-
 	// read the first line of log file
 	head, _, err := bufr.ReadLine()
-	if err != nil {
-		return false, err
+	if err == nil {
+		ht := parseLine(head, parser.ListStd())
+		if ht != nil {
+			if ht.After(end) || fi.ModTime().Before(start) {
+				return "std", false, nil
+			}
+			return "std", true, nil
+		}
+		p := &parser.SlowQueryParser{}
+		ht, _ = p.ParseHead(head)
+		if ht != nil {
+			if ht.After(end) || fi.ModTime().Before(start) {
+				return "slow", false, nil
+			}
+			return "slow", true, nil
+		}
 	}
 
-	ht := parseLine(head)
-	if ht == nil {
-		return false, fmt.Errorf("the first line is not a valid log line")
-	}
-
+	// use create time as head time for unknown file
+	cTime := fi.Sys().(*syscall.Stat_t).Ctim
+	ht := time.Unix(int64(cTime.Sec), int64(cTime.Nsec))
 	if ht.After(end) || fi.ModTime().Before(start) {
-		return false, nil
+		return "unknown", false, nil
 	}
-
-	return true, nil
+	return "unknown", true, nil
 }
 
-func parseLine(line []byte) *time.Time {
-	for _, p := range parser.List() {
+func parseLine(line []byte, parsers []parser.Parser) *time.Time {
+	for _, p := range parsers {
 		if t, _ := p.ParseHead(line); t != nil {
 			return t
 		}

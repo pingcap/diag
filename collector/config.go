@@ -41,12 +41,13 @@ type collectConfig struct {
 // ConfigCollectOptions are options used collecting component config
 type ConfigCollectOptions struct {
 	*BaseOptions
-	opt       *operator.Options // global operations from cli
-	limit     int               // scp rate limit
-	resultDir string
-	fileStats map[string][]CollectStat
-	compress  bool
-	tlsCfg    *tls.Config
+	Collectors collectConfig
+	opt        *operator.Options // global operations from cli
+	limit      int               // scp rate limit
+	resultDir  string
+	fileStats  map[string][]CollectStat
+	compress   bool
+	tlsCfg     *tls.Config
 }
 
 // Desc implements the Collector interface
@@ -78,7 +79,9 @@ func (c *ConfigCollectOptions) SetDir(dir string) {
 func (c *ConfigCollectOptions) Prepare(m *Manager, topo *models.TiDBCluster) (map[string][]CollectStat, error) {
 	switch m.mode {
 	case CollectModeTiUP:
-		return c.prepareForTiUP(m, topo)
+		if c.Collectors.File {
+			return c.prepareForTiUP(m, topo)
+		}
 	}
 
 	return nil, nil
@@ -217,21 +220,7 @@ func (c *ConfigCollectOptions) prepareForTiUP(m *Manager, cls *models.TiDBCluste
 }
 
 // Collect implements the Collector interface
-func (c *ConfigCollectOptions) Collect(m *Manager, topo *models.TiDBCluster) error {
-	switch m.mode {
-	case CollectModeTiUP:
-		return c.collectForTiUP(m, topo)
-	case CollectModeK8s:
-		return c.collectForK8s(m, topo)
-	}
-
-	return nil
-}
-
-// collectForTiUP implements config collecting for tiup-cluster deployed clusters
-func (c *ConfigCollectOptions) collectForTiUP(m *Manager, cls *models.TiDBCluster) error {
-	topo := cls.Attributes[CollectModeTiUP].(spec.Topology)
-
+func (c *ConfigCollectOptions) Collect(m *Manager, cls *models.TiDBCluster) error {
 	var (
 		collectTasks []*task.StepDisplay
 		cleanTasks   []*task.StepDisplay
@@ -242,6 +231,7 @@ func (c *ConfigCollectOptions) collectForTiUP(m *Manager, cls *models.TiDBCluste
 		c.opt.Concurrency,
 		m.logger,
 	)
+	t := task.NewBuilder(m.logger)
 
 	uniqueHosts := map[string]int{} // host -> ssh-port
 
@@ -251,130 +241,83 @@ func (c *ConfigCollectOptions) collectForTiUP(m *Manager, cls *models.TiDBCluste
 	comps := cls.Components()
 	comps = models.FilterComponent(comps, roleFilter)
 	instances := models.FilterInstance(comps, nodeFilter)
-	for _, inst := range instances {
-		switch inst.Type() {
-		case models.ComponentTypeMonitor,
-			models.ComponentTypeTiSpark:
-			continue
-		}
-
-		// query realtime configs for each instance if supported
-		if t3 := buildRealtimeConfigCollectingTasks(ctx, inst, c.resultDir, c.tlsCfg); t3 != nil {
-			queryTasks = append(queryTasks, t3)
-		}
-	}
-
-	components := topo.ComponentsByUpdateOrder()
-	components = operator.FilterComponent(components, roleFilter)
-	for _, comp := range components {
-		switch comp.Name() {
-		case spec.ComponentPrometheus,
-			spec.ComponentGrafana,
-			spec.ComponentAlertmanager,
-			spec.ComponentTiSpark,
-			spec.ComponentSpark:
-			continue
-		}
-
-		instances := operator.FilterInstance(comp.Instances(), nodeFilter)
-		if len(instances) < 1 {
-			continue
-		}
+	if c.Collectors.Runtime {
 		for _, inst := range instances {
-			// ops that applies to each host
-			if _, found := uniqueHosts[inst.GetHost()]; found {
+			switch inst.Type() {
+			case models.ComponentTypeMonitor,
+				models.ComponentTypeTiSpark:
 				continue
 			}
-			uniqueHosts[inst.GetHost()] = inst.GetSSHPort()
 
-			t1, err := m.sshTaskBuilder(c.GetBaseOptions().Cluster, topo, c.GetBaseOptions().User, *c.opt)
-			if err != nil {
-				return err
+			// query realtime configs for each instance if supported
+			if t3 := buildRealtimeConfigCollectingTasks(ctx, inst, c.resultDir, c.tlsCfg); t3 != nil {
+				queryTasks = append(queryTasks, t3)
 			}
-			for _, f := range c.fileStats[inst.GetHost()] {
-				t1 = t1.
-					CopyFile(
-						f.Target,
-						filepath.Join(c.resultDir, inst.GetHost(), f.Target),
-						inst.GetHost(),
-						true,
-						c.limit,
-						c.compress,
-					)
-			}
-			collectTasks = append(
-				collectTasks,
-				t1.BuildAsStep(fmt.Sprintf("  - Downloading config files from node %s", inst.GetHost())),
-			)
-
-			b, err := m.sshTaskBuilder(c.GetBaseOptions().Cluster, topo, c.GetBaseOptions().User, *c.opt)
-			if err != nil {
-				return err
-			}
-			t2 := b.
-				Rmdir(inst.GetHost(), task.CheckToolsPathDir).
-				BuildAsStep(fmt.Sprintf("  - Cleanup temp files on %s:%d", inst.GetHost(), inst.GetSSHPort()))
-			cleanTasks = append(cleanTasks, t2)
 		}
-
+		t = t.ParallelStep("+ Query realtime configs", false, queryTasks...)
 	}
 
-	t := task.NewBuilder(m.logger).
-		ParallelStep("+ Scrap files on nodes", false, collectTasks...).
-		ParallelStep("+ Cleanup temp files", false, cleanTasks...).
-		ParallelStep("+ Query realtime configs", false, queryTasks...).
-		Build()
+	if c.Collectors.File && (m.mode == CollectModeTiUP) {
+		topo := cls.Attributes[CollectModeTiUP].(spec.Topology)
+		components := topo.ComponentsByUpdateOrder()
+		components = operator.FilterComponent(components, roleFilter)
+		for _, comp := range components {
+			switch comp.Name() {
+			case spec.ComponentPrometheus,
+				spec.ComponentGrafana,
+				spec.ComponentAlertmanager,
+				spec.ComponentTiSpark,
+				spec.ComponentSpark:
+				continue
+			}
 
-	if err := t.Execute(ctx); err != nil {
-		if errorx.Cast(err) != nil {
-			// FIXME: Map possible task errors and give suggestions.
-			return err
+			instances := operator.FilterInstance(comp.Instances(), nodeFilter)
+			if len(instances) < 1 {
+				continue
+			}
+			for _, inst := range instances {
+				// ops that applies to each host
+				if _, found := uniqueHosts[inst.GetHost()]; found {
+					continue
+				}
+				uniqueHosts[inst.GetHost()] = inst.GetSSHPort()
+
+				t1, err := m.sshTaskBuilder(c.GetBaseOptions().Cluster, topo, c.GetBaseOptions().User, *c.opt)
+				if err != nil {
+					return err
+				}
+				for _, f := range c.fileStats[inst.GetHost()] {
+					t1 = t1.
+						CopyFile(
+							f.Target,
+							filepath.Join(c.resultDir, inst.GetHost(), f.Target),
+							inst.GetHost(),
+							true,
+							c.limit,
+							c.compress,
+						)
+				}
+				collectTasks = append(
+					collectTasks,
+					t1.BuildAsStep(fmt.Sprintf("  - Downloading config files from node %s", inst.GetHost())),
+				)
+
+				b, err := m.sshTaskBuilder(c.GetBaseOptions().Cluster, topo, c.GetBaseOptions().User, *c.opt)
+				if err != nil {
+					return err
+				}
+				t2 := b.
+					Rmdir(inst.GetHost(), task.CheckToolsPathDir).
+					BuildAsStep(fmt.Sprintf("  - Cleanup temp files on %s:%d", inst.GetHost(), inst.GetSSHPort()))
+				cleanTasks = append(cleanTasks, t2)
+			}
 		}
-		return perrs.Trace(err)
+		t = t.
+			ParallelStep("+ Scrap files on nodes", false, collectTasks...).
+			ParallelStep("+ Cleanup temp files", false, cleanTasks...)
 	}
 
-	return nil
-}
-
-// collectForK8s implements config collecting for tidb-operator deployed clusters
-func (c *ConfigCollectOptions) collectForK8s(m *Manager, topo *models.TiDBCluster) error {
-	var (
-		queryTasks []*task.StepDisplay
-	)
-	ctx := ctxt.New(
-		context.Background(),
-		c.opt.Concurrency,
-		m.logger,
-	)
-
-	/*
-		roleFilter := set.NewStringSet(c.opt.Roles...)
-		nodeFilter := set.NewStringSet(c.opt.Nodes...)
-		components := topo.Components()
-		components = models.FilterComponent(components, roleFilter)
-		instances := models.FilterInstance(components, nodeFilter)
-	*/
-	instances := topo.Components()
-
-	for _, inst := range instances {
-		switch inst.Type() {
-		case models.ComponentTypeMonitor,
-			models.ComponentTypeTiSpark:
-			continue
-		}
-
-		// query realtime configs for each instance if supported
-		// TODO: support TLS enabled clusters
-		if t3 := buildRealtimeConfigCollectingTasks(ctx, inst, c.resultDir, c.tlsCfg); t3 != nil {
-			queryTasks = append(queryTasks, t3)
-		}
-	}
-
-	t := task.NewBuilder(m.logger).
-		ParallelStep("+ Query realtime configs", false, queryTasks...).
-		Build()
-
-	if err := t.Execute(ctx); err != nil {
+	if err := t.Build().Execute(ctx); err != nil {
 		if errorx.Cast(err) != nil {
 			// FIXME: Map possible task errors and give suggestions.
 			return err

@@ -65,7 +65,11 @@ func newCollectCmd() *cobra.Command {
 			if collectAll {
 				utils.RecursiveSetBoolValue(reflect.ValueOf(&cOpt.Collectors).Elem(), true)
 			} else {
-				cOpt.Collectors, _ = collector.ParseCollectTree(inc, ext)
+				var err error
+				cOpt.Collectors, err = collector.ParseCollectTree(inc, ext)
+				if err != nil {
+					return err
+				}
 			}
 
 			opt.Cluster = args[0]
@@ -132,7 +136,7 @@ func newCollectCmd() *cobra.Command {
 	cmd.Flags().StringVarP(&opt.ScrapeBegin, "from", "f", time.Now().Add(time.Hour*-2).Format(time.RFC3339), "start timepoint when collecting timeseries data")
 	cmd.Flags().StringVarP(&opt.ScrapeEnd, "to", "t", time.Now().Format(time.RFC3339), "stop timepoint when collecting timeseries data")
 	cmd.Flags().BoolVar(&collectAll, "all", false, "Collect all data")
-	cmd.Flags().StringSliceVar(&inc, "include", nil, "types of data to collect")
+	cmd.Flags().StringSliceVar(&inc, "include", []string{"system", "config", "monitor", "log.std", "log.slow"}, "types of data to collect")
 	cmd.Flags().StringSliceVar(&ext, "exclude", nil, "types of data not to collect")
 	cmd.Flags().StringSliceVar(&cOpt.MetricsFilter, "metricsfilter", nil, "prefix of metrics to collect")
 	cmd.Flags().IntVar(&cOpt.MetricsLimit, "monitor.metricslimit", 500000, "metrics size limit of single request, specified in series*min per request")

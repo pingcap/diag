@@ -33,7 +33,6 @@ import (
 	"github.com/pingcap/tiup/pkg/cluster/spec"
 	"github.com/pingcap/tiup/pkg/logger"
 	logprinter "github.com/pingcap/tiup/pkg/logger/printer"
-	"github.com/pingcap/tiup/pkg/set"
 	"github.com/pingcap/tiup/pkg/tui"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
@@ -65,22 +64,6 @@ const (
 	AttrKeyTLSCertFile  = "tls-cert-file"
 	AttrKeyTLSKeyFile   = "tls-privkey-file"
 )
-
-var CollectDefaultSet = set.NewStringSet(
-	CollectTypeSystem,
-	CollectTypeMonitor,
-	CollectTypeLog,
-	CollectTypeConfig,
-	CollectTypeAudit,
-)
-
-/*
-var CollectAdditionSet = set.NewStringSet(
-	CollectTypeSchema,
-	CollectTypeDebug,
-	CollectTypeBind,
-)
-*/
 
 type CollectTree struct {
 	System         bool
@@ -277,13 +260,16 @@ func (m *Manager) CollectClusterInfo(
 	})
 
 	// collect data from monitoring system
-	if canCollect(&cOpt.Collectors.Monitor) {
+	if canCollect(&cOpt.Collectors.Monitor.Alert) {
 		collectors = append(collectors,
 			&AlertCollectOptions{ // alerts
 				BaseOptions: opt,
 				opt:         gOpt,
 				resultDir:   resultDir,
-			},
+			})
+	}
+	if canCollect(&cOpt.Collectors.Monitor.Metric) {
+		collectors = append(collectors,
 			&MetricCollectOptions{ // metrics
 				BaseOptions: opt,
 				opt:         gOpt,
@@ -324,6 +310,7 @@ func (m *Manager) CollectClusterInfo(
 			&LogCollectOptions{
 				BaseOptions: opt,
 				opt:         gOpt,
+				collector:   cOpt.Collectors.Log,
 				limit:       cOpt.Limit,
 				resultDir:   resultDir,
 				fileStats:   make(map[string][]CollectStat),
@@ -336,6 +323,7 @@ func (m *Manager) CollectClusterInfo(
 		collectors = append(collectors,
 			&ConfigCollectOptions{
 				BaseOptions: opt,
+				Collectors:  cOpt.Collectors.Config,
 				opt:         gOpt,
 				limit:       cOpt.Limit,
 				resultDir:   resultDir,
@@ -377,7 +365,9 @@ func (m *Manager) CollectClusterInfo(
 	}
 
 	// hide perf
-	// if canCollect(&cOpt.Collectors.Perf) {
+	if canCollect(&cOpt.Collectors.Perf) {
+		return "", fmt.Errorf("perf collection is disabled in diag, use TiDB Dashboard instead")
+	}
 
 	// 	if len(cls.TiKV) > 0 {
 	// 		// maybe it's better to use tiup/pkg/tidbver

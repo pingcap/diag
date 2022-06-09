@@ -38,15 +38,16 @@ const (
 )
 
 type collectLog struct {
-	Std   bool
-	Slow  bool
-	Other bool
+	Std     bool
+	Slow    bool
+	Unknown bool
 	// Ops   bool
 }
 
 // LogCollectOptions are options used collecting component logs
 type LogCollectOptions struct {
 	*BaseOptions
+	collector collectLog
 	opt       *operator.Options // global operations from cli
 	limit     int               // scp rate limit
 	resultDir string
@@ -161,16 +162,28 @@ func (c *LogCollectOptions) Prepare(m *Manager, cls *models.TiDBCluster) (map[st
 		}
 	}
 
+	var scraperLogType []string
+	if c.collector.Std {
+		scraperLogType = append(scraperLogType, "std")
+	}
+	if c.collector.Slow {
+		scraperLogType = append(scraperLogType, "slow")
+	}
+	if c.collector.Unknown {
+		scraperLogType = append(scraperLogType, "unknown")
+	}
+
 	// build scraper tasks
 	for h, t := range hostTasks {
 		host := h
 		t = t.
 			Shell(
 				host,
-				fmt.Sprintf("%s --log '%s' -f '%s' -t '%s'",
+				fmt.Sprintf("%s --log '%s' -f '%s' -t '%s' --logtype %s",
 					filepath.Join(task.CheckToolsPathDir, "bin", "scraper"),
 					strings.Join(hostPaths[host].Slice(), ","),
 					c.ScrapeBegin, c.ScrapeEnd,
+					strings.Join(scraperLogType, ","),
 				),
 				"",
 				false,
