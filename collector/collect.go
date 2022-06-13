@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"time"
 
@@ -25,13 +26,13 @@ import (
 	pingcapv1alpha1 "github.com/pingcap/diag/k8s/apis/pingcap/v1alpha1"
 	kubetls "github.com/pingcap/diag/k8s/apis/tls"
 	"github.com/pingcap/diag/pkg/models"
+	"github.com/pingcap/diag/pkg/utils"
 	"github.com/pingcap/errors"
 	"github.com/pingcap/tiup/pkg/cluster/executor"
 	operator "github.com/pingcap/tiup/pkg/cluster/operation"
 	"github.com/pingcap/tiup/pkg/cluster/spec"
 	"github.com/pingcap/tiup/pkg/logger"
 	logprinter "github.com/pingcap/tiup/pkg/logger/printer"
-	"github.com/pingcap/tiup/pkg/set"
 	"github.com/pingcap/tiup/pkg/tui"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
@@ -64,25 +65,20 @@ const (
 	AttrKeyTLSKeyFile   = "tls-privkey-file"
 )
 
-var CollectDefaultSet = set.NewStringSet(
-	CollectTypeSystem,
-	CollectTypeMonitor,
-	CollectTypeLog,
-	CollectTypeConfig,
-	CollectTypeAudit,
-)
-
-var CollectAdditionSet = set.NewStringSet(
-	CollectTypeSchema,
-	CollectTypeDebug,
-	CollectTypeBind,
-)
-
-var CollectNeedDBKey = set.NewStringSet(
-	CollectTypeBind,
-	CollectTypeSchema,
-	CollectTypeStatistics,
-)
+type CollectTree struct {
+	System         bool
+	Monitor        collectMonitor
+	Log            collectLog
+	Audit_log      bool
+	Config         collectConfig
+	DB_vars        bool
+	Perf           bool
+	Debug          bool
+	Component_meta bool
+	Sql_bind       bool
+	Statistics     bool
+	Explain        bool
+}
 
 // Collector is the configuration defining an collecting job
 type Collector interface {
@@ -109,12 +105,11 @@ type CollectOptions struct {
 	RawRequest     interface{}       // raw collect command or request
 	Mode           string            // the cluster is deployed with what type of tool
 	ProfileName    string            // the name of a pre-defined collecting profile
-	Include        set.StringSet     // types of data to collect
-	Exclude        set.StringSet     // types of data not to collect
-	MetricsFilter  []string          // prefix of metrics to collect
-	MetricsLimit   int               // query limit of one request
+	Collectors     CollectTree       // struct to show which collector is enabled
+	MetricsFilter  []string          // prefix of metrics to collect"
 	Dir            string            // target directory to store collected data
 	Limit          int               // rate limit of SCP
+	MetricsLimit   int               // query limit of one request
 	PerfDuration   int               //seconds: profile time(s), default is 30s.
 	CompressScp    bool              // compress of files during collecting
 	ExitOnError    bool              // break the process and exit when an error occur
@@ -203,20 +198,6 @@ func (m *Manager) CollectClusterInfo(
 		return "", err
 	}
 
-	// prepare collector list
-	collectorSet := map[string]bool{
-		CollectTypeSystem:        false,
-		CollectTypeMonitor:       false,
-		CollectTypeLog:           false,
-		CollectTypeConfig:        false,
-		CollectTypeSchema:        false,
-		CollectTypePerf:          false,
-		CollectTypeAudit:         false,
-		CollectTypeDebug:         false,
-		CollectTypeComponentMeta: false,
-		CollectTypeBind:          false,
-	}
-
 	if cOpt.ProfileName != "" {
 		cp, err := readProfile(cOpt.ProfileName)
 		if err != nil {
@@ -231,8 +212,9 @@ func (m *Manager) CollectClusterInfo(
 		}
 		logprinter.Infof(msg)
 
-		for _, c := range cp.Collectors {
-			cOpt.Include.Insert(c)
+		cOpt.Collectors, err = ParseCollectTree(cp.Collectors, nil)
+		if err != nil {
+			return "", err
 		}
 		gOpt.Roles = append(gOpt.Roles, cp.Roles...)
 		cOpt.MetricsFilter = append(cOpt.MetricsFilter, cp.MetricFilters...)
@@ -250,20 +232,14 @@ func (m *Manager) CollectClusterInfo(
 				explainSqls = append(explainSqls, sql)
 			}
 		}
-		cOpt.Include.Insert(CollectTypeStatistics)
-		cOpt.Include.Insert(CollectTypeExplainSQLs)
+		cOpt.Collectors.Statistics = true
+		cOpt.Collectors.Explain = true
 	} else {
-		if cOpt.Include.Exist(CollectTypeStatistics) {
+		if cOpt.Collectors.Statistics {
 			return "", errors.New("explain-sql should be set if statistics is included")
 		}
-		if cOpt.Include.Exist(CollectTypeExplainSQLs) {
+		if cOpt.Collectors.Explain {
 			return "", errors.New("explain-sql should be set if explain is included")
-		}
-	}
-
-	for name := range collectorSet {
-		if canCollect(cOpt, name) {
-			collectorSet[name] = true
 		}
 	}
 
@@ -276,7 +252,7 @@ func (m *Manager) CollectClusterInfo(
 		opt:         gOpt,
 		rawRequest:  cOpt.RawRequest,
 		session:     m.session,
-		collectors:  collectorSet,
+		collectors:  cOpt.Collectors,
 		resultDir:   resultDir,
 		tc:          tc,
 		tm:          tm,
@@ -284,13 +260,16 @@ func (m *Manager) CollectClusterInfo(
 	})
 
 	// collect data from monitoring system
-	if canCollect(cOpt, CollectTypeMonitor) {
+	if canCollect(&cOpt.Collectors.Monitor.Alert) {
 		collectors = append(collectors,
 			&AlertCollectOptions{ // alerts
 				BaseOptions: opt,
 				opt:         gOpt,
 				resultDir:   resultDir,
-			},
+			})
+	}
+	if canCollect(&cOpt.Collectors.Monitor.Metric) {
+		collectors = append(collectors,
 			&MetricCollectOptions{ // metrics
 				BaseOptions: opt,
 				opt:         gOpt,
@@ -303,9 +282,9 @@ func (m *Manager) CollectClusterInfo(
 
 	// populate SSH credentials if needed
 	if (m.mode == CollectModeTiUP || m.mode == CollectModeManual) &&
-		(canCollect(cOpt, CollectTypeSystem) ||
-			canCollect(cOpt, CollectTypeLog) ||
-			canCollect(cOpt, CollectTypeConfig)) {
+		(canCollect(&cOpt.Collectors.System) ||
+			canCollect(&cOpt.Collectors.Log) ||
+			canCollect(&cOpt.Collectors.Config)) {
 		// collect data from remote servers
 		var sshConnProps *tui.SSHConnectionProps = &tui.SSHConnectionProps{}
 		if gOpt.SSHType != executor.SSHTypeNone {
@@ -317,7 +296,7 @@ func (m *Manager) CollectClusterInfo(
 		opt.SSH = sshConnProps
 	}
 
-	if canCollect(cOpt, CollectTypeSystem) {
+	if canCollect(&cOpt.Collectors.System) {
 		collectors = append(collectors, &SystemCollectOptions{
 			BaseOptions: opt,
 			opt:         gOpt,
@@ -326,11 +305,12 @@ func (m *Manager) CollectClusterInfo(
 	}
 
 	// collect log files
-	if canCollect(cOpt, CollectTypeLog) {
+	if canCollect(&cOpt.Collectors.Log) {
 		collectors = append(collectors,
 			&LogCollectOptions{
 				BaseOptions: opt,
 				opt:         gOpt,
+				collector:   cOpt.Collectors.Log,
 				limit:       cOpt.Limit,
 				resultDir:   resultDir,
 				fileStats:   make(map[string][]CollectStat),
@@ -339,10 +319,11 @@ func (m *Manager) CollectClusterInfo(
 	}
 
 	// collect config files
-	if canCollect(cOpt, CollectTypeConfig) {
+	if canCollect(&cOpt.Collectors.Config) {
 		collectors = append(collectors,
 			&ConfigCollectOptions{
 				BaseOptions: opt,
+				Collectors:  cOpt.Collectors.Config,
 				opt:         gOpt,
 				limit:       cOpt.Limit,
 				resultDir:   resultDir,
@@ -353,13 +334,13 @@ func (m *Manager) CollectClusterInfo(
 	}
 
 	var dbUser, dbPassword string
-	if needDBKey(cOpt) {
+	if needDBKey(cOpt.Collectors) {
 		fmt.Print("please enter database username:")
 		fmt.Scanln(&dbUser)
 		dbPassword = tui.PromptForPassword("please enter database password:")
 	}
 
-	if canCollect(cOpt, CollectTypeSchema) {
+	if canCollect(&cOpt.Collectors.DB_vars) {
 		collectors = append(collectors,
 			&SchemaCollectOptions{
 				BaseOptions: opt,
@@ -371,7 +352,7 @@ func (m *Manager) CollectClusterInfo(
 			})
 	}
 
-	if canCollect(cOpt, CollectTypeBind) {
+	if canCollect(&cOpt.Collectors.Sql_bind) {
 		collectors = append(collectors,
 			&BindCollectOptions{
 				BaseOptions: opt,
@@ -384,7 +365,9 @@ func (m *Manager) CollectClusterInfo(
 	}
 
 	// hide perf
-	// if canCollect(cOpt, CollectTypePerf) {
+	if canCollect(&cOpt.Collectors.Perf) {
+		return "", fmt.Errorf("perf collection is disabled in diag, use TiDB Dashboard instead")
+	}
 
 	// 	if len(cls.TiKV) > 0 {
 	// 		// maybe it's better to use tiup/pkg/tidbver
@@ -412,7 +395,8 @@ func (m *Manager) CollectClusterInfo(
 	// 		})
 	// }
 
-	if canCollect(cOpt, CollectTypeAudit) {
+	// todo: rename dir name to ops and move functions to log.go
+	if canCollect(&cOpt.Collectors.Audit_log) || canCollect(&cOpt.Collectors.Log.Ops) {
 		topoType := "cluster"
 		if m.sysName == "dm" {
 			topoType = m.sysName
@@ -427,7 +411,7 @@ func (m *Manager) CollectClusterInfo(
 			})
 	}
 
-	if canCollect(cOpt, CollectTypeComponentMeta) {
+	if canCollect(&cOpt.Collectors.Component_meta) {
 		sensitiveTag = true
 		collectors = append(collectors,
 			&ComponentMetaCollectOptions{
@@ -439,8 +423,8 @@ func (m *Manager) CollectClusterInfo(
 				topo:        cls,
 			})
 	}
-	if canCollect(cOpt, CollectTypeDebug) {
 
+	if canCollect(&cOpt.Collectors.Debug) {
 		collectors = append(collectors,
 			&DebugCollectOptions{
 				BaseOptions: opt,
@@ -451,7 +435,7 @@ func (m *Manager) CollectClusterInfo(
 			})
 	}
 
-	if canCollect(cOpt, CollectTypeStatistics) {
+	if canCollect(&cOpt.Collectors.Statistics) {
 		collectors = append(collectors,
 			&StatisticsCollectorOptions{
 				BaseOptions: opt,
@@ -464,7 +448,7 @@ func (m *Manager) CollectClusterInfo(
 			})
 	}
 
-	if canCollect(cOpt, CollectTypeExplainSQLs) {
+	if canCollect(&cOpt.Collectors.Explain) {
 		collectors = append(collectors,
 			&ExplainCollectorOptions{
 				BaseOptions: opt,
@@ -634,15 +618,81 @@ func readableSize(b int64) string {
 		float64(b)/float64(div), "kMGTPE"[exp])
 }
 
+/*
 func canCollect(cOpt *CollectOptions, cType string) bool {
 	return cOpt.Include.Exist(cType) && !cOpt.Exclude.Exist(cType)
 }
+*/
 
-func needDBKey(cOpt *CollectOptions) bool {
-	for _, t := range CollectNeedDBKey.Slice() {
-		if canCollect(cOpt, t) {
-			return true
+func canCollect(w interface{}) bool {
+	reflectV := reflect.ValueOf(w).Elem()
+	return utils.RecursiveIfBoolValueExist(reflectV, true)
+}
+
+func needDBKey(c CollectTree) bool {
+	return c.Sql_bind || c.DB_vars || c.Statistics
+}
+
+func ParseCollectTree(include, exclude []string) (CollectTree, error) {
+	var collectWhat CollectTree
+	for _, item := range include {
+		reflectV := reflect.ValueOf(&collectWhat).Elem()
+		keys := strings.Split(item, ".")
+		for _, k := range keys {
+			if reflectV.Kind() != reflect.Struct {
+				return collectWhat, fmt.Errorf("%s is not a valid diag collection type", item)
+			}
+			num := reflectV.NumField()
+			var i int
+			for i = 0; i < num; i++ {
+				if strings.ToLower(k) == strings.ToLower(reflectV.Type().Field(i).Name) {
+					reflectV = reflectV.Field(i)
+					break
+				}
+			}
+			if i == num {
+				return collectWhat, fmt.Errorf("%s is not a valid diag collection type", item)
+			}
 		}
+		utils.RecursiveSetBoolValue(reflectV, true)
 	}
-	return false
+
+	for _, item := range exclude {
+		reflectV := reflect.ValueOf(&collectWhat).Elem()
+		keys := strings.Split(item, ".")
+		for _, k := range keys {
+			if reflectV.Kind() != reflect.Struct {
+				return collectWhat, fmt.Errorf("%s is not a valid diag collection type", item)
+			}
+			num := reflectV.NumField()
+			var i int
+			for i = 0; i < num; i++ {
+				if strings.ToLower(k) == strings.ToLower(reflectV.Type().Field(i).Name) {
+					reflectV = reflectV.Field(i)
+					break
+				}
+			}
+			if i == num {
+				return collectWhat, fmt.Errorf("%s is not a valid diag collection type", item)
+			}
+		}
+		utils.RecursiveSetBoolValue(reflectV, false)
+	}
+	return collectWhat, nil
+}
+
+func (t CollectTree) List() []string {
+	var r func(reflect.Value) []string
+	r = func(reflectV reflect.Value) (result []string) {
+		switch reflectV.Kind() {
+		case reflect.Struct:
+			for i := 0; i < reflectV.NumField(); i++ {
+				result = append(result, r(reflectV.Field(i))...)
+			}
+		case reflect.Bool:
+			result = []string{reflectV.Type().Name()}
+		}
+		return result
+	}
+	return r(reflect.ValueOf(&t).Elem())
 }

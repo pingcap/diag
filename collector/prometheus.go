@@ -44,6 +44,11 @@ const (
 	minQueryRange = 5   // 5min
 )
 
+type collectMonitor struct {
+	Metric bool
+	Alert  bool
+}
+
 // AlertCollectOptions is the options collecting alerts
 type AlertCollectOptions struct {
 	*BaseOptions

@@ -255,3 +255,28 @@ func jsonTagMatch(tag string, target string) bool {
 	}
 	return false
 }
+
+func RecursiveSetBoolValue(reflectV reflect.Value, value bool) {
+	if reflectV.CanSet() && reflectV.Kind() != reflect.Struct {
+		reflectV.SetBool(value)
+	}
+	if reflectV.Kind() == reflect.Struct {
+		for i := 0; i < reflectV.NumField(); i++ {
+			RecursiveSetBoolValue(reflectV.Field(i), value)
+		}
+	}
+}
+
+func RecursiveIfBoolValueExist(reflectV reflect.Value, value bool) bool {
+	switch reflectV.Kind() {
+	case reflect.Bool:
+		return reflectV.Bool() == value
+	case reflect.Struct:
+		for i := 0; i < reflectV.NumField(); i++ {
+			if RecursiveIfBoolValueExist(reflectV.Field(i), value) {
+				return true
+			}
+		}
+	}
+	return false
+}
