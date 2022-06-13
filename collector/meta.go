@@ -225,7 +225,6 @@ func getClusterIDFromPD(ctx context.Context, endpoints []string, tlsCfg *tls.Con
 func getClusterIDFromDMMaster(ctx context.Context, endpoints []string, tlsCfg *tls.Config) (string, error) {
 	c := utils.NewHTTPClient(time.Second*3, tlsCfg)
 	for _, endpoint := range endpoints {
-		fmt.Println(endpoint)
 		body, err := c.Get(ctx, utils.Ternary(tlsCfg == nil, "http://", "https://").(string)+endpoint+"/api/v1/cluster/info")
 		if err == nil {
 			d := json.NewDecoder(bytes.NewBuffer(body))
