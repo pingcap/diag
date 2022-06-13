@@ -27,7 +27,10 @@ import (
 )
 
 const (
-	seekLimit = 1024 * 1024 * 1024 // 1MB
+	seekLimit      = 1024 * 1024 * 1024 // 1MB
+	LogTypeStd     = "std"
+	LogTypeSlow    = "slow"
+	LogTypeUnknown = "unknown"
 )
 
 // LogScraper scraps log files of components
@@ -81,7 +84,7 @@ func (s *LogScraper) Scrap(result *Sample) error {
 func getLogStatus(fpath string, fi fs.FileInfo, start, end time.Time) (logtype string, inrange bool, err error) {
 	// collect stderr log despite time range
 	if strings.Contains(filepath.Base(fpath), "stderr") {
-		return "std", true, nil
+		return LogTypeStd, true, nil
 	}
 
 	f, err := os.Open(fpath)
@@ -97,17 +100,17 @@ func getLogStatus(fpath string, fi fs.FileInfo, start, end time.Time) (logtype s
 		ht := parseLine(head, parser.ListStd())
 		if ht != nil {
 			if ht.After(end) || fi.ModTime().Before(start) {
-				return "std", false, nil
+				return LogTypeStd, false, nil
 			}
-			return "std", true, nil
+			return LogTypeStd, true, nil
 		}
 		p := &parser.SlowQueryParser{}
 		ht, _ = p.ParseHead(head)
 		if ht != nil {
 			if ht.After(end) || fi.ModTime().Before(start) {
-				return "slow", false, nil
+				return LogTypeSlow, false, nil
 			}
-			return "slow", true, nil
+			return LogTypeSlow, true, nil
 		}
 	}
 
@@ -115,9 +118,9 @@ func getLogStatus(fpath string, fi fs.FileInfo, start, end time.Time) (logtype s
 	cTime := fi.Sys().(*syscall.Stat_t).Ctim
 	ht := time.Unix(int64(cTime.Sec), int64(cTime.Nsec))
 	if ht.After(end) || fi.ModTime().Before(start) {
-		return "unknown", false, nil
+		return LogTypeUnknown, false, nil
 	}
-	return "unknown", true, nil
+	return LogTypeUnknown, true, nil
 }
 
 func parseLine(line []byte, parsers []parser.Parser) *time.Time {

@@ -164,13 +164,13 @@ func (c *LogCollectOptions) Prepare(m *Manager, cls *models.TiDBCluster) (map[st
 
 	var scraperLogType []string
 	if c.collector.Std {
-		scraperLogType = append(scraperLogType, "std")
+		scraperLogType = append(scraperLogType, scraper.LogTypeStd)
 	}
 	if c.collector.Slow {
-		scraperLogType = append(scraperLogType, "slow")
+		scraperLogType = append(scraperLogType, scraper.LogTypeSlow)
 	}
 	if c.collector.Unknown {
-		scraperLogType = append(scraperLogType, "unknown")
+		scraperLogType = append(scraperLogType, scraper.LogTypeUnknown)
 	}
 
 	// build scraper tasks
