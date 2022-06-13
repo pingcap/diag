@@ -30,15 +30,17 @@ type ComponentType string
 
 // types for components
 const (
-	ComponentTypePD      ComponentType = "pd"
-	ComponentTypeTiKV    ComponentType = "tikv"
-	ComponentTypeTiDB    ComponentType = "tidb"
-	ComponentTypeTiFlash ComponentType = "tiflash"
-	ComponentTypePump    ComponentType = "pump"
-	ComponentTypeDrainer ComponentType = "drainer"
-	ComponentTypeTiCDC   ComponentType = "ticdc"
-	ComponentTypeTiSpark ComponentType = "tispark"
-	ComponentTypeMonitor ComponentType = "monitor" // prometheus and/or ng-monitor
+	ComponentTypePD       ComponentType = "pd"
+	ComponentTypeTiKV     ComponentType = "tikv"
+	ComponentTypeTiDB     ComponentType = "tidb"
+	ComponentTypeTiFlash  ComponentType = "tiflash"
+	ComponentTypePump     ComponentType = "pump"
+	ComponentTypeDrainer  ComponentType = "drainer"
+	ComponentTypeTiCDC    ComponentType = "ticdc"
+	ComponentTypeTiSpark  ComponentType = "tispark"
+	ComponentTypeMonitor  ComponentType = "monitor" // prometheus and/or ng-monitor
+	ComponentTypeDMMaster ComponentType = "dm-master"
+	ComponentTypeDMWorker ComponentType = "dm-worker"
 )
 
 // Component is the interface for any component
@@ -542,7 +544,7 @@ type DMMasterSpec struct {
 }
 
 // Type implements Component interface
-func (s *DMMasterSpec) Type() ComponentType { return ComponentTypeTiKV }
+func (s *DMMasterSpec) Type() ComponentType { return ComponentTypeDMMaster }
 
 // Host implements Component interface
 func (s *DMMasterSpec) Host() string { return s.ComponentSpec.Host }
@@ -586,7 +588,7 @@ type DMWorkerSpec struct {
 }
 
 // Type implements Component interface
-func (s *DMWorkerSpec) Type() ComponentType { return ComponentTypeTiKV }
+func (s *DMWorkerSpec) Type() ComponentType { return ComponentTypeDMWorker }
 
 // Host implements Component interface
 func (s *DMWorkerSpec) Host() string { return s.ComponentSpec.Host }

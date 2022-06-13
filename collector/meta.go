@@ -14,25 +14,24 @@
 package collector
 
 import (
+	"bytes"
 	"context"
 	"crypto/tls"
-	"errors"
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
 	"strconv"
 	"time"
 
-	json "github.com/json-iterator/go"
 	pingcapv1alpha1 "github.com/pingcap/diag/k8s/apis/pingcap/v1alpha1"
 	"github.com/pingcap/diag/pkg/models"
 	"github.com/pingcap/diag/version"
-	perrs "github.com/pingcap/errors"
 	"github.com/pingcap/tiup/pkg/cluster/api"
 	"github.com/pingcap/tiup/pkg/cluster/ctxt"
 	operator "github.com/pingcap/tiup/pkg/cluster/operation"
 	"github.com/pingcap/tiup/pkg/cluster/spec"
-	"github.com/pingcap/tiup/pkg/meta"
+	"github.com/pingcap/tiup/pkg/utils"
 )
 
 const (
@@ -119,12 +118,11 @@ func (c *MetaCollectOptions) Collect(m *Manager, topo *models.TiDBCluster) error
 
 	switch m.mode {
 	case CollectModeTiUP:
-		tiupTopo := topo.Attributes[CollectModeTiUP].(spec.Topology)
-		clusterID, err = getTiUPClusterID(ctx, b.Cluster, c.tlsCfg)
+		clusterType = topo.Attributes[CollectModeTiUP].(spec.Topology).Type()
+		clusterID, err = getTiUPClusterID(ctx, topo, c.tlsCfg)
 		if err != nil {
 			return err
 		}
-		clusterType = tiupTopo.Type()
 	case CollectModeK8s:
 		clusterID = c.tc.GetClusterID()
 		clusterType = spec.TopoTypeTiDB
@@ -224,17 +222,39 @@ func getClusterIDFromPD(ctx context.Context, endpoints []string, tlsCfg *tls.Con
 	return strconv.FormatUint(id, 10), nil
 }
 
-func getTiUPClusterID(ctx context.Context, clusterName string, tlsCfg *tls.Config) (string, error) {
-	metadata, err := spec.ClusterMetadata(clusterName)
-	if err != nil && !errors.Is(perrs.Cause(err), meta.ErrValidate) &&
-		!errors.Is(perrs.Cause(err), spec.ErrNoTiSparkMaster) {
-		return "", err
-	}
+func getClusterIDFromDMMaster(ctx context.Context, endpoints []string, tlsCfg *tls.Config) (string, error) {
+	c := utils.NewHTTPClient(time.Second*3, tlsCfg)
+	for _, endpoint := range endpoints {
+		body, err := c.Get(ctx, utils.Ternary(tlsCfg == nil, "http://", "https://").(string)+endpoint+"/api/v1/cluster/info")
+		if err == nil {
+			d := json.NewDecoder(bytes.NewBuffer(body))
+			d.UseNumber()
+			info := make(map[string]interface{})
+			d.Decode(&info)
 
-	pdEndpoints := make([]string, 0)
-	for _, pd := range metadata.Topology.PDServers {
-		pdEndpoints = append(pdEndpoints, fmt.Sprintf("%s:%d", pd.Host, pd.ClientPort))
+			id, ok := info["cluster_id"].(json.Number)
+			if ok {
+				return id.String(), nil
+			}
+		}
 	}
+	// DM may not have cluster id
+	return "", nil
+}
 
-	return getClusterIDFromPD(ctx, pdEndpoints, tlsCfg)
+func getTiUPClusterID(ctx context.Context, cls *models.TiDBCluster, tlsCfg *tls.Config) (string, error) {
+	if len(cls.PD) > 0 {
+		pdEndpoints := make([]string, 0)
+		for _, pd := range cls.PD {
+			pdEndpoints = append(pdEndpoints, fmt.Sprintf("%s:%d", pd.Host(), pd.StatusPort()))
+		}
+		return getClusterIDFromPD(ctx, pdEndpoints, tlsCfg)
+	} else if len(cls.DMMaster) > 0 {
+		masters := make([]string, 0)
+		for _, m := range cls.DMMaster {
+			masters = append(masters, fmt.Sprintf("%s:%d", m.Host(), m.MainPort()))
+		}
+		return getClusterIDFromDMMaster(ctx, masters, tlsCfg)
+	}
+	return "", fmt.Errorf("cannot find PD nor DM-master")
 }
