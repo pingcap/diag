@@ -92,7 +92,7 @@ func RunLocal(dumpDir string, opt *RebuildOptions) error {
 	}
 	clsVer := meta.Version
 
-	env, err := environment.InitEnv(repository.Options{})
+	env, err := environment.InitEnv(repository.Options{}, repository.MirrorOptions{})
 	if err != nil {
 		return err
 	}

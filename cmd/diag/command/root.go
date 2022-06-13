@@ -99,7 +99,7 @@ func init() {
 			}
 
 			// Running in other OS/ARCH Should be fine we only download manifest file.
-			env, err = tiupmeta.InitEnv(repository.Options{})
+			env, err = tiupmeta.InitEnv(repository.Options{}, repository.MirrorOptions{})
 			if err != nil {
 				return err
 			}
