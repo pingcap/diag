@@ -80,7 +80,7 @@ images: k8s
 test:
 	$(GO) test -cover ./...
 
-check: fmt vet lint check-static
+check: fmt vet check-static
 
 fmt:
 	@echo "gofmt (simplify)"
