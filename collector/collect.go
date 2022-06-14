@@ -682,17 +682,23 @@ func ParseCollectTree(include, exclude []string) (CollectTree, error) {
 }
 
 func (t CollectTree) List() []string {
-	var r func(reflect.Value) []string
-	r = func(reflectV reflect.Value) (result []string) {
+	var r func(reflect.Value, string) []string
+	r = func(reflectV reflect.Value, path string) (result []string) {
 		switch reflectV.Kind() {
 		case reflect.Struct:
 			for i := 0; i < reflectV.NumField(); i++ {
-				result = append(result, r(reflectV.Field(i))...)
+				childpath := strings.ToLower(reflectV.Type().Field(i).Name)
+				if path != "" {
+					childpath = fmt.Sprintf("%s.%s", path, childpath)
+				}
+				result = append(result, r(reflectV.Field(i), childpath)...)
 			}
 		case reflect.Bool:
-			result = []string{reflectV.Type().Name()}
+			if reflectV.Bool() == true {
+				result = []string{path}
+			}
 		}
 		return result
 	}
-	return r(reflect.ValueOf(&t).Elem())
+	return r(reflect.ValueOf(&t).Elem(), "")
 }
