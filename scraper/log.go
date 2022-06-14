@@ -115,9 +115,9 @@ func getLogStatus(fpath string, fi fs.FileInfo, start, end time.Time) (logtype s
 	}
 
 	// use create time as head time for unknown file
-	cTime := fi.Sys().(*syscall.Stat_t).Ctim
-	ht := time.Unix(int64(cTime.Sec), int64(cTime.Nsec))
-	if ht.After(end) || fi.ModTime().Before(start) {
+	// cTime := fi.Sys().(*syscall.Stat_t).Ctim
+	// ht := time.Unix(int64(cTime.Sec), int64(cTime.Nsec))
+	if fi.ModTime().Before(start) {
 		return LogTypeUnknown, false, nil
 	}
 	return LogTypeUnknown, true, nil
