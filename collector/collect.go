@@ -69,7 +69,6 @@ type CollectTree struct {
 	System         bool
 	Monitor        collectMonitor
 	Log            collectLog
-	Audit_log      bool
 	Config         collectConfig
 	DB_vars        bool
 	Perf           bool
@@ -396,7 +395,7 @@ func (m *Manager) CollectClusterInfo(
 	// }
 
 	// todo: rename dir name to ops and move functions to log.go
-	if canCollect(&cOpt.Collectors.Audit_log) || canCollect(&cOpt.Collectors.Log.Ops) {
+	if canCollect(&cOpt.Collectors.Log.Ops) {
 		topoType := "cluster"
 		if m.sysName == "dm" {
 			topoType = m.sysName

@@ -74,7 +74,7 @@ func (c *AuditLogCollectOptions) Prepare(m *Manager, _ *models.TiDBCluster) (map
 
 	t := task.NewBuilder(m.logger).
 		Func(
-			"collect audit log information",
+			"collect ops audit log information",
 			func(_ context.Context) error {
 				files, err := auditLogStat(spec.AuditDir(), c.ScrapeBegin, c.ScrapeEnd)
 				if err != nil {
@@ -129,7 +129,7 @@ func (c *AuditLogCollectOptions) Collect(m *Manager, _ *models.TiDBCluster) erro
 
 	t := task.NewBuilder(m.logger).
 		Func(
-			"collect audit log information",
+			"collect ops audit log information",
 			func(_ context.Context) error {
 				files, err := auditLogStat(spec.AuditDir(), c.ScrapeBegin, c.ScrapeEnd)
 				if err != nil {
