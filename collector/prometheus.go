@@ -40,8 +40,8 @@ const (
 	subdirMonitor = "monitor"
 	subdirAlerts  = "alerts"
 	subdirMetrics = "metrics"
-	maxQueryRange = 120 // 120min
-	minQueryRange = 5   // 5min
+	maxQueryRange = 120 * 60 // 120min
+	minQueryRange = 5 * 60   // 5min
 )
 
 type collectMonitor struct {
@@ -378,9 +378,11 @@ func collectMetric(
 		return
 	}
 
-	// split time into smaller ranges to avoid querying too many data
-	// in one request
-	block := speedlimit / series
+	// split time into smaller ranges to avoid querying too many data in one request
+	if speedlimit == 0 {
+		speedlimit = 10000
+	}
+	block := 3600 * speedlimit / series
 	if block > maxQueryRange {
 		block = maxQueryRange
 	}
@@ -390,8 +392,8 @@ func collectMetric(
 
 	l.Debugf("Dumping metric %s...", mtc)
 	for queryEnd := endTime; queryEnd.After(beginTime); queryEnd = queryEnd.Add(time.Duration(-block) * time.Minute) {
-		querySec := block * 60
-		queryBegin := queryEnd.Add(time.Duration(-block) * time.Minute)
+		querySec := block
+		queryBegin := queryEnd.Add(time.Duration(-block) * time.Second)
 		if queryBegin.Before(beginTime) {
 			querySec = int(queryEnd.Sub(beginTime).Seconds())
 			queryBegin = beginTime
@@ -402,7 +404,7 @@ func collectMetric(
 					fmt.Sprintf("http://%s/api/v1/query", promAddr),
 					url.Values{
 						"query": {fmt.Sprintf("%s[%ds]", mtc, querySec)},
-						"time":  {endTime.Format(time.RFC3339)},
+						"time":  {queryEnd.Format(time.RFC3339)},
 					},
 				)
 				if err != nil {
