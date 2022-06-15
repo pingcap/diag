@@ -139,7 +139,7 @@ func newCollectCmd() *cobra.Command {
 	cmd.Flags().StringSliceVar(&inc, "include", []string{"system", "config", "monitor", "log.std", "log.slow"}, "types of data to collect")
 	cmd.Flags().StringSliceVar(&ext, "exclude", nil, "types of data not to collect")
 	cmd.Flags().StringSliceVar(&cOpt.MetricsFilter, "metricsfilter", nil, "prefix of metrics to collect")
-	cmd.Flags().IntVar(&cOpt.MetricsLimit, "monitor.metricslimit", 10000, "metric size limit of single request, specified in series*hour per request")
+	cmd.Flags().IntVar(&cOpt.MetricsLimit, "monitor.metriclimit", 10000, "metric size limit of single request, specified in series*hour per request")
 	cmd.Flags().StringVar(&metricsConf, "metricsconfig", "", "config file of metricsfilter")
 	cmd.Flags().StringVarP(&cOpt.Dir, "output", "o", "", "output directory of collected data")
 	cmd.Flags().IntVarP(&cOpt.Limit, "limit", "l", -1, "Limits the used bandwidth, specified in Kbit/s")
