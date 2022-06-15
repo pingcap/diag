@@ -69,7 +69,6 @@ type CollectTree struct {
 	System         bool
 	Monitor        collectMonitor
 	Log            collectLog
-	Audit_log      bool
 	Config         collectConfig
 	DB_vars        bool
 	Perf           bool
@@ -396,7 +395,7 @@ func (m *Manager) CollectClusterInfo(
 	// }
 
 	// todo: rename dir name to ops and move functions to log.go
-	if canCollect(&cOpt.Collectors.Audit_log) || canCollect(&cOpt.Collectors.Log.Ops) {
+	if canCollect(&cOpt.Collectors.Log.Ops) {
 		topoType := "cluster"
 		if m.sysName == "dm" {
 			topoType = m.sysName
@@ -682,17 +681,23 @@ func ParseCollectTree(include, exclude []string) (CollectTree, error) {
 }
 
 func (t CollectTree) List() []string {
-	var r func(reflect.Value) []string
-	r = func(reflectV reflect.Value) (result []string) {
+	var r func(reflect.Value, string) []string
+	r = func(reflectV reflect.Value, path string) (result []string) {
 		switch reflectV.Kind() {
 		case reflect.Struct:
 			for i := 0; i < reflectV.NumField(); i++ {
-				result = append(result, r(reflectV.Field(i))...)
+				childpath := strings.ToLower(reflectV.Type().Field(i).Name)
+				if path != "" {
+					childpath = fmt.Sprintf("%s.%s", path, childpath)
+				}
+				result = append(result, r(reflectV.Field(i), childpath)...)
 			}
 		case reflect.Bool:
-			result = []string{reflectV.Type().Name()}
+			if reflectV.Bool() == true {
+				result = []string{path}
+			}
 		}
 		return result
 	}
-	return r(reflect.ValueOf(&t).Elem())
+	return r(reflect.ValueOf(&t).Elem(), "")
 }
