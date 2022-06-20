@@ -105,8 +105,7 @@ func (c *LogCollectOptions) Prepare(m *Manager, cls *models.TiDBCluster) (map[st
 
 	for _, comp := range components {
 		switch comp.Name() {
-		case spec.ComponentPrometheus,
-			spec.ComponentGrafana,
+		case spec.ComponentGrafana,
 			spec.ComponentAlertmanager,
 			spec.ComponentTiSpark,
 			spec.ComponentSpark:
@@ -246,8 +245,7 @@ func (c *LogCollectOptions) Collect(m *Manager, cls *models.TiDBCluster) error {
 
 	for _, comp := range components {
 		switch comp.Name() {
-		case spec.ComponentPrometheus,
-			spec.ComponentGrafana,
+		case spec.ComponentGrafana,
 			spec.ComponentAlertmanager,
 			spec.ComponentTiSpark,
 			spec.ComponentSpark:
