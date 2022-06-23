@@ -18,7 +18,6 @@ import (
 	"bytes"
 	"crypto/rsa"
 	"crypto/x509"
-	"encoding/json"
 	"encoding/pem"
 	"fmt"
 	"io"
@@ -27,6 +26,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	json "github.com/json-iterator/go"
 	"github.com/klauspost/compress/zstd"
 	"github.com/pingcap/diag/pkg/crypto"
 	"github.com/pingcap/tiup/pkg/tui"
