@@ -15,9 +15,9 @@ package packager
 
 import (
 	"bytes"
-	"encoding/json"
 	"testing"
 
+	json "github.com/json-iterator/go"
 	"github.com/stretchr/testify/require"
 )
 
