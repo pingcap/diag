@@ -149,6 +149,7 @@ type MetricCollectOptions struct {
 	*BaseOptions
 	opt       *operator.Options // global operations from cli
 	resultDir string
+	label     map[string]string
 	metrics   []string // metric list
 	filter    []string
 	limit     int // series*min per query
@@ -301,7 +302,7 @@ func (c *MetricCollectOptions) Collect(m *Manager, topo *models.TiDBCluster) err
 
 				tsEnd, _ := utils.ParseTime(c.GetBaseOptions().ScrapeEnd)
 				tsStart, _ := utils.ParseTime(c.GetBaseOptions().ScrapeBegin)
-				collectMetric(m.logger, client, prom, tsStart, tsEnd, mtc, c.resultDir, c.limit)
+				collectMetric(m.logger, client, prom, tsStart, tsEnd, mtc, c.label, c.resultDir, c.limit)
 
 				mu.Lock()
 				done++
@@ -339,11 +340,11 @@ func getMetricList(c *http.Client, prom string) ([]string, error) {
 	return r.Metrics, nil
 }
 
-func getSeriesNum(c *http.Client, promAddr, metric string) (int, error) {
+func getSeriesNum(c *http.Client, promAddr, query string) (int, error) {
 	resp, err := c.PostForm(
 		fmt.Sprintf("http://%s/api/v1/series", promAddr),
 		url.Values{
-			"match[]": {metric},
+			"match[]": {query},
 		},
 	)
 	if err != nil {
@@ -368,13 +369,20 @@ func collectMetric(
 	c *http.Client,
 	promAddr string,
 	beginTime, endTime time.Time,
-	mtc, resultDir string,
+	mtc string,
+	label map[string]string,
+	resultDir string,
 	speedlimit int,
 ) {
+	query := generateQueryWitLabel(mtc, label)
 	l.Debugf("Querying series of %s...", mtc)
-	series, err := getSeriesNum(c, promAddr, mtc)
+	series, err := getSeriesNum(c, promAddr, query)
 	if err != nil {
 		l.Errorf("%s", err)
+		return
+	}
+	if series <= 0 {
+		l.Debugf("metric %s has %d series, ignore", mtc, series)
 		return
 	}
 
@@ -403,7 +411,7 @@ func collectMetric(
 				resp, err := c.PostForm(
 					fmt.Sprintf("http://%s/api/v1/query", promAddr),
 					url.Values{
-						"query": {fmt.Sprintf("%s[%ds]", mtc, querySec)},
+						"query": {fmt.Sprintf("%s[%ds]", query, querySec)},
 						"time":  {queryEnd.Format(time.RFC3339)},
 					},
 				)
@@ -475,4 +483,16 @@ func filterMetrics(src, filter []string) []string {
 		}
 	}
 	return res
+}
+
+func generateQueryWitLabel(metric string, labels map[string]string) string {
+	query := metric
+	if len(labels) > 0 {
+		query += "{"
+		for k, v := range labels {
+			query = fmt.Sprintf("%s%s=\"%s\",", query, k, v)
+		}
+		query = query[:len(query)-1] + "}"
+	}
+	return query
 }
