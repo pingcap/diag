@@ -16,33 +16,14 @@ package command
 import (
 	"fmt"
 	"os"
-	"reflect"
-	"strings"
 
-	"github.com/BurntSushi/toml"
 	"github.com/pingcap/tiup/pkg/cluster/spec"
 	"github.com/spf13/cobra"
 )
 
-type ClinicConfig struct {
-	//	Endpoint string `toml:"endpoint,omitempty"`
-	//	Cert     string `toml:"cert,omitempty"`
-	Region string `toml:"region,omitempty"`
-	Token  string `toml:"token,omitempty"`
-}
-
-type DiagConfig struct {
-	Clinic ClinicConfig `toml:"clinic,omitempty"`
-}
-
 const RegionInfo = `Clinic Server provides the following two regions to store your diagnostic data:
 [CN] region: Data stored in China Mainland, domain name : https://clinic.pingcap.com.cn
 [US] region: Data stored in USA ,domain name : https://clinic.pingcap.com`
-
-var RegionToEndpoint map[string]string = map[string]string{
-	"CN": "https://clinic.pingcap.com.cn",
-	"US": "https://clinic.pingcap.com",
-}
 
 func newConfigCmd() *cobra.Command {
 	var unset, show bool
@@ -70,7 +51,7 @@ if not specify key nor value, an interactive interface will be used to set neces
 			} else {
 				switch len(args) {
 				case 0:
-					diagConfig.interactiveSet()
+					diagConfig.InteractiveSet()
 				case 2:
 					err := diagConfig.Set(args[0], args[1])
 					if err != nil {
@@ -88,112 +69,4 @@ if not specify key nor value, an interactive interface will be used to set neces
 	cmd.PersistentFlags().BoolVar(&show, "show", false, "show diag configuration")
 
 	return cmd
-}
-
-func (c *DiagConfig) Load() error {
-	confPath := spec.ProfilePath("diag.toml")
-	_, err := toml.DecodeFile(confPath, c)
-	return err
-}
-
-func (c *DiagConfig) Save() error {
-	confPath := spec.ProfilePath("diag.toml")
-	f, err := os.OpenFile(confPath, os.O_RDWR|os.O_CREATE|os.O_TRUNC, os.ModePerm)
-	if err != nil {
-		return err
-	}
-	enc := toml.NewEncoder(f)
-	return enc.Encode(c)
-}
-
-// only support string value now
-func (c *DiagConfig) Set(key, value string) error {
-	reflectV := reflect.ValueOf(&diagConfig).Elem()
-	keys := strings.Split(key, ".")
-	for _, k := range keys {
-		if reflectV.Kind() != reflect.Struct {
-			return fmt.Errorf("%s is not a valid diag configuration key", key)
-		}
-		num := reflectV.NumField()
-		var i int
-		for i = 0; i < num; i++ {
-			if k == strings.Split(reflectV.Type().Field(i).Tag.Get("toml"), ",")[0] {
-				reflectV = reflectV.Field(i)
-				break
-			}
-		}
-		if i == num {
-			return fmt.Errorf("%s is not a valid diag configuration key", key)
-		}
-	}
-	value, err := validateConfigKey(key, value)
-	if err != nil {
-		return err
-	}
-
-	if reflectV.CanSet() && reflectV.Kind() != reflect.Struct {
-		reflectV.SetString(value)
-	} else {
-		return fmt.Errorf("%s is not a valid diag configuration", key)
-	}
-	return nil
-}
-
-func (c *DiagConfig) Unset(key string) error {
-	reflectV := reflect.ValueOf(&diagConfig).Elem()
-	keys := strings.Split(key, ".")
-	for _, k := range keys {
-		if reflectV.Kind() != reflect.Struct {
-			return fmt.Errorf("%s is not a valid diag configuration key", key)
-		}
-		num := reflectV.NumField()
-		var i int
-		for i = 0; i < num; i++ {
-			if k == strings.Split(reflectV.Type().Field(i).Tag.Get("toml"), ",")[0] {
-				reflectV = reflectV.Field(i)
-				break
-			}
-		}
-		if i == num {
-			return fmt.Errorf("%s is not a valid diag configuration key", key)
-		}
-	}
-
-	reflectV.SetString("")
-	return nil
-}
-
-func (c *DiagConfig) interactiveSet() {
-	fmt.Printf("diag upload need token which you could get from %s\n", RegionToEndpoint[c.Clinic.Region])
-	fmt.Print("please input your token:")
-	fmt.Scanf("%s", &c.Clinic.Token)
-}
-
-func (c *DiagConfig) interactiveSetToken() {
-	fmt.Printf("diag upload need token which you could get from %s\n", RegionToEndpoint[c.Clinic.Region])
-	fmt.Print("please input your token:")
-	fmt.Scanf("%s", &c.Clinic.Token)
-}
-
-func (c *DiagConfig) interactiveSetRegion() error{
-	var region string
-	fmt.Println(RegionInfo)
-	fmt.Print("please choose region:")
-	fmt.Scanf("%s", &region)
-	region, err := validateConfigKey("clinic.token", region)
-	if err != nil {
-		return err
-	}
-	c.Clinic.Region = region
-	return nil
-}
-
-func validateConfigKey(key, value string) (string, error) {
-	switch key {
-	case "clinic.region":
-		if value != "cn" && value != "us" {
-			return value, fmt.Errorf("%s cannot be %s, it can only be CN or US\n%s", key, value, RegionInfo)
-		}
-	}
-	return strings.ToUpper(value), nil
 }

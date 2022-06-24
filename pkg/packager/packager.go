@@ -36,6 +36,7 @@ import (
 type PackageOptions struct {
 	InputDir   string // source directory of collected data
 	OutputFile string // target file to store packaged data
+	Cert       string // crt to encrypt data
 	CertPath   string // crt file to encrypt data
 	Rebuild    bool
 	Meta       map[string]interface{}
