@@ -39,6 +39,11 @@ const RegionInfo = `Clinic Server provides the following two regions to store yo
 [CN] region: Data stored in China Mainland, domain name : https://clinic.pingcap.com.cn
 [US] region: Data stored in USA ,domain name : https://clinic.pingcap.com`
 
+var RegionToEndpoint map[string]string = map[string]string{
+	"CN": "https://clinic.pingcap.com.cn",
+	"US": "https://clinic.pingcap.com",
+}
+
 func newConfigCmd() *cobra.Command {
 	var unset, show bool
 	cmd := &cobra.Command{
@@ -159,9 +164,28 @@ func (c *DiagConfig) Unset(key string) error {
 }
 
 func (c *DiagConfig) interactiveSet() {
-	fmt.Println("diag upload need token which you could get from https://clinic.pingcap.com.cn")
+	fmt.Printf("diag upload need token which you could get from %s\n", RegionToEndpoint[c.Clinic.Region])
 	fmt.Print("please input your token:")
 	fmt.Scanf("%s", &c.Clinic.Token)
+}
+
+func (c *DiagConfig) interactiveSetToken() {
+	fmt.Printf("diag upload need token which you could get from %s\n", RegionToEndpoint[c.Clinic.Region])
+	fmt.Print("please input your token:")
+	fmt.Scanf("%s", &c.Clinic.Token)
+}
+
+func (c *DiagConfig) interactiveSetRegion() error{
+	var region string
+	fmt.Println(RegionInfo)
+	fmt.Print("please choose region:")
+	fmt.Scanf("%s", &region)
+	region, err := validateConfigKey("clinic.token", region)
+	if err != nil {
+		return err
+	}
+	c.Clinic.Region = region
+	return nil
 }
 
 func validateConfigKey(key, value string) (string, error) {

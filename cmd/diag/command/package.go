@@ -66,6 +66,8 @@ func newPackageCmd() *cobra.Command {
 	cmd.Flags().StringVarP(&pOpt.OutputFile, "output", "o", "", "output file of packaged data")
 	cmd.Flags().StringVar(&pOpt.CertPath, "cert", "", "cert file to encrypt the data")
 	cmd.Flags().BoolVar(&pOpt.Rebuild, "rebuild", true, "rebuild package immediately after upload")
+	
+	cmd.Flags().MarkHidden("cert")
 
 	return cmd
 }
