@@ -390,8 +390,8 @@ func collectMetric(
 		block = minQueryRange
 	}
 
-	l.Debugf("Dumping metric %s...", mtc)
-	for queryEnd := endTime; queryEnd.After(beginTime); queryEnd = queryEnd.Add(time.Duration(-block) * time.Minute) {
+	l.Debugf("Dumping metric %s-%s-%s...", mtc, beginTime.Format(time.RFC3339), endTime.Format(time.RFC3339))
+	for queryEnd := endTime; queryEnd.After(beginTime); queryEnd = queryEnd.Add(time.Duration(-block) * time.Second) {
 		querySec := block
 		queryBegin := queryEnd.Add(time.Duration(-block) * time.Second)
 		if queryBegin.Before(beginTime) {
