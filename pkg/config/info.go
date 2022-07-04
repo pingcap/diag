@@ -24,7 +24,7 @@ import (
 
 // user specified diag config
 type DiagInfo struct {
-	ClinicServers map[region]ClinicServer `toml:"clinicservers"`
+	ClinicServers map[Region]ClinicServer `toml:"clinicservers"`
 }
 
 type ClinicServer struct {
@@ -61,16 +61,16 @@ func init() {
 	}
 }
 
-type region string
+type Region string
 
-func (r region) Endpoint() string {
+func (r Region) Endpoint() string {
 	return Info.ClinicServers[r].Endpoint
 }
 
-func (r region) Cert() string {
+func (r Region) Cert() string {
 	return Info.ClinicServers[r].Cert
 }
 
-func (r region) Info() string {
+func (r Region) Info() string {
 	return Info.ClinicServers[r].Info
 }

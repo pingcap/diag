@@ -31,7 +31,7 @@ type DiagConfig struct {
 type ClinicConfig struct {
 	//	Endpoint string `toml:"endpoint,omitempty"`
 	//	Cert     string `toml:"cert,omitempty"`
-	Region region `toml:"region,omitempty"`
+	Region Region `toml:"region,omitempty"`
 	Token  string `toml:"token,omitempty"`
 }
 
@@ -140,6 +140,6 @@ func (c *DiagConfig) InteractiveSetRegion() error {
 	if err != nil {
 		return err
 	}
-	c.Clinic.Region = region(r)
+	c.Clinic.Region = Region(r)
 	return nil
 }

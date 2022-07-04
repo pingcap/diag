@@ -32,9 +32,6 @@ spec:
         command:
         - /usr/local/bin/diag
         volumeMounts:
-        - mountPath: "/var/lib/clinic-cert"
-          name: pingcap-clinic-cert
-          readOnly: true
         {{- if .Values.diag.volume }}
         - mountPath: "/diag"
           name: "diag-storage"
@@ -46,13 +43,10 @@ spec:
               apiVersion: v1
               fieldPath: metadata.namespace
         - name: CLINIC_TOKEN
-          value: {{ required "Please set your Token. You can get your token after signing in to Clinic Server 'https://clinic.pingcap.com.cn'" .Values.diag.clinicToken }}
-        - name: CLINIC_ENDPOINT
-          value: {{ .Values.diag.clinicEndpoint | default "https://clinic.pingcap.com.cn" }}
+          value: {{ required "Please set your Token. You can get your token after signing in to Clinic Server" .Values.diag.clinicToken }}
+        - name: CLINIC_REGION
+          value: {{ .Values.diag.clinicRegion }}
       volumes:
-      - name: pingcap-clinic-cert
-        secret:
-          secretName: {{ .Values.diag.secretName | default "pingcap-clinic-cert" }}
       {{- if .Values.diag.volume }}
       - name: diag-storage
 {{ toYaml .Values.diag.volume | indent 8 }}
