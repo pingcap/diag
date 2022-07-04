@@ -25,26 +25,28 @@ func newUploadCommand() *cobra.Command {
 			var saveconfig bool
 
 			// get endpoint from config file
-			if opt.Endpoint == "" {
-				if diagConfig.Clinic.Region == "" {
-					err := diagConfig.InteractiveSetRegion()
-					if err != nil {
-						return err
-					}
+			if diagConfig.Clinic.Region == "" {
+				err := diagConfig.InteractiveSetRegion()
+				if err != nil {
+					return err
 				}
-				opt.Endpoint = diagConfig.Clinic.Region.Endpoint()
 				saveconfig = true
+
+			}
+			opt.Cert = diagConfig.Clinic.Region.Cert()
+			if opt.Endpoint == "" {
+				opt.Endpoint = diagConfig.Clinic.Region.Endpoint()
 			}
 			opt.Endpoint = strings.Trim(opt.Endpoint, "/")
 
 			// get token from env or config file
 			opt.Token = os.Getenv("CLINIC_TOKEN")
 			if opt.Token == "" {
-				opt.Token = diagConfig.Clinic.Token
-				if opt.Token == "" {
+				if diagConfig.Clinic.Token == "" {
 					diagConfig.InteractiveSetToken()
 					saveconfig = true
 				}
+				opt.Token = diagConfig.Clinic.Token
 			}
 
 			if saveconfig {

@@ -51,25 +51,19 @@ const (
 )
 
 // meta not compress
-func GenerateD1agHeader(meta map[string]interface{}, compress byte, certPath string) ([]byte, error) {
+func GenerateD1agHeader(meta map[string]interface{}, compress byte, cert *x509.Certificate) ([]byte, error) {
 	header := []byte("D1ag")
 	packageType := compress & 070
 
 	var w io.Writer
 	metaBuf := new(bytes.Buffer)
 
-	if certPath == "" {
+	if cert == nil {
 		packageType |= TypeRaw
 		w = metaBuf
 	} else {
 		// encryption meta information
 		packageType |= TypeEncryption
-		certString, err := os.ReadFile(certPath)
-		if err != nil {
-			return nil, err
-		}
-		block, _ := pem.Decode(certString)
-		cert, _ := x509.ParseCertificate(block.Bytes)
 		publicKey := cert.PublicKey.(*rsa.PublicKey)
 		w, _ = crypto.NewEncryptWriter(publicKey, metaBuf)
 	}
@@ -144,16 +138,7 @@ func PackageCollectedData(pOpt *PackageOptions, skipConfirm bool) (string, error
 		return "", err
 	}
 
-	certPath, err := selectCertFile(pOpt.CertPath)
-	if err != nil {
-		return "", err
-	}
-
-	certString, err := os.ReadFile(certPath)
-	if err != nil {
-		return "", err
-	}
-	block, _ := pem.Decode(certString)
+	block, _ := pem.Decode([]byte(pOpt.Cert))
 	cert, err := x509.ParseCertificate(block.Bytes)
 	if err != nil {
 		return "", err
@@ -194,7 +179,7 @@ func PackageCollectedData(pOpt *PackageOptions, skipConfirm bool) (string, error
 		meta["k8s_namespace"] = topo["namespace"]
 	}
 	meta["rebuild"] = pOpt.Rebuild
-	header, _ := GenerateD1agHeader(meta, TypeZST, certPath)
+	header, _ := GenerateD1agHeader(meta, TypeZST, cert)
 	fileW.Write(header)
 
 	err = filepath.Walk(input, func(path string, info fs.FileInfo, err error) error {

@@ -120,8 +120,8 @@ func runUploader(
 		pOpt := &packager.PackageOptions{
 			InputDir:   worker.job.Dir,
 			OutputFile: filepath.Join(packageDir, fmt.Sprintf("diag-%s.diag", worker.job.ID)),
-			CertPath:   "/var/lib/clinic-cert/pingcap.crt", // mounted via secret
-			Rebuild:    rebuild,
+			// tbd: add cert
+			Rebuild: rebuild,
 		}
 		pf, err := packager.PackageCollectedData(pOpt, true)
 		outW.Close()
