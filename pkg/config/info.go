@@ -14,6 +14,7 @@
 package config
 
 import (
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
@@ -33,6 +34,7 @@ type ClinicServer struct {
 }
 
 var Info DiagInfo
+var infoText string
 
 func init() {
 	binpath, err := os.Executable()
@@ -52,18 +54,13 @@ func init() {
 	}
 
 	toml.Unmarshal(data, &Info)
+
+	infoText = "Clinic Server provides the following two regions to store your diagnostic data\n"
+	for k, v := range Info.ClinicServers {
+		infoText += fmt.Sprintf("[%s] region: %s url: %s\n", k, v.Info, v.Endpoint)
+	}
 }
 
-/*
-const RegionInfo = `Clinic Server provides the following two regions to store your diagnostic data:
-[CN] region: Data stored in China Mainland, domain name : https://clinic.pingcap.com.cn
-[US] region: Data stored in USA ,domain name : https://clinic.pingcap.com`
-
-var RegionToEndpoint map[string]string = map[string]string{
-	"CN": "https://clinic.pingcap.com.cn",
-	"US": "https://clinic.pingcap.com",
-}
-*/
 type region string
 
 func (r region) Endpoint() string {

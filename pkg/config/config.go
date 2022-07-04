@@ -35,11 +35,6 @@ type ClinicConfig struct {
 	Token  string `toml:"token,omitempty"`
 }
 
-
-const RegionInfo = `Clinic Server provides the following two regions to store your diagnostic data:
-[CN] region: Data stored in China Mainland, domain name : https://clinic.pingcap.com.cn
-[US] region: Data stored in USA ,domain name : https://clinic.pingcap.com`
-
 func (c *DiagConfig) Load() error {
 	confPath := spec.ProfilePath("diag.toml")
 	_, err := toml.DecodeFile(confPath, c)
@@ -117,10 +112,11 @@ func ValidateConfigKey(key, value string) (string, error) {
 	switch key {
 	case "clinic.region":
 		if value != "cn" && value != "us" {
-			return value, fmt.Errorf("%s cannot be %s, it can only be CN or US\n%s", key, value, RegionInfo)
+			return value, fmt.Errorf("%s cannot be %s\n%s\n", key, value, infoText)
 		}
+		return strings.ToUpper(value), nil
 	}
-	return strings.ToUpper(value), nil
+	return value, nil
 }
 
 func (c *DiagConfig) InteractiveSet() {
@@ -137,10 +133,10 @@ func (c *DiagConfig) InteractiveSetToken() {
 
 func (c *DiagConfig) InteractiveSetRegion() error {
 	var r string
-	fmt.Println(RegionInfo)
+	fmt.Println(infoText)
 	fmt.Print("please choose region:")
 	fmt.Scanf("%s", &r)
-	r, err := ValidateConfigKey("clinic.token", r)
+	r, err := ValidateConfigKey("clinic.region", r)
 	if err != nil {
 		return err
 	}
