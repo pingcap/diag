@@ -340,11 +340,8 @@ func getMetricList(c *http.Client, prom string) ([]string, error) {
 }
 
 func getSeriesNum(c *http.Client, promAddr, metric string) (int, error) {
-	resp, err := c.PostForm(
-		fmt.Sprintf("http://%s/api/v1/series", promAddr),
-		url.Values{
-			"match[]": {metric},
-		},
+	resp, err := c.Get(
+		fmt.Sprintf("http://%s/api/v1/series?match[]=%s", promAddr, metric),
 	)
 	if err != nil {
 		return 0, err
