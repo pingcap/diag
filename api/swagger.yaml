@@ -408,6 +408,8 @@ definitions:
         type: string
       namespace:
         type: string
+      monitor_namespace:
+        type: string
       collectors:
         type: array
         items:

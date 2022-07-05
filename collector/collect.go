@@ -90,13 +90,14 @@ type Collector interface {
 
 // BaseOptions contains the options for check command
 type BaseOptions struct {
-	Cluster     string                  // cluster name
-	Namespace   string                  // k8s namespace of the cluster
-	User        string                  // username to login to the SSH server
-	UsePassword bool                    // use password instead of identity file for ssh connection
-	SSH         *tui.SSHConnectionProps // SSH credentials
-	ScrapeBegin string                  // start timepoint when collecting metrics and logs
-	ScrapeEnd   string                  // stop timepoint when collecting metrics and logs
+	Cluster          string                  // cluster name
+	Namespace        string                  // k8s namespace of the cluster
+	MonitorNamespace string                  // k8s namespace of the monitor
+	User             string                  // username to login to the SSH server
+	UsePassword      bool                    // use password instead of identity file for ssh connection
+	SSH              *tui.SSHConnectionProps // SSH credentials
+	ScrapeBegin      string                  // start timepoint when collecting metrics and logs
+	ScrapeEnd        string                  // stop timepoint when collecting metrics and logs
 }
 
 // CollectOptions contains the options defining which type of data to collect
