@@ -11,6 +11,7 @@ const (
 	TimeStampLayout        = "2006/01/02 15:04:05.000 -07:00"
 	FormerTimeStampLayout  = "2006/01/02 15:04:05.000"
 	TiFlashTimeStampLayout = "2006.01.02 15:04:05.000000"
+	PromTimeStampLayout    = time.RFC3339Nano
 )
 
 var LevelTypeMap = map[string]item.LevelType{
@@ -56,10 +57,20 @@ func parseFormerTimeStamp(b []byte) (*time.Time, error) {
 	return &t, nil
 }
 
-// TiFlash error log format used in former version
+// TiFlash error log format
 // 2019.07.18 11:04:29.314159 ...
 func parseTiFlashErrTimeStamp(b []byte) (*time.Time, error) {
 	t, err := time.ParseInLocation(TiFlashTimeStampLayout, string(b), time.Local)
+	if err != nil {
+		return nil, err
+	}
+	return &t, nil
+}
+
+// Prometheus log format
+// 2019.07.18T11:04:29.314Z ...
+func parsePromTimeStamp(b []byte) (*time.Time, error) {
+	t, err := time.Parse(PromTimeStampLayout, string(b))
 	if err != nil {
 		return nil, err
 	}
