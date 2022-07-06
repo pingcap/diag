@@ -15,6 +15,7 @@ package command
 
 import (
 	"bufio"
+	"fmt"
 	"os"
 	"strings"
 	"time"
@@ -38,6 +39,7 @@ func newMetricDumpCmd() *cobra.Command {
 		caPath       string
 		certPath     string
 		keyPath      string
+		labels       []string
 	)
 
 	cmd := &cobra.Command{
@@ -71,6 +73,15 @@ func newMetricDumpCmd() *cobra.Command {
 						cOpt.MetricsFilter = append(cOpt.MetricsFilter, s.Text())
 					}
 				}
+			}
+
+			cOpt.MetricsLabel = make(map[string]string)
+			for _, l := range labels {
+				splited := strings.Split(l, "=")
+				if len(splited) != 2 {
+					return fmt.Errorf("%s should be like key=value", l)
+				}
+				cOpt.MetricsLabel[splited[0]] = splited[1]
 			}
 
 			if reportEnabled {
@@ -112,6 +123,7 @@ func newMetricDumpCmd() *cobra.Command {
 	cmd.Flags().StringVarP(&opt.ScrapeBegin, "from", "f", time.Now().Add(time.Hour*-2).Format(time.RFC3339), "start timepoint when collecting timeseries data")
 	cmd.Flags().StringVarP(&opt.ScrapeEnd, "to", "t", time.Now().Format(time.RFC3339), "stop timepoint when collecting timeseries data")
 	cmd.Flags().StringSliceVar(&cOpt.MetricsFilter, "metricsfilter", nil, "prefix of metrics to collect")
+	cmd.Flags().StringSliceVar(&labels, "metriclabel", nil, "only collect metrics that match labels")
 	cmd.Flags().StringVar(&metricsConf, "metricsconfig", "", "config file of metricsfilter")
 	cmd.Flags().StringVarP(&cOpt.Dir, "output", "o", "", "output directory of collected data")
 

@@ -107,6 +107,7 @@ type CollectOptions struct {
 	ProfileName    string            // the name of a pre-defined collecting profile
 	Collectors     CollectTree       // struct to show which collector is enabled
 	MetricsFilter  []string          // prefix of metrics to collect"
+	MetricsLabel   map[string]string // label to filte metrics
 	Dir            string            // target directory to store collected data
 	Limit          int               // rate limit of SCP
 	MetricsLimit   int               // query limit of one request
@@ -274,6 +275,7 @@ func (m *Manager) CollectClusterInfo(
 				BaseOptions: opt,
 				opt:         gOpt,
 				resultDir:   resultDir,
+				label:       cOpt.MetricsLabel,
 				filter:      cOpt.MetricsFilter,
 				limit:       cOpt.MetricsLimit,
 			},
