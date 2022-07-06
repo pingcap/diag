@@ -60,10 +60,11 @@ func collectData(c *gin.Context) {
 
 	// build collect job
 	opt := collector.BaseOptions{
-		Cluster:     req.ClusterName,
-		Namespace:   req.Namespace,
-		ScrapeBegin: req.From,
-		ScrapeEnd:   req.To,
+		Cluster:          req.ClusterName,
+		Namespace:        req.Namespace,
+		MonitorNamespace: req.MonitorNamespace,
+		ScrapeBegin:      req.From,
+		ScrapeEnd:        req.To,
 	}
 
 	// parsing time

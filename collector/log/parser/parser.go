@@ -14,6 +14,7 @@ type Parser interface {
 }
 
 // List all parsers this package has
+// **not used anymore**
 func List() []Parser {
 	return []Parser{
 		&UnifiedJSONLogParser{},
@@ -31,6 +32,7 @@ func ListStd() []Parser {
 		&UnifiedJSONLogParser{},
 		&UnifiedLogParser{},
 		&TiFlashErrLogParser{},
+		&PrometheusLogParser{},
 		&PDLogV2Parser{},
 		&TiKVLogV2Parser{},
 	}

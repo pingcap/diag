@@ -341,11 +341,8 @@ func getMetricList(c *http.Client, prom string) ([]string, error) {
 }
 
 func getSeriesNum(c *http.Client, promAddr, query string) (int, error) {
-	resp, err := c.PostForm(
-		fmt.Sprintf("http://%s/api/v1/series", promAddr),
-		url.Values{
-			"match[]": {query},
-		},
+	resp, err := c.Get(
+		fmt.Sprintf("http://%s/api/v1/series?match[]=%s", promAddr, query),
 	)
 	if err != nil {
 		return 0, err
@@ -398,8 +395,8 @@ func collectMetric(
 		block = minQueryRange
 	}
 
-	l.Debugf("Dumping metric %s...", mtc)
-	for queryEnd := endTime; queryEnd.After(beginTime); queryEnd = queryEnd.Add(time.Duration(-block) * time.Minute) {
+	l.Debugf("Dumping metric %s-%s-%s...", mtc, beginTime.Format(time.RFC3339), endTime.Format(time.RFC3339))
+	for queryEnd := endTime; queryEnd.After(beginTime); queryEnd = queryEnd.Add(time.Duration(-block) * time.Second) {
 		querySec := block
 		queryBegin := queryEnd.Add(time.Duration(-block) * time.Second)
 		if queryBegin.Before(beginTime) {

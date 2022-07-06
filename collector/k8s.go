@@ -102,6 +102,12 @@ func buildTopoForK8sCluster(
 		klog.Infof("got namespace '%s'", ns)
 	}
 
+	mns := opt.MonitorNamespace
+	if mns == "" {
+		mns = ns
+		klog.Infof("use cluster namespace '%s' as monitor namespace", ns)
+	}
+
 	tcList, err := dynCli.Resource(gvrTiDB).Namespace(ns).List(context.TODO(), metav1.ListOptions{})
 	if err != nil {
 		msg := fmt.Sprintf("failed to list tidbclusters in namespace %s: %v", ns, err)
@@ -126,7 +132,7 @@ func buildTopoForK8sCluster(
 	}
 	klog.Infof("found %d tidbclusters in namespace '%s'", len(tcs.Items), ns)
 
-	monList, err := dynCli.Resource(gvrMonitor).Namespace(ns).List(context.TODO(), metav1.ListOptions{})
+	monList, err := dynCli.Resource(gvrMonitor).Namespace(mns).List(context.TODO(), metav1.ListOptions{})
 	if err != nil {
 		msg := fmt.Sprintf("failed to list tidbmonitors in namespace %s: %v", ns, err)
 		klog.Errorf(msg)
