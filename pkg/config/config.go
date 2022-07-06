@@ -111,7 +111,7 @@ func (c *DiagConfig) Unset(key string) error {
 func ValidateConfigKey(key, value string) (string, error) {
 	switch key {
 	case "clinic.region":
-		if value != "cn" && value != "us" {
+		if _, ok := Info.ClinicServers[Region(strings.ToUpper(value))]; !ok {
 			return value, fmt.Errorf("%s cannot be %s\n%s\n", key, value, infoText)
 		}
 		return strings.ToUpper(value), nil
