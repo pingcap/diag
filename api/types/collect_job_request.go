@@ -26,6 +26,9 @@ type CollectJobRequest struct {
 	// from
 	From string `json:"from,omitempty"`
 
+	// monitor namespace
+	MonitorNamespace string `json:"monitor_namespace,omitempty"`
+
 	// namespace
 	Namespace string `json:"namespace,omitempty"`
 
