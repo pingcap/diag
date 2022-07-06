@@ -24,6 +24,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/joomcode/errorx"
 	json "github.com/json-iterator/go"
+	"github.com/pingcap/diag/pkg/config"
 	"github.com/pingcap/diag/pkg/telemetry"
 	"github.com/pingcap/diag/version"
 	"github.com/pingcap/tiup/pkg/cluster/executor"
@@ -50,7 +51,7 @@ var (
 	reportEnabled bool // is telemetry report enabled
 	teleReport    *telemetry.Report
 	teleCommand   []string
-	diagConfig    DiagConfig
+	diagConfig    config.DiagConfig
 )
 
 func getParentNames(cmd *cobra.Command) []string {

@@ -24,6 +24,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/pingcap/diag/api/types"
+	"github.com/pingcap/diag/pkg/config"
 	"github.com/pingcap/diag/pkg/packager"
 	logprinter "github.com/pingcap/tiup/pkg/logger/printer"
 	"k8s.io/klog/v2"
@@ -100,6 +101,9 @@ func runUploader(
 		worker.uploader.result = "no credentials available"
 		return
 	}
+	region := config.Region(os.Getenv("CLINIC_REGION"))
+	endpoint := region.Endpoint()
+	cert := region.Cert()
 
 	// populate logger for the collect job
 	cLogger := logprinter.NewLogger("")
@@ -120,7 +124,7 @@ func runUploader(
 		pOpt := &packager.PackageOptions{
 			InputDir:   worker.job.Dir,
 			OutputFile: filepath.Join(packageDir, fmt.Sprintf("diag-%s.diag", worker.job.ID)),
-			CertPath:   "/var/lib/clinic-cert/pingcap.crt", // mounted via secret
+			Cert:       cert,
 			Rebuild:    rebuild,
 		}
 		pf, err := packager.PackageCollectedData(pOpt, true)
@@ -131,12 +135,6 @@ func runUploader(
 			return
 		}
 		klog.Infof("data set of collect job %s packaged as %s", worker.job.ID, pf)
-
-		// upload the packaged data set
-		endpoint := os.Getenv("CLINIC_ENDPOINT")
-		if endpoint == "" {
-			endpoint = "https://clinic.pingcap.com.cn"
-		}
 
 		uOpt := &packager.UploadOptions{
 			FilePath:    pf,

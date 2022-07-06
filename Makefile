@@ -50,7 +50,7 @@ CHECK_LDFLAGS += $(LDFLAGS)
 
 all: check build
 
-build: diag insight scraper collectprofiles metricfilters
+build: diag insight scraper collectprofiles metricfilters info
 
 clean:
 	@rm -rf bin
@@ -64,6 +64,9 @@ insight:
 
 scraper:
 	$(GOBUILD) $(RACE_FLAG) -ldflags '$(LDFLAGS) $(CHECK_FLAG)' -o bin/scraper cmd/scraper/*.go
+
+info:
+	cp configs/info.toml bin/
 
 metricfilters:
 	cp -r configs/metrics bin/

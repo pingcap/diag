@@ -29,7 +29,7 @@ func TestGenerateAndParserD1agHeader(t *testing.T) {
 		"cluster_type": "tidb-cluster",
 		"ext":          "To boldly go where no one has gone before",
 	}
-	file, err := GenerateD1agHeader(meta, TypeNoCompress, "")
+	file, err := GenerateD1agHeader(meta, TypeNoCompress, nil)
 	assert.Nil(err)
 
 	metabyte, format, compress, offset, err := ParserD1agHeader(bytes.NewBuffer(file))
