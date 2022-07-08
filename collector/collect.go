@@ -575,7 +575,7 @@ func (m *Manager) getOutputDir(dir string) (string, error) {
 
 func confirmStats(stats []map[string][]CollectStat, resultDir string, sensitiveTag, skipConfirm bool) error {
 	fmt.Printf("Estimated size of data to collect:\n")
-	var total int64
+	var total, compressed int64
 	statTable := [][]string{{"Host", "Size", "Target"}}
 	for _, stat := range stats {
 		if stat == nil {
@@ -587,6 +587,12 @@ func confirmStats(stats []map[string][]CollectStat, resultDir string, sensitiveT
 			}
 			for _, s := range items {
 				total += s.Size
+				if strings.HasSuffix(s.Target, "metrics, compressed") {
+					// metrics are already compressed
+					compressed += s.Size
+				} else {
+					compressed += s.Size / 10
+				}
 				statTable = append(statTable, []string{host, color.CyanString(readableSize(s.Size)), s.Target})
 			}
 		}
@@ -599,6 +605,10 @@ func confirmStats(stats []map[string][]CollectStat, resultDir string, sensitiveT
 	}
 
 	fmt.Printf("These data will be stored in %s\n", color.CyanString(resultDir))
+
+	if compressed > 3*1024*1024*1024 {
+		fmt.Println(color.YellowString("The amount of data collected is large, and the compressed data may be larger than 3GB, which exceeds the upload file size limit. Suggest to shorten the collection period if need to upload collected data to Clinic server."))
+	}
 
 	if skipConfirm {
 		return nil
