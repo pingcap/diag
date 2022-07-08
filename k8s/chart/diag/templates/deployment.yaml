@@ -43,9 +43,9 @@ spec:
               apiVersion: v1
               fieldPath: metadata.namespace
         - name: CLINIC_TOKEN
-          value: {{ required "Please set your Token. You can get your token after signing in to Clinic Server" .Values.diag.clinicToken }}
+          value: {{ required "Please set your token. You can get your token after signing in to Clinic Server" .Values.diag.clinicToken }}
         - name: CLINIC_REGION
-          value: {{ .Values.diag.clinicRegion }}
+          value: {{ required "Please set the region of Clinic Server. CN or US" .Values.diag.clinicRegion }}
       volumes:
       {{- if .Values.diag.volume }}
       - name: diag-storage

@@ -411,17 +411,17 @@ func buildTopoForK8sCluster(
 			klog.Error(err)
 			return nil, nil, nil, err
 		}
-		svcs, err := kubeCli.CoreV1().Services(ns).List(context.TODO(), metav1.ListOptions{
+		svcs, err := kubeCli.CoreV1().Services(mns).List(context.TODO(), metav1.ListOptions{
 			LabelSelector: selector.String(),
 		})
 		if err != nil {
-			klog.Errorf("error listing services of '%s' in '%s': %v", matchedMon.Name, ns, err)
+			klog.Errorf("error listing services of '%s' in '%s': %v", matchedMon.Name, mns, err)
 		}
 
 		if len(mon.Items) == 0 {
-			klog.Warningf("no services found in '%s/%s'", ns, matchedMon.Name)
+			klog.Warningf("no services found in '%s/%s'", mns, matchedMon.Name)
 		} else {
-			klog.Infof("found %d services in '%s/%s'", len(svcs.Items), ns, matchedMon.Name)
+			klog.Infof("found %d services in '%s/%s'", len(svcs.Items), mns, matchedMon.Name)
 		}
 
 		for _, svc := range svcs.Items {
