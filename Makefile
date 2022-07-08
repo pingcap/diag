@@ -78,6 +78,7 @@ k8s:
 	$(GOBUILD) $(RACE_FLAG) -ldflags '$(LDFLAGS) $(CHECK_FLAG)' -o k8s/images/diag/bin/k8s-pod cmd/k8s/*.go
 
 images: k8s
+	cp configs/info.toml k8s/images/diag/bin/
 	docker build --tag "${DOCKER_REPO}/diag:${IMAGE_TAG}" -f k8s/images/diag/Dockerfile k8s/images/diag
 
 test:
