@@ -336,6 +336,7 @@ run_with_pod {
 			echo "RELEASE_TAG: ${env.RELEASE_TAG}"
 
 			// check k8s images
+			sh "cp configs/info.toml k8s/images/diag/bin/"
 			docker.withRegistry("", "dockerhub") {
 			    sh("pwd && ls -l k8s/images")
 			    sh("docker build --tag ${IMAGE_PATH}:${env.RELEASE_TAG} -f k8s/images/diag/Dockerfile k8s/images/diag")
