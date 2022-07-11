@@ -14,7 +14,11 @@ image:
 
 # diag-collector pod config
 diag:
+
+  # get token on clinic web
   clinicToken: ""
+
+  # CN or US
   clinicRegion: ""
 
   tlsEnabled: true
