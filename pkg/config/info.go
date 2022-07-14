@@ -35,6 +35,7 @@ type ClinicServer struct {
 
 var Info DiagInfo
 var infoText string
+var AvailableRegion []string
 
 func init() {
 	binpath, err := os.Executable()
@@ -55,9 +56,10 @@ func init() {
 
 	toml.Unmarshal(data, &Info)
 
-	infoText = "Clinic Server provides the following two regions to store your diagnostic data\n"
+	infoText = "Clinic Server provides the following two regions to store your diagnostic data"
 	for k, v := range Info.ClinicServers {
-		infoText += fmt.Sprintf("[%s] region: %s url: %s\n", k, v.Info, v.Endpoint)
+		AvailableRegion = append(AvailableRegion, string(k))
+		infoText += fmt.Sprintf("\n[%s] region: %s url: %s", k, v.Info, v.Endpoint)
 	}
 }
 

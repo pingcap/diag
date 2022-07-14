@@ -112,21 +112,24 @@ func ValidateConfigKey(key, value string) (string, error) {
 	switch key {
 	case "clinic.region":
 		if _, ok := Info.ClinicServers[Region(strings.ToUpper(value))]; !ok {
-			return value, fmt.Errorf("%s cannot be %s\n%s\n", key, value, infoText)
+			return value, fmt.Errorf("%s cannot be %s, available region are [%s]", key, value, strings.Join(AvailableRegion, ","))
 		}
 		return strings.ToUpper(value), nil
 	}
 	return value, nil
 }
 
-func (c *DiagConfig) InteractiveSet() {
-	fmt.Printf("diag upload need token which you could get from %s\n", Info.ClinicServers[c.Clinic.Region])
-	fmt.Print("please input your token:")
-	fmt.Scanf("%s", &c.Clinic.Token)
+func (c *DiagConfig) InteractiveSet() error {
+	err := c.InteractiveSetRegion()
+	if err != nil {
+		return err
+	}
+	c.InteractiveSetToken()
+	return nil
 }
 
 func (c *DiagConfig) InteractiveSetToken() {
-	fmt.Printf("diag upload need token which you could get from %s\n", Info.ClinicServers[c.Clinic.Region])
+	fmt.Printf("diag upload need token which you could get from %s\n", c.Clinic.Region.Endpoint())
 	fmt.Print("please input your token:")
 	fmt.Scanf("%s", &c.Clinic.Token)
 }
