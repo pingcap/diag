@@ -544,9 +544,9 @@ func (m *Manager) CollectClusterInfo(
 }
 
 // prepare output dir of collected data
-func (m *Manager) getOutputDir(dir string) (string, error) {
+func (m *Manager) getOutputDir(dir, clusterName string) (string, error) {
 	if dir == "" {
-		dir = filepath.Join(".", "diag-"+m.session)
+		dir = filepath.Join(".", fmt.Sprintf("diag-%s-%s", clusterName, m.session))
 	}
 	dir, err := filepath.Abs(dir)
 	if err != nil {
