@@ -112,7 +112,7 @@ func ValidateConfigKey(key, value string) (string, error) {
 	switch key {
 	case "clinic.region":
 		if _, ok := Info.ClinicServers[Region(strings.ToUpper(value))]; !ok {
-			return value, fmt.Errorf("%s cannot be %s, available region are [%s]", key, value, strings.Join(AvailableRegion, ","))
+			return value, fmt.Errorf("%s cannot be %s, available regions are [%s]", key, value, strings.Join(AvailableRegion, ","))
 		}
 		return strings.ToUpper(value), nil
 	}
