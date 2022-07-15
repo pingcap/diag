@@ -179,6 +179,16 @@ func PackageCollectedData(pOpt *PackageOptions, skipConfirm bool) (string, error
 		meta["k8s_namespace"] = topo["namespace"]
 	}
 	meta["rebuild"] = pOpt.Rebuild
+
+	var size int64
+	filepath.Walk(input, func(path string, info fs.FileInfo, err error) error {
+		if !info.IsDir() {
+			size += info.Size()
+		}
+		return nil
+	})
+	meta["dir_size"] = size
+
 	header, _ := GenerateD1agHeader(meta, TypeZST, cert)
 	fileW.Write(header)
 
