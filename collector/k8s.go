@@ -64,7 +64,7 @@ func (m *Manager) prepareArgsForK8sCluster(
 	opt.ScrapeBegin = start.Format(time.RFC3339)
 	opt.ScrapeEnd = end.Format(time.RFC3339)
 
-	return m.getOutputDir(cOpt.Dir)
+	return m.getOutputDir(cOpt.Dir, opt.Cluster)
 }
 
 // buildTopoForK8sCluster creates an abstract topo from tiup-cluster metadata

@@ -70,7 +70,7 @@ func (m *Manager) prepareArgsForTiUPCluster(
 		end.Sub(start).Seconds(),
 	)
 
-	resultDir, err := m.getOutputDir(cOpt.Dir)
+	resultDir, err := m.getOutputDir(cOpt.Dir, opt.Cluster)
 	return prompt, resultDir, err
 }
 
