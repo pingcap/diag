@@ -51,7 +51,10 @@ if not specify key nor value, an interactive interface will be used to set neces
 			} else {
 				switch len(args) {
 				case 0:
-					diagConfig.InteractiveSet()
+					err := diagConfig.InteractiveSet()
+					if err != nil {
+						return err
+					}
 				case 2:
 					err := diagConfig.Set(args[0], args[1])
 					if err != nil {
