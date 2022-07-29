@@ -23,6 +23,9 @@ type CollectJobRequest struct {
 	// collectors
 	Collectors []string `json:"collectors"`
 
+	// explain sqls
+	ExplainSqls []string `json:"explain_sqls"`
+
 	// from
 	From string `json:"from,omitempty"`
 
