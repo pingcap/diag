@@ -116,6 +116,7 @@ type CollectOptions struct {
 	ExitOnError    bool              // break the process and exit when an error occur
 	ExtendedAttrs  map[string]string // extended attributes used for manual collecting mode
 	ExplainSQLPath string            // File path for explain sql
+	ExplainSqls    []string          // explain sqls
 }
 
 // CollectStat is estimated size stats of data to be collected
@@ -222,7 +223,9 @@ func (m *Manager) CollectClusterInfo(
 	}
 
 	var explainSqls []string
-	if len(cOpt.ExplainSQLPath) > 0 {
+	if len(cOpt.ExplainSqls) > 0 {
+		explainSqls = cOpt.ExplainSqls
+	} else if len(cOpt.ExplainSQLPath) > 0 {
 		b, err := os.ReadFile(cOpt.ExplainSQLPath)
 		if err != nil {
 			return "", err
@@ -447,6 +450,7 @@ func (m *Manager) CollectClusterInfo(
 				resultDir:   resultDir,
 				sqls:        explainSqls,
 				tlsCfg:      tlsCfg,
+				tables:      make(map[table]struct{}),
 			})
 	}
 

@@ -414,6 +414,10 @@ definitions:
         type: array
         items:
           type: string
+      explain_sqls:
+        type: array
+        items:
+          type: string
       from:
         type: string
         format: dateTime

@@ -37,7 +37,7 @@ type StatisticsCollectorOptions struct {
 	dbuser    string
 	dbpasswd  string
 	sqls      []string
-	tables    []table
+	tables    map[table]struct{}
 	resultDir string
 	tlsCfg    *tls.Config
 }
@@ -150,7 +150,7 @@ func (c *StatisticsCollectorOptions) Collect(m *Manager, topo *models.TiDBCluste
 
 func (c *StatisticsCollectorOptions) collectTableStatistics(ctx context.Context,
 	client *utils.HTTPClient, scheme string, db *models.TiDBSpec) (errs []string) {
-	for _, table := range c.tables {
+	for table := range c.tables {
 		err := func() error {
 			url := fmt.Sprintf("%s://%s/stats/dump/%s/%s", scheme, db.StatusURL(), table.dbName, table.tableName)
 			response, err := client.Get(ctx, url)
@@ -173,7 +173,7 @@ func (c *StatisticsCollectorOptions) collectTableStatistics(ctx context.Context,
 
 func (c *StatisticsCollectorOptions) collectTableStructures(db *sql.DB) (errs []string) {
 	defer db.Close()
-	for _, table := range c.tables {
+	for table := range c.tables {
 		err := func() error {
 			rows, err := db.Query(fmt.Sprintf("show create table %s.%s", table.dbName, table.tableName))
 			if err != nil {
@@ -204,32 +204,45 @@ func (c *StatisticsCollectorOptions) collectTables() []string {
 		}
 		for _, stmtNode := range stmtNodes {
 			v := tableVisitor{
-				tables: make([]table, 0),
+				tables:   make(map[table]struct{}),
+				cteNames: make(map[string]struct{}),
 			}
 			stmtNode.Accept(&v)
-			c.tables = append(c.tables, v.tables...)
+			for tbl := range v.tables {
+				_, ok := v.cteNames[tbl.tableName]
+				if !ok {
+					c.tables[tbl] = struct{}{}
+				}
+			}
 		}
 	}
 	return errs
 }
 
 type tableVisitor struct {
-	tables []table
+	tables   map[table]struct{}
+	cteNames map[string]struct{}
 }
 
 // Enter implements Visitor
 func (v *tableVisitor) Enter(in ast.Node) (out ast.Node, skipChildren bool) {
-	t, ok := in.(*ast.TableName)
-	if ok {
-		v.tables = append(v.tables, table{
-			dbName:    t.Schema.L,
-			tableName: t.Name.L,
-		})
-	}
 	return in, false
 }
 
 // Leave implements Visitor
 func (v *tableVisitor) Leave(in ast.Node) (out ast.Node, ok bool) {
+	if t, ok := in.(*ast.TableName); ok {
+		tbl := table{
+			tableName: t.Name.L,
+			dbName:    t.Schema.L,
+		}
+		v.tables[tbl] = struct{}{}
+	} else if s, ok := in.(*ast.SelectStmt); ok {
+		if s.With != nil && len(s.With.CTEs) > 0 {
+			for _, cte := range s.With.CTEs {
+				v.cteNames[cte.Name.L] = struct{}{}
+			}
+		}
+	}
 	return in, true
 }
