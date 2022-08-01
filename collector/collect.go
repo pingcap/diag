@@ -450,6 +450,7 @@ func (m *Manager) CollectClusterInfo(
 				resultDir:   resultDir,
 				sqls:        explainSqls,
 				tlsCfg:      tlsCfg,
+				tables:      make(map[table]struct{}),
 			})
 	}
 
