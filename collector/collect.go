@@ -228,7 +228,7 @@ func (m *Manager) CollectClusterInfo(
 		if err != nil {
 			return "", err
 		}
-		sqls := strings.Split(string(b), "\n")
+		sqls := strings.Split(string(b), ";")
 		for _, sql := range sqls {
 			if len(sql) > 0 {
 				explainSqls = append(explainSqls, sql)
