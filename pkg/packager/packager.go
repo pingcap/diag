@@ -74,7 +74,7 @@ func GenerateD1agHeader(meta map[string]interface{}, compress byte, cert *x509.C
 	}
 	w.Write(j)
 
-	if metaBuf.Len() > 0777 {
+	if metaBuf.Len() > 0xFFFFFF {
 		return nil, fmt.Errorf("the meta is too big")
 	}
 	header = append(header, packageType, byte(metaBuf.Len()>>16), byte(metaBuf.Len()>>8), byte(metaBuf.Len()))
@@ -118,8 +118,8 @@ func ParserD1agHeader(r io.Reader) (meta []byte, format, compress string, offset
 
 	metaLen := int(buf[5])<<16 + int(buf[6])<<8 + int(buf[7])
 	meta = make([]byte, metaLen)
-	_, _ = r.Read(meta)
-	return meta, format, compress, metaLen + 8, nil
+	_, err = r.Read(meta)
+	return meta, format, compress, metaLen + 8, err
 }
 
 func PackageCollectedData(pOpt *PackageOptions, skipConfirm bool) (string, error) {
@@ -189,7 +189,10 @@ func PackageCollectedData(pOpt *PackageOptions, skipConfirm bool) (string, error
 	})
 	meta["dir_size"] = size
 
-	header, _ := GenerateD1agHeader(meta, TypeZST, cert)
+	header, err := GenerateD1agHeader(meta, TypeZST, cert)
+	if err != nil {
+		return "", err
+	}
 	fileW.Write(header)
 
 	err = filepath.Walk(input, func(path string, info fs.FileInfo, err error) error {
