@@ -51,8 +51,7 @@ const (
 	CollectTypeDebug         = "debug"
 	CollectTypeComponentMeta = "component_meta"
 	CollectTypeBind          = "sql_bind"
-	CollectTypeStatistics    = "statistics"
-	CollectTypeExplainSQLs   = "explain"
+	CollectTypePlanReplayer  = "plan_replayer"
 
 	CollectModeTiUP   = "tiup-cluster"  // collect from a tiup-cluster deployed cluster
 	CollectModeK8s    = "tidb-operator" // collect from a tidb-operator deployed cluster
@@ -75,8 +74,7 @@ type CollectTree struct {
 	Debug          bool
 	Component_meta bool
 	Sql_bind       bool
-	Statistics     bool
-	Explain        bool
+	Plan_Replayer  bool
 }
 
 // Collector is the configuration defining an collecting job
@@ -230,20 +228,16 @@ func (m *Manager) CollectClusterInfo(
 		if err != nil {
 			return "", err
 		}
-		sqls := strings.Split(string(b), ";")
+		sqls := strings.Split(string(b), "\n")
 		for _, sql := range sqls {
 			if len(sql) > 0 {
 				explainSqls = append(explainSqls, sql)
 			}
 		}
-		cOpt.Collectors.Statistics = true
-		cOpt.Collectors.Explain = true
+		cOpt.Collectors.Plan_Replayer = true
 	} else {
-		if cOpt.Collectors.Statistics {
-			return "", errors.New("explain-sql should be set if statistics is included")
-		}
-		if cOpt.Collectors.Explain {
-			return "", errors.New("explain-sql should be set if explain is included")
+		if cOpt.Collectors.Plan_Replayer {
+			return "", errors.New("explain-sql should be set if PlanReplayer is included")
 		}
 	}
 
@@ -440,9 +434,9 @@ func (m *Manager) CollectClusterInfo(
 			})
 	}
 
-	if canCollect(&cOpt.Collectors.Statistics) {
+	if canCollect(&cOpt.Collectors.Plan_Replayer) {
 		collectors = append(collectors,
-			&StatisticsCollectorOptions{
+			&PlanReplayerCollectorOptions{
 				BaseOptions: opt,
 				opt:         gOpt,
 				dbuser:      dbUser,
@@ -451,18 +445,6 @@ func (m *Manager) CollectClusterInfo(
 				sqls:        explainSqls,
 				tlsCfg:      tlsCfg,
 				tables:      make(map[table]struct{}),
-			})
-	}
-
-	if canCollect(&cOpt.Collectors.Explain) {
-		collectors = append(collectors,
-			&ExplainCollectorOptions{
-				BaseOptions: opt,
-				opt:         gOpt,
-				dbuser:      dbUser,
-				dbpasswd:    dbPassword,
-				resultDir:   resultDir,
-				sqls:        explainSqls,
 			})
 	}
 
@@ -646,7 +628,7 @@ func canCollect(w interface{}) bool {
 }
 
 func needDBKey(c CollectTree) bool {
-	return c.Sql_bind || c.DB_vars || c.Statistics
+	return c.Sql_bind || c.DB_vars || c.Plan_Replayer
 }
 
 func ParseCollectTree(include, exclude []string) (CollectTree, error) {

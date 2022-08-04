@@ -6,12 +6,10 @@ maintainers = [
 
 # list of data types to collect
 collectors = [
-    "log",
     "config",
     "db_vars",
     "sql_bind",
-    "statistics",
-    "explain"
+    "plan_replayer"
 ]
 
 # list of component roles to collect
