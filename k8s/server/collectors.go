@@ -108,10 +108,8 @@ func collectData(c *gin.Context) {
 	}
 	worker := diagCtx.insertCollectJob(job)
 
-	explainSQLs := req.ExplainSqls
-
 	// run collector
-	go runCollector(diagCtx, &opt, worker, req, explainSQLs)
+	go runCollector(diagCtx, &opt, worker, req)
 
 	c.JSON(http.StatusAccepted, worker.job)
 }
@@ -120,8 +118,7 @@ func runCollector(
 	ctx *context,
 	opt *collector.BaseOptions,
 	worker *collectJobWorker,
-	req interface{},
-	explainSQLs []string,
+	rawReq interface{},
 ) {
 	gOpt := operator.Options{
 		Concurrency: 2,
@@ -134,12 +131,13 @@ func runCollector(
 		ctx.setJobStderr(worker.job.ID, err.Error())
 		return
 	}
+	req := rawReq.(types.CollectJobRequest)
 	cOpt := collector.CollectOptions{
 		Collectors:  collectors,
 		Mode:        collector.CollectModeK8s,
 		RawRequest:  req,
 		Dir:         filepath.Join(collectDir, "diag-"+worker.job.ID), // set default k8s package dir
-		ExplainSqls: explainSQLs,
+		ExplainSqls: req.ExplainSqls,
 	}
 
 	// populate logger for the collect job
@@ -373,8 +371,6 @@ func operateCollectJob(c *gin.Context) {
 
 	msg := "unknown operation."
 	sendErrMsg(c, http.StatusMethodNotAllowed, msg)
-	return
-
 }
 
 func reCollectData(c *gin.Context, diagCtx *context, id string) {
@@ -415,7 +411,7 @@ func reCollectData(c *gin.Context, diagCtx *context, id string) {
 	os.RemoveAll(requestDir)
 
 	// run collector
-	go runCollector(diagCtx, &opt, worker, cluster.RawRequest, []string{})
+	go runCollector(diagCtx, &opt, worker, cluster.RawRequest)
 	diagCtx.setJobStatus(worker.job.ID, taskStatusRunning)
 
 	c.JSON(http.StatusAccepted, worker.job)

@@ -14,6 +14,7 @@
 package collector
 
 import (
+	"context"
 	"crypto/tls"
 	"fmt"
 	"os"
@@ -34,6 +35,7 @@ import (
 	"github.com/pingcap/tiup/pkg/logger"
 	logprinter "github.com/pingcap/tiup/pkg/logger/printer"
 	"github.com/pingcap/tiup/pkg/tui"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/klog"
@@ -62,6 +64,10 @@ const (
 	AttrKeyTLSCAFile    = "tls-ca-file"
 	AttrKeyTLSCertFile  = "tls-cert-file"
 	AttrKeyTLSKeyFile   = "tls-privkey-file"
+
+	K8sSecretNameDBCredentials = "diag-db-credentials" //nolint:gosec // false positive
+	K8sSecretKeyDBUser         = "user"
+	K8sSecretKeyDBPass         = "password"
 )
 
 type CollectTree struct {
@@ -221,24 +227,29 @@ func (m *Manager) CollectClusterInfo(
 	}
 
 	var explainSqls []string
-	if len(cOpt.ExplainSqls) > 0 {
-		explainSqls = cOpt.ExplainSqls
-	} else if len(cOpt.ExplainSQLPath) > 0 {
-		b, err := os.ReadFile(cOpt.ExplainSQLPath)
-		if err != nil {
-			return "", err
-		}
-		sqls := strings.Split(string(b), ";")
-		for _, sql := range sqls {
-			if len(sql) > 0 {
-				explainSqls = append(explainSqls, sql)
+	switch cOpt.Mode {
+	case CollectModeTiUP:
+		if len(cOpt.ExplainSqls) > 0 {
+			explainSqls = cOpt.ExplainSqls
+		} else if len(cOpt.ExplainSQLPath) > 0 {
+			b, err := os.ReadFile(cOpt.ExplainSQLPath)
+			if err != nil {
+				return "", err
+			}
+			sqls := strings.Split(string(b), ";")
+			for _, sql := range sqls {
+				if len(sql) > 0 {
+					explainSqls = append(explainSqls, sql)
+				}
+			}
+			cOpt.Collectors.Plan_Replayer = true
+		} else {
+			if cOpt.Collectors.Plan_Replayer {
+				return "", errors.New("explain-sql should be set if PlanReplayer is included")
 			}
 		}
-		cOpt.Collectors.Plan_Replayer = true
-	} else {
-		if cOpt.Collectors.Plan_Replayer {
-			return "", errors.New("explain-sql should be set if PlanReplayer is included")
-		}
+	case CollectModeK8s:
+		explainSqls = cOpt.ExplainSqls
 	}
 
 	// build collector list
@@ -334,9 +345,35 @@ func (m *Manager) CollectClusterInfo(
 
 	var dbUser, dbPassword string
 	if needDBKey(cOpt.Collectors) {
-		fmt.Print("please enter database username:")
-		fmt.Scanln(&dbUser)
-		dbPassword = tui.PromptForPassword("please enter database password:")
+		switch cOpt.Mode {
+		case CollectModeTiUP:
+			fmt.Print("please enter database username:")
+			fmt.Scanln(&dbUser)
+			dbPassword = tui.PromptForPassword("please enter database password:")
+		case CollectModeK8s:
+			// get namespace
+			ns := opt.Namespace
+			if opt.Namespace == "" {
+				ns = os.Getenv("NAMESPACE")
+				if ns == "" {
+					msg := "namespace not specified and NAMESPACE environment variable not set"
+					klog.Error(msg)
+					return "", fmt.Errorf(msg)
+				}
+				klog.Infof("got namespace '%s'", ns)
+			}
+			sec, err := kubeCli.CoreV1().Secrets(ns).Get(context.TODO(), K8sSecretNameDBCredentials, metav1.GetOptions{})
+			if err != nil {
+				msg := fmt.Sprintf(
+					"collectors that require login of db specified, but failed to get db credentials from secret '%s/%s'",
+					ns, K8sSecretNameDBCredentials,
+				)
+				klog.Error(msg)
+				return "", fmt.Errorf(msg)
+			}
+			dbUser = string(sec.Data[K8sSecretKeyDBUser])
+			dbPassword = string(sec.Data[K8sSecretKeyDBPass])
+		}
 	}
 
 	if canCollect(&cOpt.Collectors.DB_vars) {
