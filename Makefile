@@ -53,7 +53,7 @@ all: check build
 build: diag insight scraper collectprofiles metricfilters info
 
 clean:
-	@rm -rf bin
+	@rm -rf bin k8s/images/diag/bin
 
 diag:
 	$(GOBUILD) $(RACE_FLAG) -ldflags '$(LDFLAGS) $(CHECK_FLAG)' -o bin/diag cmd/diag/*.go
