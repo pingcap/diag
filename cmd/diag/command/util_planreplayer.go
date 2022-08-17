@@ -28,7 +28,11 @@ import (
 func newPlanReplayerCmd() *cobra.Command {
 	opt := collector.BaseOptions{}
 	cOpt := collector.CollectOptions{}
-	cOpt.Collectors, _ = collector.ParseCollectTree([]string{collector.CollectTypePlanReplayer}, nil)
+	cOpt.Collectors, _ = collector.ParseCollectTree([]string{
+		collector.CollectTypeSchema,
+		collector.CollectTypeBind,
+		collector.CollectTypePlanReplayer,
+	}, nil)
 	var (
 		clsName        string
 		tidbHost       string

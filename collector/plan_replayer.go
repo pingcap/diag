@@ -10,7 +10,6 @@ import (
 	"io"
 	"os"
 	"path/filepath"
-	"strconv"
 	"strings"
 	"time"
 
@@ -89,29 +88,7 @@ func (c *PlanReplayerCollectorOptions) Collect(m *Manager, topo *models.TiDBClus
 		Func(
 			"collect information for plan replayer",
 			func(ctx context.Context) error {
-				var db *models.TiDBSpec
-				var sqldb *sql.DB
-				if dbHost, found := topo.Attributes[AttrKeyTiDBHost].(string); found {
-					var dbPort int
-					var dbStatus int
-					var err error
-					if dbPort, err = strconv.Atoi(topo.Attributes[AttrKeyTiDBPort].(string)); err != nil {
-						return perrs.Annotatef(err, "invalid tidb port")
-					}
-					if dbStatus, err = strconv.Atoi(topo.Attributes[AttrKeyTiDBPort].(string)); err != nil {
-						return perrs.Annotatef(err, "invalid tidb status port")
-					}
-					db = &models.TiDBSpec{
-						ComponentSpec: models.ComponentSpec{
-							Host:       dbHost,
-							Port:       dbPort,
-							StatusPort: dbStatus,
-						},
-					}
-					sqldb, err = c.getDB(db)
-				} else {
-					db, sqldb = c.getDBFromTopo(tidbInstances)
-				}
+				db, sqldb := c.getDBFromTopo(tidbInstances)
 				if db == nil || sqldb == nil {
 					return fmt.Errorf("cannot connect to any TiDB instance")
 				}

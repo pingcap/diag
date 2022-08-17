@@ -15,9 +15,11 @@ package collector
 
 import (
 	"crypto/tls"
+	"strconv"
 	"strings"
 
 	"github.com/pingcap/diag/pkg/models"
+	perrs "github.com/pingcap/errors"
 	"go.etcd.io/etcd/client/pkg/v3/transport"
 )
 
@@ -29,10 +31,27 @@ func buildTopoForManualCluster(cOpt *CollectOptions) (*models.TiDBCluster, error
 		Attributes: map[string]interface{}{},
 	}
 
+	if dbHost, found := cOpt.ExtendedAttrs[AttrKeyTiDBHost]; found {
+		var dbPort int
+		var dbStatus int
+		var err error
+		if dbPort, err = strconv.Atoi(cOpt.ExtendedAttrs[AttrKeyTiDBPort]); err != nil {
+			return nil, perrs.Annotatef(err, "invalid tidb port")
+		}
+		if dbStatus, err = strconv.Atoi(cOpt.ExtendedAttrs[AttrKeyTiDBPort]); err != nil {
+			return nil, perrs.Annotatef(err, "invalid tidb status port")
+		}
+		cls.TiDB = make([]*models.TiDBSpec, 0)
+		cls.TiDB = append(cls.TiDB, &models.TiDBSpec{
+			ComponentSpec: models.ComponentSpec{
+				Host:       dbHost,
+				Port:       dbPort,
+				StatusPort: dbStatus,
+			},
+		})
+	}
+
 	cls.Attributes[AttrKeyPDEndpoint] = strings.Split(cOpt.ExtendedAttrs[AttrKeyPDEndpoint], ",")
-	cls.Attributes[AttrKeyTiDBHost] = cOpt.ExtendedAttrs[AttrKeyTiDBHost]
-	cls.Attributes[AttrKeyTiDBPort] = cOpt.ExtendedAttrs[AttrKeyTiDBPort]
-	cls.Attributes[AttrKeyTiDBStatus] = cOpt.ExtendedAttrs[AttrKeyTiDBStatus]
 	cls.Attributes[AttrKeyPromEndpoint] = strings.Split(cOpt.ExtendedAttrs[AttrKeyPromEndpoint], ",")
 
 	return cls, nil
