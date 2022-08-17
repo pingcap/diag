@@ -59,6 +59,9 @@ const (
 
 	AttrKeyPromEndpoint = "prometheus-endpoint"
 	AttrKeyPDEndpoint   = "pd-endpoint"
+	AttrKeyTiDBHost     = "tidb-host"
+	AttrKeyTiDBPort     = "tidb-port"
+	AttrKeyTiDBStatus   = "tidb-status-port"
 	AttrKeyTLSCAFile    = "tls-ca-file"
 	AttrKeyTLSCertFile  = "tls-cert-file"
 	AttrKeyTLSKeyFile   = "tls-privkey-file"

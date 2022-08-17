@@ -14,8 +14,6 @@
 package command
 
 import (
-	"bufio"
-	"fmt"
 	"os"
 	"strings"
 	"time"
@@ -27,24 +25,24 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func newMetricDumpCmd() *cobra.Command {
+func newPlanReplayerCmd() *cobra.Command {
 	opt := collector.BaseOptions{}
 	cOpt := collector.CollectOptions{}
-	cOpt.Collectors, _ = collector.ParseCollectTree([]string{collector.CollectTypeMonitor}, nil)
+	cOpt.Collectors, _ = collector.ParseCollectTree([]string{collector.CollectTypePlanReplayer}, nil)
 	var (
-		clsName      string
-		promEndpoint string
-		pdEndpoint   string
-		metricsConf  string
-		caPath       string
-		certPath     string
-		keyPath      string
-		labels       []string
+		clsName        string
+		tidbHost       string
+		tidbPort       string
+		tidbStatusPort string
+		pdEndpoint     string
+		caPath         string
+		certPath       string
+		keyPath        string
 	)
 
 	cmd := &cobra.Command{
-		Use:   "metricdump",
-		Short: "Dump metrics from a Prometheus endpoint.",
+		Use:   "planreplayer",
+		Short: "Dump SQL plan data for replayer from a TiDB endpoint.",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			log.SetDisplayModeFromString(gOpt.DisplayMode)
 			spec.Initialize("cluster")
@@ -52,37 +50,18 @@ func newMetricDumpCmd() *cobra.Command {
 			cm := collector.NewManager("tidb", tidbSpec, log)
 
 			opt.Cluster = clsName
+			opt.ScrapeBegin = time.Now().Add(time.Minute * -1).Format(time.RFC3339)
+			opt.ScrapeEnd = time.Now().Format(time.RFC3339)
 			cOpt.RawRequest = strings.Join(os.Args[1:], " ")
 			cOpt.Mode = collector.CollectModeManual      // set collect mode
 			cOpt.ExtendedAttrs = make(map[string]string) // init attributes map
 			cOpt.ExtendedAttrs[collector.AttrKeyPDEndpoint] = pdEndpoint
-			cOpt.ExtendedAttrs[collector.AttrKeyPromEndpoint] = promEndpoint
+			cOpt.ExtendedAttrs[collector.AttrKeyTiDBHost] = tidbHost
+			cOpt.ExtendedAttrs[collector.AttrKeyTiDBPort] = tidbPort
+			cOpt.ExtendedAttrs[collector.AttrKeyTiDBStatus] = tidbStatusPort
 			cOpt.ExtendedAttrs[collector.AttrKeyTLSCAFile] = caPath
 			cOpt.ExtendedAttrs[collector.AttrKeyTLSCertFile] = certPath
 			cOpt.ExtendedAttrs[collector.AttrKeyTLSKeyFile] = keyPath
-
-			if metricsConf != "" {
-				f, err := os.Open(metricsConf)
-				if err != nil {
-					return err
-				}
-				defer f.Close()
-				s := bufio.NewScanner(f)
-				for s.Scan() {
-					if len(s.Text()) > 0 {
-						cOpt.MetricsFilter = append(cOpt.MetricsFilter, s.Text())
-					}
-				}
-			}
-
-			cOpt.MetricsLabel = make(map[string]string)
-			for _, l := range labels {
-				splited := strings.Split(l, "=")
-				if len(splited) != 2 {
-					return fmt.Errorf("%s should be like key=value", l)
-				}
-				cOpt.MetricsLabel[splited[0]] = splited[1]
-			}
 
 			if reportEnabled {
 				clsID := scrubClusterName(opt.Cluster)
@@ -96,15 +75,7 @@ func newMetricDumpCmd() *cobra.Command {
 			}
 
 			_, err := cm.CollectClusterInfo(&opt, &cOpt, &gOpt, nil, nil, skipConfirm)
-			// time is validated and updated during the collecting process
 			if reportEnabled {
-				st, errs := utils.ParseTime(opt.ScrapeBegin)
-				et, erre := utils.ParseTime(opt.ScrapeEnd)
-				if errs == nil && erre == nil {
-					teleReport.CommandInfo.(*telemetry.CollectInfo).
-						TimeSpan = int64(et.Sub(st))
-				}
-
 				if size, err := utils.DirSize(cOpt.Dir); err == nil {
 					teleReport.CommandInfo.(*telemetry.CollectInfo).
 						DataSize = size
@@ -115,21 +86,19 @@ func newMetricDumpCmd() *cobra.Command {
 	}
 
 	cmd.Flags().StringVar(&clsName, "name", "", "name of the TiDB cluster")
-	cmd.Flags().StringVar(&promEndpoint, "prometheus", "", "Prometheus endpoint")
+	cmd.Flags().StringVar(&tidbHost, "tidb-host", "", "host of the TiDB server")
+	cmd.Flags().StringVarP(&tidbPort, "tidb-port", "", "4000", "port of the TiDB server")
+	cmd.Flags().StringVarP(&tidbStatusPort, "tidb-status", "", "10080", "status port of the TiDB server")
 	cmd.Flags().StringVar(&pdEndpoint, "pd", "", "PD endpoint of the TiDB cluster")
 	cmd.Flags().StringVar(&caPath, "ca-file", "", "path to the CA of TLS enabled cluster")
 	cmd.Flags().StringVar(&certPath, "cert-file", "", "path to the client certification of TLS enabled cluster")
 	cmd.Flags().StringVar(&keyPath, "key-file", "", "path to the private key of client certification of TLS enabled cluster")
-	cmd.Flags().StringVarP(&opt.ScrapeBegin, "from", "f", time.Now().Add(time.Hour*-2).Format(time.RFC3339), "start timepoint when collecting timeseries data")
-	cmd.Flags().StringVarP(&opt.ScrapeEnd, "to", "t", time.Now().Format(time.RFC3339), "stop timepoint when collecting timeseries data")
-	cmd.Flags().StringSliceVar(&cOpt.MetricsFilter, "metricsfilter", nil, "prefix of metrics to collect")
-	cmd.Flags().StringSliceVar(&labels, "metricslabel", nil, "only collect metrics that match labels")
-	cmd.Flags().StringVar(&metricsConf, "metricsconfig", "", "config file of metricsfilter")
+	cmd.Flags().StringVar(&cOpt.ExplainSQLPath, "explain-sql", "", "File path for explain sql")
 	cmd.Flags().StringVarP(&cOpt.Dir, "output", "o", "", "output directory of collected data")
-
 	cobra.MarkFlagRequired(cmd.Flags(), "name")
-	cobra.MarkFlagRequired(cmd.Flags(), "prometheus")
+	cobra.MarkFlagRequired(cmd.Flags(), "tidb-host")
 	cobra.MarkFlagRequired(cmd.Flags(), "pd")
+	cobra.MarkFlagRequired(cmd.Flags(), "explain-sql")
 
 	return cmd
 }

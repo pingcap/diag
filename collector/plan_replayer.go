@@ -10,6 +10,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
@@ -19,6 +20,7 @@ import (
 	perrs "github.com/pingcap/errors"
 	"github.com/pingcap/tidb/parser"
 	"github.com/pingcap/tidb/parser/ast"
+
 	// Register some standard stuff
 	_ "github.com/pingcap/tidb/parser/test_driver"
 	"github.com/pingcap/tiup/pkg/cluster/ctxt"
@@ -80,14 +82,36 @@ func (c *PlanReplayerCollectorOptions) Collect(m *Manager, topo *models.TiDBClus
 		c.opt.Concurrency,
 		m.logger,
 	)
-	tidbInstants := topo.TiDB
+	tidbInstances := topo.TiDB
 	logger := ctx.Value(logprinter.ContextKeyLogger).(*logprinter.Logger)
 
 	t := task.NewBuilder(m.logger).
 		Func(
 			"collect information for plan replayer",
 			func(ctx context.Context) error {
-				db, sqldb := c.getDB(tidbInstants)
+				var db *models.TiDBSpec
+				var sqldb *sql.DB
+				if dbHost, found := topo.Attributes[AttrKeyTiDBHost].(string); found {
+					var dbPort int
+					var dbStatus int
+					var err error
+					if dbPort, err = strconv.Atoi(topo.Attributes[AttrKeyTiDBPort].(string)); err != nil {
+						return perrs.Annotatef(err, "invalid tidb port")
+					}
+					if dbStatus, err = strconv.Atoi(topo.Attributes[AttrKeyTiDBPort].(string)); err != nil {
+						return perrs.Annotatef(err, "invalid tidb status port")
+					}
+					db = &models.TiDBSpec{
+						ComponentSpec: models.ComponentSpec{
+							Host:       dbHost,
+							Port:       dbPort,
+							StatusPort: dbStatus,
+						},
+					}
+					sqldb, err = c.getDB(db)
+				} else {
+					db, sqldb = c.getDBFromTopo(tidbInstances)
+				}
 				if db == nil || sqldb == nil {
 					return fmt.Errorf("cannot connect to any TiDB instance")
 				}
@@ -161,7 +185,7 @@ func (c *PlanReplayerCollectorOptions) collectPlanReplayer(ctx context.Context, 
 }
 
 /*
- |-table_tiflash_replica.txt
+|-table_tiflash_replica.txt
 */
 func (c *PlanReplayerCollectorOptions) collectTiflashReplicas(zw *zip.Writer, db *sql.DB) (errs []string) {
 	vf, err := zw.Create("table_tiflash_replica.txt")
@@ -194,7 +218,7 @@ func (c *PlanReplayerCollectorOptions) collectTiflashReplicas(zw *zip.Writer, db
 }
 
 /*
- |-variables.toml
+|-variables.toml
 */
 func (c *PlanReplayerCollectorOptions) collectDBVars(zw *zip.Writer, db *sql.DB) (errs []string) {
 	err := func() error {
@@ -228,15 +252,15 @@ func (c *PlanReplayerCollectorOptions) collectDBVars(zw *zip.Writer, db *sql.DB)
 }
 
 /*
- |-meta.txt
- |-schema
- |	 |-db1.table1.schema.txt
- |	 |-db2.table2.schema.txt
- |	 |-....
- |-view
- | 	 |-db1.view1.view.txt
- |	 |-db2.view2.view.txt
- |	 |-....
+|-meta.txt
+|-schema
+|	 |-db1.table1.schema.txt
+|	 |-db2.table2.schema.txt
+|	 |-....
+|-view
+| 	 |-db1.view1.view.txt
+|	 |-db2.view2.view.txt
+|	 |-....
 */
 func (c *PlanReplayerCollectorOptions) collectTableStructures(zw *zip.Writer, db *sql.DB) (errs []string) {
 	createTblOrView := func(isTable bool, dbName, name string) error {
@@ -344,11 +368,11 @@ func (c *PlanReplayerCollectorOptions) separateTableAndView(ctx context.Context,
 }
 
 /*
- |-meta.txt
- |-stats
- |   |-stats1.json
- |   |-stats2.json
- |   |-....
+|-meta.txt
+|-stats
+|   |-stats1.json
+|   |-stats2.json
+|   |-....
 */
 func (c *PlanReplayerCollectorOptions) collectTableStats(ctx context.Context, zw *zip.Writer,
 	db *models.TiDBSpec) (errs []string) {
@@ -382,11 +406,11 @@ func (c *PlanReplayerCollectorOptions) collectTableStats(ctx context.Context, zw
 }
 
 /*
- |-sqls.sql
- |_explain
-     |-explain1.txt
-	 |-explain2.txt
- 	 |-....
+	 |-sqls.sql
+	 |_explain
+	     |-explain1.txt
+		 |-explain2.txt
+	 	 |-....
 */
 func (c *PlanReplayerCollectorOptions) collectSQLExplain(zw *zip.Writer, db *sql.DB) (errs []string) {
 	for index, sql := range c.sqls {
@@ -425,22 +449,25 @@ func (c *PlanReplayerCollectorOptions) collectSQLExplain(zw *zip.Writer, db *sql
 	return errs
 }
 
-func (c *PlanReplayerCollectorOptions) getDB(tidbInstants []*models.TiDBSpec) (*models.TiDBSpec, *sql.DB) {
+func (c *PlanReplayerCollectorOptions) getDB(inst *models.TiDBSpec) (*sql.DB, error) {
+	trydb, err := sql.Open("mysql", fmt.Sprintf("%s:%s@tcp(%s:%d)/%s",
+		c.dbuser, c.dbpasswd, inst.Host(), inst.MainPort(), c.currDB))
+	if err != nil {
+		return nil, err
+	}
+	err = trydb.Ping()
+	if err != nil {
+		defer trydb.Close()
+		return nil, err
+	}
+	return trydb, nil
+}
+
+func (c *PlanReplayerCollectorOptions) getDBFromTopo(tidbInstants []*models.TiDBSpec) (*models.TiDBSpec, *sql.DB) {
 	var sqldb *sql.DB
 	var db *models.TiDBSpec
 	for _, inst := range tidbInstants {
-		cdb, err := func() (*sql.DB, error) {
-			trydb, err := sql.Open("mysql", fmt.Sprintf("%s:%s@tcp(%s:%d)/%s", c.dbuser, c.dbpasswd, inst.Host(), inst.MainPort(), c.currDB))
-			if err != nil {
-				return nil, err
-			}
-			err = trydb.Ping()
-			if err != nil {
-				defer trydb.Close()
-				return nil, err
-			}
-			return trydb, nil
-		}()
+		cdb, err := c.getDB(inst)
 		if err != nil {
 			continue
 		}
