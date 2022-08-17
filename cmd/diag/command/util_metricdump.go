@@ -33,6 +33,7 @@ func newMetricDumpCmd() *cobra.Command {
 	cOpt.Collectors, _ = collector.ParseCollectTree([]string{collector.CollectTypeMonitor}, nil)
 	var (
 		clsName      string
+		clsID        string
 		promEndpoint string
 		pdEndpoint   string
 		metricsConf  string
@@ -47,6 +48,12 @@ func newMetricDumpCmd() *cobra.Command {
 		Short: "Dump metrics from a Prometheus endpoint.",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			log.SetDisplayModeFromString(gOpt.DisplayMode)
+
+			// check for arguments
+			if pdEndpoint == "" && clsID == "" {
+				return fmt.Errorf("either on of --pd or --cluster-id must be specified")
+			}
+
 			spec.Initialize("cluster")
 			tidbSpec := spec.GetSpecManager()
 			cm := collector.NewManager("tidb", tidbSpec, log)
@@ -55,6 +62,7 @@ func newMetricDumpCmd() *cobra.Command {
 			cOpt.RawRequest = strings.Join(os.Args[1:], " ")
 			cOpt.Mode = collector.CollectModeManual      // set collect mode
 			cOpt.ExtendedAttrs = make(map[string]string) // init attributes map
+			cOpt.ExtendedAttrs[collector.AttrKeyClusterID] = clsID
 			cOpt.ExtendedAttrs[collector.AttrKeyPDEndpoint] = pdEndpoint
 			cOpt.ExtendedAttrs[collector.AttrKeyPromEndpoint] = promEndpoint
 			cOpt.ExtendedAttrs[collector.AttrKeyTLSCAFile] = caPath
@@ -115,6 +123,7 @@ func newMetricDumpCmd() *cobra.Command {
 	}
 
 	cmd.Flags().StringVar(&clsName, "name", "", "name of the TiDB cluster")
+	cmd.Flags().StringVar(&clsID, "cluster-id", "", "ID of the TiDB cluster")
 	cmd.Flags().StringVar(&promEndpoint, "prometheus", "", "Prometheus endpoint")
 	cmd.Flags().StringVar(&pdEndpoint, "pd", "", "PD endpoint of the TiDB cluster")
 	cmd.Flags().StringVar(&caPath, "ca-file", "", "path to the CA of TLS enabled cluster")

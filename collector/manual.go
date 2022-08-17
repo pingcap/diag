@@ -38,7 +38,7 @@ func buildTopoForManualCluster(cOpt *CollectOptions) (*models.TiDBCluster, error
 		if dbPort, err = strconv.Atoi(cOpt.ExtendedAttrs[AttrKeyTiDBPort]); err != nil {
 			return nil, perrs.Annotatef(err, "invalid tidb port")
 		}
-		if dbStatus, err = strconv.Atoi(cOpt.ExtendedAttrs[AttrKeyTiDBPort]); err != nil {
+		if dbStatus, err = strconv.Atoi(cOpt.ExtendedAttrs[AttrKeyTiDBStatus]); err != nil {
 			return nil, perrs.Annotatef(err, "invalid tidb status port")
 		}
 		cls.TiDB = make([]*models.TiDBSpec, 0)
@@ -51,6 +51,7 @@ func buildTopoForManualCluster(cOpt *CollectOptions) (*models.TiDBCluster, error
 		})
 	}
 
+	cls.Attributes[AttrKeyClusterID] = cOpt.ExtendedAttrs[AttrKeyClusterID]
 	cls.Attributes[AttrKeyPDEndpoint] = strings.Split(cOpt.ExtendedAttrs[AttrKeyPDEndpoint], ",")
 	cls.Attributes[AttrKeyPromEndpoint] = strings.Split(cOpt.ExtendedAttrs[AttrKeyPromEndpoint], ",")
 

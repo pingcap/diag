@@ -125,10 +125,14 @@ func (c *MetaCollectOptions) Collect(m *Manager, topo *models.TiDBCluster) error
 		clusterID = c.tc.GetClusterID()
 		clusterType = spec.TopoTypeTiDB
 	case CollectModeManual:
-		endpoints := topo.Attributes[AttrKeyPDEndpoint].([]string)
-		clusterID, err = getClusterIDFromPD(ctx, endpoints, c.tlsCfg)
-		if err != nil {
-			return err
+		if clsID, ok := topo.Attributes[AttrKeyClusterID].(string); ok && clsID != "" {
+			clusterID = clsID
+		} else {
+			endpoints := topo.Attributes[AttrKeyPDEndpoint].([]string)
+			clusterID, err = getClusterIDFromPD(ctx, endpoints, c.tlsCfg)
+			if err != nil {
+				return err
+			}
 		}
 		clusterType = spec.TopoTypeTiDB
 	default:

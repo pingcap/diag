@@ -14,6 +14,7 @@
 package command
 
 import (
+	"fmt"
 	"os"
 	"strings"
 	"time"
@@ -35,6 +36,7 @@ func newPlanReplayerCmd() *cobra.Command {
 	}, nil)
 	var (
 		clsName        string
+		clsID          string
 		tidbHost       string
 		tidbPort       string
 		tidbStatusPort string
@@ -49,6 +51,12 @@ func newPlanReplayerCmd() *cobra.Command {
 		Short: "Dump SQL plan data for replayer from a TiDB endpoint.",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			log.SetDisplayModeFromString(gOpt.DisplayMode)
+
+			// check for arguments
+			if pdEndpoint == "" && clsID == "" {
+				return fmt.Errorf("either on of --pd or --cluster-id must be specified")
+			}
+
 			spec.Initialize("cluster")
 			tidbSpec := spec.GetSpecManager()
 			cm := collector.NewManager("tidb", tidbSpec, log)
@@ -56,9 +64,11 @@ func newPlanReplayerCmd() *cobra.Command {
 			opt.Cluster = clsName
 			opt.ScrapeBegin = time.Now().Add(time.Minute * -1).Format(time.RFC3339)
 			opt.ScrapeEnd = time.Now().Format(time.RFC3339)
+
 			cOpt.RawRequest = strings.Join(os.Args[1:], " ")
 			cOpt.Mode = collector.CollectModeManual      // set collect mode
 			cOpt.ExtendedAttrs = make(map[string]string) // init attributes map
+			cOpt.ExtendedAttrs[collector.AttrKeyClusterID] = clsID
 			cOpt.ExtendedAttrs[collector.AttrKeyPDEndpoint] = pdEndpoint
 			cOpt.ExtendedAttrs[collector.AttrKeyTiDBHost] = tidbHost
 			cOpt.ExtendedAttrs[collector.AttrKeyTiDBPort] = tidbPort
@@ -90,6 +100,7 @@ func newPlanReplayerCmd() *cobra.Command {
 	}
 
 	cmd.Flags().StringVar(&clsName, "name", "", "name of the TiDB cluster")
+	cmd.Flags().StringVar(&clsID, "cluster-id", "", "ID of the TiDB cluster")
 	cmd.Flags().StringVar(&tidbHost, "tidb-host", "", "host of the TiDB server")
 	cmd.Flags().StringVarP(&tidbPort, "tidb-port", "", "4000", "port of the TiDB server")
 	cmd.Flags().StringVarP(&tidbStatusPort, "tidb-status", "", "10080", "status port of the TiDB server")
@@ -101,7 +112,6 @@ func newPlanReplayerCmd() *cobra.Command {
 	cmd.Flags().StringVarP(&cOpt.Dir, "output", "o", "", "output directory of collected data")
 	cobra.MarkFlagRequired(cmd.Flags(), "name")
 	cobra.MarkFlagRequired(cmd.Flags(), "tidb-host")
-	cobra.MarkFlagRequired(cmd.Flags(), "pd")
 	cobra.MarkFlagRequired(cmd.Flags(), "explain-sql")
 
 	return cmd
