@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/BurntSushi/toml"
 	"github.com/joomcode/errorx"
 	"github.com/pingcap/diag/pkg/models"
 	perrs "github.com/pingcap/errors"
@@ -135,7 +136,82 @@ func (c *PlanReplayerCollectorOptions) collectPlanReplayer(ctx context.Context, 
 	if len(errs) > 0 {
 		logger.Warnf("error happened during explain sql, err:%v", strings.Join(errs, ","))
 	}
+	errs = c.collectDBVars(zw, db)
+	if len(errs) > 0 {
+		logger.Warnf("error happened during collect dbvars, err:%v", strings.Join(errs, ","))
+	}
+	errs = c.collectTiflashReplicas(zw, db)
+	if len(errs) > 0 {
+		logger.Warnf("error happened during collect tiflash replica info, err:%v", strings.Join(errs, ","))
+	}
 	return nil
+}
+
+/*
+ |-table_tiflash_replica.txt
+*/
+func (c *PlanReplayerCollectorOptions) collectTiflashReplicas(zw *zip.Writer, db *sql.DB) (errs []string) {
+	vf, err := zw.Create("table_tiflash_replica.txt")
+	if err != nil {
+		errs = append(errs, fmt.Errorf("create table_tiflash_replica.txt failed, err:%v", err).Error())
+		return errs
+	}
+	for table := range c.tables {
+		err := func() error {
+			sql := fmt.Sprintf("SELECT TABLE_SCHEMA,TABLE_NAME,REPLICA_COUNT FROM INFORMATION_SCHEMA.TIFLASH_REPLICA WHERE TABLE_SCHEMA='%s' AND TABLE_NAME ='%s' AND REPLICA_COUNT >0", table.dbName, table.tableName)
+			rows, err := db.Query(sql)
+			if err != nil {
+				return fmt.Errorf("failed to query tiflash replicas, err:%v", err)
+			}
+			for rows.Next() {
+				var dbName, tableName, count string
+				err = rows.Scan(&dbName, &tableName, &count)
+				r := []string{
+					dbName, tableName, count,
+				}
+				fmt.Fprintf(vf, "%s\n", strings.Join(r, "\t"))
+			}
+			return nil
+		}()
+		if err != nil {
+			errs = append(errs, err.Error())
+		}
+	}
+	return errs
+}
+
+/*
+ |-variables.toml
+*/
+func (c *PlanReplayerCollectorOptions) collectDBVars(zw *zip.Writer, db *sql.DB) (errs []string) {
+	err := func() error {
+		vf, err := zw.Create("variables.toml")
+		if err != nil {
+			return fmt.Errorf("create variables.toml failed, err:%v", err)
+		}
+		rows, err := db.Query("show variables")
+		if err != nil {
+			return fmt.Errorf("show variables failed, err:%v", err)
+		}
+		defer rows.Close()
+		varMap := make(map[string]string)
+		var name, value string
+		for rows.Next() {
+			err := rows.Scan(&name, &value)
+			if err != nil {
+				return fmt.Errorf("show variables failed, err:%v", err)
+			}
+			varMap[name] = value
+		}
+		if err := toml.NewEncoder(vf).Encode(varMap); err != nil {
+			return fmt.Errorf("dump varMap failed, err:%v", err)
+		}
+		return nil
+	}()
+	if err != nil {
+		errs = append(errs, err.Error())
+	}
+	return errs
 }
 
 /*
