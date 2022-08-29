@@ -39,7 +39,7 @@ type PlanReplayerCollectorOptions struct {
 
 // Desc implements the Collector interface
 func (c *PlanReplayerCollectorOptions) Desc() string {
-	return "collect plan replayer"
+	return "collect information for plan replayer"
 }
 
 // GetBaseOptions implements the Collector interface
@@ -79,7 +79,7 @@ func (c *PlanReplayerCollectorOptions) Collect(m *Manager, topo *models.TiDBClus
 
 	t := task.NewBuilder(m.logger).
 		Func(
-			"collect plan replayer",
+			"collect information for plan replayer",
 			func(ctx context.Context) error {
 				db, sqldb := c.getDB(tidbInstants)
 				if db == nil || sqldb == nil {
