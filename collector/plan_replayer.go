@@ -1,6 +1,7 @@
 package collector
 
 import (
+	"archive/zip"
 	"context"
 	"crypto/tls"
 	"database/sql"
@@ -10,7 +11,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/joho/sqltocsv"
 	"github.com/joomcode/errorx"
 	"github.com/pingcap/diag/pkg/models"
 	perrs "github.com/pingcap/errors"
@@ -39,7 +39,7 @@ type PlanReplayerCollectorOptions struct {
 
 // Desc implements the Collector interface
 func (c *PlanReplayerCollectorOptions) Desc() string {
-	return "table statistics of components"
+	return "collect information for plan replayer"
 }
 
 // GetBaseOptions implements the Collector interface
@@ -69,14 +69,6 @@ func (c *PlanReplayerCollectorOptions) Prepare(_ *Manager, _ *models.TiDBCluster
 
 // Collect implements the Collector interface
 func (c *PlanReplayerCollectorOptions) Collect(m *Manager, topo *models.TiDBCluster) error {
-	err := os.Mkdir(filepath.Join(c.resultDir, DirNameExplain), 0755)
-	if err != nil {
-		return err
-	}
-	err = os.Mkdir(filepath.Join(c.resultDir, DirStatistics), 0755)
-	if err != nil {
-		return err
-	}
 	ctx := ctxt.New(
 		context.Background(),
 		c.opt.Concurrency,
@@ -87,19 +79,16 @@ func (c *PlanReplayerCollectorOptions) Collect(m *Manager, topo *models.TiDBClus
 
 	t := task.NewBuilder(m.logger).
 		Func(
-			"collect explain sqls",
+			"collect information for plan replayer",
 			func(ctx context.Context) error {
 				db, sqldb := c.getDB(tidbInstants)
 				if db == nil || sqldb == nil {
 					return fmt.Errorf("cannot connect to any TiDB instance")
 				}
 				defer sqldb.Close()
-				errs1 := c.CollectSqlExplain(sqldb)
-				errs2 := c.CollectTableStats(ctx, db, sqldb)
-				errs := append(errs1, errs2...)
-				if len(errs) > 0 {
-					// Only print warning is enough here
-					logger.Warnf(strings.Join(errs, ";"))
+				err := c.collectPlanReplayer(ctx, sqldb, db)
+				if err != nil {
+					logger.Warnf("error happened during plan replayer, err:%v", err)
 				}
 				return nil
 			},
@@ -116,35 +105,158 @@ func (c *PlanReplayerCollectorOptions) Collect(m *Manager, topo *models.TiDBClus
 	return nil
 }
 
-func (c *PlanReplayerCollectorOptions) CollectTableStats(ctx context.Context, db *models.TiDBSpec, sqldb *sql.DB) []string {
+func (c *PlanReplayerCollectorOptions) collectPlanReplayer(ctx context.Context, db *sql.DB, dbInstance *models.TiDBSpec) error {
+	logger := ctx.Value(logprinter.ContextKeyLogger).(*logprinter.Logger)
+	zf, err := os.Create(filepath.Join(c.resultDir, "plan_replayer.zip"))
+	if err != nil {
+		return err
+	}
+	// Create zip writer
+	zw := zip.NewWriter(zf)
+	defer func() {
+		err = zw.Close()
+		if err != nil {
+			logger.Warnf("Closing zip writer failed, err:%v", err)
+		}
+		err = zf.Close()
+		if err != nil {
+			logger.Warnf("Closing zip file failed, err:%v", err)
+		}
+	}()
+	errs := c.collectTableStructures(zw, db)
+	if len(errs) > 0 {
+		logger.Warnf("error happened during collect table schema, err:%v", strings.Join(errs, ","))
+	}
+	errs = c.collectTableStats(ctx, zw, dbInstance)
+	if len(errs) > 0 {
+		logger.Warnf("error happened during collect table stats, err:%v", strings.Join(errs, ","))
+	}
+	errs = c.collectSQLExplain(zw, db)
+	if len(errs) > 0 {
+		logger.Warnf("error happened during explain sql, err:%v", strings.Join(errs, ","))
+	}
+	return nil
+}
+
+/*
+ |-meta.txt
+ |-schema
+ |	 |-db1.table1.schema.txt
+ |	 |-db2.table2.schema.txt
+ |	 |-....
+*/
+func (c *PlanReplayerCollectorOptions) collectTableStructures(zw *zip.Writer, db *sql.DB) (errs []string) {
+	errs = c.collectTables()
+	if errs != nil {
+		return errs
+	}
+	for table := range c.tables {
+		err := func() error {
+			rows, err := db.Query(fmt.Sprintf("show create table %s.%s", table.dbName, table.tableName))
+			if err != nil {
+				return fmt.Errorf("db:%v, table:%v, err:%v", table.dbName, table.tableName, err.Error())
+			}
+			var tableName string
+			var showCreate string
+			for rows.Next() {
+				err := rows.Scan(&tableName, &showCreate)
+				if err != nil {
+					return fmt.Errorf("show create table %s.%s failed, err:%v", table.dbName, table.tableName, err)
+				}
+			}
+			defer rows.Close()
+			fw, err := zw.Create(fmt.Sprintf("schema/%s.%s.schema.txt", table.dbName, table.tableName))
+			if err != nil {
+				return fmt.Errorf("generate schema/%s.%s.schema.txt failed, err:%v", table.dbName, table.tableName, err)
+			}
+			fmt.Fprintf(fw, "create database if not exists `%v`; use `%v`;", table.dbName, table.dbName)
+			fmt.Fprintf(fw, "%s", showCreate)
+			return nil
+		}()
+		if err != nil {
+			errs = append(errs, err.Error())
+		}
+	}
+	return errs
+}
+
+/*
+ |-meta.txt
+ |-stats
+ |   |-stats1.json
+ |   |-stats2.json
+ |   |-....
+*/
+func (c *PlanReplayerCollectorOptions) collectTableStats(ctx context.Context, zw *zip.Writer,
+	db *models.TiDBSpec) (errs []string) {
 	client := utils.NewHTTPClient(time.Second*15, c.tlsCfg)
 	scheme := "http"
 	if c.tlsCfg != nil {
 		scheme = "https"
 	}
-	errs1 := c.collectTableStatistics(ctx, client, scheme, db)
-	errs2 := c.collectTableStructures(sqldb)
-	return append(errs1, errs2...)
+	for table := range c.tables {
+		err := func() error {
+			url := fmt.Sprintf("%s://%s/stats/dump/%s/%s", scheme, db.StatusURL(), table.dbName, table.tableName)
+			response, err := client.Get(ctx, url)
+			if err != nil {
+				return fmt.Errorf("dump %s.%s failed, err:%v", table.dbName, table.tableName, err.Error())
+			}
+			fw, err := zw.Create(fmt.Sprintf("stats/%s.%s.json", table.dbName, table.tableName))
+			if err != nil {
+				return fmt.Errorf("create stats/%s.%s.json failed, err:%v", table.dbName, table.tableName, err)
+			}
+			_, err = fw.Write(response)
+			if err != nil {
+				return fmt.Errorf("write %s.%s stats failed, err:%v", table.dbName, table.tableName, err)
+			}
+			return nil
+		}()
+		if err != nil {
+			errs = append(errs, err.Error())
+		}
+	}
+	return errs
 }
 
-func (c *PlanReplayerCollectorOptions) CollectSqlExplain(db *sql.DB) []string {
-	var errs []string
+/*
+ |-sqls.sql
+ |_explain
+     |-explain1.txt
+	 |-explain2.txt
+ 	 |-....
+*/
+func (c *PlanReplayerCollectorOptions) collectSQLExplain(zw *zip.Writer, db *sql.DB) (errs []string) {
 	for index, sql := range c.sqls {
-		rows, err := db.Query(fmt.Sprintf("explain %s", sql))
+		err := func() error {
+			fw, err := zw.Create(fmt.Sprintf("explain/explain%v.txt", index))
+			if err != nil {
+				return fmt.Errorf("create explain sql failed, err:%v", err)
+			}
+			rows, err := db.Query(fmt.Sprintf("explain %s", sql))
+			if err != nil {
+				return fmt.Errorf("explain sql:%s failed, err:%v", sql, err)
+			}
+			defer rows.Close()
+			cols, err := rows.Columns()
+			if err != nil {
+				return fmt.Errorf("explain sql:%s failed, err:%v", sql, err)
+			}
+			buff := make([]interface{}, len(cols))
+			data := make([]string, len(cols))
+			for i, _ := range buff {
+				buff[i] = &data[i]
+			}
+			for rows.Next() {
+				err := rows.Scan(buff...)
+				if err != nil {
+					return fmt.Errorf("explain sql:%s failed, err:%v", sql, err)
+				}
+				fmt.Fprintf(fw, "%s\n", strings.Join(data, "\t"))
+			}
+			return nil
+		}()
 		if err != nil {
-			errs = append(errs, fmt.Sprintf("sql:%v, err:%v", sql, err.Error()))
-			continue
-		}
-		fileName := filepath.Join(c.resultDir, DirNameExplain, fmt.Sprintf("sql%d", index))
-		_, err = os.Create(fileName)
-		if err != nil {
-			errs = append(errs, fmt.Sprintf("sql:%v, err:%v", sql, err.Error()))
-			continue
-		}
-		err = sqltocsv.WriteFile(fileName, rows)
-		if err != nil {
-			errs = append(errs, fmt.Sprintf("sql:%v, err:%v", sql, err.Error()))
-			continue
+			errs = append(errs, err.Error())
 		}
 	}
 	return errs
@@ -173,63 +285,6 @@ func (c *PlanReplayerCollectorOptions) getDB(tidbInstants []*models.TiDBSpec) (*
 		db = inst
 	}
 	return db, sqldb
-}
-
-func (c *PlanReplayerCollectorOptions) collectTableStatistics(ctx context.Context,
-	client *utils.HTTPClient, scheme string, db *models.TiDBSpec) (errs []string) {
-	for table := range c.tables {
-		err := func() error {
-			url := fmt.Sprintf("%s://%s/stats/dump/%s/%s", scheme, db.StatusURL(), table.dbName, table.tableName)
-			response, err := client.Get(ctx, url)
-			if err != nil {
-				return fmt.Errorf("db:%v, table:%v, err:%v", table.dbName, table.tableName, err.Error())
-			}
-			path := filepath.Join(c.resultDir, DirStatistics, fmt.Sprintf("%s.%s.json", table.dbName, table.tableName))
-			_, err = os.Create(path)
-			if err != nil {
-				return fmt.Errorf("db:%v, table:%v, err:%v", table.dbName, table.tableName, err.Error())
-			}
-			err = os.WriteFile(path, response, 0600)
-			if err != nil {
-				return fmt.Errorf("db:%v, table:%v, err:%v", table.dbName, table.tableName, err.Error())
-			}
-			return nil
-		}()
-		if err != nil {
-			errs = append(errs, err.Error())
-		}
-	}
-	return errs
-}
-
-func (c *PlanReplayerCollectorOptions) collectTableStructures(db *sql.DB) (errs []string) {
-	defer db.Close()
-	errs = c.collectTables()
-	if errs != nil {
-		return errs
-	}
-	for table := range c.tables {
-		err := func() error {
-			rows, err := db.Query(fmt.Sprintf("show create table %s.%s", table.dbName, table.tableName))
-			if err != nil {
-				return fmt.Errorf("db:%v, table:%v, err:%v", table.dbName, table.tableName, err.Error())
-			}
-			fileName := filepath.Join(c.resultDir, DirStatistics, fmt.Sprintf("%s.%s.schema", table.dbName, table.tableName))
-			_, err = os.Create(fileName)
-			if err != nil {
-				return fmt.Errorf("db:%v, table:%v, err:%v", table.dbName, table.tableName, err.Error())
-			}
-			err = sqltocsv.WriteFile(fileName, rows)
-			if err != nil {
-				return fmt.Errorf("db:%v, table:%v, err:%v", table.dbName, table.tableName, err.Error())
-			}
-			return nil
-		}()
-		if err != nil {
-			errs = append(errs, err.Error())
-		}
-	}
-	return errs
 }
 
 func (c *PlanReplayerCollectorOptions) collectTables() []string {
