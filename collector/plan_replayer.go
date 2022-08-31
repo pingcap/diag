@@ -243,15 +243,25 @@ func (c *PlanReplayerCollectorOptions) collectTableStructures(zw *zip.Writer, db
 		if err != nil {
 			return fmt.Errorf("db:%v, table:%v, err:%v", dbName, name, err.Error())
 		}
-		var tableName string
+		defer rows.Close()
 		var showCreate string
-		for rows.Next() {
-			err := rows.Scan(&tableName, &showCreate)
-			if err != nil {
-				return fmt.Errorf("show create table %s.%s failed, err:%v", dbName, name, err)
+		if isTable {
+			var tableName string
+			for rows.Next() {
+				err := rows.Scan(&tableName, &showCreate)
+				if err != nil {
+					return fmt.Errorf("show create table %s.%s failed, err:%v", dbName, name, err)
+				}
+			}
+		} else {
+			var viewName, character, collation string
+			for rows.Next() {
+				err := rows.Scan(&viewName, &showCreate, &character, &collation)
+				if err != nil {
+					return fmt.Errorf("show create table %s.%s failed, err:%v", dbName, name, err)
+				}
 			}
 		}
-		defer rows.Close()
 		var fw io.Writer
 		if isTable {
 			fw, err = zw.Create(fmt.Sprintf("schema/%s.%s.schema.txt", dbName, name))
