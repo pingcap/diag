@@ -5,7 +5,9 @@ import (
 	"context"
 	"crypto/tls"
 	"database/sql"
+	"encoding/json"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -29,13 +31,15 @@ import (
 // PlanReplayerCollectorOptions collects sql explains and related statistics
 type PlanReplayerCollectorOptions struct {
 	*BaseOptions
-	opt       *operator.Options // global operations from cli
-	dbuser    string
-	dbpasswd  string
-	sqls      []string
-	tables    map[table]struct{}
-	resultDir string
-	tlsCfg    *tls.Config
+	opt            *operator.Options // global operations from cli
+	dbuser         string
+	dbpasswd       string
+	sqls           []string
+	views          map[table]struct{}
+	tables         map[table]struct{}
+	tablesAndViews map[table]struct{}
+	resultDir      string
+	tlsCfg         *tls.Config
 }
 
 // Desc implements the Collector interface
@@ -124,7 +128,15 @@ func (c *PlanReplayerCollectorOptions) collectPlanReplayer(ctx context.Context, 
 			logger.Warnf("Closing zip file failed, err:%v", err)
 		}
 	}()
-	errs := c.collectTableStructures(zw, db)
+	errs := c.collectTables()
+	if errs != nil {
+		return fmt.Errorf("collect table failed, errs:%s", strings.Join(errs, ","))
+	}
+	errs = c.separateTableAndView(ctx, dbInstance, c.tablesAndViews)
+	if errs != nil {
+		return fmt.Errorf("separate tables and views failed, err:%s", strings.Join(errs, ","))
+	}
+	errs = c.collectTableStructures(zw, db)
 	if len(errs) > 0 {
 		logger.Warnf("error happened during collect table schema, err:%v", strings.Join(errs, ","))
 	}
@@ -220,33 +232,107 @@ func (c *PlanReplayerCollectorOptions) collectDBVars(zw *zip.Writer, db *sql.DB)
  |	 |-db1.table1.schema.txt
  |	 |-db2.table2.schema.txt
  |	 |-....
+ |-view
+ | 	 |-db1.view1.view.txt
+ |	 |-db2.view2.view.txt
+ |	 |-....
 */
 func (c *PlanReplayerCollectorOptions) collectTableStructures(zw *zip.Writer, db *sql.DB) (errs []string) {
-	errs = c.collectTables()
-	if errs != nil {
-		return errs
-	}
-	for table := range c.tables {
-		err := func() error {
-			rows, err := db.Query(fmt.Sprintf("show create table %s.%s", table.dbName, table.tableName))
-			if err != nil {
-				return fmt.Errorf("db:%v, table:%v, err:%v", table.dbName, table.tableName, err.Error())
-			}
+	createTblOrView := func(isTable bool, dbName, name string) error {
+		rows, err := db.Query(fmt.Sprintf("show create table %s.%s", dbName, name))
+		if err != nil {
+			return fmt.Errorf("db:%v, table:%v, err:%v", dbName, name, err.Error())
+		}
+		defer rows.Close()
+		var showCreate string
+		if isTable {
 			var tableName string
-			var showCreate string
 			for rows.Next() {
 				err := rows.Scan(&tableName, &showCreate)
 				if err != nil {
-					return fmt.Errorf("show create table %s.%s failed, err:%v", table.dbName, table.tableName, err)
+					return fmt.Errorf("show create table %s.%s failed, err:%v", dbName, name, err)
 				}
 			}
-			defer rows.Close()
-			fw, err := zw.Create(fmt.Sprintf("schema/%s.%s.schema.txt", table.dbName, table.tableName))
-			if err != nil {
-				return fmt.Errorf("generate schema/%s.%s.schema.txt failed, err:%v", table.dbName, table.tableName, err)
+		} else {
+			var viewName, character, collation string
+			for rows.Next() {
+				err := rows.Scan(&viewName, &showCreate, &character, &collation)
+				if err != nil {
+					return fmt.Errorf("show create table %s.%s failed, err:%v", dbName, name, err)
+				}
 			}
-			fmt.Fprintf(fw, "create database if not exists `%v`; use `%v`;", table.dbName, table.dbName)
-			fmt.Fprintf(fw, "%s", showCreate)
+		}
+		var fw io.Writer
+		if isTable {
+			fw, err = zw.Create(fmt.Sprintf("schema/%s.%s.schema.txt", dbName, name))
+			if err != nil {
+				return fmt.Errorf("generate schema/%s.%s.schema.txt failed, err:%v", dbName, name, err)
+			}
+		} else {
+			fw, err = zw.Create(fmt.Sprintf("view/%s.%s.view.txt", dbName, name))
+			if err != nil {
+				return fmt.Errorf("generate view/%s.%s.view.txt failed, err:%v", dbName, name, err)
+			}
+		}
+		fmt.Fprintf(fw, "create database if not exists `%v`; use `%v`;", dbName, dbName)
+		fmt.Fprintf(fw, "%s", showCreate)
+		return nil
+	}
+
+	for table := range c.tables {
+		err := createTblOrView(true, table.dbName, table.tableName)
+		if err != nil {
+			errs = append(errs, err.Error())
+		}
+	}
+	for view := range c.views {
+		err := createTblOrView(false, view.dbName, view.tableName)
+		if err != nil {
+			errs = append(errs, err.Error())
+		}
+	}
+	return errs
+}
+
+type SchemaResponse struct {
+	View *ViewResponse `json:"view"`
+}
+
+type ViewResponse struct {
+	ViewSelect string `json:"view_select"`
+}
+
+func (c *PlanReplayerCollectorOptions) separateTableAndView(ctx context.Context, db *models.TiDBSpec, tableAndViews map[table]struct{}) (errs []string) {
+	client := utils.NewHTTPClient(time.Second*15, c.tlsCfg)
+	scheme := "http"
+	if c.tlsCfg != nil {
+		scheme = "https"
+	}
+	for table := range tableAndViews {
+		err := func() error {
+			url := fmt.Sprintf("%s://%s/schema/%s/%s", scheme, db.StatusURL(), table.dbName, table.tableName)
+			b, err := client.Get(ctx, url)
+			if err != nil {
+				return err
+			}
+			r := &SchemaResponse{}
+			err = json.Unmarshal(b, r)
+			if err != nil {
+				return err
+			}
+			if r.View == nil {
+				c.tables[table] = struct{}{}
+			} else {
+				c.views[table] = struct{}{}
+				subTablesAndViews, err := extractTablesAndViews(r.View.ViewSelect)
+				if err != nil {
+					return err
+				}
+				subErrs := c.separateTableAndView(ctx, db, subTablesAndViews)
+				if len(subErrs) > 0 {
+					errs = append(errs, subErrs...)
+				}
+			}
 			return nil
 		}()
 		if err != nil {
@@ -363,27 +449,20 @@ func (c *PlanReplayerCollectorOptions) getDB(tidbInstants []*models.TiDBSpec) (*
 	return db, sqldb
 }
 
-func (c *PlanReplayerCollectorOptions) collectTables() []string {
-	p := parser.New()
-	var errs []string
+func (c *PlanReplayerCollectorOptions) collectTables() (errs []string) {
 	for _, sql := range c.sqls {
-		stmtNodes, _, err := p.Parse(sql, "", "")
+		err := func() error {
+			r, err := extractTablesAndViews(sql)
+			if err != nil {
+				return err
+			}
+			for table := range r {
+				c.tablesAndViews[table] = struct{}{}
+			}
+			return nil
+		}()
 		if err != nil {
 			errs = append(errs, err.Error())
-			continue
-		}
-		for _, stmtNode := range stmtNodes {
-			v := tableVisitor{
-				tables:   make(map[table]struct{}),
-				cteNames: make(map[string]struct{}),
-			}
-			stmtNode.Accept(&v)
-			for tbl := range v.tables {
-				_, ok := v.cteNames[tbl.tableName]
-				if !ok {
-					c.tables[tbl] = struct{}{}
-				}
-			}
 		}
 	}
 	return errs
@@ -397,6 +476,14 @@ type table struct {
 type tableVisitor struct {
 	tables   map[table]struct{}
 	cteNames map[string]struct{}
+}
+
+func newTableVisitor() *tableVisitor {
+	v := &tableVisitor{
+		tables:   make(map[table]struct{}),
+		cteNames: make(map[string]struct{}),
+	}
+	return v
 }
 
 // Enter implements Visitor
@@ -420,4 +507,24 @@ func (v *tableVisitor) Leave(in ast.Node) (out ast.Node, ok bool) {
 		}
 	}
 	return in, true
+}
+
+func extractTablesAndViews(sql string) (map[table]struct{}, error) {
+	p := parser.New()
+	stmtNodes, _, err := p.Parse(sql, "", "")
+	if err != nil {
+		return nil, err
+	}
+	tablesAndViews := make(map[table]struct{})
+	for _, stmtNode := range stmtNodes {
+		v := newTableVisitor()
+		stmtNode.Accept(v)
+		for tbl := range v.tables {
+			_, ok := v.cteNames[tbl.tableName]
+			if !ok {
+				tablesAndViews[tbl] = struct{}{}
+			}
+		}
+	}
+	return tablesAndViews, nil
 }
