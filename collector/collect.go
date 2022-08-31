@@ -437,14 +437,16 @@ func (m *Manager) CollectClusterInfo(
 	if canCollect(&cOpt.Collectors.Plan_Replayer) {
 		collectors = append(collectors,
 			&PlanReplayerCollectorOptions{
-				BaseOptions: opt,
-				opt:         gOpt,
-				dbuser:      dbUser,
-				dbpasswd:    dbPassword,
-				resultDir:   resultDir,
-				sqls:        explainSqls,
-				tlsCfg:      tlsCfg,
-				tables:      make(map[table]struct{}),
+				BaseOptions:    opt,
+				opt:            gOpt,
+				dbuser:         dbUser,
+				dbpasswd:       dbPassword,
+				resultDir:      resultDir,
+				sqls:           explainSqls,
+				tlsCfg:         tlsCfg,
+				tables:         make(map[table]struct{}),
+				views:          make(map[table]struct{}),
+				tablesAndViews: make(map[table]struct{}),
 			})
 	}
 
