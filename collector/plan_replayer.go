@@ -172,6 +172,7 @@ func (c *PlanReplayerCollectorOptions) collectTiflashReplicas(zw *zip.Writer, db
 	}
 	for table := range c.tables {
 		err := func() error {
+			// nolint: gosec
 			sql := fmt.Sprintf("SELECT TABLE_SCHEMA,TABLE_NAME,REPLICA_COUNT FROM INFORMATION_SCHEMA.TIFLASH_REPLICA WHERE TABLE_SCHEMA='%s' AND TABLE_NAME ='%s' AND REPLICA_COUNT >0", table.dbName, table.tableName)
 			rows, err := db.Query(sql)
 			if err != nil {
@@ -179,7 +180,9 @@ func (c *PlanReplayerCollectorOptions) collectTiflashReplicas(zw *zip.Writer, db
 			}
 			for rows.Next() {
 				var dbName, tableName, count string
-				err = rows.Scan(&dbName, &tableName, &count)
+				if err := rows.Scan(&dbName, &tableName, &count); err != nil {
+					return err
+				}
 				r := []string{
 					dbName, tableName, count,
 				}
@@ -407,7 +410,7 @@ func (c *PlanReplayerCollectorOptions) collectSQLExplain(zw *zip.Writer, db *sql
 			}
 			buff := make([]interface{}, len(cols))
 			data := make([]string, len(cols))
-			for i, _ := range buff {
+			for i := range buff {
 				buff[i] = &data[i]
 			}
 			for rows.Next() {

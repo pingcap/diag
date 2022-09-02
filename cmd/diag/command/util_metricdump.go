@@ -46,13 +46,15 @@ func newMetricDumpCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "metricdump",
 		Short: "Dump metrics from a Prometheus endpoint.",
-		RunE: func(cmd *cobra.Command, args []string) error {
-			log.SetDisplayModeFromString(gOpt.DisplayMode)
-
+		PreRunE: func(cmd *cobra.Command, args []string) error {
 			// check for arguments
 			if pdEndpoint == "" && clsID == "" {
 				return fmt.Errorf("either on of --pd or --cluster-id must be specified")
 			}
+			return nil
+		},
+		RunE: func(cmd *cobra.Command, args []string) error {
+			log.SetDisplayModeFromString(gOpt.DisplayMode)
 
 			spec.Initialize("cluster")
 			tidbSpec := spec.GetSpecManager()
