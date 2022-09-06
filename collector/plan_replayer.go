@@ -40,6 +40,7 @@ type PlanReplayerCollectorOptions struct {
 	tablesAndViews map[table]struct{}
 	resultDir      string
 	tlsCfg         *tls.Config
+	currDB         string
 }
 
 // Desc implements the Collector interface
@@ -324,7 +325,7 @@ func (c *PlanReplayerCollectorOptions) separateTableAndView(ctx context.Context,
 				c.tables[table] = struct{}{}
 			} else {
 				c.views[table] = struct{}{}
-				subTablesAndViews, err := extractTablesAndViews(r.View.ViewSelect)
+				subTablesAndViews, err := extractTablesAndViews(c.currDB, r.View.ViewSelect)
 				if err != nil {
 					return err
 				}
@@ -429,7 +430,7 @@ func (c *PlanReplayerCollectorOptions) getDB(tidbInstants []*models.TiDBSpec) (*
 	var db *models.TiDBSpec
 	for _, inst := range tidbInstants {
 		cdb, err := func() (*sql.DB, error) {
-			trydb, err := sql.Open("mysql", fmt.Sprintf("%s:%s@tcp(%s:%d)/", c.dbuser, c.dbpasswd, inst.Host(), inst.MainPort()))
+			trydb, err := sql.Open("mysql", fmt.Sprintf("%s:%s@tcp(%s:%d)/%s", c.dbuser, c.dbpasswd, inst.Host(), inst.MainPort(), c.currDB))
 			if err != nil {
 				return nil, err
 			}
@@ -452,7 +453,7 @@ func (c *PlanReplayerCollectorOptions) getDB(tidbInstants []*models.TiDBSpec) (*
 func (c *PlanReplayerCollectorOptions) collectTables() (errs []string) {
 	for _, sql := range c.sqls {
 		err := func() error {
-			r, err := extractTablesAndViews(sql)
+			r, err := extractTablesAndViews(c.currDB, sql)
 			if err != nil {
 				return err
 			}
@@ -474,12 +475,14 @@ type table struct {
 }
 
 type tableVisitor struct {
+	currDB   string
 	tables   map[table]struct{}
 	cteNames map[string]struct{}
 }
 
-func newTableVisitor() *tableVisitor {
+func newTableVisitor(currDB string) *tableVisitor {
 	v := &tableVisitor{
+		currDB:   currDB,
 		tables:   make(map[table]struct{}),
 		cteNames: make(map[string]struct{}),
 	}
@@ -498,6 +501,9 @@ func (v *tableVisitor) Leave(in ast.Node) (out ast.Node, ok bool) {
 			tableName: t.Name.L,
 			dbName:    t.Schema.L,
 		}
+		if len(t.Schema.L) < 1 {
+			tbl.dbName = v.currDB
+		}
 		v.tables[tbl] = struct{}{}
 	} else if s, ok := in.(*ast.SelectStmt); ok {
 		if s.With != nil && len(s.With.CTEs) > 0 {
@@ -509,7 +515,7 @@ func (v *tableVisitor) Leave(in ast.Node) (out ast.Node, ok bool) {
 	return in, true
 }
 
-func extractTablesAndViews(sql string) (map[table]struct{}, error) {
+func extractTablesAndViews(currDB, sql string) (map[table]struct{}, error) {
 	p := parser.New()
 	stmtNodes, _, err := p.Parse(sql, "", "")
 	if err != nil {
@@ -517,7 +523,7 @@ func extractTablesAndViews(sql string) (map[table]struct{}, error) {
 	}
 	tablesAndViews := make(map[table]struct{})
 	for _, stmtNode := range stmtNodes {
-		v := newTableVisitor()
+		v := newTableVisitor(currDB)
 		stmtNode.Accept(v)
 		for tbl := range v.tables {
 			_, ok := v.cteNames[tbl.tableName]

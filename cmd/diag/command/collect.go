@@ -148,6 +148,7 @@ func newCollectCmd() *cobra.Command {
 	cmd.Flags().BoolVar(&cOpt.CompressScp, "compress-scp", true, "Compress when transfer config and logs.Only works with system ssh")
 	cmd.Flags().BoolVar(&cOpt.ExitOnError, "exit-on-error", false, "Stop collecting and exit if an error occurs.")
 	cmd.Flags().StringVar(&cOpt.ExplainSQLPath, "explain-sql", "", "File path for explain sql")
+	cmd.Flags().StringVar(&cOpt.CurrDB, "db", "", "default db for plan replayer collector")
 
 	return cmd
 }

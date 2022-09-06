@@ -115,6 +115,7 @@ type CollectOptions struct {
 	ExtendedAttrs  map[string]string // extended attributes used for manual collecting mode
 	ExplainSQLPath string            // File path for explain sql
 	ExplainSqls    []string          // explain sqls
+	CurrDB         string
 }
 
 // CollectStat is estimated size stats of data to be collected
@@ -447,6 +448,7 @@ func (m *Manager) CollectClusterInfo(
 				tables:         make(map[table]struct{}),
 				views:          make(map[table]struct{}),
 				tablesAndViews: make(map[table]struct{}),
+				currDB:         cOpt.CurrDB,
 			})
 	}
 
