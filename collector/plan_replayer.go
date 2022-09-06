@@ -430,7 +430,7 @@ func (c *PlanReplayerCollectorOptions) getDB(tidbInstants []*models.TiDBSpec) (*
 	var db *models.TiDBSpec
 	for _, inst := range tidbInstants {
 		cdb, err := func() (*sql.DB, error) {
-			trydb, err := sql.Open("mysql", fmt.Sprintf("%s:%s@tcp(%s:%d)/", c.dbuser, c.dbpasswd, inst.Host(), inst.MainPort()))
+			trydb, err := sql.Open("mysql", fmt.Sprintf("%s:%s@tcp(%s:%d)/%s", c.dbuser, c.dbpasswd, inst.Host(), inst.MainPort(), c.currDB))
 			if err != nil {
 				return nil, err
 			}
