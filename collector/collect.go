@@ -58,7 +58,11 @@ const (
 	CollectModeManual = "manual"        // collect from a manually deployed cluster
 
 	AttrKeyPromEndpoint = "prometheus-endpoint"
+	AttrKeyClusterID    = "cluster-id"
 	AttrKeyPDEndpoint   = "pd-endpoint"
+	AttrKeyTiDBHost     = "tidb-host"
+	AttrKeyTiDBPort     = "tidb-port"
+	AttrKeyTiDBStatus   = "tidb-status-port"
 	AttrKeyTLSCAFile    = "tls-ca-file"
 	AttrKeyTLSCertFile  = "tls-cert-file"
 	AttrKeyTLSKeyFile   = "tls-privkey-file"

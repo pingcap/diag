@@ -20,6 +20,7 @@ import (
 )
 
 // TODO load all config data at once may not the best solution.
+//
 //go:embed rule_beta.toml
 var betaRuleStr string
 

@@ -128,11 +128,14 @@ func (iter *LogIterator) Next() (current item.Item, err error) {
 // be returned.
 //
 // params:
-//     point: the start point of the logs
+//
+//	point: the start point of the logs
+//
 // return:
-//		if found, nil
-//		if not found, io.EOF
-//		otherwise, other error
+//
+//	if found, nil
+//	if not found, io.EOF
+//	otherwise, other error
 func (iter *LogIterator) Seek(point time.Time) error {
 	info, err := iter.file.Stat()
 	if err != nil {

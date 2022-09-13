@@ -32,6 +32,7 @@ func newUtilCmd() *cobra.Command {
 
 	utilCmd.AddCommand(
 		newMetricDumpCmd(),
+		newPlanReplayerCmd(),
 	)
 
 	return utilCmd

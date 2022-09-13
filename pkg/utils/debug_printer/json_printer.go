@@ -14,7 +14,7 @@ func FormatJSON(object interface{}) string {
 	return string(data)
 }
 
-//JSONMapper maps the object
+// JSONMapper maps the object
 func JSONMapper(object interface{}) map[string]interface{} {
 	return structs.Map(object)
 }
