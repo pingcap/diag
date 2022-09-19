@@ -104,22 +104,23 @@ type BaseOptions struct {
 
 // CollectOptions contains the options defining which type of data to collect
 type CollectOptions struct {
-	RawRequest     interface{}       // raw collect command or request
-	Mode           string            // the cluster is deployed with what type of tool
-	ProfileName    string            // the name of a pre-defined collecting profile
-	Collectors     CollectTree       // struct to show which collector is enabled
-	MetricsFilter  []string          // prefix of metrics to collect"
-	MetricsLabel   map[string]string // label to filte metrics
-	Dir            string            // target directory to store collected data
-	Limit          int               // rate limit of SCP
-	MetricsLimit   int               // query limit of one request
-	PerfDuration   int               //seconds: profile time(s), default is 30s.
-	CompressScp    bool              // compress of files during collecting
-	ExitOnError    bool              // break the process and exit when an error occur
-	ExtendedAttrs  map[string]string // extended attributes used for manual collecting mode
-	ExplainSQLPath string            // File path for explain sql
-	ExplainSqls    []string          // explain sqls
-	CurrDB         string
+	RawRequest      interface{}       // raw collect command or request
+	Mode            string            // the cluster is deployed with what type of tool
+	ProfileName     string            // the name of a pre-defined collecting profile
+	Collectors      CollectTree       // struct to show which collector is enabled
+	MetricsFilter   []string          // prefix of metrics to collect"
+	MetricsLabel    map[string]string // label to filte metrics
+	Dir             string            // target directory to store collected data
+	Limit           int               // rate limit of SCP
+	MetricsLimit    int               // query limit of one request
+	PerfDuration    int               //seconds: profile time(s), default is 30s.
+	CompressScp     bool              // compress of files during collecting
+	CompressMetrics bool              // compress of files during collecting
+	ExitOnError     bool              // break the process and exit when an error occur
+	ExtendedAttrs   map[string]string // extended attributes used for manual collecting mode
+	ExplainSQLPath  string            // File path for explain sql
+	ExplainSqls     []string          // explain sqls
+	CurrDB          string
 }
 
 // CollectStat is estimated size stats of data to be collected
@@ -269,6 +270,7 @@ func (m *Manager) CollectClusterInfo(
 				BaseOptions: opt,
 				opt:         gOpt,
 				resultDir:   resultDir,
+				compress:    cOpt.CompressMetrics,
 			})
 	}
 	if canCollect(&cOpt.Collectors.Monitor.Metric) {
@@ -280,6 +282,7 @@ func (m *Manager) CollectClusterInfo(
 				label:       cOpt.MetricsLabel,
 				filter:      cOpt.MetricsFilter,
 				limit:       cOpt.MetricsLimit,
+				compress:    cOpt.CompressMetrics,
 			},
 		)
 	}

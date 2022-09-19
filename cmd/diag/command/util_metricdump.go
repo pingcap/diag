@@ -137,6 +137,7 @@ func newMetricDumpCmd() *cobra.Command {
 	cmd.Flags().StringSliceVar(&labels, "metricslabel", nil, "only collect metrics that match labels")
 	cmd.Flags().StringVar(&metricsConf, "metricsconfig", "", "config file of metricsfilter")
 	cmd.Flags().StringVarP(&cOpt.Dir, "output", "o", "", "output directory of collected data")
+	cmd.Flags().BoolVar(&cOpt.CompressMetrics, "compress-metrics", true, "Compress collected metrics data.")
 
 	cobra.MarkFlagRequired(cmd.Flags(), "name")
 	cobra.MarkFlagRequired(cmd.Flags(), "prometheus")

@@ -21,6 +21,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/fatih/color"
 	"github.com/pingcap/diag/collector"
 	"github.com/pingcap/diag/pkg/telemetry"
 	"github.com/pingcap/diag/pkg/utils"
@@ -100,6 +101,10 @@ func newCollectCmd() *cobra.Command {
 			}
 			cOpt.Mode = collector.CollectModeTiUP
 
+			if cOpt.CompressMetrics == false {
+				log.Warnf(color.YellowString("Uncompressed metrics may not be handled correctly by Clinic, use it only when you really need it"))
+			}
+
 			if reportEnabled {
 				teleReport.CommandInfo = &telemetry.CollectInfo{
 					ID:         clsID,
@@ -146,6 +151,7 @@ func newCollectCmd() *cobra.Command {
 	cmd.Flags().IntVar(&cOpt.PerfDuration, "perf-duration", 30, "Duration of the collection of profile information in seconds")
 	cmd.Flags().Uint64Var(&gOpt.APITimeout, "api-timeout", 10, "Timeout in seconds when querying PD APIs.")
 	cmd.Flags().BoolVar(&cOpt.CompressScp, "compress-scp", true, "Compress when transfer config and logs.Only works with system ssh")
+	cmd.Flags().BoolVar(&cOpt.CompressMetrics, "compress-metrics", true, "Compress collected metrics data.")
 	cmd.Flags().BoolVar(&cOpt.ExitOnError, "exit-on-error", false, "Stop collecting and exit if an error occurs.")
 	cmd.Flags().StringVar(&cOpt.ExplainSQLPath, "explain-sql", "", "File path for explain sql")
 	cmd.Flags().StringVar(&cOpt.CurrDB, "db", "", "default db for plan replayer collector")

@@ -135,11 +135,12 @@ func runCollector(
 		return
 	}
 	cOpt := collector.CollectOptions{
-		Collectors:  collectors,
-		Mode:        collector.CollectModeK8s,
-		RawRequest:  req,
-		Dir:         filepath.Join(collectDir, "diag-"+worker.job.ID), // set default k8s package dir
-		ExplainSqls: explainSQLs,
+		Collectors:      collectors,
+		Mode:            collector.CollectModeK8s,
+		RawRequest:      req,
+		Dir:             filepath.Join(collectDir, "diag-"+worker.job.ID), // set default k8s package dir
+		ExplainSqls:     explainSQLs,
+		CompressMetrics: false,
 	}
 
 	// populate logger for the collect job
