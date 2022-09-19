@@ -21,6 +21,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/fatih/color"
 	"github.com/pingcap/diag/collector"
 	"github.com/pingcap/diag/pkg/telemetry"
 	"github.com/pingcap/diag/pkg/utils"
@@ -100,6 +101,10 @@ func newCollectDMCmd() *cobra.Command {
 				}
 			}
 
+			if cOpt.CompressMetrics == false {
+				log.Warnf(color.YellowString("Uncompressed metrics may not be handled correctly by Clinic, use it only when you really need it"))
+			}
+
 			cOpt.Mode = collector.CollectModeTiUP
 			if reportEnabled {
 				teleReport.CommandInfo = &telemetry.CollectInfo{
@@ -142,6 +147,7 @@ func newCollectDMCmd() *cobra.Command {
 	cmd.Flags().StringVarP(&cOpt.Dir, "output", "o", "", "output directory of collected data")
 	cmd.Flags().IntVarP(&cOpt.Limit, "limit", "l", -1, "Limits the used bandwidth, specified in Kbit/s")
 	cmd.Flags().BoolVar(&cOpt.CompressScp, "compress-scp", true, "Compress when transfer config and logs.Only works with system ssh")
+	cmd.Flags().BoolVar(&cOpt.CompressMetrics, "compress-metrics", true, "Compress collected metrics data.")
 	cmd.Flags().BoolVar(&cOpt.ExitOnError, "exit-on-error", false, "Stop collecting and exit if an error occurs.")
 
 	return cmd

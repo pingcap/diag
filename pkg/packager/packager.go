@@ -91,7 +91,7 @@ func ParserD1agHeader(r io.Reader) (meta []byte, format, compress string, offset
 
 	if string(buf[0:4]) != "D1ag" {
 		// return nil, "legacy", "zstd", 0, nil
-		return nil, "", "", 0, fmt.Errorf("input is not a diag package, plaease use diag v0.7.0 or newer version to package and upload")
+		return nil, "", "", 0, fmt.Errorf("input is not a diag package, please use diag v0.7.0 or newer version to package and upload")
 	}
 
 	// byte 3~5

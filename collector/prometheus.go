@@ -54,6 +54,7 @@ type AlertCollectOptions struct {
 	*BaseOptions
 	opt       *operator.Options // global operations from cli
 	resultDir string
+	compress  bool
 }
 
 // Desc implements the Collector interface
@@ -124,12 +125,17 @@ func (c *AlertCollectOptions) Collect(m *Manager, topo *models.TiDBCluster) erro
 		}
 		defer f.Close()
 
-		enc, err := zstd.NewWriter(f)
-		if err != nil {
-			m.logger.Errorf("failed compressing alert list: %s, retry...\n", err)
-			return err
+		var enc io.WriteCloser
+		if c.compress {
+			enc, err = zstd.NewWriter(f)
+			if err != nil {
+				m.logger.Errorf("failed compressing alert list: %s, retry...\n", err)
+				return err
+			}
+			defer enc.Close()
+		} else {
+			enc = f
 		}
-		defer enc.Close()
 		_, err = io.Copy(enc, resp.Body)
 		if err != nil {
 			m.logger.Errorf("failed writing alert list to file: %s, retry...\n", err)
@@ -153,6 +159,7 @@ type MetricCollectOptions struct {
 	metrics   []string // metric list
 	filter    []string
 	limit     int // series*min per query
+	compress  bool
 }
 
 // Desc implements the Collector interface
@@ -302,7 +309,7 @@ func (c *MetricCollectOptions) Collect(m *Manager, topo *models.TiDBCluster) err
 
 				tsEnd, _ := utils.ParseTime(c.GetBaseOptions().ScrapeEnd)
 				tsStart, _ := utils.ParseTime(c.GetBaseOptions().ScrapeBegin)
-				collectMetric(m.logger, client, prom, tsStart, tsEnd, mtc, c.label, c.resultDir, c.limit)
+				collectMetric(m.logger, client, prom, tsStart, tsEnd, mtc, c.label, c.resultDir, c.limit, c.compress)
 
 				mu.Lock()
 				done++
@@ -370,6 +377,7 @@ func collectMetric(
 	label map[string]string,
 	resultDir string,
 	speedlimit int,
+	compress bool,
 ) {
 	query := generateQueryWitLabel(mtc, label)
 	l.Debugf("Querying series of %s...", mtc)
@@ -433,14 +441,19 @@ func collectMetric(
 				}
 				defer dst.Close()
 
-				// compress the metric
+				var enc io.WriteCloser
 				var n int64
-				enc, err := zstd.NewWriter(dst)
-				if err != nil {
-					l.Errorf("failed compressing metric %s: %s, retry...\n", mtc, err)
-					return err
+				if compress {
+					// compress the metric
+					enc, err = zstd.NewWriter(dst)
+					if err != nil {
+						l.Errorf("failed compressing metric %s: %s, retry...\n", mtc, err)
+						return err
+					}
+					defer enc.Close()
+				} else {
+					enc = dst
 				}
-				defer enc.Close()
 				n, err = io.Copy(enc, resp.Body)
 				if err != nil {
 					l.Errorf("failed writing metric %s to file: %s, retry...\n", mtc, err)
