@@ -2,6 +2,7 @@ package command
 
 import (
 	"context"
+	"net/http"
 	"os"
 	"strings"
 
@@ -56,7 +57,7 @@ func newUploadCommand() *cobra.Command {
 				}
 			}
 
-			opt.Client = packager.InitClient(opt.Endpoint)
+			opt.Client = http.DefaultClient
 			opt.Concurrency = gOpt.Concurrency
 
 			if reportEnabled {

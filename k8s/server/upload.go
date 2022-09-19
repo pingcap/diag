@@ -142,7 +142,7 @@ func runUploader(
 			ClientOptions: packager.ClientOptions{
 				Endpoint: endpoint,
 				Token:    clinicToken,
-				Client:   packager.InitClient(endpoint),
+				Client:   http.DefaultClient,
 			},
 		}
 		ctx := goctx.WithValue(
