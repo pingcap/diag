@@ -141,7 +141,6 @@ func newMetricDumpCmd() *cobra.Command {
 
 	cobra.MarkFlagRequired(cmd.Flags(), "name")
 	cobra.MarkFlagRequired(cmd.Flags(), "prometheus")
-	cobra.MarkFlagRequired(cmd.Flags(), "pd")
 
 	return cmd
 }
