@@ -15,7 +15,9 @@ package scraper
 
 import (
 	"bufio"
+	"compress/gzip"
 	"fmt"
+	"io"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -64,7 +66,7 @@ func (s *LogScraper) Scrap(result *Sample) error {
 				continue
 			}
 
-			logtype, in, err := getLogStatus(fp, fi, s.Start, s.End)
+			logtype, in, err := getLogType(fp, fi, s.Start, s.End)
 			if s.Types[logtype] && in {
 				result.Log[fp] = fi.Size()
 			}
@@ -80,7 +82,7 @@ func (s *LogScraper) Scrap(result *Sample) error {
 	return nil
 }
 
-func getLogStatus(fpath string, fi fs.FileInfo, start, end time.Time) (logtype string, inrange bool, err error) {
+func getLogType(fpath string, fi fs.FileInfo, start, end time.Time) (logtype string, inrange bool, err error) {
 	// collect stderr log despite time range
 	if strings.Contains(filepath.Base(fpath), "stderr") {
 		return LogTypeStd, true, nil
@@ -92,7 +94,16 @@ func getLogStatus(fpath string, fi fs.FileInfo, start, end time.Time) (logtype s
 	}
 	defer f.Close()
 
-	bufr := bufio.NewReader(f)
+	var r io.ReadCloser = f
+	if strings.HasSuffix(fpath, ".gz") {
+		r, err = gzip.NewReader(f)
+		if err != nil {
+			return LogTypeUnknown, false, err
+		}
+		defer r.Close()
+	}
+
+	bufr := bufio.NewReader(r)
 	// read the first line of log file
 	head, _, err := bufr.ReadLine()
 	if err == nil {
