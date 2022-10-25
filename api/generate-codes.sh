@@ -11,4 +11,4 @@ swagger generate model \
     -t "${scriptdir}" \
     -m types
 
-"${scriptdir}"/swagger-yaml-to-html.py < "${scriptdir}/swagger.yaml" > "${scriptdir}/doc.html"
+python3 "${scriptdir}"/swagger-yaml-to-html.py < "${scriptdir}/swagger.yaml" > "${scriptdir}/doc.html"

@@ -111,7 +111,7 @@ func collectData(c *gin.Context) {
 	explainSQLs := req.ExplainSqls
 
 	// run collector
-	go runCollector(diagCtx, &opt, worker, req, explainSQLs)
+	go runCollector(diagCtx, &opt, worker, req, explainSQLs, req.Metricfilter)
 
 	c.JSON(http.StatusAccepted, worker.job)
 }
@@ -122,6 +122,7 @@ func runCollector(
 	worker *collectJobWorker,
 	req interface{},
 	explainSQLs []string,
+	metricFilters []string,
 ) {
 	gOpt := operator.Options{
 		Concurrency: 2,
@@ -140,6 +141,7 @@ func runCollector(
 		RawRequest:      req,
 		Dir:             filepath.Join(collectDir, "diag-"+worker.job.ID), // set default k8s package dir
 		ExplainSqls:     explainSQLs,
+		MetricsFilter:   metricFilters,
 		CompressMetrics: false,
 	}
 
@@ -416,7 +418,7 @@ func reCollectData(c *gin.Context, diagCtx *context, id string) {
 	os.RemoveAll(requestDir)
 
 	// run collector
-	go runCollector(diagCtx, &opt, worker, cluster.RawRequest, []string{})
+	go runCollector(diagCtx, &opt, worker, cluster.RawRequest, []string{}, []string{})
 	diagCtx.setJobStatus(worker.job.ID, taskStatusRunning)
 
 	c.JSON(http.StatusAccepted, worker.job)

@@ -424,6 +424,10 @@ definitions:
       to:
         type: string
         format: dateTime
+      metricfilter:
+        type: array
+        items:
+          type: string
   CollectJob:
     type: object
     properties:

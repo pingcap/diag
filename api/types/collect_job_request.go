@@ -29,6 +29,9 @@ type CollectJobRequest struct {
 	// from
 	From string `json:"from,omitempty"`
 
+	// metricfilter
+	Metricfilter []string `json:"metricfilter"`
+
 	// monitor namespace
 	MonitorNamespace string `json:"monitor_namespace,omitempty"`
 
