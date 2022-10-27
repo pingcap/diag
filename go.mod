@@ -16,7 +16,6 @@ require (
 	github.com/go-openapi/strfmt v0.21.1
 	github.com/go-openapi/swag v0.19.15
 	github.com/go-sql-driver/mysql v1.6.0
-	github.com/google/go-cmp v0.5.6
 	github.com/google/gofuzz v1.2.0 // indirect
 	github.com/google/uuid v1.3.0
 	github.com/influxdata/influxdb v1.9.5
@@ -28,7 +27,7 @@ require (
 	github.com/lensesio/tableprinter v0.0.0-20201125135848-89e81fc956e7
 	github.com/lorenzosaino/go-sysctl v0.2.0
 	github.com/mitchellh/mapstructure v1.4.3 // indirect
-	github.com/mohae/deepcopy v0.0.0-20170929034955-c48cc78d4826
+	github.com/mohae/deepcopy v0.0.0-20170929034955-c48cc78d4826 // indirect
 	github.com/onsi/gomega v1.17.0
 	github.com/pingcap/check v0.0.0-20211026125417-57bd13f7b5f0
 	github.com/pingcap/errors v0.11.5-0.20210425183316-da1aaba5fb63

@@ -23,8 +23,8 @@ import (
 	"time"
 
 	"github.com/fatih/color"
-	kubetls "github.com/pingcap/diag/k8s/apis/tls"
 	"github.com/pingcap/diag/pkg/models"
+	kubetls "github.com/pingcap/diag/pkg/tls"
 	"github.com/pingcap/diag/pkg/utils"
 	"github.com/pingcap/errors"
 	pingcapv1alpha1 "github.com/pingcap/tidb-operator/pkg/apis/pingcap/v1alpha1"
