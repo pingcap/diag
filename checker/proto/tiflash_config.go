@@ -61,23 +61,23 @@ type TiflashConfig struct {
 		} `toml:"coprocessor" json:"coprocessor"`
 	} `toml:"readpool" json:"readpool"`
 	Server struct {
-		Addr                             string `toml:"addr" json:"addr"`
-		AdvertiseAddr                    string `toml:"advertise-addr" json:"advertise-addr"`
-		EngineAddr                       string `toml:"engine-addr" json:"engine-addr"`
-		EngineStoreVersion               string `toml:"engine-store-version" json:"engine-store-version"`
-		EngineStoreGitHash               string `toml:"engine-store-git-hash" json:"engine-store-git-hash"`
-		StatusAddr                       string `toml:"status-addr" json:"status-addr"`
-		AdvertiseStatusAddr              string `toml:"advertise-status-addr" json:"advertise-status-addr"`
-		StatusThreadPoolSize             int    `toml:"status-thread-pool-size" json:"status-thread-pool-size"`
-		MaxGrpcSendMsgLen                int    `toml:"max-grpc-send-msg-len" json:"max-grpc-send-msg-len"`
-		RaftClientGrpcSendMsgBuffer      int    `toml:"raft-client-grpc-send-msg-buffer" json:"raft-client-grpc-send-msg-buffer"`
-		RaftClientQueueSize              int    `toml:"raft-client-queue-size" json:"raft-client-queue-size"`
-		RaftMsgMaxBatchSize              int    `toml:"raft-msg-max-batch-size" json:"raft-msg-max-batch-size"`
-		GrpcCompressionType              string `toml:"grpc-compression-type" json:"grpc-compression-type"`
-		GrpcConcurrency                  int    `toml:"grpc-concurrency" json:"grpc-concurrency"`
-		GrpcConcurrentStream             int    `toml:"grpc-concurrent-stream" json:"grpc-concurrent-stream"`
-		GrpcRaftConnNum                  int    `toml:"grpc-raft-conn-num" json:"grpc-raft-conn-num"`
-		GrpcMemoryPoolQuota              int64  `toml:"grpc-memory-pool-quota" json:"grpc-memory-pool-quota"`
+		Addr                        string `toml:"addr" json:"addr"`
+		AdvertiseAddr               string `toml:"advertise-addr" json:"advertise-addr"`
+		EngineAddr                  string `toml:"engine-addr" json:"engine-addr"`
+		EngineStoreVersion          string `toml:"engine-store-version" json:"engine-store-version"`
+		EngineStoreGitHash          string `toml:"engine-store-git-hash" json:"engine-store-git-hash"`
+		StatusAddr                  string `toml:"status-addr" json:"status-addr"`
+		AdvertiseStatusAddr         string `toml:"advertise-status-addr" json:"advertise-status-addr"`
+		StatusThreadPoolSize        int    `toml:"status-thread-pool-size" json:"status-thread-pool-size"`
+		MaxGrpcSendMsgLen           int    `toml:"max-grpc-send-msg-len" json:"max-grpc-send-msg-len"`
+		RaftClientGrpcSendMsgBuffer int    `toml:"raft-client-grpc-send-msg-buffer" json:"raft-client-grpc-send-msg-buffer"`
+		RaftClientQueueSize         int    `toml:"raft-client-queue-size" json:"raft-client-queue-size"`
+		RaftMsgMaxBatchSize         int    `toml:"raft-msg-max-batch-size" json:"raft-msg-max-batch-size"`
+		GrpcCompressionType         string `toml:"grpc-compression-type" json:"grpc-compression-type"`
+		GrpcConcurrency             int    `toml:"grpc-concurrency" json:"grpc-concurrency"`
+		GrpcConcurrentStream        int    `toml:"grpc-concurrent-stream" json:"grpc-concurrent-stream"`
+		GrpcRaftConnNum             int    `toml:"grpc-raft-conn-num" json:"grpc-raft-conn-num"`
+		// GrpcMemoryPoolQuota              int64  `toml:"grpc-memory-pool-quota" json:"grpc-memory-pool-quota"`
 		GrpcStreamInitialWindowSize      string `toml:"grpc-stream-initial-window-size" json:"grpc-stream-initial-window-size"`
 		GrpcKeepaliveTime                string `toml:"grpc-keepalive-time" json:"grpc-keepalive-time"`
 		GrpcKeepaliveTimeout             string `toml:"grpc-keepalive-timeout" json:"grpc-keepalive-timeout"`
