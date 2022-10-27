@@ -22,10 +22,10 @@ import (
 	"time"
 
 	json "github.com/json-iterator/go"
-	"github.com/pingcap/diag/k8s/apis/label"
-	pingcapv1alpha1 "github.com/pingcap/diag/k8s/apis/pingcap/v1alpha1"
 	"github.com/pingcap/diag/pkg/models"
 	"github.com/pingcap/diag/pkg/utils"
+	"github.com/pingcap/tidb-operator/pkg/apis/label"
+	pingcapv1alpha1 "github.com/pingcap/tidb-operator/pkg/apis/pingcap/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
