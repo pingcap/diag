@@ -142,7 +142,7 @@ func runCollector(
 		Dir:             filepath.Join(collectDir, "diag-"+worker.job.ID), // set default k8s package dir
 		ExplainSqls:     explainSQLs,
 		MetricsFilter:   metricFilters,
-		CompressMetrics: false,
+		CompressMetrics: true,
 	}
 
 	// populate logger for the collect job
