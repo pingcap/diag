@@ -351,6 +351,12 @@ func parseScraperSamples(ctx context.Context, host string) (map[string][]Collect
 			Size:   v,
 		})
 	}
+	for k, v := range s.TSDB {
+		stats[host] = append(stats[host], CollectStat{
+			Target: k,
+			Size:   v,
+		})
+	}
 
 	return stats, nil
 }

@@ -15,12 +15,13 @@ package scraper
 
 // Option is configurations of how scrapper works
 type Option struct {
-	LogPaths    []string        // paths of log files
-	LogTypes    map[string]bool // types of log need to scrap
-	ConfigPaths []string        // paths of config files
-	FilePaths   []string        // paths of normal files
-	Start       string          // start time
-	End         string          // end time
+	LogPaths          []string        // paths of log files
+	LogTypes          map[string]bool // types of log need to scrap
+	ConfigPaths       []string        // paths of config files
+	FilePaths         []string        // paths of normal files
+	PrometheusDataDir string
+	Start             string // start time
+	End               string // end time
 }
 
 // FileStat is the size information of a file to scrap
@@ -32,6 +33,7 @@ type Sample struct {
 	Log    FileStat `json:"log_files,omitempty"`
 	Config FileStat `json:"config_files,omitempty"`
 	File   FileStat `json:"files,omitempty"`
+	TSDB   FileStat `json:"prometheus_data,omitempty"`
 }
 
 // Scrapper is used to scrap a kind of files

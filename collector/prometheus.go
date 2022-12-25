@@ -14,6 +14,7 @@
 package collector
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"net/http"
@@ -26,12 +27,18 @@ import (
 	"sync"
 	"time"
 
+	"github.com/joomcode/errorx"
 	json "github.com/json-iterator/go"
 	"github.com/klauspost/compress/zstd"
 	"github.com/pingcap/diag/pkg/models"
 	"github.com/pingcap/diag/pkg/utils"
+	perrs "github.com/pingcap/errors"
+	"github.com/pingcap/tiup/pkg/cluster/ctxt"
 	operator "github.com/pingcap/tiup/pkg/cluster/operation"
+	"github.com/pingcap/tiup/pkg/cluster/spec"
+	"github.com/pingcap/tiup/pkg/cluster/task"
 	logprinter "github.com/pingcap/tiup/pkg/logger/printer"
+	"github.com/pingcap/tiup/pkg/set"
 	"github.com/pingcap/tiup/pkg/tui/progress"
 	tiuputils "github.com/pingcap/tiup/pkg/utils"
 )
@@ -40,6 +47,7 @@ const (
 	subdirMonitor = "monitor"
 	subdirAlerts  = "alerts"
 	subdirMetrics = "metrics"
+	subdirRaw     = "raw"
 	maxQueryRange = 120 * 60 // 120min
 	minQueryRange = 5 * 60   // 5min
 )
@@ -505,4 +513,251 @@ func generateQueryWitLabel(metric string, labels map[string]string) string {
 		query = query[:len(query)-1] + "}"
 	}
 	return query
+}
+
+// TSDBCollectOptions is the options collecting TSDB file of prometheus, only work for tiup-cluster deployed cluster
+type TSDBCollectOptions struct {
+	*BaseOptions
+	opt       *operator.Options // global operations from cli
+	resultDir string
+	fileStats map[string][]CollectStat
+	compress  bool
+	limit     int
+}
+
+// Desc implements the Collector interface
+func (c *TSDBCollectOptions) Desc() string {
+	return "metrics from Prometheus node"
+}
+
+// GetBaseOptions implements the Collector interface
+func (c *TSDBCollectOptions) GetBaseOptions() *BaseOptions {
+	return c.BaseOptions
+}
+
+// SetBaseOptions implements the Collector interface
+func (c *TSDBCollectOptions) SetBaseOptions(opt *BaseOptions) {
+	c.BaseOptions = opt
+}
+
+// SetGlobalOperations sets the global operation fileds
+func (c *TSDBCollectOptions) SetGlobalOperations(opt *operator.Options) {
+	c.opt = opt
+}
+
+// SetDir sets the result directory path
+func (c *TSDBCollectOptions) SetDir(dir string) {
+	c.resultDir = dir
+}
+
+// Prepare implements the Collector interface
+func (c *TSDBCollectOptions) Prepare(m *Manager, cls *models.TiDBCluster) (map[string][]CollectStat, error) {
+	if m.mode != CollectModeTiUP {
+		return nil, nil
+	}
+	if len(cls.Monitors) < 1 {
+		if m.logger.GetDisplayMode() == logprinter.DisplayModeDefault {
+			fmt.Println("No Prometheus node found in topology, skip.")
+		} else {
+			m.logger.Warnf("No Prometheus node found in topology, skip.")
+		}
+		return nil, nil
+	}
+
+	// tsEnd, _ := utils.ParseTime(c.GetBaseOptions().ScrapeEnd)
+	// tsStart, _ := utils.ParseTime(c.GetBaseOptions().ScrapeBegin)
+
+	uniqueHosts := map[string]int{}             // host -> ssh-port
+	uniqueArchList := make(map[string]struct{}) // map["os-arch"]{}
+	hostPaths := make(map[string]set.StringSet)
+	hostTasks := make(map[string]*task.Builder)
+
+	topo := cls.Attributes[CollectModeTiUP].(spec.Topology)
+	components := topo.ComponentsByUpdateOrder()
+	var (
+		dryRunTasks   []*task.StepDisplay
+		downloadTasks []*task.StepDisplay
+	)
+
+	for _, comp := range components {
+		if comp.Name() != spec.ComponentPrometheus {
+			continue
+		}
+
+		for _, inst := range comp.Instances() {
+			archKey := fmt.Sprintf("%s-%s", inst.OS(), inst.Arch())
+			if _, found := uniqueArchList[archKey]; !found {
+				uniqueArchList[archKey] = struct{}{}
+				t0 := task.NewBuilder(m.logger).
+					Download(
+						componentDiagCollector,
+						inst.OS(),
+						inst.Arch(),
+						"", // latest version
+					).
+					BuildAsStep(fmt.Sprintf("  - Downloading collecting tools for %s/%s", inst.OS(), inst.Arch()))
+				downloadTasks = append(downloadTasks, t0)
+			}
+
+			// tasks that applies to each host
+			if _, found := uniqueHosts[inst.GetHost()]; !found {
+				uniqueHosts[inst.GetHost()] = inst.GetSSHPort()
+				// build system info collecting tasks
+				t1, err := m.sshTaskBuilder(c.GetBaseOptions().Cluster, topo, c.GetBaseOptions().User, *c.opt)
+				if err != nil {
+					return nil, err
+				}
+				t1 = t1.
+					Mkdir(c.GetBaseOptions().User, inst.GetHost(), filepath.Join(task.CheckToolsPathDir, "bin")).
+					CopyComponent(
+						componentDiagCollector,
+						inst.OS(),
+						inst.Arch(),
+						"", // latest version
+						"", // use default srcPath
+						inst.GetHost(),
+						task.CheckToolsPathDir,
+					)
+				hostTasks[inst.GetHost()] = t1
+			}
+
+			// add filepaths to list
+			if _, found := hostPaths[inst.GetHost()]; !found {
+				hostPaths[inst.GetHost()] = set.NewStringSet()
+			}
+			hostPaths[inst.GetHost()].Insert(inst.DataDir())
+		}
+	}
+
+	// build scraper tasks
+	for h, t := range hostTasks {
+		host := h
+		t = t.
+			Shell(
+				host,
+				fmt.Sprintf("%s --prometheus '%s' -f '%s' -t '%s'",
+					filepath.Join(task.CheckToolsPathDir, "bin", "scraper"),
+					strings.Join(hostPaths[host].Slice(), ","),
+					c.ScrapeBegin, c.ScrapeEnd,
+				),
+				"",
+				false,
+			).
+			Func(
+				host,
+				func(ctx context.Context) error {
+					stats, err := parseScraperSamples(ctx, host)
+					if err != nil {
+						return err
+					}
+					for host, files := range stats {
+						c.fileStats[host] = files
+					}
+					return nil
+				},
+			)
+		t1 := t.BuildAsStep(fmt.Sprintf("  - Scraping prometheus data files on %s:%d", host, uniqueHosts[host]))
+		dryRunTasks = append(dryRunTasks, t1)
+	}
+
+	t := task.NewBuilder(m.logger).
+		ParallelStep("+ Download necessary tools", false, downloadTasks...).
+		ParallelStep("+ Collect host information", false, dryRunTasks...).
+		Build()
+
+	ctx := ctxt.New(
+		context.Background(),
+		c.opt.Concurrency,
+		m.logger,
+	)
+	if err := t.Execute(ctx); err != nil {
+		if errorx.Cast(err) != nil {
+			// FIXME: Map possible task errors and give suggestions.
+			return nil, err
+		}
+		return nil, perrs.Trace(err)
+	}
+
+	return c.fileStats, nil
+}
+
+// Collect implements the Collector interface
+func (c *TSDBCollectOptions) Collect(m *Manager, cls *models.TiDBCluster) error {
+	if m.mode != CollectModeTiUP {
+		return nil
+	}
+
+	topo := cls.Attributes[CollectModeTiUP].(spec.Topology)
+	var (
+		collectTasks []*task.StepDisplay
+		cleanTasks   []*task.StepDisplay
+	)
+	uniqueHosts := map[string]int{} // host -> ssh-port
+
+	components := topo.ComponentsByUpdateOrder()
+
+	for _, comp := range components {
+		if comp.Name() != spec.ComponentPrometheus {
+			continue
+		}
+
+		for _, inst := range comp.Instances() {
+			// checks that applies to each host
+			if _, found := uniqueHosts[inst.GetHost()]; found {
+				continue
+			}
+			uniqueHosts[inst.GetHost()] = inst.GetSSHPort()
+
+			t2, err := m.sshTaskBuilder(c.GetBaseOptions().Cluster, topo, c.GetBaseOptions().User, *c.opt)
+			if err != nil {
+				return err
+			}
+			for _, f := range c.fileStats[inst.GetHost()] {
+				// build checking tasks
+				t2 = t2.
+					// check for listening ports
+					CopyFile(
+						f.Target,
+						filepath.Join(c.resultDir, subdirMonitor, subdirRaw, fmt.Sprintf("%s-%d", inst.GetHost(), inst.GetMainPort()), filepath.Base(f.Target)),
+						inst.GetHost(),
+						true,
+						c.limit,
+						c.compress,
+					)
+			}
+			collectTasks = append(
+				collectTasks,
+				t2.BuildAsStep(fmt.Sprintf("  - Downloading prometheus data files from node %s", inst.GetHost())),
+			)
+
+			b, err := m.sshTaskBuilder(c.GetBaseOptions().Cluster, topo, c.GetBaseOptions().User, *c.opt)
+			if err != nil {
+				return err
+			}
+			t3 := b.
+				Rmdir(inst.GetHost(), task.CheckToolsPathDir).
+				BuildAsStep(fmt.Sprintf("  - Cleanup temp files on %s:%d", inst.GetHost(), inst.GetSSHPort()))
+			cleanTasks = append(cleanTasks, t3)
+		}
+	}
+
+	t := task.NewBuilder(m.logger).
+		ParallelStep("+ Scrap files on nodes", false, collectTasks...).
+		ParallelStep("+ Cleanup temp files", false, cleanTasks...).
+		Build()
+
+	ctx := ctxt.New(
+		context.Background(),
+		c.opt.Concurrency,
+		m.logger,
+	)
+	if err := t.Execute(ctx); err != nil {
+		if errorx.Cast(err) != nil {
+			// FIXME: Map possible task errors and give suggestions.
+			return err
+		}
+		return perrs.Trace(err)
+	}
+
+	return nil
 }

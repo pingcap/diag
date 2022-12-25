@@ -62,6 +62,7 @@ func init() {
 	rootCmd.Flags().StringSliceVar(&logtype, "logtype", []string{"std", "slow"}, "type of log files to scrap")
 	rootCmd.Flags().StringSliceVar(&opt.ConfigPaths, "config", nil, "paths of config files to scrap")
 	rootCmd.Flags().StringSliceVar(&opt.FilePaths, "file", nil, "paths of normal files to scrap")
+	rootCmd.Flags().StringVar(&opt.PrometheusDataDir, "prometheus", "", "paths of prometheus datadir")
 	rootCmd.Flags().StringVarP(&opt.Start, "from", "f", "", "start time of range to scrap, only apply to logs")
 	rootCmd.Flags().StringVarP(&opt.End, "to", "t", "", "start time of range to scrap, only apply to logs")
 
@@ -76,6 +77,7 @@ func Execute() {
 	err := rootCmd.Execute()
 	if err != nil {
 		code = 1
+		fmt.Println(err)
 	}
 
 	if code != 0 {
