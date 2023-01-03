@@ -31,6 +31,9 @@ The data collected from above procedures could be viewed locally for manual inve
 To upload collected data to the PingCAP Clinic, please follow [this guide](https://docs.pingcap.com/tidb/v6.3/quick-start-with-clinic).
 
 # Development
+
+Some design and specification docs are in the `docs` directory.
+
 ## File Structures
 
 - checker: a simple static checker used to parse collected data and list known issues
