@@ -53,9 +53,7 @@ If you only need the config data for node '127.0.0.1', run the following command
 tiup diag collect ${cluster-name} --include="config" -N="127.0.0.1"
 ``` 
 
-> ** tip **
-> Metrics and alerts collection can not be filtered by '-R' and '-N' parameters. When you have '--include=monitor' in your collect command, metrics and alerts for all nodes will be collected. 
-> ** tip **
+> Tips: Metrics and alerts' collection can not be filtered by '-R' and '-N' parameters. When you have '--include=monitor' in your collect command, metrics and alerts for all nodes will be collected. 
  
 ## Collect specific metrics 
 Metrics can be filtered by '--metricsfilter' command，it can filter the metrics by metrics name. 
