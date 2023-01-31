@@ -41,7 +41,7 @@ tiup diag collect ${cluster-name} --exclude="log.slow,system" -f="-4h" -t="-2h"
 ```
 
 ## Collect diagnosis data for selected node
-If you only need the log data for tidb server, run the following command:
+If you only need the log data for tidb servers, run the following command:
 
 ```bash
 tiup diag collect ${cluster-name} --include="log" -R="tidb"
@@ -55,6 +55,7 @@ tiup diag collect ${cluster-name} --include="config" -N="127.0.0.1"
 
 > ** tip **
 > Metrics and alerts collection can not be filtered by '-R' and '-N' parameters. When you have '--include=monitor' in your collect command, metrics and alerts for all nodes will be collected. 
+> ** tip **
  
 ## Collect specific metrics 
 Metrics can be filtered by '--metricsfilter' command，it can filter the metrics by metrics name. 
