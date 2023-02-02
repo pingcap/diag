@@ -1047,19 +1047,19 @@ const (
 
 // BytesToString converts the memory consumption to a readable string.
 func BytesToString(numBytes int64) string {
-	GB := float64(numBytes) / float64(byteSizeGB)
-	if GB > 1 {
-		return fmt.Sprintf("%v GB", GB)
+	gb := float64(numBytes) / float64(byteSizeGB)
+	if gb > 1 {
+		return fmt.Sprintf("%v GB", gb)
 	}
 
-	MB := float64(numBytes) / float64(byteSizeMB)
-	if MB > 1 {
-		return fmt.Sprintf("%v MB", MB)
+	mb := float64(numBytes) / float64(byteSizeMB)
+	if mb > 1 {
+		return fmt.Sprintf("%v MB", mb)
 	}
 
-	KB := float64(numBytes) / float64(byteSizeKB)
-	if KB > 1 {
-		return fmt.Sprintf("%v KB", KB)
+	kb := float64(numBytes) / float64(byteSizeKB)
+	if kb > 1 {
+		return fmt.Sprintf("%v KB", kb)
 	}
 
 	return fmt.Sprintf("%v Bytes", numBytes)

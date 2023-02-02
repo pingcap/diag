@@ -142,7 +142,6 @@ var uploadFunc = func(g *gomega.WithT, mt *mapTest, fileSize int, defaultBlockSi
 			} else {
 				g.Expect(int(size)).To(gomega.Equal(fileSize % defaultBlockSize))
 			}
-
 		} else {
 			g.Expect(int(size)).To(gomega.Equal(defaultBlockSize))
 		}

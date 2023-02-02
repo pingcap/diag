@@ -42,5 +42,4 @@ func TestGenerateAndParserD1agHeader(t *testing.T) {
 	err = json.Unmarshal(metabyte, &meta2)
 	assert.Nil(err)
 	assert.EqualValues(meta, meta2)
-
 }

@@ -58,5 +58,5 @@ func getTLSConfig(c kubernetes.Interface, namespace, secretName string, timemot 
 	if err != nil {
 		return nil, fmt.Errorf("unable to load certificates from secret %s/%s: %v", namespace, secretName, err)
 	}
-	return LoadTlsConfigFromSecret(secret)
+	return LoadTLSConfigFromSecret(secret)
 }

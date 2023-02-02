@@ -120,5 +120,4 @@ func TestParseReadableDuration(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-
 }

@@ -64,8 +64,7 @@ func (u *ComputeUnit) Compute() (map[string]interface{}, error) {
 
 func (u *ComputeUnit) Register(dataContext *genginecontext.DataContext) {
 	// register global func
-	GlobalRegisterFunc := GetRegisterFunc()
-	for globalName, globalFunc := range GlobalRegisterFunc {
+	for globalName, globalFunc := range GetRegisterFunc() {
 		dataContext.Add(globalName, globalFunc)
 	}
 	// register data acting name

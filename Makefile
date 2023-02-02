@@ -84,7 +84,7 @@ images: k8s
 test:
 	$(GO) test -cover ./...
 
-check: fmt vet check-static
+check: fmt vet lint check-static
 
 fmt:
 	@echo "gofmt (simplify)"
@@ -106,11 +106,9 @@ vet:
 
 lint: tests/bin/revive
 	@echo "linting"
-	./tests/check/check-lint.sh
 	@tests/bin/revive -formatter friendly \
-		-exclude ./k8s/apis/... \
 		-exclude ./api/types/... \
-		-config tests/check/revive.toml \
+		-config .revive.toml \
 		$(FILES)
 
 tests/bin/revive: tests/check/go.mod

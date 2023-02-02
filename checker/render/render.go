@@ -139,7 +139,6 @@ func (w *ResultWrapper) OutputSummary(logger *logprinter.Logger, checkresult map
 			writer.WriteString(logger, "\n### Configuration Summary")
 			writer.WriteString(logger, fmt.Sprintf("The configuration rules are all derived from PingCAP’s OnCall Service.\nIf the results of the configuration rules are found to be abnormal, they may cause the cluster to fail.\nThere were **%v** abnormal results.",
 				abnormalConfigCnt))
-
 		} else if ruleType == proto.PerformanceType {
 			continue
 		} else if ruleType == proto.DefaultConfigType {

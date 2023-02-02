@@ -222,7 +222,6 @@ func runCollector(
 		klog.Infof("collect job %s finished.", worker.job.ID)
 		ctx.setJobStatus(worker.job.ID, taskStatusFinish)
 	}
-
 }
 
 // collectData implements GET /collectors
@@ -383,7 +382,6 @@ func operateCollectJob(c *gin.Context) {
 	msg := "unknown operation."
 	sendErrMsg(c, http.StatusMethodNotAllowed, msg)
 	return
-
 }
 
 func reCollectData(c *gin.Context, diagCtx *context, id string) {

@@ -119,7 +119,6 @@ func (w *Wrapper) GetDataSet(namestructs string) ([]*proto.HandleData, error) {
 			return nil, err
 		}
 		chainData = append(chainData, singleclassData)
-
 	}
 	cd := w.CrossData(chainData)
 	return w.GenHandleData(cd), nil

@@ -1,0 +1,58 @@
+ignoreGeneratedHeader = false
+severity = "error"
+confidence = 0.8
+errorCode = -1
+warningCode = 0
+
+[rule.atomic]
+[rule.blank-imports]
+[rule.context-as-argument]
+[rule.dot-imports]
+[rule.duplicated-imports]
+[rule.error-return]
+[rule.error-strings]
+[rule.error-naming]
+[rule.confusing-naming]
+[rule.unexported-naming]
+[rule.confusing-results]
+#[rule.exported]
+[rule.if-return]
+[rule.var-declaration]
+[rule.var-naming]
+[rule.range]
+[rule.range-val-in-closure]
+[rule.range-val-address]
+[rule.receiver-naming]
+[rule.indent-error-flow]
+[rule.superfluous-else]
+[rule.modifies-parameter]
+[rule.modifies-value-receiver]
+[rule.time-naming]
+[rule.empty-block]
+[rule.empty-lines]
+#[rule.early-return]
+#[rule.unnecessary-stmt]
+#[rule.struct-tag] # https://github.com/mgechev/revive/issues/520
+[rule.string-of-int]
+[rule.string-format]
+[rule.constant-logical-expr]
+[rule.bool-literal-in-expr]
+[rule.redefines-builtin-id]
+[rule.waitgroup-by-value]
+[rule.unconditional-recursion]
+
+[rule.cognitive-complexity]
+  severity = "warning"
+  arguments =[48]
+#[rule.cyclomatic]
+#  severity = "warning"
+#  arguments = [48]
+
+[imports-blacklist]
+  arguments =["crypto/md5", "crypto/sha1", "io/ioutil"]
+
+[rule.defer]
+  arguments=[["call-chain", "method-call", "return"]]
+
+# This can be checked by other tools like megacheck
+[rule.unreachable-code]

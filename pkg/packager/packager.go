@@ -123,7 +123,6 @@ func ParserD1agHeader(r io.Reader) (meta []byte, format, compress string, offset
 }
 
 func PackageCollectedData(pOpt *PackageOptions, skipConfirm bool) (string, error) {
-
 	if tiuputils.IsNotExist(filepath.Dir(pOpt.OutputFile)) {
 		os.MkdirAll(filepath.Dir(pOpt.OutputFile), 0755)
 	}
@@ -275,26 +274,14 @@ func selectOutputFile(input, output string) (string, error) {
 	return filepath.Abs(output)
 }
 
-func selectCertFile(path string) (string, error) {
-	// choose latest diag directory if not specify
-	if path == "" {
-		path = filepath.Join(filepath.Dir(os.Args[0]), "pingcap.crt")
-	}
-	_, err := os.Stat(path)
-	if err != nil {
-		return "", fmt.Errorf("cannot find cert for encryption: %w", err)
-	}
-	return filepath.Abs(path)
-}
-
 func validateClusterID(clusterJSON map[string]interface{}) (clusterID string, clusterType string, err error) {
 	clusterID, ok := clusterJSON["cluster_id"].(string)
 	if !ok {
-		IDjson, ok := clusterJSON["cluster_id"].(json.Number)
+		clsID, ok := clusterJSON["cluster_id"].(json.Number)
 		if !ok {
 			return "", "", fmt.Errorf("cluster_id must exist in cluster.json")
 		}
-		clusterID = IDjson.String()
+		clusterID = clsID.String()
 	}
 	clusterType, ok = clusterJSON["cluster_type"].(string)
 	if !ok {
