@@ -1,0 +1,57 @@
+---
+name: static-tests
+
+on:
+  # schedule:
+  #   # times are in UTC
+  #   - cron: '19 21 * * *'
+  pull_request:
+    branches:
+      - master
+      - release-*
+    paths-ignore:
+      - '**.html'
+      - '**.md'
+      - 'LICENSE'
+      - 'doc/**'
+  push:
+    branches:
+      - master
+    paths-ignore:
+      - '**.html'
+      - '**.md'
+      - 'LICENSE'
+      - 'doc/**'
+
+jobs:
+  unit-test:
+    runs-on: ubuntu-latest
+    env:
+      working-directory: ${{ github.workspace }}/go/src/github.com/${{ github.repository }}
+    steps:
+      - name: Check out code into the Go module directory
+        uses: actions/checkout@v3
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          path: go/src/github.com/${{ github.repository }}
+
+      - name: Set up Go 1.19
+        uses: actions/setup-go@v2
+        with:
+          go-version: 1.19.x
+        id: go
+
+      - name: make unit-test
+        working-directory: ${{ env.working-directory }}
+        run: |
+          export GOPATH=${GITHUB_WORKSPACE}/go
+          export PATH=$PATH:$GOPATH/bin
+          make check
+          make test
+
+      - name: Upload coverage to Codecov
+        working-directory: ${{ env.working-directory }}
+        run: |
+          curl -Os https://uploader.codecov.io/latest/linux/codecov
+          chmod +x codecov
+          ./codecov -F unittest -s cover -f '*.out'
