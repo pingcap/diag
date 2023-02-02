@@ -81,8 +81,10 @@ images: k8s
 	cp configs/info.toml k8s/images/diag/bin/
 	docker build --tag "${DOCKER_REPO}/diag:${IMAGE_TAG}" -f k8s/images/diag/Dockerfile k8s/images/diag
 
-test:
-	$(GO) test -cover ./...
+test: unit-test
+
+unit-test:
+	$(GO) test ./... -covermode=count -coverprofile tests/cov.unit-test.out
 
 check: fmt vet lint check-static
 

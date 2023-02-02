@@ -50,8 +50,8 @@ jobs:
           make test
 
       - name: Upload coverage to Codecov
-        working-directory: ${{ env.working-directory }}
-        run: |
-          curl -Os https://uploader.codecov.io/latest/linux/codecov
-          chmod +x codecov
-          ./codecov -F unittest -s cover -f '*.out'
+        uses: codecov/codecov-action@v3
+        with:
+          working-directory: ${{ env.working-directory }}
+          files: ./tests/cov.unit-test.out
+          flags: unittests
