@@ -82,6 +82,8 @@ func (c *ConfigCollectOptions) Prepare(m *Manager, topo *models.TiDBCluster) (ma
 		if c.Collectors.File {
 			return c.prepareForTiUP(m, topo)
 		}
+	default:
+		// pass
 	}
 
 	return nil, nil

@@ -76,11 +76,11 @@ func (c *DiagConfig) Set(key, value string) error {
 		return err
 	}
 
-	if reflectV.CanSet() && reflectV.Kind() != reflect.Struct {
-		reflectV.SetString(value)
-	} else {
+	if !reflectV.CanSet() || reflectV.Kind() == reflect.Struct {
 		return fmt.Errorf("%s is not a valid diag configuration", key)
 	}
+	reflectV.SetString(value)
+
 	return nil
 }
 
@@ -115,6 +115,8 @@ func ValidateConfigKey(key, value string) (string, error) {
 			return value, fmt.Errorf("%s cannot be %s, available regions are [%s]", key, value, strings.Join(AvailableRegion, ","))
 		}
 		return strings.ToUpper(value), nil
+	default:
+		// pass
 	}
 	return value, nil
 }

@@ -223,7 +223,6 @@ func concurrentUploadFile(
 	uploadPart UploadPart,
 	errChan chan error,
 ) {
-
 	waitGroup := sync.WaitGroup{}
 	if concurrency < 1 {
 		concurrency = 1

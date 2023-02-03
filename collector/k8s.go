@@ -175,7 +175,8 @@ func buildTopoForK8sCluster(
 
 		klog.Infof("found cluster '%s': %s, status: %s, created at %s",
 			clsName, tc.Spec.Version, status, cTime)
-		cluster = &tc //#nosec G601
+		matchedCluster := tc // make a copy if iter var
+		cluster = &matchedCluster
 		cls.Version = tc.Spec.Version
 		tcsMatched = true
 		klog.Infof("find the cluster %s is the one we want to collect.", clsName)

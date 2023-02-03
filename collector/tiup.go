@@ -34,7 +34,7 @@ import (
 func (m *Manager) prepareArgsForTiUPCluster(
 	opt *BaseOptions,
 	cOpt *CollectOptions,
-) (string, string, error) {
+) (prompt string, resultDir string, err error) {
 	// parse time range
 	end, err := utils.ParseTime(opt.ScrapeEnd)
 	if err != nil {
@@ -60,7 +60,7 @@ func (m *Manager) prepareArgsForTiUPCluster(
 	opt.ScrapeEnd = end.Format(time.RFC3339)
 
 	// show time range
-	prompt := fmt.Sprintf(`Time range:
+	prompt = fmt.Sprintf(`Time range:
   %s - %s (Local)
   %s - %s (UTC)
   (total %.0f seconds)
@@ -70,7 +70,7 @@ func (m *Manager) prepareArgsForTiUPCluster(
 		end.Sub(start).Seconds(),
 	)
 
-	resultDir, err := m.getOutputDir(cOpt.Dir, opt.Cluster)
+	resultDir, err = m.getOutputDir(cOpt.Dir, opt.Cluster)
 	return prompt, resultDir, err
 }
 
@@ -106,7 +106,6 @@ func buildTopoForTiUPCluster(m *Manager, opt *BaseOptions) (*models.TiDBCluster,
 		},
 	}
 	topo.IterInstance(func(ins spec.Instance) {
-
 		switch ins.ComponentName() {
 		case spec.ComponentPD:
 			if cls.PD == nil {

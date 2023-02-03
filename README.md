@@ -2,7 +2,7 @@
 [![Language](https://img.shields.io/badge/Language-Go-blue.svg)](https://golang.org/)
 [![Go Report Card](https://goreportcard.com/badge/github.com/pingcap/diag)](https://goreportcard.com/badge/github.com/pingcap/diag)
 [![Coverage Status](https://codecov.io/gh/pingcap/diag/branch/master/graph/badge.svg)](https://codecov.io/gh/pingcap/diag/)
-[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fpingcap%diag.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2Fpingcap%2Fdiag?ref=badge_shield)
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fpingcap%2Fdiag.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2Fpingcap%2Fdiag?ref=badge_shield)
 
 # What is diag
 

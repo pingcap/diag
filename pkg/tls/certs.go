@@ -41,7 +41,7 @@ func tiDBServerTLSSecretName(tcName string) string {
 	return fmt.Sprintf("%s-tidb-server-secret", tcName)
 }
 
-func LoadTlsConfigFromSecret(secret *corev1.Secret) (*tls.Config, error) {
+func LoadTLSConfigFromSecret(secret *corev1.Secret) (*tls.Config, error) {
 	rootCAs := x509.NewCertPool()
 	var tlsCert tls.Certificate
 

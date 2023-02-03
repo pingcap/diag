@@ -23,7 +23,7 @@ func (fw *FileWrapper) Open() (*os.File, error) {
 }
 
 // ParseFolderName returns the component name and port it listening on.
-func (fw *FileWrapper) ParseFolderName() (string, string, error) {
+func (fw *FileWrapper) ParseFolderName() (comp string, port string, err error) {
 	s := strings.Split(fw.Folder, "-")
 	if len(s) < 2 {
 		return "", "", fmt.Errorf("unexpect folder name: %s", s)

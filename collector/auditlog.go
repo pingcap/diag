@@ -43,7 +43,6 @@ type AuditLogCollectOptions struct {
 // Desc implements the Collector interface
 func (c *AuditLogCollectOptions) Desc() string {
 	return fmt.Sprintf("%s audit logs of components", c.topoType)
-
 }
 
 // GetBaseOptions implements the Collector interface
@@ -136,7 +135,6 @@ func (c *AuditLogCollectOptions) Collect(m *Manager, _ *models.TiDBCluster) erro
 					return err
 				}
 				if len(files) != 0 {
-
 					err := os.MkdirAll(filepath.Join(c.resultDir, fmt.Sprintf("%s_audit", c.topoType)), 0755)
 					if err != nil {
 						return err

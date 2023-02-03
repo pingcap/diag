@@ -5,9 +5,9 @@ import (
 )
 
 var (
-	ReleaseVersion string = ""
-	GitBranch      string = ""
-	GitHash        string = ""
+	ReleaseVersion string
+	GitBranch      string
+	GitHash        string
 )
 
 func PrintReleaseInfo() {

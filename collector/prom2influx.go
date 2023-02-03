@@ -178,7 +178,6 @@ func (opt *RebuildOptions) LoadMetrics(tl *utils.TokenLimiter) error {
 	}
 
 	return writeBatchPoints(tl, data, opt)
-
 }
 
 type promResult struct {

@@ -114,12 +114,15 @@ func TestJsonDecodeTidbConfigData(t *testing.T) {
 		t.Fatal("wrong json decode result")
 	}
 	// for nullable bool
+	//revive:disable-next-line:bool-literal-in-expr
 	if cfg.Log.DisableTimestamp != false {
 		t.Fatal("wrong json decode result")
 	}
+	//revive:disable-next-line:bool-literal-in-expr
 	if cfg.Log.DisableErrorStack != false {
 		t.Fatal("wrong json decode result")
 	}
+	//revive:disable-next-line:bool-literal-in-expr
 	if cfg.Log.EnableErrorStack != false {
 		t.Fatal("wrong json decode result")
 	}
@@ -222,7 +225,7 @@ func TestTidbConfigData_GetDeprecatedValueByTagPath(t *testing.T) {
 	if err := json.Unmarshal(bs, cfg); err != nil {
 		t.Fatal(err)
 	}
-	if cfg.TidbConfig.EnableStreaming == false {
+	if !cfg.TidbConfig.EnableStreaming {
 		t.Fatal("wrong")
 	}
 	result := cfg.GetValueByTagPath("enable-streaming")

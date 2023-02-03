@@ -36,17 +36,17 @@ func GetProcPath(paths ...string) string {
 	}
 }
 
-func GetSysUptime() (float64, float64, error) {
+func GetSysUptime() (uptime float64, idleTime float64, err error) {
 	contents, err := os.ReadFile(GetProcPath("uptime"))
 	if err != nil {
 		return 0, 0, err
 	}
 	timerCounts := strings.Fields(string(contents))
-	uptime, err := strconv.ParseFloat(timerCounts[0], 64)
+	uptime, err = strconv.ParseFloat(timerCounts[0], 64)
 	if err != nil {
 		return 0, 0, err
 	}
-	idleTime, err := strconv.ParseFloat(timerCounts[1], 64)
+	idleTime, err = strconv.ParseFloat(timerCounts[1], 64)
 	if err != nil {
 		return 0, 0, err
 	}

@@ -44,22 +44,22 @@ func (i *IterWithAccessTime) Next() (item.Item, error) {
 	defer i.l.Unlock()
 	i.access = time.Now()
 
-	if i.iter != nil {
-		for {
-			item, err := i.iter.Next()
-			if err != nil {
-				return nil, err
-			}
-			if !bytes.Contains(item.GetContent(), i.search) {
-				continue
-			}
-			if i.level != "" && item.GetLevel() != parser.ParseLogLevel([]byte(i.level)) {
-				continue
-			}
-			return item, nil
-		}
-	} else {
+	if i.iter == nil {
 		return nil, errors.New("log file closed")
+	}
+
+	for {
+		item, err := i.iter.Next()
+		if err != nil {
+			return nil, err
+		}
+		if !bytes.Contains(item.GetContent(), i.search) {
+			continue
+		}
+		if i.level != "" && item.GetLevel() != parser.ParseLogLevel([]byte(i.level)) {
+			continue
+		}
+		return item, nil
 	}
 }
 
@@ -108,14 +108,14 @@ func (s *searcher) DelIter(token string) {
 }
 
 func (s *searcher) Gc(token string, iter *IterWithAccessTime) {
-	const DURATION = 60 * time.Second
+	const duration = 60 * time.Second
 
 	s.SetIter(token, iter)
 
 	for {
-		time.Sleep(DURATION - time.Since(iter.GetAccessTime()))
+		time.Sleep(duration - time.Since(iter.GetAccessTime()))
 
-		if iter.GetAccessTime().Add(DURATION).Before(time.Now()) {
+		if iter.GetAccessTime().Add(duration).Before(time.Now()) {
 			s.DelIter(token)
 			iter.Close()
 			break

@@ -81,10 +81,12 @@ images: k8s
 	cp configs/info.toml k8s/images/diag/bin/
 	docker build --tag "${DOCKER_REPO}/diag:${IMAGE_TAG}" -f k8s/images/diag/Dockerfile k8s/images/diag
 
-test:
-	$(GO) test -cover ./...
+test: unit-test
 
-check: fmt vet check-static
+unit-test:
+	$(GO) test ./... -covermode=count -coverprofile tests/cov.unit-test.out
+
+check: fmt vet lint check-static
 
 fmt:
 	@echo "gofmt (simplify)"
@@ -106,11 +108,9 @@ vet:
 
 lint: tests/bin/revive
 	@echo "linting"
-	./tests/check/check-lint.sh
 	@tests/bin/revive -formatter friendly \
-		-exclude ./k8s/apis/... \
 		-exclude ./api/types/... \
-		-config tests/check/revive.toml \
+		-config .revive.toml \
 		$(FILES)
 
 tests/bin/revive: tests/check/go.mod

@@ -68,7 +68,6 @@ func (c *PerfCollectOptions) SetDir(dir string) {
 
 // Prepare implements the Collector interface
 func (c *PerfCollectOptions) Prepare(m *Manager, topo *models.TiDBCluster) (map[string][]CollectStat, error) {
-
 	switch m.mode {
 	case CollectModeTiUP:
 		return c.prepareForTiUP(m, topo)
@@ -119,7 +118,6 @@ func (c *PerfCollectOptions) prepareForTiUP(_ *Manager, topo *models.TiDBCluster
 				Size:   (18 * 1024) * int64(c.duration),
 			})
 		}
-
 	}
 
 	return c.fileStats, nil
@@ -144,7 +142,6 @@ func (c *PerfCollectOptions) Collect(m *Manager, topo *models.TiDBCluster) error
 
 	// build tsaks
 	for _, inst := range instances {
-
 		if t := buildPerfCollectingTasks(ctx, inst, c); len(t) != 0 {
 			collectePerfTasks = append(collectePerfTasks, t...)
 		}
@@ -260,7 +257,6 @@ func buildPerfCollectingTasks(ctx context.Context, inst models.Component, c *Per
 						logger.Warnf("fail querying perf info %s: %s, continue", url, err)
 						return err
 					}
-
 				}
 				return nil
 			},

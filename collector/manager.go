@@ -101,7 +101,6 @@ func (m *Manager) collectLock(resultDir string) {
 	os.MkdirAll(resultDir, 0755)
 	lockFile := filepath.Join(resultDir, CollectLockName)
 	os.Create(lockFile)
-
 }
 
 // collectUnlock when the acquisition ends, remove the file lock

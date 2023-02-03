@@ -69,16 +69,16 @@ const (
 )
 
 type CollectTree struct {
-	System         bool
-	Monitor        collectMonitor
-	Log            collectLog
-	Config         collectConfig
-	DB_vars        bool
-	Perf           bool
-	Debug          bool
-	Component_meta bool
-	Sql_bind       bool
-	Plan_Replayer  bool
+	System        bool
+	Monitor       collectMonitor
+	Log           collectLog
+	Config        collectConfig
+	DBVars        bool
+	Perf          bool
+	Debug         bool
+	ComponentMeta bool
+	SQLBind       bool
+	PlanReplayer  bool
 }
 
 // Collector is the configuration defining an collecting job
@@ -240,9 +240,9 @@ func (m *Manager) CollectClusterInfo(
 				explainSqls = append(explainSqls, sql)
 			}
 		}
-		cOpt.Collectors.Plan_Replayer = true
+		cOpt.Collectors.PlanReplayer = true
 	} else {
-		if cOpt.Collectors.Plan_Replayer {
+		if cOpt.Collectors.PlanReplayer {
 			return "", errors.New("explain-sql should be set if PlanReplayer is included")
 		}
 	}
@@ -347,7 +347,7 @@ func (m *Manager) CollectClusterInfo(
 		dbPassword = tui.PromptForPassword("please enter database password:")
 	}
 
-	if canCollect(&cOpt.Collectors.DB_vars) {
+	if canCollect(&cOpt.Collectors.DBVars) {
 		collectors = append(collectors,
 			&SchemaCollectOptions{
 				BaseOptions: opt,
@@ -359,7 +359,7 @@ func (m *Manager) CollectClusterInfo(
 			})
 	}
 
-	if canCollect(&cOpt.Collectors.Sql_bind) {
+	if canCollect(&cOpt.Collectors.SQLBind) {
 		collectors = append(collectors,
 			&BindCollectOptions{
 				BaseOptions: opt,
@@ -418,7 +418,7 @@ func (m *Manager) CollectClusterInfo(
 			})
 	}
 
-	if canCollect(&cOpt.Collectors.Component_meta) {
+	if canCollect(&cOpt.Collectors.ComponentMeta) {
 		sensitiveTag = true
 		collectors = append(collectors,
 			&ComponentMetaCollectOptions{
@@ -442,7 +442,7 @@ func (m *Manager) CollectClusterInfo(
 			})
 	}
 
-	if canCollect(&cOpt.Collectors.Plan_Replayer) {
+	if canCollect(&cOpt.Collectors.PlanReplayer) {
 		collectors = append(collectors,
 			&PlanReplayerCollectorOptions{
 				BaseOptions:    opt,
@@ -639,7 +639,7 @@ func canCollect(w interface{}) bool {
 }
 
 func needDBKey(c CollectTree) bool {
-	return c.Sql_bind || c.DB_vars || c.Plan_Replayer
+	return c.SQLBind || c.DBVars || c.PlanReplayer
 }
 
 func ParseCollectTree(include, exclude []string) (CollectTree, error) {
@@ -703,7 +703,7 @@ func (t CollectTree) List() []string {
 				result = append(result, r(reflectV.Field(i), childpath)...)
 			}
 		case reflect.Bool:
-			if reflectV.Bool() == true {
+			if reflectV.Bool() {
 				result = []string{path}
 			}
 		}
