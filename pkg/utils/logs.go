@@ -24,7 +24,6 @@ import (
 
 // CollectLog collects logs
 func CollectLog(collector, home, user, instanceID, inspectionID string, begin, end time.Time) error {
-
 	args := []string{
 		fmt.Sprintf("--home=%s", home),
 		fmt.Sprintf("--instance-id=%s", instanceID),

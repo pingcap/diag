@@ -676,7 +676,6 @@ func FilterInstance(instances []Component, nodes set.StringSet) (res []Component
 
 // GetEtcdClient loads EtcdClient of current cluster
 func (c *TiDBCluster) GetEtcdClient(tlsCfg *tls.Config) (*clientv3.Client, error) {
-
 	var pdList []string
 
 	for _, pd := range c.PD {
@@ -696,7 +695,6 @@ const ticdcEtcdKeyBase string = "/tidb/cdc"
 
 // getAllCDCInfo get all keys created by CDC
 func (c *TiDBCluster) GetAllCDCInfo(ctx context.Context, timeout time.Duration, tlsCfg *tls.Config) ([]*mvccpb.KeyValue, error) {
-
 	if timeout < time.Second {
 		timeout = 5 * time.Second
 	}

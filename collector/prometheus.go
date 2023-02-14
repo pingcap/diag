@@ -127,7 +127,7 @@ func (c *AlertCollectOptions) Collect(m *Manager, topo *models.TiDBCluster) erro
 
 		f, err := os.Create(filepath.Join(c.resultDir, subdirMonitor, subdirAlerts, strings.ReplaceAll(promAddr, ":", "-"), "alerts.json"))
 		if err == nil {
-			queryOK = queryOK || true
+			queryOK = true
 		} else {
 			queryErr = err
 		}

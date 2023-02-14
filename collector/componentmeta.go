@@ -69,7 +69,6 @@ func (c *ComponentMetaCollectOptions) SetDir(dir string) {
 
 // Prepare implements the Collector interface
 func (c *ComponentMetaCollectOptions) Prepare(m *Manager, topo *models.TiDBCluster) (map[string][]CollectStat, error) {
-
 	if m.mode != CollectModeTiUP {
 		return nil, nil
 	}
@@ -88,6 +87,8 @@ func (c *ComponentMetaCollectOptions) Prepare(m *Manager, topo *models.TiDBClust
 				Target: fmt.Sprintf("%s:%d %s component_meta", inst.Host(), inst.MainPort(), inst.Type()),
 				Size:   (10 * 1024),
 			})
+		default:
+			// pass
 		}
 	}
 
@@ -113,7 +114,6 @@ func (c *ComponentMetaCollectOptions) Collect(m *Manager, topo *models.TiDBClust
 
 	// build tsaks
 	for _, inst := range instances {
-
 		if t := buildMateCollectingTasks(ctx, c, inst); len(t) != 0 {
 			collecteMetaDateTasks = append(collecteMetaDateTasks, t...)
 		}
@@ -135,7 +135,6 @@ func (c *ComponentMetaCollectOptions) Collect(m *Manager, topo *models.TiDBClust
 
 // buildMateCollectingTasks build collect matedata information tasks
 func buildMateCollectingTasks(ctx context.Context, c *ComponentMetaCollectOptions, inst models.Component) []*task.StepDisplay {
-
 	logger := ctx.Value(logprinter.ContextKeyLogger).(*logprinter.Logger)
 
 	switch inst.Type() {
@@ -152,7 +151,6 @@ func buildMateCollectingTasks(ctx context.Context, c *ComponentMetaCollectOption
 }
 
 func buildTiCDCMateCollectTask(ctx context.Context, c *ComponentMetaCollectOptions, inst models.Component) ([]*task.StepDisplay, error) {
-
 	var debugTasks []*task.StepDisplay
 	logger := ctx.Value(logprinter.ContextKeyLogger).(*logprinter.Logger)
 
@@ -194,7 +192,6 @@ func buildTiCDCMateCollectTask(ctx context.Context, c *ComponentMetaCollectOptio
 						logger.Warnf("failed to collect TiCDC metadata: %s, continue", err)
 					}
 				}
-
 				return nil
 			},
 		).
@@ -206,5 +203,4 @@ func buildTiCDCMateCollectTask(ctx context.Context, c *ComponentMetaCollectOptio
 		))
 	debugTasks = append(debugTasks, t)
 	return debugTasks, nil
-
 }

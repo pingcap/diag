@@ -81,10 +81,12 @@ images: k8s
 	cp configs/info.toml k8s/images/diag/bin/
 	docker build --tag "${DOCKER_REPO}/diag:${IMAGE_TAG}" -f k8s/images/diag/Dockerfile k8s/images/diag
 
-test:
-	$(GO) test -cover ./...
+test: unit-test
 
-check: fmt vet check-static
+unit-test:
+	$(GO) test ./... -covermode=count -coverprofile tests/cov.unit-test.out
+
+check: fmt vet lint check-static
 
 fmt:
 	@echo "gofmt (simplify)"
@@ -106,11 +108,9 @@ vet:
 
 lint: tests/bin/revive
 	@echo "linting"
-	./tests/check/check-lint.sh
 	@tests/bin/revive -formatter friendly \
-		-exclude ./k8s/apis/... \
 		-exclude ./api/types/... \
-		-config tests/check/revive.toml \
+		-config .revive.toml \
 		$(FILES)
 
 tests/bin/revive: tests/check/go.mod
@@ -118,7 +118,7 @@ tests/bin/revive: tests/check/go.mod
 	$(GO) build -o ../bin/revive github.com/mgechev/revive
 
 tools/bin/golangci-lint:
-	curl -sfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b ./tools/bin v1.49.0
+	curl -sfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b ./tools/bin v1.50.1
 
 check-static: tools/bin/golangci-lint
 	GO111MODULE=on CGO_ENABLED=0 tools/bin/golangci-lint run -v --config .golangci.yml

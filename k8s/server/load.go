@@ -28,7 +28,6 @@ import (
 )
 
 func loadJobWorker(ctx *context) {
-
 	if tiuputils.IsNotExist(collectDir) {
 		os.MkdirAll(collectDir, 0755)
 	}
@@ -82,7 +81,6 @@ func loadJobWorker(ctx *context) {
 		}
 		ctx.insertCollectJob(job)
 		klog.Infof("load worker [%s] success", id)
-
 	}
 
 	klog.Infof("finished loading workers from %s ", collectDir)

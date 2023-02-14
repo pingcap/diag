@@ -32,7 +32,8 @@ func TestJsonDecodeTikvConfigData(t *testing.T) {
 	if len(cfg.LogLevel) == 0 {
 		t.Fatal("wrong json decode result")
 	}
-	if cfg.Gc.EnableCompactionFilter == false {
+	//revive:disable-next-line:bool-literal-in-expr
+	if cfg.Gc.EnableCompactionFilter != true {
 		t.Fatal("wrong json decode result")
 	}
 }

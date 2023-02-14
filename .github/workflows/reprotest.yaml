@@ -1,0 +1,57 @@
+# Check for reproducible build
+
+name: reprotest
+
+# Controls when the action will run. Triggers the workflow on push or pull request
+# events but only for the master branch
+on:
+  pull_request:
+    branches:
+      - master
+      - release-*
+    paths-ignore:
+      - '**.html'
+      - '**.md'
+      - 'LICENSE'
+      - 'doc/**'
+  push:
+    branches:
+      - release-*
+    paths-ignore:
+      - '**.html'
+      - '**.md'
+      - 'LICENSE'
+      - 'doc/**'
+
+jobs:
+  reprotest:
+    # The type of runner that the job will run on
+    runs-on: ubuntu-20.04
+
+    strategy:
+      matrix:
+        go:
+          - 1.19.x
+
+    # Steps represent a sequence of tasks that will be executed as part of the job
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Go ${{ matrix.go }}
+        uses: actions/setup-go@v2
+        with:
+          go-version: ${{ matrix.go }}
+
+      - name: Install reprotest and prepare
+        id: prepare_env
+        run: |
+          sudo apt-get update && sudo apt-get -qy install reprotest
+
+      - name: Check for reproducible build
+        run: |
+          sudo reprotest \
+            "make clean && \
+            PATH=$GOROOT/bin:$PATH \
+            BUILD_FLAGS='-trimpath -buildmode=pie -mod=readonly -modcacherw -buildvcs=false' \
+            make build" \
+          bin

@@ -1,10 +1,11 @@
 package engine
 
 import (
+	"testing"
+
 	"github.com/pingcap/diag/checker/config"
 	"github.com/pingcap/diag/checker/proto"
 	"github.com/stretchr/testify/require"
-	"testing"
 )
 
 // rule 105 should return ok if `performance.feedback-probability` is set to 0, otherwise it should return false.
@@ -68,5 +69,4 @@ func Test_Issue243(t *testing.T) {
 			assert.Equal(v, true)
 		}
 	}
-
 }

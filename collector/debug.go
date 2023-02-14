@@ -67,7 +67,6 @@ func (c *DebugCollectOptions) SetDir(dir string) {
 
 // Prepare implements the Collector interface
 func (c *DebugCollectOptions) Prepare(m *Manager, topo *models.TiDBCluster) (map[string][]CollectStat, error) {
-
 	switch m.mode {
 	case CollectModeTiUP:
 		return c.prepareForTiUP(m, topo)
@@ -87,7 +86,6 @@ func (c *DebugCollectOptions) prepareForTiUP(_ *Manager, topo *models.TiDBCluste
 	for _, inst := range instances {
 		switch inst.Type() {
 		case models.ComponentTypeTiCDC:
-
 			stat := CollectStat{
 				Target: fmt.Sprintf("%s:%d %s debug", inst.Host(), inst.MainPort(), inst.Type()),
 				Size:   1024 * 5 * 5,
@@ -95,7 +93,6 @@ func (c *DebugCollectOptions) prepareForTiUP(_ *Manager, topo *models.TiDBCluste
 
 			c.fileStats[inst.Host()] = append(c.fileStats[inst.Host()], stat)
 		}
-
 	}
 
 	return c.fileStats, nil
@@ -120,7 +117,6 @@ func (c *DebugCollectOptions) Collect(m *Manager, topo *models.TiDBCluster) erro
 
 	// build tsaks
 	for _, inst := range instances {
-
 		if t := buildDebugCollectingTasks(ctx, inst, c); len(t) != 0 {
 			collecteDebugTasks = append(collecteDebugTasks, t...)
 		}

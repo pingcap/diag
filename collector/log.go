@@ -82,7 +82,7 @@ func (c *LogCollectOptions) SetDir(dir string) {
 
 // Prepare implements the Collector interface
 func (c *LogCollectOptions) Prepare(m *Manager, cls *models.TiDBCluster) (map[string][]CollectStat, error) {
-	if m.mode != CollectModeTiUP || (c.collector.Std || c.collector.Slow || c.collector.Unknown) == false {
+	if m.mode != CollectModeTiUP || !(c.collector.Std || c.collector.Slow || c.collector.Unknown) {
 		return nil, nil
 	}
 

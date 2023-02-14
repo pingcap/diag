@@ -70,5 +70,4 @@ func (w *EncryptWriter) Write(p []byte) (n int, err error) {
 	w.stream.XORKeyStream(outBuf, p)
 	n, err = w.w.Write(outBuf)
 	return int(headn) + n, err
-
 }

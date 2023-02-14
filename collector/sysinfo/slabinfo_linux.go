@@ -17,7 +17,7 @@
 package sysinfo
 
 import (
-	"io/ioutil"
+	"os"
 	"strings"
 )
 
@@ -25,7 +25,7 @@ const slabInfoFilePath = "slabinfo"
 
 // GetSlabInfo reads /proc/cpuinfo and parses its content
 func GetSlabInfo() ([]SlabInfo, error) {
-	content, err := ioutil.ReadFile(GetProcPath(slabInfoFilePath))
+	content, err := os.ReadFile(GetProcPath(slabInfoFilePath))
 	if err != nil {
 		return nil, err
 	}

@@ -222,7 +222,6 @@ func runCollector(
 		klog.Infof("collect job %s finished.", worker.job.ID)
 		ctx.setJobStatus(worker.job.ID, taskStatusFinish)
 	}
-
 }
 
 // collectData implements GET /collectors
@@ -346,6 +345,12 @@ func getCollectLogs(c *gin.Context) {
 // operateCollectJob implements POST /collectors/:id
 func operateCollectJob(c *gin.Context) {
 	id := c.Param("id")
+	// check if the input ID is valid
+	if _, err := base52.Decode(id); id != "" && err != nil {
+		msg := fmt.Sprintf("invalid ID: %s", err)
+		sendErrMsg(c, http.StatusBadRequest, msg)
+		return
+	}
 
 	// parse argument from POST body
 	var req types.OperateJobRequest
@@ -377,7 +382,6 @@ func operateCollectJob(c *gin.Context) {
 	msg := "unknown operation."
 	sendErrMsg(c, http.StatusMethodNotAllowed, msg)
 	return
-
 }
 
 func reCollectData(c *gin.Context, diagCtx *context, id string) {

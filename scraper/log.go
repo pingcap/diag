@@ -73,7 +73,6 @@ func (s *LogScraper) Scrap(result *Sample) error {
 			if err != nil {
 				fmt.Fprintf(os.Stderr, "error checking %s: %s\n", fi.Name(), err)
 			}
-
 		} else {
 			fmt.Fprintf(os.Stderr, "error checking %s: %s\n", fi.Name(), err)
 		}
