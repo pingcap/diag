@@ -70,6 +70,12 @@ func (s *TSDBScraper) Scrap(result *Sample) error {
 			}
 		}
 
+		now := time.Now()
+		// ignore chunks_head
+		if s.End.Before(now.Add(-3 * time.Hour)) {
+			continue
+		}
+
 		size, err := utils.DirSize(dirPath)
 		if err != nil {
 			size = 0
