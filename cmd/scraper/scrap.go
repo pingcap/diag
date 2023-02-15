@@ -55,6 +55,20 @@ func Scrap(opt *scraper.Option) (*scraper.Sample, error) {
 		scrapers = append(scrapers, s)
 	}
 
+	if opt.PrometheusDataDir != "" {
+		s := &scraper.TSDBScraper{
+			Paths: []string{opt.PrometheusDataDir},
+		}
+		var err error
+		if s.Start, err = utils.ParseTime(opt.Start); err != nil {
+			return nil, err
+		}
+		if s.End, err = utils.ParseTime(opt.End); err != nil {
+			return nil, err
+		}
+		scrapers = append(scrapers, s)
+	}
+
 	result := &scraper.Sample{}
 	for _, s := range scrapers {
 		if err := s.Scrap(result); err != nil {

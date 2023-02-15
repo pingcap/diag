@@ -116,6 +116,7 @@ type CollectOptions struct {
 	PerfDuration    int               //seconds: profile time(s), default is 30s.
 	CompressScp     bool              // compress of files during collecting
 	CompressMetrics bool              // compress of files during collecting
+	RawMonitor      bool              // collect raw data for metrics
 	ExitOnError     bool              // break the process and exit when an error occur
 	ExtendedAttrs   map[string]string // extended attributes used for manual collecting mode
 	ExplainSQLPath  string            // File path for explain sql
@@ -273,7 +274,7 @@ func (m *Manager) CollectClusterInfo(
 				compress:    cOpt.CompressMetrics,
 			})
 	}
-	if canCollect(&cOpt.Collectors.Monitor.Metric) {
+	if canCollect(&cOpt.Collectors.Monitor.Metric) && !cOpt.RawMonitor {
 		collectors = append(collectors,
 			&MetricCollectOptions{ // metrics
 				BaseOptions: opt,
@@ -283,6 +284,18 @@ func (m *Manager) CollectClusterInfo(
 				filter:      cOpt.MetricsFilter,
 				limit:       cOpt.MetricsLimit,
 				compress:    cOpt.CompressMetrics,
+			},
+		)
+	}
+	if canCollect(&cOpt.Collectors.Monitor.Metric) && cOpt.RawMonitor {
+		collectors = append(collectors,
+			&TSDBCollectOptions{ // metrics
+				BaseOptions: opt,
+				opt:         gOpt,
+				resultDir:   resultDir,
+				fileStats:   make(map[string][]CollectStat),
+				limit:       cOpt.Limit,
+				compress:    cOpt.CompressScp,
 			},
 		)
 	}
