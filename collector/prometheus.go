@@ -744,7 +744,6 @@ func (c *TSDBCollectOptions) Collect(m *Manager, cls *models.TiDBCluster) error 
 			Rmdir(inst.GetHost(), task.CheckToolsPathDir).
 			BuildAsStep(fmt.Sprintf("  - Cleanup temp files on %s:%d", inst.GetHost(), inst.GetSSHPort()))
 		cleanTasks = append(cleanTasks, t3)
-
 	}
 
 	t := task.NewBuilder(m.logger).

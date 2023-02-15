@@ -68,12 +68,12 @@ func (s *TSDBScraper) Scrap(result *Sample) error {
 			if meta.MaxTime < s.Start.UnixMilli() || meta.MinTime > s.End.UnixMilli() {
 				continue
 			}
-		}
-
-		now := time.Now()
-		// ignore chunks_head
-		if s.End.Before(now.Add(-3 * time.Hour)) {
-			continue
+		} else {
+			now := time.Now()
+			// ignore chunks_head
+			if s.End.Before(now.Add(-3 * time.Hour)) {
+				continue
+			}
 		}
 
 		size, err := utils.DirSize(dirPath)
@@ -81,7 +81,6 @@ func (s *TSDBScraper) Scrap(result *Sample) error {
 			size = 0
 		}
 		result.TSDB[dirPath] = size
-
 	}
 
 	return nil
