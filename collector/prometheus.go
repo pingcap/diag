@@ -14,6 +14,7 @@
 package collector
 
 import (
+	"archive/tar"
 	"context"
 	"fmt"
 	"io"
@@ -32,6 +33,7 @@ import (
 	"github.com/klauspost/compress/zstd"
 	"github.com/pingcap/diag/pkg/models"
 	"github.com/pingcap/diag/pkg/utils"
+	"github.com/pingcap/diag/scraper"
 	perrs "github.com/pingcap/errors"
 	"github.com/pingcap/tiup/pkg/cluster/ctxt"
 	operator "github.com/pingcap/tiup/pkg/cluster/operation"
@@ -41,6 +43,10 @@ import (
 	"github.com/pingcap/tiup/pkg/set"
 	"github.com/pingcap/tiup/pkg/tui/progress"
 	tiuputils "github.com/pingcap/tiup/pkg/utils"
+	k8sutils "github.com/qiffang/k8sutils/pkg/exec"
+	"k8s.io/client-go/dynamic"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/tools/clientcmd"
 )
 
 const (
@@ -523,6 +529,10 @@ type TSDBCollectOptions struct {
 	fileStats map[string][]CollectStat
 	compress  bool
 	limit     int
+	kubeCli   *kubernetes.Clientset
+	dynCli    dynamic.Interface
+	fCli      *k8sutils.Client
+	pod       string
 }
 
 // Desc implements the Collector interface
@@ -553,7 +563,7 @@ func (c *TSDBCollectOptions) SetDir(dir string) {
 // Prepare implements the Collector interface
 func (c *TSDBCollectOptions) Prepare(m *Manager, cls *models.TiDBCluster) (map[string][]CollectStat, error) {
 	if m.mode != CollectModeTiUP {
-		return nil, nil
+		return c.kubePrepare(m, cls)
 	}
 	if len(cls.Monitors) < 1 {
 		if m.logger.GetDisplayMode() == logprinter.DisplayModeDefault {
@@ -684,7 +694,7 @@ func (c *TSDBCollectOptions) Prepare(m *Manager, cls *models.TiDBCluster) (map[s
 // Collect implements the Collector interface
 func (c *TSDBCollectOptions) Collect(m *Manager, cls *models.TiDBCluster) error {
 	if m.mode != CollectModeTiUP {
-		return nil
+		return c.kubeCollect(m, cls)
 	}
 
 	topo := cls.Attributes[CollectModeTiUP].(spec.Topology)
@@ -765,4 +775,110 @@ func (c *TSDBCollectOptions) Collect(m *Manager, cls *models.TiDBCluster) error 
 	}
 
 	return nil
+}
+
+func (c *TSDBCollectOptions) kubePrepare(m *Manager, cls *models.TiDBCluster) (map[string][]CollectStat, error) {
+	cfg, err := clientcmd.BuildConfigFromFlags("", c.BaseOptions.Kubeconfig)
+	if err != nil {
+		return nil, err
+	}
+	c.fCli, err = k8sutils.NewClient(&k8sutils.ClientOpt{
+		K8sConfig: cfg,
+		Namespace: c.Namespace,
+		PodName:   c.pod,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	var datadir string
+
+	err = c.fCli.CanExec()
+	if err != nil {
+		fmt.Print(err)
+		return nil, err
+	}
+
+	// todo: copy scraper to pod
+	command := []string{"tar", "--no-same-permissions", "--no-same-owner", "-xmf", "-", "-C", "/tmp/"}
+
+	reader, writer := io.Pipe()
+	defer reader.Close()
+
+	go func() {
+		tarW := tar.NewWriter(writer)
+		defer tarW.Close()
+		fi, err := os.Stat("/home/wk/local.yaml")
+		if err != nil {
+			return
+		}
+		header, _ := tar.FileInfoHeader(fi, "")
+		header.Name = "local.yaml"
+
+		err = tarW.WriteHeader(header)
+		if err != nil {
+			return
+		}
+
+		fd, err := os.Open("/home/wk/local.yaml")
+		if err != nil {
+			return
+		}
+		defer fd.Close()
+
+		_, err = io.Copy(tarW, fd)
+		if err != nil {
+			return
+		}
+
+		tarW.Close()
+		writer.Close()
+	}()
+
+	err = c.fCli.ExecPod(command, reader, nil, nil, false, 40*(time.Second))
+	if err != nil {
+		println(err)
+	}
+
+	// todo: run scraper
+
+	stdout := fmt.Sprintf("/tmp/bin/scraper --prometheus '%s' -f '%s' -t '%s'",
+		datadir,
+		c.ScrapeBegin, c.ScrapeEnd,
+	)
+
+	stats, err := parseScraperTSDB([]byte(stdout))
+	if err != nil {
+		return nil, err
+	}
+	c.fileStats[c.pod] = stats
+
+	return c.fileStats, nil
+}
+
+func (c *TSDBCollectOptions) kubeCollect(m *Manager, cls *models.TiDBCluster) error {
+	// f := c.fileStats[c.pod]
+
+	// f.Target,
+	// filepath.Join(c.resultDir, subdirMonitor, subdirRaw, fmt.Sprintf("%s-%d", inst.GetHost(), inst.GetMainPort()), filepath.Base(f.Target)),
+
+	return nil
+}
+
+func parseScraperTSDB(stdout []byte) ([]CollectStat, error) {
+	var s scraper.Sample
+	if err := json.Unmarshal(stdout, &s); err != nil {
+		// save output directly on parsing errors
+		return nil, fmt.Errorf("error parsing scraped stats: %s", stdout)
+	}
+
+	stats := make([]CollectStat, 0)
+	for k, v := range s.TSDB {
+		stats = append(stats, CollectStat{
+			Target: k,
+			Size:   v,
+		})
+	}
+
+	return stats, nil
 }

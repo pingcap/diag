@@ -95,6 +95,7 @@ type BaseOptions struct {
 	Cluster          string                  // cluster name
 	Namespace        string                  // k8s namespace of the cluster
 	MonitorNamespace string                  // k8s namespace of the monitor
+	Kubeconfig       string                  // path of kubeconfig
 	User             string                  // username to login to the SSH server
 	UsePassword      bool                    // use password instead of identity file for ssh connection
 	SSH              *tui.SSHConnectionProps // SSH credentials
@@ -122,6 +123,7 @@ type CollectOptions struct {
 	ExplainSQLPath  string            // File path for explain sql
 	ExplainSqls     []string          // explain sqls
 	CurrDB          string
+	PodName         string
 }
 
 // CollectStat is estimated size stats of data to be collected
@@ -296,6 +298,9 @@ func (m *Manager) CollectClusterInfo(
 				fileStats:   make(map[string][]CollectStat),
 				limit:       cOpt.Limit,
 				compress:    cOpt.CompressScp,
+				kubeCli:     kubeCli,
+				dynCli:      dynCli,
+				pod:         cOpt.PodName,
 			},
 		)
 	}
