@@ -15,6 +15,7 @@ package collector
 
 import (
 	"archive/tar"
+	"bytes"
 	"context"
 	"fmt"
 	"io"
@@ -799,8 +800,14 @@ func (c *TSDBCollectOptions) kubePrepare(m *Manager, cls *models.TiDBCluster) (m
 		return nil, err
 	}
 
+	binpath, err := os.Executable()
+	if err != nil {
+		return nil, err
+	}
+	scraperPath := path.Join(path.Dir(binpath), "scraper")
+
 	// todo: copy scraper to pod
-	command := []string{"tar", "--no-same-permissions", "--no-same-owner", "-xmf", "-", "-C", "/tmp/"}
+	cpCommand := []string{"tar", "--no-same-permissions", "--no-same-owner", "-xmf", "-", "-C", "/tmp"}
 
 	reader, writer := io.Pipe()
 	defer reader.Close()
@@ -808,19 +815,18 @@ func (c *TSDBCollectOptions) kubePrepare(m *Manager, cls *models.TiDBCluster) (m
 	go func() {
 		tarW := tar.NewWriter(writer)
 		defer tarW.Close()
-		fi, err := os.Stat("/home/wk/local.yaml")
+		fi, err := os.Stat(scraperPath)
 		if err != nil {
 			return
 		}
 		header, _ := tar.FileInfoHeader(fi, "")
-		header.Name = "local.yaml"
 
 		err = tarW.WriteHeader(header)
 		if err != nil {
 			return
 		}
 
-		fd, err := os.Open("/home/wk/local.yaml")
+		fd, err := os.Open(scraperPath)
 		if err != nil {
 			return
 		}
@@ -835,19 +841,20 @@ func (c *TSDBCollectOptions) kubePrepare(m *Manager, cls *models.TiDBCluster) (m
 		writer.Close()
 	}()
 
-	err = c.fCli.ExecPod(command, reader, nil, nil, false, 40*(time.Second))
+	err = c.fCli.ExecPod(cpCommand, reader, nil, nil, false, 40*(time.Second))
 	if err != nil {
 		println(err)
 	}
 
-	// todo: run scraper
 
-	stdout := fmt.Sprintf("/tmp/bin/scraper --prometheus '%s' -f '%s' -t '%s'",
-		datadir,
-		c.ScrapeBegin, c.ScrapeEnd,
-	)
+	out := &bytes.Buffer{}
+	scraperCommand := []string{"/tmp/scraper", "--prometheus", datadir, "-f", c.ScrapeBegin, "-t", c.ScrapeEnd}
+	err = c.fCli.ExecPod(scraperCommand, nil, out, nil, false, 40*(time.Second))
+	if err != nil {
+		println(err)
+	}
 
-	stats, err := parseScraperTSDB([]byte(stdout))
+	stats, err := parseScraperTSDB(out.Bytes())
 	if err != nil {
 		return nil, err
 	}
