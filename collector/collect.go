@@ -124,6 +124,7 @@ type CollectOptions struct {
 	ExplainSqls     []string          // explain sqls
 	CurrDB          string
 	PodName         string
+	ContainerName   string
 }
 
 // CollectStat is estimated size stats of data to be collected
@@ -301,6 +302,7 @@ func (m *Manager) CollectClusterInfo(
 				kubeCli:     kubeCli,
 				dynCli:      dynCli,
 				pod:         cOpt.PodName,
+				container:   cOpt.ContainerName,
 			},
 		)
 	}

@@ -64,6 +64,7 @@ func newkubeDumpCmd() *cobra.Command {
 	cmd.Flags().StringVar(&clsID, "cluster-id", "", "ID of the TiDB cluster")
 	cmd.Flags().StringVar(&opt.Namespace, "namespace", "", "namespace of prometheus")
 	cmd.Flags().StringVar(&cOpt.PodName, "pod", "", "pod name of prometheus")
+	cmd.Flags().StringVar(&cOpt.ContainerName, "container", "", "container name of prometheus")
 	// cmd.Flags().StringVar(&caPath, "ca-file", "", "path to the CA of TLS enabled cluster")
 	// cmd.Flags().StringVar(&certPath, "cert-file", "", "path to the client certification of TLS enabled cluster")
 	// cmd.Flags().StringVar(&keyPath, "key-file", "", "path to the private key of client certification of TLS enabled cluster")
@@ -76,6 +77,7 @@ func newkubeDumpCmd() *cobra.Command {
 	cobra.MarkFlagRequired(cmd.Flags(), "cluster-id")
 	cobra.MarkFlagRequired(cmd.Flags(), "namespace")
 	cobra.MarkFlagRequired(cmd.Flags(), "pod")
+	cobra.MarkFlagRequired(cmd.Flags(), "container")
 
 	return cmd
 }

@@ -534,6 +534,7 @@ type TSDBCollectOptions struct {
 	dynCli    dynamic.Interface
 	fCli      *k8sutils.Client
 	pod       string
+	container string
 }
 
 // Desc implements the Collector interface
@@ -784,15 +785,16 @@ func (c *TSDBCollectOptions) kubePrepare(m *Manager, cls *models.TiDBCluster) (m
 		return nil, err
 	}
 	c.fCli, err = k8sutils.NewClient(&k8sutils.ClientOpt{
-		K8sConfig: cfg,
-		Namespace: c.Namespace,
-		PodName:   c.pod,
+		K8sConfig:     cfg,
+		Namespace:     c.Namespace,
+		PodName:       c.pod,
+		ContainerName: c.container,
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	var datadir string
+	datadir := "/data/prometheus"
 
 	err = c.fCli.CanExec()
 	if err != nil {
@@ -846,7 +848,6 @@ func (c *TSDBCollectOptions) kubePrepare(m *Manager, cls *models.TiDBCluster) (m
 		println(err)
 	}
 
-
 	out := &bytes.Buffer{}
 	scraperCommand := []string{"/tmp/scraper", "--prometheus", datadir, "-f", c.ScrapeBegin, "-t", c.ScrapeEnd}
 	err = c.fCli.ExecPod(scraperCommand, nil, out, nil, false, 40*(time.Second))
@@ -864,7 +865,18 @@ func (c *TSDBCollectOptions) kubePrepare(m *Manager, cls *models.TiDBCluster) (m
 }
 
 func (c *TSDBCollectOptions) kubeCollect(m *Manager, cls *models.TiDBCluster) error {
-	// f := c.fileStats[c.pod]
+	for _, f := range c.fileStats[c.pod] {
+		downloadCommand := []string{"tar", "cf", "-", f.Target}
+		r, w := io.Pipe()
+		go func() {
+			utils.Untar(r, filepath.Join(c.resultDir, subdirMonitor, subdirRaw, c.pod, filepath.Base(f.Target)))
+		}()
+		err := c.fCli.ExecPod(downloadCommand, nil, w, nil, false, 400*(time.Second))
+		w.Close()
+		if err != nil {
+			println(err)
+		}
+	}
 
 	// f.Target,
 	// filepath.Join(c.resultDir, subdirMonitor, subdirRaw, fmt.Sprintf("%s-%d", inst.GetHost(), inst.GetMainPort()), filepath.Base(f.Target)),
