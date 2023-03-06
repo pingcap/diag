@@ -14,6 +14,8 @@
 package collector
 
 import (
+	"archive/tar"
+	"bytes"
 	"context"
 	"fmt"
 	"io"
@@ -32,6 +34,7 @@ import (
 	"github.com/klauspost/compress/zstd"
 	"github.com/pingcap/diag/pkg/models"
 	"github.com/pingcap/diag/pkg/utils"
+	"github.com/pingcap/diag/scraper"
 	perrs "github.com/pingcap/errors"
 	"github.com/pingcap/tiup/pkg/cluster/ctxt"
 	operator "github.com/pingcap/tiup/pkg/cluster/operation"
@@ -41,6 +44,8 @@ import (
 	"github.com/pingcap/tiup/pkg/set"
 	"github.com/pingcap/tiup/pkg/tui/progress"
 	tiuputils "github.com/pingcap/tiup/pkg/utils"
+	k8sutils "github.com/qiffang/k8sutils/pkg/exec"
+	"k8s.io/client-go/tools/clientcmd"
 )
 
 const (
@@ -523,6 +528,8 @@ type TSDBCollectOptions struct {
 	fileStats map[string][]CollectStat
 	compress  bool
 	limit     int
+	fCli      *k8sutils.Client
+	pod       string
 }
 
 // Desc implements the Collector interface
@@ -553,7 +560,7 @@ func (c *TSDBCollectOptions) SetDir(dir string) {
 // Prepare implements the Collector interface
 func (c *TSDBCollectOptions) Prepare(m *Manager, cls *models.TiDBCluster) (map[string][]CollectStat, error) {
 	if m.mode != CollectModeTiUP {
-		return nil, nil
+		return c.kubePrepare(m, cls)
 	}
 	if len(cls.Monitors) < 1 {
 		if m.logger.GetDisplayMode() == logprinter.DisplayModeDefault {
@@ -684,7 +691,7 @@ func (c *TSDBCollectOptions) Prepare(m *Manager, cls *models.TiDBCluster) (map[s
 // Collect implements the Collector interface
 func (c *TSDBCollectOptions) Collect(m *Manager, cls *models.TiDBCluster) error {
 	if m.mode != CollectModeTiUP {
-		return nil
+		return c.kubeCollect(m, cls)
 	}
 
 	topo := cls.Attributes[CollectModeTiUP].(spec.Topology)
@@ -765,4 +772,127 @@ func (c *TSDBCollectOptions) Collect(m *Manager, cls *models.TiDBCluster) error 
 	}
 
 	return nil
+}
+
+func (c *TSDBCollectOptions) kubePrepare(m *Manager, cls *models.TiDBCluster) (map[string][]CollectStat, error) {
+	cfg, err := clientcmd.BuildConfigFromFlags("", c.BaseOptions.Kubeconfig)
+	if err != nil {
+		return nil, err
+	}
+	c.fCli, err = k8sutils.NewClient(&k8sutils.ClientOpt{
+		K8sConfig:     cfg,
+		Namespace:     c.Namespace,
+		PodName:       c.pod,
+		ContainerName: "prometheus",
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	datadir := "/data/prometheus"
+
+	err = c.fCli.CanExec()
+	if err != nil {
+		fmt.Print(err)
+		return nil, err
+	}
+
+	binpath, err := os.Executable()
+	if err != nil {
+		return nil, err
+	}
+	scraperPath := path.Join(path.Dir(binpath), "scraper")
+
+	// todo: copy scraper to pod
+	cpCommand := []string{"tar", "--no-same-permissions", "--no-same-owner", "-xmf", "-", "-C", "/tmp"}
+
+	reader, writer := io.Pipe()
+	defer reader.Close()
+
+	go func() {
+		tarW := tar.NewWriter(writer)
+		defer tarW.Close()
+		fi, err := os.Stat(scraperPath)
+		if err != nil {
+			return
+		}
+		header, _ := tar.FileInfoHeader(fi, "")
+
+		err = tarW.WriteHeader(header)
+		if err != nil {
+			return
+		}
+
+		fd, err := os.Open(scraperPath)
+		if err != nil {
+			return
+		}
+		defer fd.Close()
+
+		_, err = io.Copy(tarW, fd)
+		if err != nil {
+			return
+		}
+
+		tarW.Close()
+		writer.Close()
+	}()
+
+	err = c.fCli.ExecPod(cpCommand, reader, nil, nil, false, 40*(time.Second))
+	if err != nil {
+		println(err)
+	}
+
+	out := &bytes.Buffer{}
+	scraperCommand := []string{"/tmp/scraper", "--prometheus", datadir, "-f", c.ScrapeBegin, "-t", c.ScrapeEnd}
+	err = c.fCli.ExecPod(scraperCommand, nil, out, nil, false, 40*(time.Second))
+	if err != nil {
+		println(err)
+	}
+
+	stats, err := parseScraperTSDB(out.Bytes())
+	if err != nil {
+		return nil, err
+	}
+	c.fileStats[c.pod] = stats
+
+	return c.fileStats, nil
+}
+
+func (c *TSDBCollectOptions) kubeCollect(m *Manager, cls *models.TiDBCluster) error {
+	for _, f := range c.fileStats[c.pod] {
+		downloadCommand := []string{"tar", "cf", "-", "-C", f.Target, "."}
+		r, w := io.Pipe()
+		go func() {
+			utils.Untar(r, filepath.Join(c.resultDir, subdirMonitor, subdirRaw, c.pod, filepath.Base(f.Target)))
+		}()
+		err := c.fCli.ExecPod(downloadCommand, nil, w, nil, false, 400*(time.Second))
+		w.Close()
+		if err != nil {
+			println(err)
+		}
+	}
+
+	// f.Target,
+	// filepath.Join(c.resultDir, subdirMonitor, subdirRaw, fmt.Sprintf("%s-%d", inst.GetHost(), inst.GetMainPort()), filepath.Base(f.Target)),
+
+	return nil
+}
+
+func parseScraperTSDB(stdout []byte) ([]CollectStat, error) {
+	var s scraper.Sample
+	if err := json.Unmarshal(stdout, &s); err != nil {
+		// save output directly on parsing errors
+		return nil, fmt.Errorf("error parsing scraped stats: %s", stdout)
+	}
+
+	stats := make([]CollectStat, 0)
+	for k, v := range s.TSDB {
+		stats = append(stats, CollectStat{
+			Target: k,
+			Size:   v,
+		})
+	}
+
+	return stats, nil
 }

@@ -44,6 +44,7 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/common v0.39.0
 	github.com/prometheus/prom2json v1.3.2 // indirect
+	github.com/qiffang/k8sutils v0.0.0-20230303100957-2c68696ecd73
 	github.com/rivo/uniseg v0.4.3 // indirect
 	github.com/sergi/go-diff v1.3.1 // indirect
 	github.com/shirou/gopsutil v3.21.11+incompatible
