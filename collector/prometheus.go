@@ -866,7 +866,7 @@ func (c *TSDBCollectOptions) kubePrepare(m *Manager, cls *models.TiDBCluster) (m
 
 func (c *TSDBCollectOptions) kubeCollect(m *Manager, cls *models.TiDBCluster) error {
 	for _, f := range c.fileStats[c.pod] {
-		downloadCommand := []string{"tar", "cf", "-", f.Target}
+		downloadCommand := []string{"tar", "cf", "-", "-C", f.Target, "."}
 		r, w := io.Pipe()
 		go func() {
 			utils.Untar(r, filepath.Join(c.resultDir, subdirMonitor, subdirRaw, c.pod, filepath.Base(f.Target)))
