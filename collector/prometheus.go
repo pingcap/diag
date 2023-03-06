@@ -45,8 +45,6 @@ import (
 	"github.com/pingcap/tiup/pkg/tui/progress"
 	tiuputils "github.com/pingcap/tiup/pkg/utils"
 	k8sutils "github.com/qiffang/k8sutils/pkg/exec"
-	"k8s.io/client-go/dynamic"
-	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
 )
 
@@ -530,11 +528,8 @@ type TSDBCollectOptions struct {
 	fileStats map[string][]CollectStat
 	compress  bool
 	limit     int
-	kubeCli   *kubernetes.Clientset
-	dynCli    dynamic.Interface
 	fCli      *k8sutils.Client
 	pod       string
-	container string
 }
 
 // Desc implements the Collector interface
@@ -788,7 +783,7 @@ func (c *TSDBCollectOptions) kubePrepare(m *Manager, cls *models.TiDBCluster) (m
 		K8sConfig:     cfg,
 		Namespace:     c.Namespace,
 		PodName:       c.pod,
-		ContainerName: c.container,
+		ContainerName: "prometheus",
 	})
 	if err != nil {
 		return nil, err

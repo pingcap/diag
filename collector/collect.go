@@ -299,10 +299,7 @@ func (m *Manager) CollectClusterInfo(
 				fileStats:   make(map[string][]CollectStat),
 				limit:       cOpt.Limit,
 				compress:    cOpt.CompressScp,
-				kubeCli:     kubeCli,
-				dynCli:      dynCli,
 				pod:         cOpt.PodName,
-				container:   cOpt.ContainerName,
 			},
 		)
 	}
