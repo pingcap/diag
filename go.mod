@@ -9,6 +9,7 @@ require (
 	github.com/Masterminds/semver v1.5.0
 	github.com/ScaleFT/sshkeys v1.2.0 // indirect
 	github.com/bilibili/gengine v1.5.7
+	github.com/cheggaaa/pb/v3 v3.1.2 // indirect
 	github.com/coreos/go-semver v0.3.1 // indirect
 	github.com/coreos/go-systemd/v22 v22.5.0 // indirect
 	github.com/fatih/color v1.14.1
@@ -36,15 +37,15 @@ require (
 	github.com/otiai10/copy v1.9.0 // indirect
 	github.com/pingcap/check v0.0.0-20211026125417-57bd13f7b5f0
 	github.com/pingcap/errors v0.11.5-0.20210425183316-da1aaba5fb63
-	github.com/pingcap/kvproto v0.0.0-20230213063737-f1dee547f028 // indirect
+	github.com/pingcap/kvproto v0.0.0-20230306123729-599d60b69067 // indirect
 	github.com/pingcap/log v1.1.0
 	github.com/pingcap/tidb-operator/pkg/apis v1.4.1
 	github.com/pingcap/tidb/parser v0.0.0-20230202053355-337af61d9521
-	github.com/pingcap/tiup v1.11.1-0.20230215071401-de5f71bb5e98
+	github.com/pingcap/tiup v1.11.1-0.20230307103113-5095ad9a8437
 	github.com/pkg/errors v0.9.1
-	github.com/prometheus/common v0.39.0
+	github.com/prometheus/common v0.41.0
 	github.com/prometheus/prom2json v1.3.2 // indirect
-	github.com/rivo/uniseg v0.4.3 // indirect
+	github.com/rivo/uniseg v0.4.4 // indirect
 	github.com/sergi/go-diff v1.3.1 // indirect
 	github.com/shirou/gopsutil v3.21.11+incompatible
 	github.com/sirupsen/logrus v1.9.0
@@ -57,13 +58,11 @@ require (
 	go.etcd.io/etcd/client/v3 v3.5.7
 	go.uber.org/multierr v1.9.0 // indirect
 	go.uber.org/zap v1.24.0
-	golang.org/x/crypto v0.6.0 // indirect
-	golang.org/x/mod v0.8.0 // indirect
-	golang.org/x/net v0.7.0 // indirect
+	golang.org/x/crypto v0.7.0 // indirect
+	golang.org/x/mod v0.9.0 // indirect
 	golang.org/x/sync v0.1.0
-	golang.org/x/sys v0.5.0
-	google.golang.org/genproto v0.0.0-20230209215440-0dfe4f8abfcc // indirect
-	google.golang.org/grpc v1.53.0 // indirect
+	golang.org/x/sys v0.6.0
+	google.golang.org/genproto v0.0.0-20230306155012-7f2fa6fef1f4 // indirect
 	gopkg.in/yaml.v3 v3.0.1
 	k8s.io/api v0.22.4
 	k8s.io/apiextensions-apiserver v0.22.4 // indirect

@@ -29,7 +29,6 @@ import (
 	"github.com/pingcap/tiup/pkg/cluster/spec"
 	"github.com/pingcap/tiup/pkg/cluster/task"
 	"github.com/pingcap/tiup/pkg/set"
-	"github.com/pingcap/tiup/pkg/utils"
 )
 
 // SystemCollectOptions are options used collecting system information
@@ -208,7 +207,7 @@ func (c *SystemCollectOptions) Collect(m *Manager, cls *models.TiDBCluster) erro
 
 func saveOutput(data []byte, fname string) error {
 	dir := filepath.Dir(fname)
-	if err := utils.CreateDir(dir); err != nil {
+	if err := os.MkdirAll(dir, 0755); err != nil {
 		return err
 	}
 
