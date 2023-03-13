@@ -31,11 +31,9 @@ import (
 	operator "github.com/pingcap/tiup/pkg/cluster/operation"
 	"github.com/pingcap/tiup/pkg/cluster/spec"
 	"github.com/pingcap/tiup/pkg/environment"
-	tiupmeta "github.com/pingcap/tiup/pkg/environment"
 	"github.com/pingcap/tiup/pkg/localdata"
 	"github.com/pingcap/tiup/pkg/logger"
 	logprinter "github.com/pingcap/tiup/pkg/logger/printer"
-	"github.com/pingcap/tiup/pkg/repository"
 	tiuptelemetry "github.com/pingcap/tiup/pkg/telemetry"
 	"github.com/pingcap/tiup/pkg/tui"
 	"github.com/pingcap/tiup/pkg/utils"
@@ -92,7 +90,7 @@ func init() {
 			log.SetDisplayModeFromString(gOpt.DisplayMode)
 
 			var err error
-			var env *tiupmeta.Environment
+			// var env *tiupmeta.Environment
 			// unset component data dir to use clusters'
 			os.Unsetenv(localdata.EnvNameComponentDataDir)
 			if err = spec.Initialize("diag"); err != nil {
@@ -100,12 +98,12 @@ func init() {
 			}
 
 			// Running in other OS/ARCH Should be fine we only download manifest file.
-			env, err = tiupmeta.InitEnv(repository.Options{}, repository.MirrorOptions{})
+			/*env, err = tiupmeta.InitEnv(repository.Options{}, repository.MirrorOptions{})
 			if err != nil {
 				return err
 			}
 			tiupmeta.SetGlobalEnv(env)
-
+			*/
 			logger.EnableAuditLog(spec.AuditDir())
 
 			teleCommand = getParentNames(cmd)
@@ -120,7 +118,8 @@ func init() {
 			return nil
 		},
 		PersistentPostRunE: func(cmd *cobra.Command, args []string) error {
-			return tiupmeta.GlobalEnv().V1Repository().Mirror().Close()
+			// return tiupmeta.GlobalEnv().V1Repository().Mirror().Close()
+			return nil
 		},
 	}
 
@@ -140,8 +139,8 @@ func init() {
 	_ = rootCmd.PersistentFlags().MarkHidden("native-ssh")
 
 	rootCmd.AddCommand(
-		newCollectCmd(),
-		newCollectDMCmd(),
+		//newCollectCmd(),
+		//newCollectDMCmd(),
 		newPackageCmd(),
 		newRebuildCmd(),
 		newUploadCommand(),
