@@ -31,7 +31,6 @@ import (
 	operator "github.com/pingcap/tiup/pkg/cluster/operation"
 	"github.com/pingcap/tiup/pkg/cluster/spec"
 	"github.com/pingcap/tiup/pkg/environment"
-	tiupmeta "github.com/pingcap/tiup/pkg/environment"
 	"github.com/pingcap/tiup/pkg/localdata"
 	"github.com/pingcap/tiup/pkg/logger"
 	logprinter "github.com/pingcap/tiup/pkg/logger/printer"
@@ -119,7 +118,8 @@ func init() {
 			return nil
 		},
 		PersistentPostRunE: func(cmd *cobra.Command, args []string) error {
-			return tiupmeta.GlobalEnv().V1Repository().Mirror().Close()
+			//return tiupmeta.GlobalEnv().V1Repository().Mirror().Close()
+			return nil
 		},
 	}
 
