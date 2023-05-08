@@ -31,7 +31,6 @@ import (
 	json "github.com/json-iterator/go"
 	"github.com/klauspost/compress/zstd"
 	"github.com/pingcap/diag/pkg/utils"
-	"github.com/pingcap/log"
 	"github.com/pingcap/tiup/pkg/tui/progress"
 	"github.com/prometheus/common/model"
 )
@@ -68,7 +67,7 @@ func LoadMetrics(ctx context.Context, dataDir string, opt *RebuildOptions) error
 			continue
 		}
 		if promDirEntry != nil {
-			log.Warn(color.YellowString("Found multi metrics dir on %s, only pick %s to rebuild", promsDir, promDirEntry.Name()))
+			fmt.Println(color.YellowString("Multiple folders were found under %s, only pick %s to rebuild", promsDir, promDirEntry.Name()))
 			break
 		}
 
