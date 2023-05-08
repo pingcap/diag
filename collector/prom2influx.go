@@ -26,6 +26,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/fatih/color"
 	influx "github.com/influxdata/influxdb/client/v2"
 	json "github.com/json-iterator/go"
 	"github.com/klauspost/compress/zstd"
@@ -53,28 +54,37 @@ func LoadMetrics(ctx context.Context, dataDir string, opt *RebuildOptions) error
 	dirFields := strings.Split(dataDir, "-")
 	opt.Session = dirFields[len(dirFields)-1]
 
-	proms, err := os.ReadDir(path.Join(dataDir, subdirMonitor, subdirMetrics))
+	promsDir := path.Join(dataDir, subdirMonitor, subdirMetrics)
+	proms, err := os.ReadDir(promsDir)
 	if err != nil {
 		return err
 	}
-	mtcFiles := make(map[string][]fs.DirEntry)
+
+	var promDirEntry fs.DirEntry
+	var files []fs.DirEntry
 	for _, p := range proms {
 		if !p.IsDir() {
 			continue
 		}
-		subs, err := os.ReadDir(path.Join(dataDir, subdirMonitor, subdirMetrics, p.Name()))
+		if promDirEntry != nil {
+			fmt.Println(color.YellowString("Multiple folders were found under %s, only pick %s to rebuild", promsDir, promDirEntry.Name()))
+			break
+		}
+
+		promDirEntry = p
+		subs, err := os.ReadDir(path.Join(dataDir, subdirMonitor, subdirMetrics, promDirEntry.Name()))
 		if err != nil {
 			return err
 		}
-		mtcFiles[p.Name()] = subs
+		files = subs
+	}
+	if promDirEntry == nil {
+		return fmt.Errorf("cannot find metrics on %s", promsDir)
 	}
 
 	// load individual metric files
 	mb := progress.NewMultiBar("Loading metrics")
-	bars := make(map[string]*progress.MultiBarItem)
-	for p := range mtcFiles {
-		bars[p] = mb.AddBar(p)
-	}
+	bar := mb.AddBar(promDirEntry.Name())
 	mb.StartRenderLoop()
 	defer mb.StopRenderLoop()
 
@@ -90,57 +100,39 @@ func LoadMetrics(ctx context.Context, dataDir string, opt *RebuildOptions) error
 		return err
 	}
 
-	errChan := make(chan error)
-	doneChan := make(chan struct{}, 1)
-	tl := utils.NewTokenLimiter(uint(opt.Concurrency) + 1)
-	for p, files := range mtcFiles {
-		cnt := 0
-		b := bars[p]
-		go func(tok *utils.Token, parent string, files []fs.DirEntry) {
-			total := len(files)
-			for _, file := range files {
-				if file.IsDir() {
-					continue
-				}
-				cnt++
-				b.UpdateDisplay(&progress.DisplayProps{
-					Prefix: fmt.Sprintf(" - Loading metrics from %s", parent),
-					Suffix: fmt.Sprintf("%d/%d: %s", cnt, total, file.Name()),
-				})
+	tl := utils.NewTokenLimiter(uint(opt.Concurrency))
+	cnt := 0
+	total := len(files)
+	for _, file := range files {
+		if file.IsDir() {
+			continue
+		}
+		cnt++
+		bar.UpdateDisplay(&progress.DisplayProps{
+			Prefix: fmt.Sprintf(" - Loading metrics from %s", promDirEntry.Name()),
+			Suffix: fmt.Sprintf("%d/%d: %s", cnt, total, file.Name()),
+		})
 
-				fOpt := *opt
-				fOpt.File = path.Join(
-					dataDir, subdirMonitor, subdirMetrics,
-					parent, file.Name(),
-				)
-				if err := fOpt.LoadMetrics(tl); err != nil {
-					b.UpdateDisplay(&progress.DisplayProps{
-						Prefix: fmt.Sprintf(" - Load metrics from %s", parent),
-						Suffix: err.Error(),
-						Mode:   progress.ModeError,
-					})
-					errChan <- err
-					return
-				}
-			}
-			b.UpdateDisplay(&progress.DisplayProps{
-				Prefix: fmt.Sprintf(" - Load metrics from %s", parent),
-				Mode:   progress.ModeDone,
+		fOpt := *opt
+		fOpt.File = path.Join(
+			dataDir, subdirMonitor, subdirMetrics,
+			promDirEntry.Name(), file.Name(),
+		)
+		if err := fOpt.LoadMetrics(tl); err != nil {
+			bar.UpdateDisplay(&progress.DisplayProps{
+				Prefix: fmt.Sprintf(" - Load metrics from %s", promDirEntry.Name()),
+				Suffix: err.Error(),
+				Mode:   progress.ModeError,
 			})
-			tl.Put(tok)
-		}(tl.Get(), p, files)
+			return err
+		}
 	}
-	tl.Wait()
-	doneChan <- struct{}{}
 
-	select {
-	case <-ctx.Done():
-		return nil
-	case err := <-errChan:
-		return err
-	case <-doneChan:
-		return nil
-	}
+	bar.UpdateDisplay(&progress.DisplayProps{
+		Prefix: fmt.Sprintf(" - Load metrics from %s", promDirEntry.Name()),
+		Mode:   progress.ModeDone,
+	})
+	return nil
 }
 
 func (opt *RebuildOptions) LoadMetrics(tl *utils.TokenLimiter) error {
@@ -242,7 +234,6 @@ func newClient(opts *RebuildOptions) (influx.Client, error) {
 }
 
 func buildPoints(
-	tl *utils.TokenLimiter,
 	series *model.SampleStream,
 	opts *RebuildOptions,
 ) chan *influx.Point {
@@ -257,25 +248,18 @@ func buildPoints(
 	measurement := tags["__name__"]
 
 	// build points
-	ptChan := make(chan *influx.Point)
+	ptChan := make(chan *influx.Point, 10)
 	go func() {
-		wg := sync.WaitGroup{}
 		for _, point := range series.Values {
-			wg.Add(1)
-			go func(tok *utils.Token, point model.SamplePair) {
-				timestamp := point.Timestamp.Time()
-				fields := map[string]interface{}{
-					// model.SampleValue is alias of float64
-					"value": float64(point.Value),
-				}
-				if pt, err := influx.NewPoint(measurement, tags, fields, timestamp); err == nil {
-					ptChan <- pt
-				} // errored points are ignored
-				tl.Put(tok)
-				wg.Done()
-			}(tl.Get(), point)
+			timestamp := point.Timestamp.Time()
+			fields := map[string]interface{}{
+				// model.SampleValue is alias of float64
+				"value": float64(point.Value),
+			}
+			if pt, err := influx.NewPoint(measurement, tags, fields, timestamp); err == nil {
+				ptChan <- pt
+			} // errored points are ignored
 		}
-		wg.Wait()
 		close(ptChan)
 	}()
 
@@ -284,11 +268,10 @@ func buildPoints(
 
 func writeBatchPoints(tl *utils.TokenLimiter, data promDump, opts *RebuildOptions) error {
 	// build and write points
-	errChan := make(chan error)
-	doneChan := make(chan struct{}, 1)
+	var errr error
 	wg := sync.WaitGroup{}
 	for _, series := range data.Data.Result {
-		ptChan := buildPoints(tl, series, opts)
+		ptChan := buildPoints(series, opts)
 
 		for chunk := range slicePoints(ptChan, opts.Chunk) {
 			wg.Add(1)
@@ -301,7 +284,7 @@ func writeBatchPoints(tl *utils.TokenLimiter, data promDump, opts *RebuildOption
 					Precision: "s",
 				})
 				if err != nil {
-					errChan <- err
+					errr = err
 					return
 				}
 				bp.AddPoints(chunk)
@@ -311,26 +294,19 @@ func writeBatchPoints(tl *utils.TokenLimiter, data promDump, opts *RebuildOption
 				client, err := newClient(opts)
 				if err != nil {
 					client.Close()
-					errChan <- err
+					errr = err
 					return
 				}
 				defer client.Close()
 
 				// write batch points to influxdb
 				if err := client.Write(bp); err != nil {
-					errChan <- err
+					errr = err
 					return
 				}
 			}(tl.Get(), chunk)
 		}
 	}
 	wg.Wait()
-	doneChan <- struct{}{}
-
-	select {
-	case err := <-errChan:
-		return err
-	case <-doneChan:
-		return nil
-	}
+	return errr
 }
