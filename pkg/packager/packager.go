@@ -137,6 +137,10 @@ func PackageCollectedData(pOpt *PackageOptions, skipConfirm bool) (string, error
 		return "", err
 	}
 
+	if strings.HasPrefix(output, input+"/") {
+		return "", fmt.Errorf("the target path of the package(%s) cannot be within the given data directory", output)
+	}
+
 	block, _ := pem.Decode([]byte(pOpt.Cert))
 	cert, err := x509.ParseCertificate(block.Bytes)
 	if err != nil {
