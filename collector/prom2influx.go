@@ -27,7 +27,7 @@ import (
 	"sync"
 
 	"github.com/fatih/color"
-	influx "github.com/influxdata/influxdb/client/v2"
+	influx "github.com/influxdata/influxdb1-client/v2"
 	json "github.com/json-iterator/go"
 	"github.com/klauspost/compress/zstd"
 	"github.com/pingcap/diag/pkg/utils"
@@ -100,7 +100,6 @@ func LoadMetrics(ctx context.Context, dataDir string, opt *RebuildOptions) error
 		return err
 	}
 
-	tl := utils.NewTokenLimiter(uint(opt.Concurrency))
 	cnt := 0
 	total := len(files)
 	for _, file := range files {
@@ -118,7 +117,7 @@ func LoadMetrics(ctx context.Context, dataDir string, opt *RebuildOptions) error
 			dataDir, subdirMonitor, subdirMetrics,
 			promDirEntry.Name(), file.Name(),
 		)
-		if err := fOpt.LoadMetrics(tl); err != nil {
+		if err := fOpt.LoadMetrics(client); err != nil {
 			bar.UpdateDisplay(&progress.DisplayProps{
 				Prefix: fmt.Sprintf(" - Load metrics from %s", promDirEntry.Name()),
 				Suffix: err.Error(),
@@ -135,7 +134,7 @@ func LoadMetrics(ctx context.Context, dataDir string, opt *RebuildOptions) error
 	return nil
 }
 
-func (opt *RebuildOptions) LoadMetrics(tl *utils.TokenLimiter) error {
+func (opt *RebuildOptions) LoadMetrics(client influx.Client) error {
 	f, err := os.Open(opt.File)
 	if err != nil {
 		return err
@@ -169,7 +168,7 @@ func (opt *RebuildOptions) LoadMetrics(tl *utils.TokenLimiter) error {
 		return err
 	}
 
-	return writeBatchPoints(tl, data, opt)
+	return writeBatchPoints(client, data, opt)
 }
 
 type promResult struct {
@@ -226,9 +225,10 @@ func slicePoints(data chan *influx.Point, chunkSize int) chan []*influx.Point {
 func newClient(opts *RebuildOptions) (influx.Client, error) {
 	// connect to influxdb
 	client, err := influx.NewHTTPClient(influx.HTTPConfig{
-		Addr:     fmt.Sprintf("http://%s:%d", opts.Host, opts.Port),
-		Username: opts.User,
-		Password: opts.Passwd,
+		Addr:                fmt.Sprintf("http://%s:%d", opts.Host, opts.Port),
+		Username:            opts.User,
+		Password:            opts.Passwd,
+		MaxIdleConnsPerHost: opts.Concurrency * 2,
 	})
 	return client, err
 }
@@ -266,9 +266,10 @@ func buildPoints(
 	return ptChan
 }
 
-func writeBatchPoints(tl *utils.TokenLimiter, data promDump, opts *RebuildOptions) error {
+func writeBatchPoints(client influx.Client, data promDump, opts *RebuildOptions) error {
 	// build and write points
 	var errr error
+	tl := utils.NewTokenLimiter(uint(opts.Concurrency))
 	wg := sync.WaitGroup{}
 	for _, series := range data.Data.Result {
 		ptChan := buildPoints(series, opts)
@@ -288,16 +289,6 @@ func writeBatchPoints(tl *utils.TokenLimiter, data promDump, opts *RebuildOption
 					return
 				}
 				bp.AddPoints(chunk)
-
-				// create influx.Client and close it every time we write a BatchPoints
-				// series to reduce memory usage on large dataset
-				client, err := newClient(opts)
-				if err != nil {
-					client.Close()
-					errr = err
-					return
-				}
-				defer client.Close()
 
 				// write batch points to influxdb
 				if err := client.Write(bp); err != nil {
