@@ -16,13 +16,14 @@ require (
 	github.com/fatih/structs v1.1.0
 	github.com/gin-gonic/gin v1.8.2
 	github.com/go-openapi/jsonreference v0.19.6 // indirect
+	github.com/go-openapi/spec v0.19.7 // indirect
 	github.com/go-openapi/strfmt v0.21.3
 	github.com/go-openapi/swag v0.22.3
 	github.com/go-sql-driver/mysql v1.7.0
 	github.com/google/gofuzz v1.2.0 // indirect
 	github.com/google/uuid v1.3.0
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
-	github.com/influxdata/influxdb v1.11.0
+	github.com/influxdata/influxdb1-client v0.0.0-20220302092344-a9ab5670611c
 	github.com/joho/sqltocsv v0.0.0-20210428211105-a6d6801d59df
 	github.com/joomcode/errorx v1.1.0
 	github.com/json-iterator/go v1.1.12
@@ -35,6 +36,7 @@ require (
 	github.com/mohae/deepcopy v0.0.0-20170929034955-c48cc78d4826 // indirect
 	github.com/onsi/gomega v1.26.0
 	github.com/otiai10/copy v1.9.0 // indirect
+	github.com/pelletier/go-toml v1.4.0 // indirect
 	github.com/pingcap/check v0.0.0-20211026125417-57bd13f7b5f0
 	github.com/pingcap/errors v0.11.5-0.20210425183316-da1aaba5fb63
 	github.com/pingcap/kvproto v0.0.0-20230306123729-599d60b69067 // indirect
@@ -75,5 +77,6 @@ require (
 
 replace (
 	github.com/appleboy/easyssh-proxy => github.com/AstroProfundis/easyssh-proxy v1.3.10-0.20211209071554-9910ebdf514e
+	github.com/influxdata/influxdb1-client => github.com/nexustar/influxdb1-client v0.0.0-20230512064922-fecb4b50d16f
 	k8s.io/kube-openapi => k8s.io/kube-openapi v0.0.0-20200805222855-6aeccd4b50c6
 )
