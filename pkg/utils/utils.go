@@ -15,7 +15,9 @@ package utils
 
 import (
 	"io/fs"
+	"net/http"
 	"path/filepath"
+	"strings"
 )
 
 // DirSize returns the total file size of a dir
@@ -33,4 +35,17 @@ func DirSize(dir string) (int64, error) {
 		return totalSize, err
 	}
 	return totalSize, nil
+}
+
+// TrimLeftSpace trim all left space
+func TrimLeftSpace(s string) string {
+	return strings.TrimLeft(s, "\t\n\v\f\r ")
+}
+
+// AddHeaders parse headers like "a: b" and add them to exist header
+func AddHeaders(exist http.Header, addons []string) {
+	for _, line := range addons {
+		index := strings.IndexRune(line, ':')
+		exist.Add(line[:index], TrimLeftSpace(line[index+1:]))
+	}
 }
