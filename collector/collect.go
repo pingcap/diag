@@ -122,6 +122,7 @@ type CollectOptions struct {
 	ExplainSQLPath  string            // File path for explain sql
 	ExplainSqls     []string          // explain sqls
 	CurrDB          string
+	Header          []string
 }
 
 // CollectStat is estimated size stats of data to be collected
@@ -277,13 +278,14 @@ func (m *Manager) CollectClusterInfo(
 	if canCollect(&cOpt.Collectors.Monitor.Metric) && !cOpt.RawMonitor {
 		collectors = append(collectors,
 			&MetricCollectOptions{ // metrics
-				BaseOptions: opt,
-				opt:         gOpt,
-				resultDir:   resultDir,
-				label:       cOpt.MetricsLabel,
-				filter:      cOpt.MetricsFilter,
-				limit:       cOpt.MetricsLimit,
-				compress:    cOpt.CompressMetrics,
+				BaseOptions:  opt,
+				opt:          gOpt,
+				resultDir:    resultDir,
+				label:        cOpt.MetricsLabel,
+				filter:       cOpt.MetricsFilter,
+				limit:        cOpt.MetricsLimit,
+				compress:     cOpt.CompressMetrics,
+				costomHeader: cOpt.Header,
 			},
 		)
 	}

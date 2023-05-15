@@ -161,13 +161,14 @@ func (c *AlertCollectOptions) Collect(m *Manager, topo *models.TiDBCluster) erro
 // MetricCollectOptions is the options collecting metrics
 type MetricCollectOptions struct {
 	*BaseOptions
-	opt       *operator.Options // global operations from cli
-	resultDir string
-	label     map[string]string
-	metrics   []string // metric list
-	filter    []string
-	limit     int // series*min per query
-	compress  bool
+	opt          *operator.Options // global operations from cli
+	resultDir    string
+	label        map[string]string
+	metrics      []string // metric list
+	filter       []string
+	limit        int // series*min per query
+	compress     bool
+	costomHeader []string
 }
 
 // Desc implements the Collector interface
@@ -224,7 +225,7 @@ func (c *MetricCollectOptions) Prepare(m *Manager, topo *models.TiDBCluster) (ma
 	for _, prom := range monitors {
 		promAddr = prom
 		client := &http.Client{Timeout: time.Second * 10}
-		c.metrics, queryErr = getMetricList(client, promAddr)
+		c.metrics, queryErr = getMetricList(client, promAddr, c.costomHeader)
 		if queryErr == nil {
 			break
 		}
@@ -317,7 +318,7 @@ func (c *MetricCollectOptions) Collect(m *Manager, topo *models.TiDBCluster) err
 
 				tsEnd, _ := utils.ParseTime(c.GetBaseOptions().ScrapeEnd)
 				tsStart, _ := utils.ParseTime(c.GetBaseOptions().ScrapeBegin)
-				collectMetric(m.logger, client, prom, tsStart, tsEnd, mtc, c.label, c.resultDir, c.limit, c.compress)
+				collectMetric(m.logger, client, prom, tsStart, tsEnd, mtc, c.label, c.resultDir, c.limit, c.compress, c.costomHeader)
 
 				mu.Lock()
 				done++
@@ -339,8 +340,16 @@ func (c *MetricCollectOptions) Collect(m *Manager, topo *models.TiDBCluster) err
 	return nil
 }
 
-func getMetricList(c *http.Client, prom string) ([]string, error) {
-	resp, err := c.Get(fmt.Sprintf("http://%s/api/v1/label/__name__/values", prom))
+func getMetricList(c *http.Client, prom string, costomHeader []string) ([]string, error) {
+	req, err := http.NewRequest(
+		http.MethodGet,
+		fmt.Sprintf("http://%s/api/v1/label/__name__/values", prom),
+		nil)
+	if err != nil {
+		return nil, err
+	}
+	utils.AddHeaders(req.Header, costomHeader)
+	resp, err := c.Do(req)
 	if err != nil {
 		return []string{}, err
 	}
@@ -355,10 +364,16 @@ func getMetricList(c *http.Client, prom string) ([]string, error) {
 	return r.Metrics, nil
 }
 
-func getSeriesNum(c *http.Client, promAddr, query string) (int, error) {
-	resp, err := c.Get(
+func getSeriesNum(c *http.Client, promAddr, query string, costomerHeader []string) (int, error) {
+	req, err := http.NewRequest(
+		http.MethodGet,
 		fmt.Sprintf("http://%s/api/v1/series?match[]=%s", promAddr, query),
-	)
+		nil)
+	if err != nil {
+		return 0, err
+	}
+	utils.AddHeaders(req.Header, costomerHeader)
+	resp, err := c.Do(req)
 	if err != nil {
 		return 0, err
 	}
@@ -386,10 +401,11 @@ func collectMetric(
 	resultDir string,
 	speedlimit int,
 	compress bool,
+	costomHeader []string,
 ) {
 	query := generateQueryWitLabel(mtc, label)
 	l.Debugf("Querying series of %s...", mtc)
-	series, err := getSeriesNum(c, promAddr, query)
+	series, err := getSeriesNum(c, promAddr, query, costomHeader)
 	if err != nil {
 		l.Errorf("%s", err)
 		return
@@ -421,13 +437,18 @@ func collectMetric(
 		}
 		if err := tiuputils.Retry(
 			func() error {
-				resp, err := c.PostForm(
-					fmt.Sprintf("http://%s/api/v1/query", promAddr),
-					url.Values{
+				req, err := http.NewRequest(
+					http.MethodGet,
+					fmt.Sprintf("http://%s/api/v1/query?%s", promAddr, url.Values{
 						"query": {fmt.Sprintf("%s[%ds]", query, querySec)},
 						"time":  {queryEnd.Format(time.RFC3339)},
-					},
-				)
+					}.Encode()),
+					nil)
+				if err != nil {
+					return err
+				}
+				utils.AddHeaders(req.Header, costomHeader)
+				resp, err := c.Do(req)
 				if err != nil {
 					l.Errorf("failed query metric %s: %s, retry...", mtc, err)
 					return err
