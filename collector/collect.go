@@ -285,7 +285,7 @@ func (m *Manager) CollectClusterInfo(
 				filter:       cOpt.MetricsFilter,
 				limit:        cOpt.MetricsLimit,
 				compress:     cOpt.CompressMetrics,
-				costomHeader: cOpt.Header,
+				customHeader: cOpt.Header,
 			},
 		)
 	}
