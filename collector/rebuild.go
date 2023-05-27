@@ -150,74 +150,59 @@ func RunLocal(dumpDir string, opt *RebuildOptions) error {
 
 	atomic.StoreUint32(&booted, 1)
 
-	wg := sync.WaitGroup{}
 	timeoutOpt := tiuputils.RetryOption{
 		Attempts: 200,
 		Delay:    time.Millisecond * 300,
 		Timeout:  time.Second * 60,
 	}
 
-	var loadErr error
-	wg.Add(2)
-	go func() {
-		defer wg.Done()
-		mb := progress.NewMultiBar("Starting monitor components")
-		bars := make(map[string]*progress.MultiBarItem)
-		for comp, ins := range p.Proc {
-			bars[comp] = mb.AddBar(fmt.Sprintf(" - Setting up %s (%s)", comp, ins.addr()))
-		}
-		mb.StartRenderLoop()
+	mb := progress.NewMultiBar("Starting monitor components")
+	bars := make(map[string]*progress.MultiBarItem)
+	for comp, ins := range p.Proc {
+		bars[comp] = mb.AddBar(fmt.Sprintf(" - Setting up %s (%s)", comp, ins.addr()))
+	}
+	mb.StartRenderLoop()
 
-		for comp, ins := range p.Proc {
-			if err := tiuputils.Retry(func() error {
-				if ins.ready() {
-					bars[comp].UpdateDisplay(&progress.DisplayProps{
-						Prefix: fmt.Sprintf(" - Set up %s (%s)", comp, ins.addr()),
-						Mode:   progress.ModeDone,
-					})
-					return nil
-				}
+	for comp, ins := range p.Proc {
+		if err := tiuputils.Retry(func() error {
+			if ins.ready() {
 				bars[comp].UpdateDisplay(&progress.DisplayProps{
-					Prefix: fmt.Sprintf(" - Setting up %s (%s)", comp, ins.addr()),
-					Suffix: "waiting process to be ready",
+					Prefix: fmt.Sprintf(" - Set up %s (%s)", comp, ins.addr()),
+					Mode:   progress.ModeDone,
 				})
-				return fmt.Errorf("process of %s not ready yet", comp)
-			}, timeoutOpt); err != nil {
-				bars[comp].UpdateDisplay(&progress.DisplayProps{
-					Prefix: fmt.Sprintf(" - Setting up %s (%s)", comp, ins.addr()),
-					Suffix: err.Error(),
-					Mode:   progress.ModeError,
-				})
-				loadErr = errors.Annotatef(err, "failed to start %s", comp)
-				mb.StopRenderLoop()
-				return
+				return nil
 			}
+			bars[comp].UpdateDisplay(&progress.DisplayProps{
+				Prefix: fmt.Sprintf(" - Setting up %s (%s)", comp, ins.addr()),
+				Suffix: "waiting process to be ready",
+			})
+			return fmt.Errorf("process of %s not ready yet", comp)
+		}, timeoutOpt); err != nil {
+			bars[comp].UpdateDisplay(&progress.DisplayProps{
+				Prefix: fmt.Sprintf(" - Setting up %s (%s)", comp, ins.addr()),
+				Suffix: err.Error(),
+				Mode:   progress.ModeError,
+			})
+			mb.StopRenderLoop()
+			return err
 		}
-		mb.StopRenderLoop()
+	}
+	mb.StopRenderLoop()
 
-		loadStart := time.Now()
-		loadErr = LoadMetrics(ctx, dumpDir, opt)
-		fmt.Printf("Load completed in %.2f seconds\n", time.Since(loadStart).Seconds())
+	loadStart := time.Now()
+	err = LoadMetrics(ctx, dumpDir, opt)
+	if err != nil {
+		return err
+	}
+	fmt.Printf("Load completed in %.2f seconds\n", time.Since(loadStart).Seconds())
 
-		// print addresses
-		fmt.Println("Components are started and listening:")
-		for comp, ins := range p.Proc {
-			fmt.Printf("%s: %s\n", comp, color.CyanString(ins.addr()))
-		}
-	}()
-	if loadErr != nil {
-		return loadErr
+	// print addresses
+	fmt.Println("Components are started and listening:")
+	for comp, ins := range p.Proc {
+		fmt.Printf("%s: %s\n", comp, color.CyanString(ins.addr()))
 	}
 
-	var waitErr error
-	go func() {
-		defer wg.Done()
-		waitErr = p.wait()
-	}()
-
-	wg.Wait()
-
-	return waitErr
+	return p.wait()
 }
 
 type component interface {
