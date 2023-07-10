@@ -224,7 +224,7 @@ func (c *MetricCollectOptions) Prepare(m *Manager, topo *models.TiDBCluster) (ma
 	var promAddr string
 	for _, prom := range monitors {
 		promAddr = prom
-		client := &http.Client{Timeout: time.Second * 10}
+		client := &http.Client{Timeout: time.Second * time.Duration(c.opt.APITimeout)}
 		c.metrics, queryErr = getMetricList(client, promAddr, c.customHeader)
 		if queryErr == nil {
 			break
@@ -307,7 +307,7 @@ func (c *MetricCollectOptions) Collect(m *Manager, topo *models.TiDBCluster) err
 			return err
 		}
 
-		client := &http.Client{Timeout: time.Second * 60}
+		client := &http.Client{Timeout: time.Second * time.Duration(c.opt.APITimeout)}
 
 		for _, mtc := range c.metrics {
 			go func(tok *utils.Token, mtc string) {
