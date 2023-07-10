@@ -137,6 +137,7 @@ func newCollectDMCmd() *cobra.Command {
 
 	cmd.Flags().StringSliceVarP(&gOpt.Roles, "role", "R", nil, "Only collect data from specified roles")
 	cmd.Flags().StringSliceVarP(&gOpt.Nodes, "node", "N", nil, "Only collect data from specified nodes")
+	cmd.Flags().Uint64Var(&gOpt.APITimeout, "api-timeout", 60, "Timeout in seconds when querying APIs.")
 	cmd.Flags().StringVarP(&opt.ScrapeBegin, "from", "f", time.Now().Add(time.Hour*-2).Format(time.RFC3339), "start timepoint when collecting timeseries data")
 	cmd.Flags().StringVarP(&opt.ScrapeEnd, "to", "t", time.Now().Format(time.RFC3339), "stop timepoint when collecting timeseries data")
 	cmd.Flags().BoolVar(&collectAll, "all", false, "Collect all data")
