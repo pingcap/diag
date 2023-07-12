@@ -95,6 +95,7 @@ type BaseOptions struct {
 	Cluster          string                  // cluster name
 	Namespace        string                  // k8s namespace of the cluster
 	MonitorNamespace string                  // k8s namespace of the monitor
+	Kubeconfig       string                  // path of kubeconfig
 	User             string                  // username to login to the SSH server
 	UsePassword      bool                    // use password instead of identity file for ssh connection
 	SSH              *tui.SSHConnectionProps // SSH credentials
