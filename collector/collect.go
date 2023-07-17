@@ -128,8 +128,9 @@ type CollectOptions struct {
 
 // CollectStat is estimated size stats of data to be collected
 type CollectStat struct {
-	Target string
-	Size   int64
+	Target     string
+	Size       int64
+	Attributes map[string]interface{}
 }
 
 // CollectClusterInfo collects information and metrics from a tidb cluster
@@ -338,6 +339,7 @@ func (m *Manager) CollectClusterInfo(
 				resultDir:   resultDir,
 				fileStats:   make(map[string][]CollectStat),
 				compress:    cOpt.CompressScp,
+				kubeCli:     kubeCli,
 			})
 	}
 

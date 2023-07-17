@@ -14,14 +14,18 @@
 package collector
 
 import (
+	"bufio"
 	"context"
 	"fmt"
+	"io"
+	"os"
 	"path/filepath"
 	"strings"
 
 	"github.com/joomcode/errorx"
 	json "github.com/json-iterator/go"
 	"github.com/pingcap/diag/pkg/models"
+	"github.com/pingcap/diag/pkg/utils"
 	"github.com/pingcap/diag/scraper"
 	perrs "github.com/pingcap/errors"
 	"github.com/pingcap/tiup/pkg/cluster/ctxt"
@@ -30,6 +34,9 @@ import (
 	"github.com/pingcap/tiup/pkg/cluster/task"
 	logprinter "github.com/pingcap/tiup/pkg/logger/printer"
 	"github.com/pingcap/tiup/pkg/set"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
 )
 
 const (
@@ -53,6 +60,7 @@ type LogCollectOptions struct {
 	resultDir string
 	fileStats map[string][]CollectStat
 	compress  bool
+	kubeCli   *kubernetes.Clientset
 }
 
 // Desc implements the Collector interface
@@ -82,7 +90,14 @@ func (c *LogCollectOptions) SetDir(dir string) {
 
 // Prepare implements the Collector interface
 func (c *LogCollectOptions) Prepare(m *Manager, cls *models.TiDBCluster) (map[string][]CollectStat, error) {
-	if m.mode != CollectModeTiUP || !(c.collector.Std || c.collector.Slow || c.collector.Unknown) {
+	switch m.mode {
+	case CollectModeTiUP:
+		if !(c.collector.Std || c.collector.Slow) {
+			return nil, nil
+		}
+	case CollectModeK8s:
+		return c.prepareK8s(m, cls)
+	default:
 		return nil, nil
 	}
 
@@ -227,7 +242,11 @@ func (c *LogCollectOptions) Prepare(m *Manager, cls *models.TiDBCluster) (map[st
 
 // Collect implements the Collector interface
 func (c *LogCollectOptions) Collect(m *Manager, cls *models.TiDBCluster) error {
-	if m.mode != CollectModeTiUP {
+	switch m.mode {
+	case CollectModeTiUP:
+	case CollectModeK8s:
+		return c.collectK8s(m, cls)
+	default:
 		return nil
 	}
 
@@ -315,6 +334,96 @@ func (c *LogCollectOptions) Collect(m *Manager, cls *models.TiDBCluster) error {
 	}
 
 	return nil
+}
+
+func (c *LogCollectOptions) prepareK8s(m *Manager, cls *models.TiDBCluster) (map[string][]CollectStat, error) {
+	roleFilter := set.NewStringSet(c.opt.Roles...)
+	comps := cls.Components()
+	comps = models.FilterComponent(comps, roleFilter)
+
+	c.fileStats = make(map[string][]CollectStat)
+
+	for _, inst := range comps {
+		podName, ok := inst.Attributes()["pod"].(string)
+		if !ok {
+			// return fmt.Errorf("pod name not found in %s", inst.ID())
+			// component like prometheus does not have pod name
+			continue
+		}
+
+		var logs []CollectStat
+		if c.collector.Std {
+			logs = append(logs, CollectStat{
+				Target: podName + ".log",
+				Attributes: map[string]interface{}{
+					"podName":       podName,
+					"containerName": string(inst.Type()),
+				},
+			})
+		}
+		if c.collector.Slow && inst.Type() == models.ComponentTypeTiDB {
+			logs = append(logs, CollectStat{
+				Target: "tidb_slow.log",
+				Attributes: map[string]interface{}{
+					"podName":       podName,
+					"containerName": "slowlog",
+				},
+			})
+		}
+		c.fileStats[podName] = logs
+	}
+	return c.fileStats, nil
+}
+
+func (c *LogCollectOptions) collectK8s(m *Manager, cls *models.TiDBCluster) error {
+	beginTime, _ := utils.ParseTime(c.GetBaseOptions().ScrapeBegin)
+
+	for podName, fileStats := range c.fileStats {
+		for _, fs := range fileStats {
+			opt := corev1.PodLogOptions{
+				Container: fs.Attributes["containerName"].(string),
+				SinceTime: &metav1.Time{Time: beginTime},
+			}
+
+			req := c.kubeCli.CoreV1().Pods(c.Namespace).GetLogs(podName, &opt)
+
+			stream, err := req.Stream(context.TODO())
+			if err != nil {
+				return err
+			}
+			defer stream.Close()
+
+			fp := filepath.Join(c.resultDir, "logs", podName, fs.Target)
+			err = os.MkdirAll(filepath.Dir(fp), 0755)
+			if err != nil {
+				return err
+			}
+			f, err := os.OpenFile(fp, os.O_CREATE|os.O_WRONLY, 0644)
+			if err != nil {
+				return err
+			}
+			defer f.Close()
+
+			r := bufio.NewReader(stream)
+			w := bufio.NewWriter(f)
+			for {
+				bytes, err := r.ReadBytes('\n')
+				if err == io.EOF {
+					break
+				} else if err != nil {
+					return err
+				}
+
+				_, err = w.Write(bytes)
+				if err != nil {
+					return err
+				}
+			}
+		}
+	}
+
+	return nil
+
 }
 
 func parseScraperSamples(ctx context.Context, host string) (map[string][]CollectStat, error) {
