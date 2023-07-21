@@ -354,7 +354,7 @@ func (c *LogCollectOptions) prepareK8s(m *Manager, cls *models.TiDBCluster) (map
 		var logs []CollectStat
 		if c.collector.Std {
 			logs = append(logs, CollectStat{
-				Target: podName + ".log",
+				Target: string(inst.Type()) + ".log",
 				Attributes: map[string]interface{}{
 					"podName":       podName,
 					"containerName": string(inst.Type()),
@@ -363,7 +363,7 @@ func (c *LogCollectOptions) prepareK8s(m *Manager, cls *models.TiDBCluster) (map
 		}
 		if c.collector.Slow && inst.Type() == models.ComponentTypeTiDB {
 			logs = append(logs, CollectStat{
-				Target: "tidb_slow.log",
+				Target: "tidb_slow_query.log",
 				Attributes: map[string]interface{}{
 					"podName":       podName,
 					"containerName": "slowlog",
