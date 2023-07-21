@@ -38,7 +38,7 @@ const (
 	ComponentTypeDrainer  ComponentType = "drainer"
 	ComponentTypeTiCDC    ComponentType = "ticdc"
 	ComponentTypeTiSpark  ComponentType = "tispark"
-	ComponentTypeMonitor  ComponentType = "monitor" // prometheus and/or ng-monitor
+	ComponentTypeMonitor  ComponentType = "prometheus" // prometheus and/or ng-monitor
 	ComponentTypeDMMaster ComponentType = "dm-master"
 	ComponentTypeDMWorker ComponentType = "dm-worker"
 )

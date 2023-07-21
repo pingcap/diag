@@ -404,7 +404,7 @@ func buildTopoForK8sCluster(
 				label.NameLabelKey:      "tidb-cluster",
 				label.ComponentLabelKey: "monitor",
 				label.InstanceLabelKey:  matchedMon.Name,
-				label.UsedByLabelKey:    "prometheus",
+				// label.UsedByLabelKey:    "prometheus",
 			},
 		}
 		selector, err := metav1.LabelSelectorAsSelector(labels)
@@ -412,37 +412,22 @@ func buildTopoForK8sCluster(
 			klog.Error(err)
 			return nil, nil, nil, err
 		}
-		svcs, err := kubeCli.CoreV1().Services(mns).List(context.TODO(), metav1.ListOptions{
+		pods, err := kubeCli.CoreV1().Pods(mns).List(context.TODO(), metav1.ListOptions{
 			LabelSelector: selector.String(),
 		})
 		if err != nil {
-			klog.Errorf("error listing services of '%s' in '%s': %v", matchedMon.Name, mns, err)
+			klog.Errorf("error listing pods of '%s' in '%s': %v", matchedMon.Name, mns, err)
 		}
 
 		if len(mon.Items) == 0 {
-			klog.Warningf("no services found in '%s/%s'", mns, matchedMon.Name)
+			klog.Warningf("no pod found in '%s/%s'", mns, matchedMon.Name)
 		} else {
-			klog.Infof("found %d services in '%s/%s'", len(svcs.Items), mns, matchedMon.Name)
+			klog.Infof("found %d pods in '%s/%s'", len(pods.Items), mns, matchedMon.Name)
 		}
 
-		for _, svc := range svcs.Items {
-			// svc.Spec.ClusterIPs is not available on k8s v1.19.x
-			if svc.Spec.ClusterIP == "" {
-				klog.Errorf("service %s does not have any clusterIP, skip", svc.Name)
-				continue
-			}
-			ip := svc.Spec.ClusterIP
-			port := 0
-
-			for _, p := range svc.Spec.Ports {
-				if p.Name == "http-prometheus" {
-					port = int(p.Port)
-				}
-				break
-			}
-			if port == 0 {
-				continue
-			}
+		for _, svc := range pods.Items {
+			ip := svc.Status.PodIP
+			port := 9090
 
 			if len(cls.Monitors) < 1 {
 				cls.Monitors = make([]*models.MonitorSpec, 0)
@@ -452,7 +437,7 @@ func buildTopoForK8sCluster(
 					Host: ip,
 					Port: port,
 					Attributes: map[string]interface{}{
-						"service": svc.Name,
+						"pod": svc.Name,
 					},
 				},
 			})

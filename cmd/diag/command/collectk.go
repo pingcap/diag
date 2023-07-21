@@ -34,6 +34,7 @@ import (
 
 func newCollectkCmd() *cobra.Command {
 	var collectAll bool
+	var direct bool
 	var metricsConf string
 	opt := collector.BaseOptions{
 		SSH: &tui.SSHConnectionProps{
@@ -46,11 +47,13 @@ func newCollectkCmd() *cobra.Command {
 
 	cmd := &cobra.Command{
 		Use:   "collectk <cluster-name>",
-		Short: "Collect information and metrics from the tidb-operator deployed cluster.",
+		Short: "(EXPERIMENTAL) Collect information and metrics from the tidb-operator deployed cluster.",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if len(args) != 1 {
 				return cmd.Help()
 			}
+			cOpt.DiagMode = collector.DiagModeCmd
+			cOpt.UsePortForward = !direct
 			cOpt.RawRequest = strings.Join(os.Args[1:], " ")
 
 			log.SetDisplayModeFromString(gOpt.DisplayMode)
@@ -111,7 +114,7 @@ func newCollectkCmd() *cobra.Command {
 	cmd.Flags().StringVarP(&opt.ScrapeBegin, "from", "f", time.Now().Add(time.Hour*-2).Format(time.RFC3339), "start timepoint when collecting timeseries data")
 	cmd.Flags().StringVarP(&opt.ScrapeEnd, "to", "t", time.Now().Format(time.RFC3339), "stop timepoint when collecting timeseries data")
 	cmd.Flags().BoolVar(&collectAll, "all", false, "Collect all data")
-	cmd.Flags().StringSliceVar(&inc, "include", []string{"config", "monitor", "log.std", "log.slow"}, "types of data to collect")
+	cmd.Flags().StringSliceVar(&inc, "include", []string{"monitor.metric", "log.std", "log.slow"}, "types of data to collect")
 	cmd.Flags().StringSliceVar(&ext, "exclude", nil, "types of data not to collect")
 	cmd.Flags().StringSliceVar(&cOpt.MetricsFilter, "metricsfilter", nil, "prefix of metrics to collect")
 	cmd.Flags().IntVar(&cOpt.MetricsLimit, "metricslimit", 10000, "metric size limit of single request, specified in series*hour per request")
@@ -127,8 +130,9 @@ func newCollectkCmd() *cobra.Command {
 	// cmd.Flags().StringVar(&cOpt.ExplainSQLPath, "explain-sql", "", "File path for explain sql")
 	// cmd.Flags().StringVar(&cOpt.CurrDB, "db", "", "default db for plan replayer collector")
 
-	cmd.Flags().StringVar(&opt.Kubeconfig, "kubeconfig", "", "path of kubeconfig")
+	cmd.Flags().StringVar(&opt.Kubeconfig, "kubeconfig", clientcmd.RecommendedHomeFile, "path of kubeconfig")
 	cmd.Flags().StringVar(&opt.Namespace, "namespace", "", "namespace of prometheus")
+	cmd.Flags().BoolVar(&direct, "--direct", false, "not use port-forward to collect from inside of k8s cluster")
 
 	return cmd
 }

@@ -423,7 +423,6 @@ func (c *LogCollectOptions) collectK8s(m *Manager, cls *models.TiDBCluster) erro
 	}
 
 	return nil
-
 }
 
 func parseScraperSamples(ctx context.Context, host string) (map[string][]CollectStat, error) {

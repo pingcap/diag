@@ -34,6 +34,7 @@ type Manager struct {
 	specManager *spec.SpecManager
 	session     string // an unique ID of the collection
 	mode        string // tiup-cluster or tidb-operator
+	diagMode    string // cmd or server
 	logger      *logprinter.Logger
 }
 

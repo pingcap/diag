@@ -56,6 +56,8 @@ const (
 	CollectModeTiUP   = "tiup-cluster"  // collect from a tiup-cluster deployed cluster
 	CollectModeK8s    = "tidb-operator" // collect from a tidb-operator deployed cluster
 	CollectModeManual = "manual"        // collect from a manually deployed cluster
+	DiagModeCmd       = "cmd"           // run diag collect at command line mode
+	DiagModeServer    = "server"        // run diag collect at server mode
 
 	AttrKeyPromEndpoint = "prometheus-endpoint"
 	AttrKeyClusterID    = "cluster-id"
@@ -88,6 +90,7 @@ type Collector interface {
 	GetBaseOptions() *BaseOptions
 	SetBaseOptions(*BaseOptions)
 	Desc() string // a brief self description
+	Close()
 }
 
 // BaseOptions contains the options for check command
@@ -107,6 +110,7 @@ type BaseOptions struct {
 type CollectOptions struct {
 	RawRequest      interface{}       // raw collect command or request
 	Mode            string            // the cluster is deployed with what type of tool
+	DiagMode        string            // run diag collect at command line mode or server mode
 	ProfileName     string            // the name of a pre-defined collecting profile
 	Collectors      CollectTree       // struct to show which collector is enabled
 	MetricsFilter   []string          // prefix of metrics to collect"
@@ -124,6 +128,7 @@ type CollectOptions struct {
 	ExplainSqls     []string          // explain sqls
 	CurrDB          string
 	Header          []string
+	UsePortForward  bool // use portforward when call api inside k8s cluster
 }
 
 // CollectStat is estimated size stats of data to be collected
@@ -131,6 +136,10 @@ type CollectStat struct {
 	Target     string
 	Size       int64
 	Attributes map[string]interface{}
+}
+
+func (c BaseOptions) Close() {
+	return
 }
 
 // CollectClusterInfo collects information and metrics from a tidb cluster
@@ -142,6 +151,7 @@ func (m *Manager) CollectClusterInfo(
 	dynCli dynamic.Interface,
 	skipConfirm bool,
 ) (string, error) {
+	m.diagMode = cOpt.DiagMode
 	m.mode = cOpt.Mode
 
 	var sensitiveTag bool
@@ -288,6 +298,7 @@ func (m *Manager) CollectClusterInfo(
 				limit:        cOpt.MetricsLimit,
 				compress:     cOpt.CompressMetrics,
 				customHeader: cOpt.Header,
+				portForward:  cOpt.UsePortForward,
 			},
 		)
 	}
@@ -496,13 +507,13 @@ func (m *Manager) CollectClusterInfo(
 			}
 			prepareErrs[c.Desc()] = err
 		}
+		defer c.Close()
 		stats = append(stats, stat)
 	}
 
 	// confirm before really collect
-	switch m.mode {
-	case CollectModeTiUP,
-		CollectModeManual:
+	switch m.diagMode {
+	case DiagModeCmd:
 		fmt.Println(prompt)
 		if err := confirmStats(stats, resultDir, sensitiveTag, skipConfirm); err != nil {
 			return "", err
