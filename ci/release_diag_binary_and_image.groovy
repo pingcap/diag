@@ -320,13 +320,14 @@ run_with_pod {
 
 			echo "Publish diag cli success"
 		}
-
+/*
 		stage("Build k8s binary") {
 			// build 
 			sh """BUILD_FLAGS="-trimpath -mod=readonly -modcacherw -buildvcs=false" make k8s"""
 		}
+*/
 	}	
-
+/*
 	container("docker") {
 		
 		stage("Build and Push docker image") {
@@ -367,4 +368,5 @@ run_with_pod {
 			echo "Publish chart success"
 		}
 	}
+*/
 }
