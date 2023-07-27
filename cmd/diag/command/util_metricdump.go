@@ -62,6 +62,7 @@ func newMetricDumpCmd() *cobra.Command {
 
 			opt.Cluster = clsName
 			cOpt.RawRequest = strings.Join(os.Args[1:], " ")
+			cOpt.DiagMode = collector.DiagModeCmd
 			cOpt.Mode = collector.CollectModeManual      // set collect mode
 			cOpt.ExtendedAttrs = make(map[string]string) // init attributes map
 			cOpt.ExtendedAttrs[collector.AttrKeyClusterID] = clsID

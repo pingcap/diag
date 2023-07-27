@@ -1,4 +1,4 @@
-// Copyright 2021 PingCAP, Inc.
+// Copyright 2023 PingCAP, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -15,25 +15,26 @@ package command
 
 import (
 	"bufio"
+	"fmt"
 	"os"
 	"path"
 	"reflect"
 	"strings"
 	"time"
 
-	"github.com/fatih/color"
 	"github.com/pingcap/diag/collector"
-	"github.com/pingcap/diag/pkg/telemetry"
 	"github.com/pingcap/diag/pkg/utils"
-	"github.com/pingcap/tiup/pkg/cluster/executor"
-	"github.com/pingcap/tiup/pkg/cluster/spec"
 	"github.com/pingcap/tiup/pkg/tui"
 	tiuputils "github.com/pingcap/tiup/pkg/utils"
 	"github.com/spf13/cobra"
+	"k8s.io/client-go/dynamic"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/tools/clientcmd"
 )
 
-func newCollectCmd() *cobra.Command {
+func newCollectkCmd() *cobra.Command {
 	var collectAll bool
+	var direct bool
 	var metricsConf string
 	opt := collector.BaseOptions{
 		SSH: &tui.SSHConnectionProps{
@@ -45,24 +46,18 @@ func newCollectCmd() *cobra.Command {
 	ext := make([]string, 0)
 
 	cmd := &cobra.Command{
-		Use:   "collect <cluster-name>",
-		Short: "Collect information and metrics from the cluster.",
+		Use:   "collectk <cluster-name>",
+		Short: "(EXPERIMENTAL) Collect information and metrics from the tidb-operator deployed cluster.",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if len(args) != 1 {
 				return cmd.Help()
 			}
 			cOpt.DiagMode = collector.DiagModeCmd
+			cOpt.UsePortForward = !direct
 			cOpt.RawRequest = strings.Join(os.Args[1:], " ")
 
 			log.SetDisplayModeFromString(gOpt.DisplayMode)
-			spec.Initialize("cluster")
-			tidbSpec := spec.GetSpecManager()
-			cm := collector.NewManager("tidb", tidbSpec, log)
-
-			// natvie ssh has it's own logic to find the default identity_file
-			if gOpt.SSHType == executor.SSHTypeSystem && !tiuputils.IsFlagSetByUser(cmd.Flags(), "identity_file") {
-				opt.SSH.IdentityFile = ""
-			}
+			cm := collector.NewManager("tidb", nil, log)
 
 			if collectAll {
 				utils.RecursiveSetBoolValue(reflect.ValueOf(&cOpt.Collectors).Elem(), true)
@@ -92,71 +87,52 @@ func newCollectCmd() *cobra.Command {
 				}
 			}
 
-			if cOpt.Limit == -1 {
-				switch gOpt.SSHType {
-				case "system":
-					cOpt.Limit = 100000
-				default:
-					cOpt.Limit = 10000
-				}
-			}
-			cOpt.Mode = collector.CollectModeTiUP
+			cOpt.Mode = collector.CollectModeK8s
 
-			if cOpt.CompressMetrics == false {
-				log.Warnf(color.YellowString("Uncompressed metrics may not be handled correctly by Clinic, use it only when you really need it"))
+			cfg, err := clientcmd.BuildConfigFromFlags("", opt.Kubeconfig)
+			if err != nil {
+				return err
 			}
 
-			if reportEnabled {
-				teleReport.CommandInfo = &telemetry.CollectInfo{
-					ID:         clsID,
-					Mode:       cOpt.Mode,
-					ArgYes:     skipConfirm,
-					ArgLimit:   cOpt.Limit,
-					ArgInclude: inc,
-					ArgExclude: ext,
-				}
+			kubeCli, err := kubernetes.NewForConfig(cfg)
+			if err != nil {
+				return fmt.Errorf("failed to get kubernetes Clientset: %v", err)
+			}
+			dynCli, err := dynamic.NewForConfig(cfg)
+			if err != nil {
+				return fmt.Errorf("failed to get kubernetes dynamic client interface: %v", err)
 			}
 
-			_, err := cm.CollectClusterInfo(&opt, &cOpt, &gOpt, nil, nil, skipConfirm)
-			// time is validated and updated during the collecting process
-			if reportEnabled {
-				st, errs := utils.ParseTime(opt.ScrapeBegin)
-				et, erre := utils.ParseTime(opt.ScrapeEnd)
-				if errs == nil && erre == nil {
-					teleReport.CommandInfo.(*telemetry.CollectInfo).
-						TimeSpan = int64(et.Sub(st))
-				}
-
-				if size, err := utils.DirSize(cOpt.Dir); err == nil {
-					teleReport.CommandInfo.(*telemetry.CollectInfo).
-						DataSize = size
-				}
-			}
+			_, err = cm.CollectClusterInfo(&opt, &cOpt, &gOpt, kubeCli, dynCli, skipConfirm)
 			return err
 		},
 	}
 
 	cmd.Flags().StringVar(&cOpt.ProfileName, "profile", "", "File name of a pre-defined collecting profile")
 	cmd.Flags().StringSliceVarP(&gOpt.Roles, "role", "R", nil, "Only collect data from specified roles")
-	cmd.Flags().StringSliceVarP(&gOpt.Nodes, "node", "N", nil, "Only collect data from specified nodes")
+	// cmd.Flags().StringSliceVarP(&gOpt.Nodes, "node", "N", nil, "Only collect data from specified nodes")
 	cmd.Flags().StringVarP(&opt.ScrapeBegin, "from", "f", time.Now().Add(time.Hour*-2).Format(time.RFC3339), "start timepoint when collecting timeseries data")
 	cmd.Flags().StringVarP(&opt.ScrapeEnd, "to", "t", time.Now().Format(time.RFC3339), "stop timepoint when collecting timeseries data")
 	cmd.Flags().BoolVar(&collectAll, "all", false, "Collect all data")
-	cmd.Flags().StringSliceVar(&inc, "include", []string{"system", "config", "monitor", "log.std", "log.slow"}, "types of data to collect")
+	cmd.Flags().StringSliceVar(&inc, "include", []string{"monitor.metric", "log.std", "log.slow"}, "types of data to collect")
 	cmd.Flags().StringSliceVar(&ext, "exclude", nil, "types of data not to collect")
 	cmd.Flags().StringSliceVar(&cOpt.MetricsFilter, "metricsfilter", nil, "prefix of metrics to collect")
 	cmd.Flags().IntVar(&cOpt.MetricsLimit, "metricslimit", 10000, "metric size limit of single request, specified in series*hour per request")
 	cmd.Flags().StringVar(&metricsConf, "metricsconfig", "", "config file of metricsfilter")
 	cmd.Flags().StringVarP(&cOpt.Dir, "output", "o", "", "output directory of collected data")
-	cmd.Flags().IntVarP(&cOpt.Limit, "limit", "l", -1, "Limits the used bandwidth, specified in Kbit/s")
-	cmd.Flags().IntVar(&cOpt.PerfDuration, "perf-duration", 30, "Duration of the collection of profile information in seconds")
-	cmd.Flags().Uint64Var(&gOpt.APITimeout, "api-timeout", 60, "Timeout in seconds when querying APIs.")
-	cmd.Flags().BoolVar(&cOpt.CompressScp, "compress-scp", true, "Compress when transfer config and logs.Only works with system ssh")
+	// cmd.Flags().IntVarP(&cOpt.Limit, "limit", "l", -1, "Limits the used bandwidth, specified in Kbit/s")
+	// cmd.Flags().IntVar(&cOpt.PerfDuration, "perf-duration", 30, "Duration of the collection of profile information in seconds")
+	cmd.Flags().Uint64Var(&gOpt.APITimeout, "api-timeout", 10, "Timeout in seconds when querying PD APIs.")
+	// cmd.Flags().BoolVar(&cOpt.CompressScp, "compress-scp", true, "Compress when transfer config and logs.Only works with system ssh")
 	cmd.Flags().BoolVar(&cOpt.CompressMetrics, "compress-metrics", true, "Compress collected metrics data.")
 	cmd.Flags().BoolVar(&cOpt.ExitOnError, "exit-on-error", false, "Stop collecting and exit if an error occurs.")
-	cmd.Flags().BoolVar(&cOpt.RawMonitor, "raw-monitor", false, "Collect raw prometheus data")
-	cmd.Flags().StringVar(&cOpt.ExplainSQLPath, "explain-sql", "", "File path for explain sql")
-	cmd.Flags().StringVar(&cOpt.CurrDB, "db", "", "default db for plan replayer collector")
+	// cmd.Flags().BoolVar(&cOpt.RawMonitor, "raw-monitor", false, "Collect raw prometheus data")
+	// cmd.Flags().StringVar(&cOpt.ExplainSQLPath, "explain-sql", "", "File path for explain sql")
+	// cmd.Flags().StringVar(&cOpt.CurrDB, "db", "", "default db for plan replayer collector")
+
+	cmd.Flags().StringVar(&opt.Kubeconfig, "kubeconfig", clientcmd.RecommendedHomeFile, "path of kubeconfig")
+	cmd.Flags().StringVar(&opt.Namespace, "namespace", "", "namespace of prometheus")
+	cmd.Flags().BoolVar(&direct, "--direct", false, "not use port-forward to collect from inside of k8s cluster")
 
 	return cmd
 }

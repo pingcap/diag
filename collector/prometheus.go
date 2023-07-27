@@ -41,6 +41,10 @@ import (
 	"github.com/pingcap/tiup/pkg/set"
 	"github.com/pingcap/tiup/pkg/tui/progress"
 	tiuputils "github.com/pingcap/tiup/pkg/utils"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/tools/clientcmd"
+	"k8s.io/client-go/tools/portforward"
+	"k8s.io/client-go/transport/spdy"
 )
 
 const (
@@ -97,6 +101,10 @@ func (c *AlertCollectOptions) Prepare(_ *Manager, _ *models.TiDBCluster) (map[st
 
 // Collect implements the Collector interface
 func (c *AlertCollectOptions) Collect(m *Manager, topo *models.TiDBCluster) error {
+	if c.Kubeconfig != "" && m.diagMode == DiagModeCmd {
+		// ignore collect alerts for "diag collectk"
+		return nil
+	}
 	if m.mode != CollectModeManual && len(topo.Monitors) < 1 {
 		fmt.Println("No monitoring node (prometheus) found in topology, skip.")
 		return nil
@@ -169,6 +177,9 @@ type MetricCollectOptions struct {
 	limit        int // series*min per query
 	compress     bool
 	customHeader []string
+	monitors     []string
+	portForward  bool
+	stopChans    []chan struct{}
 }
 
 // Desc implements the Collector interface
@@ -196,6 +207,15 @@ func (c *MetricCollectOptions) SetDir(dir string) {
 	c.resultDir = dir
 }
 
+// Close implements the Collector interface
+func (c *MetricCollectOptions) Close() {
+	for _, c := range c.stopChans {
+		if c != nil {
+			close(c)
+		}
+	}
+}
+
 // Prepare implements the Collector interface
 func (c *MetricCollectOptions) Prepare(m *Manager, topo *models.TiDBCluster) (map[string][]CollectStat, error) {
 	if m.mode != CollectModeManual && len(topo.Monitors) < 1 {
@@ -211,18 +231,28 @@ func (c *MetricCollectOptions) Prepare(m *Manager, topo *models.TiDBCluster) (ma
 	tsStart, _ := utils.ParseTime(c.GetBaseOptions().ScrapeBegin)
 	nsec := tsEnd.Unix() - tsStart.Unix()
 
-	monitors := make([]string, 0)
+	c.monitors = make([]string, 0)
 	if eps, found := topo.Attributes[AttrKeyPromEndpoint]; found {
-		monitors = append(monitors, eps.([]string)...)
+		c.monitors = append(c.monitors, eps.([]string)...)
 	} else {
 		for _, prom := range topo.Monitors {
-			monitors = append(monitors, fmt.Sprintf("%s:%d", prom.Host(), prom.MainPort()))
+			if c.portForward {
+				podName, _ := prom.Attributes()["pod"].(string)
+				stopChan, port, err := c.NewForwardPorts(podName, 9090)
+				if err != nil {
+					return nil, err
+				}
+				c.stopChans = append(c.stopChans, stopChan)
+				c.monitors = append(c.monitors, fmt.Sprintf("127.0.0.1:%d", port))
+			} else {
+				c.monitors = append(c.monitors, fmt.Sprintf("%s:%d", prom.Host(), prom.MainPort()))
+			}
 		}
 	}
 
 	var queryErr error
 	var promAddr string
-	for _, prom := range monitors {
+	for _, prom := range c.monitors {
 		promAddr = prom
 		client := &http.Client{Timeout: time.Second * time.Duration(c.opt.APITimeout)}
 		c.metrics, queryErr = getMetricList(client, promAddr, c.customHeader)
@@ -262,28 +292,17 @@ func (c *MetricCollectOptions) Collect(m *Manager, topo *models.TiDBCluster) err
 		return nil
 	}
 
-	monitors := make([]string, 0)
-	if eps, found := topo.Attributes[AttrKeyPromEndpoint]; found {
-		monitors = append(monitors, eps.([]string)...)
-	} else {
-		for _, prom := range topo.Monitors {
-			monitors = append(monitors, fmt.Sprintf("%s:%d", prom.Host(), prom.MainPort()))
-		}
-	}
-
 	mb := progress.NewMultiBar("+ Dumping metrics")
 	bars := make(map[string]*progress.MultiBarItem)
 	total := len(c.metrics)
 	mu := sync.Mutex{}
-	for _, prom := range monitors {
+	for _, prom := range c.monitors {
 		key := prom
 		if _, ok := bars[key]; !ok {
 			bars[key] = mb.AddBar(fmt.Sprintf("  - Querying server %s", key))
 		}
 	}
-	switch m.mode {
-	case CollectModeTiUP,
-		CollectModeManual:
+	if m.diagMode == DiagModeCmd {
 		mb.StartRenderLoop()
 		defer mb.StopRenderLoop()
 	}
@@ -295,7 +314,7 @@ func (c *MetricCollectOptions) Collect(m *Manager, topo *models.TiDBCluster) err
 	}
 	tl := utils.NewTokenLimiter(uint(qLimit))
 
-	for _, prom := range monitors {
+	for _, prom := range c.monitors {
 		key := prom
 		done := 1
 
@@ -318,7 +337,7 @@ func (c *MetricCollectOptions) Collect(m *Manager, topo *models.TiDBCluster) err
 
 				tsEnd, _ := utils.ParseTime(c.GetBaseOptions().ScrapeEnd)
 				tsStart, _ := utils.ParseTime(c.GetBaseOptions().ScrapeBegin)
-				collectMetric(m.logger, client, prom, tsStart, tsEnd, mtc, c.label, c.resultDir, c.limit, c.compress, c.customHeader)
+				collectMetric(m.logger, client, key, tsStart, tsEnd, mtc, c.label, c.resultDir, c.limit, c.compress, c.customHeader)
 
 				mu.Lock()
 				done++
@@ -786,4 +805,41 @@ func (c *TSDBCollectOptions) Collect(m *Manager, cls *models.TiDBCluster) error 
 	}
 
 	return nil
+}
+
+func (c *MetricCollectOptions) NewForwardPorts(podName string, port int) (chan struct{}, int, error) {
+	cfg, err := clientcmd.BuildConfigFromFlags("", c.Kubeconfig)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	kubeCli, err := kubernetes.NewForConfig(cfg)
+	if err != nil {
+		return nil, 0, fmt.Errorf("failed to get kubernetes Clientset: %v", err)
+	}
+
+	req := kubeCli.CoreV1().RESTClient().Post().Namespace(c.Namespace).
+		Resource("pods").Name(podName).SubResource("portforward")
+
+	var readyChannel, stopChannel chan struct{}
+	readyChannel = make(chan struct{})
+	stopChannel = make(chan struct{}, 1)
+	transport, upgrader, err := spdy.RoundTripperFor(cfg)
+	if err != nil {
+		return nil, 0, err
+	}
+	dialer := spdy.NewDialer(upgrader, &http.Client{Transport: transport}, "POST", req.URL())
+	fw, err := portforward.NewOnAddresses(dialer, []string{"127.0.0.1"}, []string{fmt.Sprintf(":%d", port)}, stopChannel, readyChannel, nil, nil)
+	if err != nil {
+		return nil, 0, err
+	}
+	go fw.ForwardPorts()
+	<-readyChannel
+
+	ports, err := fw.GetPorts()
+	if err != nil {
+		return nil, 0, err
+	}
+
+	return stopChannel, int(ports[0].Local), nil
 }
