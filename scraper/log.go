@@ -31,6 +31,7 @@ const (
 	seekLimit      = 1024 * 1024 * 1024 // 1MB
 	LogTypeStd     = "std"
 	LogTypeSlow    = "slow"
+	LogTypeRocksDB = "rocksdb"
 	LogTypeUnknown = "unknown"
 )
 
@@ -82,9 +83,15 @@ func (s *LogScraper) Scrap(result *Sample) error {
 }
 
 func getLogType(fpath string, fi fs.FileInfo, start, end time.Time) (logtype string, inrange bool, err error) {
+	fileName := filepath.Base(fpath)
 	// collect stderr log despite time range
-	if strings.Contains(filepath.Base(fpath), "stderr") {
+	if strings.Contains(fileName, "stderr") {
 		return LogTypeStd, true, nil
+	}
+
+	// todo: parse time range
+	if strings.HasPrefix(fileName, "rocksdb") && strings.HasSuffix(fileName, ".info") {
+		return LogTypeRocksDB, true, nil
 	}
 
 	f, err := os.Open(fpath)

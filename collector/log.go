@@ -49,6 +49,7 @@ type collectLog struct {
 	Slow    bool
 	Unknown bool
 	Ops     bool
+	Rocksdb bool
 }
 
 // LogCollectOptions are options used collecting component logs
@@ -92,7 +93,7 @@ func (c *LogCollectOptions) SetDir(dir string) {
 func (c *LogCollectOptions) Prepare(m *Manager, cls *models.TiDBCluster) (map[string][]CollectStat, error) {
 	switch m.mode {
 	case CollectModeTiUP:
-		if !(c.collector.Std || c.collector.Slow) {
+		if !(c.collector.Std || c.collector.Slow || c.collector.Rocksdb) {
 			return nil, nil
 		}
 	case CollectModeK8s:
@@ -168,6 +169,35 @@ func (c *LogCollectOptions) Prepare(m *Manager, cls *models.TiDBCluster) (map[st
 				hostTasks[inst.GetHost()] = t1
 			}
 
+			// Placing this code here is not elegant, but it can avoid encountering unknown files from collecting datadir.
+			if c.collector.Rocksdb && inst.ComponentName() == spec.ComponentTiKV {
+				hostTasks[inst.GetHost()].
+					Shell(
+						inst.GetHost(),
+						fmt.Sprintf("%s --log '%s' -f '%s' -t '%s' --logtype %s",
+							filepath.Join(task.CheckToolsPathDir, "bin", "scraper"),
+							fmt.Sprintf("%s/*", inst.DataDir()),
+							c.ScrapeBegin, c.ScrapeEnd,
+							scraper.LogTypeRocksDB,
+						),
+						"",
+						false,
+					).
+					Func(
+						inst.GetHost(),
+						func(ctx context.Context) error {
+							stats, err := parseScraperSamples(ctx, inst.GetHost())
+							if err != nil {
+								return err
+							}
+							for host, files := range stats {
+								c.fileStats[host] = files
+							}
+							return nil
+						},
+					)
+			}
+
 			// add filepaths to list
 			if _, found := hostPaths[inst.GetHost()]; !found {
 				hostPaths[inst.GetHost()] = set.NewStringSet()
@@ -210,7 +240,11 @@ func (c *LogCollectOptions) Prepare(m *Manager, cls *models.TiDBCluster) (map[st
 						return err
 					}
 					for host, files := range stats {
-						c.fileStats[host] = files
+						if c.fileStats[host] == nil {
+							c.fileStats[host] = files
+						} else {
+							c.fileStats[host] = append(c.fileStats[host], files...)
+						}
 					}
 					return nil
 				},
