@@ -14,7 +14,6 @@
 package collector
 
 import (
-	"bufio"
 	"context"
 	"fmt"
 	"io"
@@ -438,20 +437,9 @@ func (c *LogCollectOptions) collectK8s(m *Manager, cls *models.TiDBCluster) erro
 			}
 			defer f.Close()
 
-			r := bufio.NewReader(stream)
-			w := bufio.NewWriter(f)
-			for {
-				bytes, err := r.ReadBytes('\n')
-				if err == io.EOF {
-					break
-				} else if err != nil {
-					return err
-				}
-
-				_, err = w.Write(bytes)
-				if err != nil {
-					return err
-				}
+			_, err = io.Copy(f, stream)
+			if err != nil {
+				return err
 			}
 		}
 	}
