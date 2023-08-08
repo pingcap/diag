@@ -818,7 +818,7 @@ func (c *MetricCollectOptions) NewForwardPorts(podName string, port int) (chan s
 		return nil, 0, fmt.Errorf("failed to get kubernetes Clientset: %v", err)
 	}
 
-	req := kubeCli.CoreV1().RESTClient().Post().Namespace(c.Namespace).
+	req := kubeCli.CoreV1().RESTClient().Post().Namespace(c.MonitorNamespace).
 		Resource("pods").Name(podName).SubResource("portforward")
 
 	var readyChannel, stopChannel chan struct{}
