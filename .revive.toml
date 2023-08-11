@@ -18,7 +18,7 @@ warningCode = 0
 #[rule.exported]
 [rule.if-return]
 [rule.var-declaration]
-[rule.var-naming]
+#[rule.var-naming]
 [rule.range]
 [rule.range-val-in-closure]
 [rule.range-val-address]
