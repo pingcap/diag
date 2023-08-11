@@ -71,16 +71,16 @@ const (
 )
 
 type CollectTree struct {
-	System        bool
-	Monitor       collectMonitor
-	Log           collectLog
-	Config        collectConfig
-	DBVars        bool
-	Perf          bool
-	Debug         bool
-	ComponentMeta bool
-	SQLBind       bool
-	PlanReplayer  bool
+	System         bool
+	Monitor        collectMonitor
+	Log            collectLog
+	Config         collectConfig
+	DB_Vars        bool
+	Perf           bool
+	Debug          bool
+	Component_Meta bool
+	SQL_Bind       bool
+	Plan_Replayer  bool
 }
 
 // Collector is the configuration defining an collecting job
@@ -254,9 +254,9 @@ func (m *Manager) CollectClusterInfo(
 				explainSqls = append(explainSqls, sql)
 			}
 		}
-		cOpt.Collectors.PlanReplayer = true
+		cOpt.Collectors.Plan_Replayer = true
 	} else {
-		if cOpt.Collectors.PlanReplayer {
+		if cOpt.Collectors.Plan_Replayer {
 			return "", errors.New("explain-sql should be set if PlanReplayer is included")
 		}
 	}
@@ -376,7 +376,7 @@ func (m *Manager) CollectClusterInfo(
 		dbPassword = tui.PromptForPassword("please enter database password:")
 	}
 
-	if canCollect(&cOpt.Collectors.DBVars) {
+	if canCollect(&cOpt.Collectors.DB_Vars) {
 		collectors = append(collectors,
 			&SchemaCollectOptions{
 				BaseOptions: opt,
@@ -388,7 +388,7 @@ func (m *Manager) CollectClusterInfo(
 			})
 	}
 
-	if canCollect(&cOpt.Collectors.SQLBind) {
+	if canCollect(&cOpt.Collectors.SQL_Bind) {
 		collectors = append(collectors,
 			&BindCollectOptions{
 				BaseOptions: opt,
@@ -447,7 +447,7 @@ func (m *Manager) CollectClusterInfo(
 			})
 	}
 
-	if canCollect(&cOpt.Collectors.ComponentMeta) {
+	if canCollect(&cOpt.Collectors.Component_Meta) {
 		sensitiveTag = true
 		collectors = append(collectors,
 			&ComponentMetaCollectOptions{
@@ -471,7 +471,7 @@ func (m *Manager) CollectClusterInfo(
 			})
 	}
 
-	if canCollect(&cOpt.Collectors.PlanReplayer) {
+	if canCollect(&cOpt.Collectors.Plan_Replayer) {
 		collectors = append(collectors,
 			&PlanReplayerCollectorOptions{
 				BaseOptions:    opt,
@@ -668,7 +668,7 @@ func canCollect(w interface{}) bool {
 }
 
 func needDBKey(c CollectTree) bool {
-	return c.SQLBind || c.DBVars || c.PlanReplayer
+	return c.SQL_Bind || c.DB_Vars || c.Plan_Replayer
 }
 
 func ParseCollectTree(include, exclude []string) (CollectTree, error) {
