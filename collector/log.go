@@ -383,6 +383,7 @@ func (c *LogCollectOptions) prepareK8s(m *Manager, cls *models.TiDBCluster) (map
 			// component like prometheus does not have pod name
 			continue
 		}
+		ns := inst.Attributes()["namespace"].(string)
 
 		var logs []CollectStat
 		if c.collector.Std {
@@ -391,6 +392,7 @@ func (c *LogCollectOptions) prepareK8s(m *Manager, cls *models.TiDBCluster) (map
 				Attributes: map[string]interface{}{
 					"podName":       podName,
 					"containerName": string(inst.Type()),
+					"namespace":     ns,
 				},
 			})
 		}
@@ -400,6 +402,7 @@ func (c *LogCollectOptions) prepareK8s(m *Manager, cls *models.TiDBCluster) (map
 				Attributes: map[string]interface{}{
 					"podName":       podName,
 					"containerName": "slowlog",
+					"namespace":     ns,
 				},
 			})
 		}
@@ -418,7 +421,7 @@ func (c *LogCollectOptions) collectK8s(m *Manager, cls *models.TiDBCluster) erro
 				SinceTime: &metav1.Time{Time: beginTime},
 			}
 
-			req := c.kubeCli.CoreV1().Pods(c.Namespace).GetLogs(podName, &opt)
+			req := c.kubeCli.CoreV1().Pods(fs.Attributes["namespace"].(string)).GetLogs(podName, &opt)
 
 			stream, err := req.Stream(context.TODO())
 			if err != nil {
