@@ -208,6 +208,7 @@ func buildTopoForK8sCluster(
 						"image":      tc.Status.PD.Image,
 						"pod":        ins.Name,
 						"domain":     fmt.Sprintf("%s.%s-pd-peer.%s.svc", ins.Name, clsName, ns),
+						"namespace":  ns,
 					},
 				},
 			})
@@ -234,10 +235,11 @@ func buildTopoForK8sCluster(
 						Port:       4000,
 						StatusPort: 10080,
 						Attributes: map[string]interface{}{
-							"health": ins.Health,
-							"image":  tc.Status.TiDB.Image,
-							"pod":    ins.Name,
-							"domain": fmt.Sprintf("%s.%s-tidb-peer.%s.svc", ins.Name, clsName, ns),
+							"health":    ins.Health,
+							"image":     tc.Status.TiDB.Image,
+							"pod":       ins.Name,
+							"domain":    fmt.Sprintf("%s.%s-tidb-peer.%s.svc", ins.Name, clsName, ns),
+							"namespace": ns,
 						},
 					},
 				})
@@ -271,6 +273,7 @@ func buildTopoForK8sCluster(
 							"image":        tc.Status.TiKV.Image,
 							"pod":          ins.PodName,
 							"domain":       fmt.Sprintf("%s.%s-tikv-peer.%s.svc", ins.PodName, clsName, ns),
+							"namespace":    ns,
 						},
 					},
 				})
@@ -304,6 +307,7 @@ func buildTopoForK8sCluster(
 							"image":        tc.Status.TiFlash.Image,
 							"pod":          ins.PodName,
 							"domain":       fmt.Sprintf("%s.%s-tiflash-peer.%s.svc", ins.PodName, clsName, ns),
+							"namespace":    ns,
 						},
 					},
 				})
@@ -330,9 +334,10 @@ func buildTopoForK8sCluster(
 						Host: pod.Status.PodIP,
 						Port: 8301,
 						Attributes: map[string]interface{}{
-							"id":     ins.ID,
-							"pod":    ins.PodName,
-							"domain": fmt.Sprintf("%s.%s-ticdc-peer.%s.svc", ins.PodName, clsName, ns),
+							"id":        ins.ID,
+							"pod":       ins.PodName,
+							"domain":    fmt.Sprintf("%s.%s-ticdc-peer.%s.svc", ins.PodName, clsName, ns),
+							"namespace": ns,
 						},
 					},
 				})
@@ -359,9 +364,10 @@ func buildTopoForK8sCluster(
 						Host: pod.Status.PodIP,
 						Port: 8250,
 						Attributes: map[string]interface{}{
-							"node":  ins.NodeID,
-							"state": ins.State,
-							"pod":   ins.Host,
+							"node":      ins.NodeID,
+							"state":     ins.State,
+							"pod":       ins.Host,
+							"namespace": ns,
 						},
 					},
 				})
@@ -437,7 +443,8 @@ func buildTopoForK8sCluster(
 					Host: ip,
 					Port: port,
 					Attributes: map[string]interface{}{
-						"pod": svc.Name,
+						"pod":       svc.Name,
+						"namespace": mns,
 					},
 				},
 			})
