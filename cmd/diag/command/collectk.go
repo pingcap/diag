@@ -69,6 +69,9 @@ func newCollectkCmd() *cobra.Command {
 				}
 			}
 
+			if opt.MonitorNamespace == "" {
+				opt.MonitorNamespace = opt.Namespace
+			}
 			opt.Cluster = args[0]
 			clsID := scrubClusterName(opt.Cluster)
 			teleCommand = append(teleCommand, clsID)
@@ -131,7 +134,7 @@ func newCollectkCmd() *cobra.Command {
 	// cmd.Flags().StringVar(&cOpt.CurrDB, "db", "", "default db for plan replayer collector")
 
 	cmd.Flags().StringVar(&opt.Kubeconfig, "kubeconfig", clientcmd.RecommendedHomeFile, "path of kubeconfig")
-	cmd.Flags().StringVar(&opt.Namespace, "namespace", "", "namespace of TidbCluster")
+	cmd.Flags().StringVarP(&opt.Namespace, "namespace", "n", "", "namespace of TidbCluster")
 	cmd.Flags().StringVar(&opt.MonitorNamespace, "monitor-namespace", "", "namespace of TidbMonitor")
 	cmd.Flags().BoolVar(&direct, "--direct", false, "not use port-forward to collect from inside of k8s cluster")
 

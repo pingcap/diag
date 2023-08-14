@@ -95,7 +95,7 @@ func buildTopoForK8sCluster(
 	if opt.Namespace == "" {
 		ns = os.Getenv("NAMESPACE")
 		if ns == "" {
-			msg := "namespace not specified and NAMESPACE environment variable not set"
+			msg := "namespace are not specified"
 			klog.Error(msg)
 			return nil, nil, nil, fmt.Errorf(msg)
 		}
