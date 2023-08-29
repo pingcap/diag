@@ -255,8 +255,18 @@ func (c *MetricCollectOptions) Prepare(m *Manager, topo *models.TiDBCluster) (ma
 	for _, prom := range c.monitors {
 		promAddr = prom
 		client := &http.Client{Timeout: time.Second * time.Duration(c.opt.APITimeout)}
-		c.metrics, queryErr = getMetricList(client, promAddr, c.customHeader)
-		if queryErr == nil {
+
+		if err := tiuputils.Retry(
+			func() error {
+				c.metrics, queryErr = getMetricList(client, promAddr, c.customHeader)
+				return queryErr
+			},
+			tiuputils.RetryOption{
+				Attempts: 3,
+				Delay:    time.Microsecond * 300,
+				Timeout:  client.Timeout + 5*time.Second, //make sure the retry timeout is longer than the api timeout
+			},
+		); err == nil {
 			break
 		}
 	}
@@ -424,11 +434,24 @@ func collectMetric(
 ) {
 	query := generateQueryWitLabel(mtc, label)
 	l.Debugf("Querying series of %s...", mtc)
-	series, err := getSeriesNum(c, promAddr, query, customHeader)
-	if err != nil {
+
+	var series int
+	if err := tiuputils.Retry(
+		func() error {
+			seriesNum, err := getSeriesNum(c, promAddr, query, customHeader)
+			series = seriesNum
+			return err
+		},
+		tiuputils.RetryOption{
+			Attempts: 3,
+			Delay:    time.Microsecond * 300,
+			Timeout:  c.Timeout + 5*time.Second, //make sure the retry timeout is longer than the api timeout
+		},
+	); err != nil {
 		l.Errorf("%s", err)
 		return
 	}
+
 	if series <= 0 {
 		l.Debugf("metric %s has %d series, ignore", mtc, series)
 		return
@@ -513,7 +536,7 @@ func collectMetric(
 			tiuputils.RetryOption{
 				Attempts: 3,
 				Delay:    time.Microsecond * 300,
-				Timeout:  time.Second * 120,
+				Timeout:  c.Timeout + 5*time.Second, //make sure the retry timeout is longer than the api timeout
 			},
 		); err != nil {
 			l.Errorf("Error quering metrics %s: %s", mtc, err)
