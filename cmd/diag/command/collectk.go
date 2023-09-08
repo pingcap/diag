@@ -136,7 +136,7 @@ func newCollectkCmd() *cobra.Command {
 	cmd.Flags().StringVar(&opt.Kubeconfig, "kubeconfig", clientcmd.RecommendedHomeFile, "path of kubeconfig")
 	cmd.Flags().StringVarP(&opt.Namespace, "namespace", "n", "", "namespace of TidbCluster")
 	cmd.Flags().StringVar(&opt.MonitorNamespace, "monitor-namespace", "", "namespace of TidbMonitor")
-	cmd.Flags().BoolVar(&direct, "--direct", false, "not use port-forward to collect from inside of k8s cluster")
+	cmd.Flags().BoolVar(&direct, "direct", false, "not use port-forward to collect from inside of k8s cluster")
 
 	return cmd
 }
