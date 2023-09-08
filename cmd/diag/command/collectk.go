@@ -29,6 +29,7 @@ import (
 	"github.com/spf13/cobra"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 )
 
@@ -92,7 +93,13 @@ func newCollectkCmd() *cobra.Command {
 
 			cOpt.Mode = collector.CollectModeK8s
 
-			cfg, err := clientcmd.BuildConfigFromFlags("", opt.Kubeconfig)
+			var err error
+			var cfg *rest.Config
+			if direct {
+				cfg, err = rest.InClusterConfig()
+			} else {
+				cfg, err = clientcmd.BuildConfigFromFlags("", opt.Kubeconfig)
+			}
 			if err != nil {
 				return err
 			}
