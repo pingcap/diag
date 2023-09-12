@@ -126,7 +126,7 @@ func (c *AlertCollectOptions) Collect(m *Manager, topo *models.TiDBCluster) erro
 			return err
 		}
 
-		client := &http.Client{Timeout: time.Second * 10}
+		client := &http.Client{Timeout: time.Second * time.Duration(c.opt.APITimeout)}
 		resp, err := client.PostForm(fmt.Sprintf("http://%s/api/v1/query", promAddr), url.Values{"query": {"ALERTS"}})
 		if err != nil {
 			return err

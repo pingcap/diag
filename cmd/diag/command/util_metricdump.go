@@ -140,6 +140,7 @@ func newMetricDumpCmd() *cobra.Command {
 	cmd.Flags().StringVar(&metricsConf, "metricsconfig", "", "config file of metricsfilter")
 	cmd.Flags().StringVarP(&cOpt.Dir, "output", "o", "", "output directory of collected data")
 	cmd.Flags().BoolVar(&cOpt.CompressMetrics, "compress-metrics", true, "Compress collected metrics data.")
+	cmd.Flags().Uint64Var(&gOpt.APITimeout, "api-timeout", 60, "Timeout in seconds when querying APIs.")
 
 	cobra.MarkFlagRequired(cmd.Flags(), "name")
 	cobra.MarkFlagRequired(cmd.Flags(), "prometheus")
