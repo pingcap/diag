@@ -53,7 +53,6 @@ func buildTopoForManualCluster(cOpt *CollectOptions) (*models.TiDBCluster, error
 
 	cls.Attributes[AttrKeyClusterID] = cOpt.ExtendedAttrs[AttrKeyClusterID]
 	cls.Attributes[AttrKeyPDEndpoint] = strings.Split(cOpt.ExtendedAttrs[AttrKeyPDEndpoint], ",")
-	cls.Attributes[AttrKeyPromEndpoint] = strings.Split(cOpt.ExtendedAttrs[AttrKeyPromEndpoint], ",")
 
 	return cls, nil
 }

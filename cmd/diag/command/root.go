@@ -316,3 +316,15 @@ func scrubClusterName(n string) string {
 	// of tiup with the same cluster name produce different hashes
 	return "cluster_" + tiuptelemetry.SaltedHash(n)
 }
+
+func parseMetricsLabel(flagValue []string) (map[string]string, error) {
+	result := make(map[string]string)
+	for _, l := range flagValue {
+		splited := strings.Split(l, "=")
+		if len(splited) != 2 {
+			return nil, fmt.Errorf("%s should be like key=value", l)
+		}
+		result[splited[0]] = splited[1]
+	}
+	return result, nil
+}

@@ -37,6 +37,8 @@ func newCollectkCmd() *cobra.Command {
 	var collectAll bool
 	var direct bool
 	var metricsConf string
+	var labels []string
+	var promEndpoint string
 	opt := collector.BaseOptions{
 		SSH: &tui.SSHConnectionProps{
 			IdentityFile: path.Join(tiuputils.UserHome(), ".ssh", "id_rsa"),
@@ -94,6 +96,14 @@ func newCollectkCmd() *cobra.Command {
 			cOpt.Mode = collector.CollectModeK8s
 
 			var err error
+			cOpt.MetricsLabel, err = parseMetricsLabel(labels)
+			if err != nil {
+				return err
+			}
+
+			cOpt.ExtendedAttrs = make(map[string]string) // init attributes map
+			cOpt.ExtendedAttrs[collector.AttrKeyPromEndpoint] = promEndpoint
+
 			var cfg *rest.Config
 			if direct {
 				cfg, err = rest.InClusterConfig()
@@ -129,6 +139,9 @@ func newCollectkCmd() *cobra.Command {
 	cmd.Flags().StringSliceVar(&cOpt.MetricsFilter, "metricsfilter", nil, "prefix of metrics to collect")
 	cmd.Flags().IntVar(&cOpt.MetricsLimit, "metricslimit", 10000, "metric size limit of single request, specified in series*hour per request")
 	cmd.Flags().StringVar(&metricsConf, "metricsconfig", "", "config file of metricsfilter")
+	cmd.Flags().StringSliceVar(&labels, "metricslabel", nil, "only collect metrics that match labels")
+	cmd.Flags().StringVar(&promEndpoint, "overwrite-prometheus-endpoint", "", "Prometheus endpoint")
+	cmd.Flags().StringSliceVarP(&cOpt.Header, "prometheus-header", "H", nil, "custom headers of http request when collect metrics")
 	cmd.Flags().StringVarP(&cOpt.Dir, "output", "o", "", "output directory of collected data")
 	// cmd.Flags().IntVarP(&cOpt.Limit, "limit", "l", -1, "Limits the used bandwidth, specified in Kbit/s")
 	// cmd.Flags().IntVar(&cOpt.PerfDuration, "perf-duration", 30, "Duration of the collection of profile information in seconds")

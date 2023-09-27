@@ -203,6 +203,10 @@ func (m *Manager) CollectClusterInfo(
 	if cls == nil {
 		return "", fmt.Errorf("no valid cluster topology parsed")
 	}
+	if cls.Attributes == nil {
+		cls.Attributes = map[string]interface{}{}
+	}
+	cls.Attributes[AttrKeyPromEndpoint] = strings.Split(cOpt.ExtendedAttrs[AttrKeyPromEndpoint], ",")
 
 	// prepare for different deploy mode
 	var resultDir string
