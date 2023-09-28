@@ -86,13 +86,10 @@ func newMetricDumpCmd() *cobra.Command {
 				}
 			}
 
-			cOpt.MetricsLabel = make(map[string]string)
-			for _, l := range labels {
-				splited := strings.Split(l, "=")
-				if len(splited) != 2 {
-					return fmt.Errorf("%s should be like key=value", l)
-				}
-				cOpt.MetricsLabel[splited[0]] = splited[1]
+			var err error
+			cOpt.MetricsLabel, err = parseMetricsLabel(labels)
+			if err != nil {
+				return err
 			}
 
 			if reportEnabled {
@@ -106,7 +103,7 @@ func newMetricDumpCmd() *cobra.Command {
 				}
 			}
 
-			_, err := cm.CollectClusterInfo(&opt, &cOpt, &gOpt, nil, nil, skipConfirm)
+			_, err = cm.CollectClusterInfo(&opt, &cOpt, &gOpt, nil, nil, skipConfirm)
 			// time is validated and updated during the collecting process
 			if reportEnabled {
 				st, errs := utils.ParseTime(opt.ScrapeBegin)
