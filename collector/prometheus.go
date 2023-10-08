@@ -111,7 +111,7 @@ func (c *AlertCollectOptions) Collect(m *Manager, topo *models.TiDBCluster) erro
 	}
 
 	monitors := make([]string, 0)
-	if eps, found := topo.Attributes[AttrKeyPromEndpoint]; found {
+	if eps, found := topo.Attributes[AttrKeyPromEndpoint]; found && len(eps.([]string)) > 0 && eps.([]string)[0] != "" {
 		monitors = append(monitors, eps.([]string)...)
 	} else {
 		for _, prom := range topo.Monitors {
@@ -218,7 +218,7 @@ func (c *MetricCollectOptions) Close() {
 
 // Prepare implements the Collector interface
 func (c *MetricCollectOptions) Prepare(m *Manager, topo *models.TiDBCluster) (map[string][]CollectStat, error) { // only collect from the first one
-	if eps, found := topo.Attributes[AttrKeyPromEndpoint]; found && len(eps.([]string)) > 0 {
+	if eps, found := topo.Attributes[AttrKeyPromEndpoint]; found && len(eps.([]string)) > 0 && eps.([]string)[0] != "" {
 		c.endpoint = eps.([]string)[0]
 	} else if len(topo.Monitors) > 0 {
 		prom := topo.Monitors[0]
