@@ -96,9 +96,6 @@ func (c *AlertCollectOptions) SetDir(dir string) {
 
 // Prepare implements the Collector interface
 func (c *AlertCollectOptions) Prepare(m *Manager, topo *models.TiDBCluster) (map[string][]CollectStat, error) {
-	if m.mode != CollectModeManual && len(topo.Monitors) < 1 {
-		m.logger.Warnf("No monitoring node (prometheus) found in topology, skip collecting alert.")
-	}
 	return nil, nil
 }
 
@@ -106,6 +103,10 @@ func (c *AlertCollectOptions) Prepare(m *Manager, topo *models.TiDBCluster) (map
 func (c *AlertCollectOptions) Collect(m *Manager, topo *models.TiDBCluster) error {
 	if c.Kubeconfig != "" && m.diagMode == DiagModeCmd {
 		// ignore collect alerts for "diag collectk"
+		return nil
+	}
+	if m.mode != CollectModeManual && len(topo.Monitors) < 1 {
+		m.logger.Warnf("No monitoring node (prometheus) found in topology, skip collecting alert.")
 		return nil
 	}
 
@@ -177,7 +178,6 @@ type MetricCollectOptions struct {
 	compress     bool
 	customHeader []string
 	endpoint     string
-	monitors     []string
 	portForward  bool
 	stopChans    []chan struct{}
 }
@@ -234,9 +234,6 @@ func (c *MetricCollectOptions) Prepare(m *Manager, topo *models.TiDBCluster) (ma
 			c.endpoint = fmt.Sprintf("%s:%d", prom.Host(), prom.MainPort())
 		}
 	} else {
-		if m.logger.GetDisplayMode() == logprinter.DisplayModeDefault {
-			fmt.Println("No Prometheus node found in topology, skip.")
-		}
 		m.logger.Warnf("No Prometheus node found in topology, skip.")
 		return nil, nil
 	}
@@ -258,8 +255,7 @@ func (c *MetricCollectOptions) Prepare(m *Manager, topo *models.TiDBCluster) (ma
 			Timeout:  client.Timeout + 5*time.Second, //make sure the retry timeout is longer than the api timeout
 		},
 	); err != nil {
-		m.logger.Errorf("failed to get metric list from %s: %s", c.endpoint, err)
-		return nil, fmt.Errorf("failed to get metric list from %s", c.endpoint)
+		return nil, fmt.Errorf("failed to get metric list from %s: %s", c.endpoint, err)
 	}
 
 	c.metrics = filterMetrics(c.metrics, c.filter)
@@ -595,11 +591,7 @@ func (c *TSDBCollectOptions) Prepare(m *Manager, cls *models.TiDBCluster) (map[s
 		return nil, nil
 	}
 	if len(cls.Monitors) < 1 {
-		if m.logger.GetDisplayMode() == logprinter.DisplayModeDefault {
-			fmt.Println("No Prometheus node found in topology, skip.")
-		} else {
-			m.logger.Warnf("No Prometheus node found in topology, skip.")
-		}
+		m.logger.Warnf("No Prometheus node found in topology, skip.")
 		return nil, nil
 	}
 
