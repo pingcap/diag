@@ -504,11 +504,7 @@ func (m *Manager) CollectClusterInfo(
 				return "", err
 			}
 			msg := fmt.Sprintf("Error collecting %s: %s, the data might be incomplete.", c.Desc(), err)
-			if m.logger.GetDisplayMode() == logprinter.DisplayModeDefault {
-				fmt.Println(color.YellowString(msg))
-			} else {
-				m.logger.Warnf(msg)
-			}
+			m.logger.Warnf(color.YellowString(msg))
 			prepareErrs[c.Desc()] = err
 		}
 		defer c.Close()
@@ -542,11 +538,7 @@ func (m *Manager) CollectClusterInfo(
 				return "", err
 			}
 			msg := fmt.Sprintf("Error collecting %s: %s, the data might be incomplete.", c.Desc(), err)
-			if m.logger.GetDisplayMode() == logprinter.DisplayModeDefault {
-				fmt.Println(color.YellowString(msg))
-			} else {
-				m.logger.Warnf(msg)
-			}
+			m.logger.Warnf(color.YellowString(msg))
 			collectErrs[c.Desc()] = err
 		}
 	}

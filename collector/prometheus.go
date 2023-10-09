@@ -95,7 +95,7 @@ func (c *AlertCollectOptions) SetDir(dir string) {
 }
 
 // Prepare implements the Collector interface
-func (c *AlertCollectOptions) Prepare(_ *Manager, _ *models.TiDBCluster) (map[string][]CollectStat, error) {
+func (c *AlertCollectOptions) Prepare(m *Manager, topo *models.TiDBCluster) (map[string][]CollectStat, error) {
 	return nil, nil
 }
 
@@ -106,12 +106,12 @@ func (c *AlertCollectOptions) Collect(m *Manager, topo *models.TiDBCluster) erro
 		return nil
 	}
 	if m.mode != CollectModeManual && len(topo.Monitors) < 1 {
-		fmt.Println("No monitoring node (prometheus) found in topology, skip.")
+		m.logger.Warnf("No monitoring node (prometheus) found in topology, skip collecting alert.")
 		return nil
 	}
 
 	monitors := make([]string, 0)
-	if eps, found := topo.Attributes[AttrKeyPromEndpoint]; found {
+	if eps, found := topo.Attributes[AttrKeyPromEndpoint]; found && len(eps.([]string)) > 0 && eps.([]string)[0] != "" {
 		monitors = append(monitors, eps.([]string)...)
 	} else {
 		for _, prom := range topo.Monitors {
@@ -177,7 +177,7 @@ type MetricCollectOptions struct {
 	limit        int // series*min per query
 	compress     bool
 	customHeader []string
-	monitors     []string
+	endpoint     string
 	portForward  bool
 	stopChans    []chan struct{}
 }
@@ -217,13 +217,24 @@ func (c *MetricCollectOptions) Close() {
 }
 
 // Prepare implements the Collector interface
-func (c *MetricCollectOptions) Prepare(m *Manager, topo *models.TiDBCluster) (map[string][]CollectStat, error) {
-	if m.mode != CollectModeManual && len(topo.Monitors) < 1 {
-		if m.logger.GetDisplayMode() == logprinter.DisplayModeDefault {
-			fmt.Println("No Prometheus node found in topology, skip.")
+func (c *MetricCollectOptions) Prepare(m *Manager, topo *models.TiDBCluster) (map[string][]CollectStat, error) { // only collect from the first one
+	if eps, found := topo.Attributes[AttrKeyPromEndpoint]; found && len(eps.([]string)) > 0 && eps.([]string)[0] != "" {
+		c.endpoint = eps.([]string)[0]
+	} else if len(topo.Monitors) > 0 {
+		prom := topo.Monitors[0]
+		if c.portForward {
+			podName, _ := prom.Attributes()["pod"].(string)
+			stopChan, port, err := c.NewForwardPorts(podName, 9090)
+			if err != nil {
+				return nil, err
+			}
+			c.stopChans = append(c.stopChans, stopChan)
+			c.endpoint = fmt.Sprintf("127.0.0.1:%d", port)
 		} else {
-			m.logger.Warnf("No Prometheus node found in topology, skip.")
+			c.endpoint = fmt.Sprintf("%s:%d", prom.Host(), prom.MainPort())
 		}
+	} else {
+		m.logger.Warnf("No Prometheus node found in topology, skip.")
 		return nil, nil
 	}
 
@@ -231,48 +242,20 @@ func (c *MetricCollectOptions) Prepare(m *Manager, topo *models.TiDBCluster) (ma
 	tsStart, _ := utils.ParseTime(c.GetBaseOptions().ScrapeBegin)
 	nsec := tsEnd.Unix() - tsStart.Unix()
 
-	c.monitors = make([]string, 0)
-	if eps, found := topo.Attributes[AttrKeyPromEndpoint]; found {
-		c.monitors = append(c.monitors, eps.([]string)...)
-	} else {
-		for _, prom := range topo.Monitors {
-			if c.portForward {
-				podName, _ := prom.Attributes()["pod"].(string)
-				stopChan, port, err := c.NewForwardPorts(podName, 9090)
-				if err != nil {
-					return nil, err
-				}
-				c.stopChans = append(c.stopChans, stopChan)
-				c.monitors = append(c.monitors, fmt.Sprintf("127.0.0.1:%d", port))
-			} else {
-				c.monitors = append(c.monitors, fmt.Sprintf("%s:%d", prom.Host(), prom.MainPort()))
-			}
-		}
-	}
-
-	var queryErr error
-	var promAddr string
-	for _, prom := range c.monitors {
-		promAddr = prom
-		client := &http.Client{Timeout: time.Second * time.Duration(c.opt.APITimeout)}
-
-		if err := tiuputils.Retry(
-			func() error {
-				c.metrics, queryErr = getMetricList(client, promAddr, c.customHeader)
-				return queryErr
-			},
-			tiuputils.RetryOption{
-				Attempts: 3,
-				Delay:    time.Microsecond * 300,
-				Timeout:  client.Timeout + 5*time.Second, //make sure the retry timeout is longer than the api timeout
-			},
-		); err == nil {
-			break
-		}
-	}
-	// if query successed for any one of prometheus, ignore errors for other instances
-	if queryErr != nil {
-		return nil, queryErr
+	client := &http.Client{Timeout: time.Second * time.Duration(c.opt.APITimeout)}
+	if err := tiuputils.Retry(
+		func() error {
+			var queryErr error
+			c.metrics, queryErr = getMetricList(client, c.endpoint, c.customHeader)
+			return queryErr
+		},
+		tiuputils.RetryOption{
+			Attempts: 3,
+			Delay:    time.Microsecond * 300,
+			Timeout:  client.Timeout + 5*time.Second, //make sure the retry timeout is longer than the api timeout
+		},
+	); err != nil {
+		return nil, fmt.Errorf("failed to get metric list from %s: %s", c.endpoint, err)
 	}
 
 	c.metrics = filterMetrics(c.metrics, c.filter)
@@ -286,32 +269,26 @@ func (c *MetricCollectOptions) Prepare(m *Manager, topo *models.TiDBCluster) (ma
 	// compression rate is approximately 2.5%
 	cStat.Size = int64(float64(cStat.Size) * 0.025)
 
-	result[promAddr] = append(result[promAddr], cStat)
+	result[c.endpoint] = append(result[c.endpoint], cStat)
 
 	return result, nil
 }
 
 // Collect implements the Collector interface
 func (c *MetricCollectOptions) Collect(m *Manager, topo *models.TiDBCluster) error {
-	if m.mode != CollectModeManual && len(topo.Monitors) < 1 {
-		if m.logger.GetDisplayMode() == logprinter.DisplayModeDefault {
-			fmt.Println("No Prometheus node found in topology, skip.")
-		} else {
-			m.logger.Warnf("No Prometheus node found in topology, skip.")
-		}
+	if c.endpoint == "" {
 		return nil
 	}
-
 	mb := progress.NewMultiBar("+ Dumping metrics")
 	bars := make(map[string]*progress.MultiBarItem)
 	total := len(c.metrics)
 	mu := sync.Mutex{}
-	for _, prom := range c.monitors {
-		key := prom
-		if _, ok := bars[key]; !ok {
-			bars[key] = mb.AddBar(fmt.Sprintf("  - Querying server %s", key))
-		}
+
+	key := c.endpoint
+	if _, ok := bars[key]; !ok {
+		bars[key] = mb.AddBar(fmt.Sprintf("  - Querying server %s", key))
 	}
+
 	if m.diagMode == DiagModeCmd {
 		mb.StartRenderLoop()
 		defer mb.StopRenderLoop()
@@ -324,44 +301,39 @@ func (c *MetricCollectOptions) Collect(m *Manager, topo *models.TiDBCluster) err
 	}
 	tl := utils.NewTokenLimiter(uint(qLimit))
 
-	for _, prom := range c.monitors {
-		key := prom
-		done := 1
+	done := 1
+	if err := ensureMonitorDir(c.resultDir, subdirMetrics, strings.ReplaceAll(c.endpoint, ":", "-")); err != nil {
+		bars[key].UpdateDisplay(&progress.DisplayProps{
+			Prefix: fmt.Sprintf("  - Query server %s: %s", key, err),
+			Mode:   progress.ModeError,
+		})
+		return err
+	}
 
-		if err := ensureMonitorDir(c.resultDir, subdirMetrics, strings.ReplaceAll(prom, ":", "-")); err != nil {
+	client := &http.Client{Timeout: time.Second * time.Duration(c.opt.APITimeout)}
+	for _, mtc := range c.metrics {
+		go func(tok *utils.Token, mtc string) {
 			bars[key].UpdateDisplay(&progress.DisplayProps{
-				Prefix: fmt.Sprintf("  - Query server %s: %s", key, err),
-				Mode:   progress.ModeError,
+				Prefix: fmt.Sprintf("  - Querying server %s", key),
+				Suffix: fmt.Sprintf("%d/%d querying %s ...", done, total, mtc),
 			})
-			return err
-		}
 
-		client := &http.Client{Timeout: time.Second * time.Duration(c.opt.APITimeout)}
+			tsEnd, _ := utils.ParseTime(c.GetBaseOptions().ScrapeEnd)
+			tsStart, _ := utils.ParseTime(c.GetBaseOptions().ScrapeBegin)
+			collectMetric(m.logger, client, key, tsStart, tsEnd, mtc, c.label, c.resultDir, c.limit, c.compress, c.customHeader)
 
-		for _, mtc := range c.metrics {
-			go func(tok *utils.Token, mtc string) {
+			mu.Lock()
+			done++
+			if done >= total {
 				bars[key].UpdateDisplay(&progress.DisplayProps{
-					Prefix: fmt.Sprintf("  - Querying server %s", key),
-					Suffix: fmt.Sprintf("%d/%d querying %s ...", done, total, mtc),
+					Prefix: fmt.Sprintf("  - Query server %s", key),
+					Mode:   progress.ModeDone,
 				})
+			}
+			mu.Unlock()
 
-				tsEnd, _ := utils.ParseTime(c.GetBaseOptions().ScrapeEnd)
-				tsStart, _ := utils.ParseTime(c.GetBaseOptions().ScrapeBegin)
-				collectMetric(m.logger, client, key, tsStart, tsEnd, mtc, c.label, c.resultDir, c.limit, c.compress, c.customHeader)
-
-				mu.Lock()
-				done++
-				if done >= total {
-					bars[key].UpdateDisplay(&progress.DisplayProps{
-						Prefix: fmt.Sprintf("  - Query server %s", key),
-						Mode:   progress.ModeDone,
-					})
-				}
-				mu.Unlock()
-
-				tl.Put(tok)
-			}(tl.Get(), mtc)
-		}
+			tl.Put(tok)
+		}(tl.Get(), mtc)
 	}
 
 	tl.Wait()
@@ -619,11 +591,7 @@ func (c *TSDBCollectOptions) Prepare(m *Manager, cls *models.TiDBCluster) (map[s
 		return nil, nil
 	}
 	if len(cls.Monitors) < 1 {
-		if m.logger.GetDisplayMode() == logprinter.DisplayModeDefault {
-			fmt.Println("No Prometheus node found in topology, skip.")
-		} else {
-			m.logger.Warnf("No Prometheus node found in topology, skip.")
-		}
+		m.logger.Warnf("No Prometheus node found in topology, skip.")
 		return nil, nil
 	}
 
