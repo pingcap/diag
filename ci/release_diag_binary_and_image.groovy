@@ -231,6 +231,11 @@ def publish_diag_cli(RELEASE_TAG, TIUP_MIRROR) {
 		"darwin" : ["amd64", "arm64"]
 	]
 
+	sh """
+	curl --proto '=https' --tlsv1.2 -sSf https://tiup-mirrors.pingcap.com/install.sh | sh"
+	export PATH=${PATH}:~/.tiup/bin
+	"""
+
 	// set TiUP mirror address
 	sh "tiup mirror set ${TIUP_MIRROR}"
 
