@@ -42,7 +42,7 @@ def run_with_pod(Closure body) {
 	label = "clinic-diag"
     def cloud = "kubernetes"
     def namespace = "jenkins-tidb"
-    def pod_go_docker_image = "hub.pingcap.net/clinic/centos7_golang-1.18:latest" 
+    def pod_go_docker_image = "hub.pingcap.net/jenkins/centos7_golang-1.21:latest" 
     podTemplate(label: label,
             cloud: cloud,
             namespace: namespace,

@@ -115,7 +115,7 @@ func (c *LogCollectOptions) Prepare(m *Manager, cls *models.TiDBCluster) (map[st
 
 	roleFilter := set.NewStringSet(c.opt.Roles...)
 	nodeFilter := set.NewStringSet(c.opt.Nodes...)
-	components := topo.ComponentsByUpdateOrder()
+	components := topo.ComponentsByStartOrder()
 	components = operator.FilterComponent(components, roleFilter)
 
 	for _, comp := range components {
@@ -292,7 +292,7 @@ func (c *LogCollectOptions) Collect(m *Manager, cls *models.TiDBCluster) error {
 
 	roleFilter := set.NewStringSet(c.opt.Roles...)
 	nodeFilter := set.NewStringSet(c.opt.Nodes...)
-	components := topo.ComponentsByUpdateOrder()
+	components := topo.ComponentsByStartOrder()
 	components = operator.FilterComponent(components, roleFilter)
 
 	for _, comp := range components {
