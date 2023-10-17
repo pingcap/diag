@@ -107,7 +107,7 @@ func (c *ConfigCollectOptions) prepareForTiUP(m *Manager, cls *models.TiDBCluste
 	roleFilter := set.NewStringSet(c.opt.Roles...)
 	nodeFilter := set.NewStringSet(c.opt.Nodes...)
 
-	components := topo.ComponentsByUpdateOrder()
+	components := topo.ComponentsByStartOrder()
 	components = operator.FilterComponent(components, roleFilter)
 
 	for _, comp := range components {
@@ -261,7 +261,7 @@ func (c *ConfigCollectOptions) Collect(m *Manager, cls *models.TiDBCluster) erro
 
 	if c.Collectors.File && (m.mode == CollectModeTiUP) {
 		topo := cls.Attributes[CollectModeTiUP].(spec.Topology)
-		components := topo.ComponentsByUpdateOrder()
+		components := topo.ComponentsByStartOrder()
 		components = operator.FilterComponent(components, roleFilter)
 		for _, comp := range components {
 			switch comp.Name() {

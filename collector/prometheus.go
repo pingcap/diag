@@ -252,7 +252,7 @@ func (c *MetricCollectOptions) Prepare(m *Manager, topo *models.TiDBCluster) (ma
 		tiuputils.RetryOption{
 			Attempts: 3,
 			Delay:    time.Microsecond * 300,
-			Timeout:  client.Timeout + 5*time.Second, //make sure the retry timeout is longer than the api timeout
+			Timeout:  client.Timeout*3 + 5*time.Second, //make sure the retry timeout is longer than the api timeout
 		},
 	); err != nil {
 		return nil, fmt.Errorf("failed to get metric list from %s: %s", c.endpoint, err)
@@ -379,7 +379,7 @@ func getSeriesNum(c *http.Client, promAddr, query string, customHeader []string)
 		return 0, err
 	}
 	if resp.StatusCode/100 != 2 {
-		return 0, fmt.Errorf("fail to get series. Status Code %d", resp.StatusCode)
+		return 0, fmt.Errorf("Status Code %d", resp.StatusCode)
 	}
 	defer resp.Body.Close()
 
@@ -417,10 +417,10 @@ func collectMetric(
 		tiuputils.RetryOption{
 			Attempts: 3,
 			Delay:    time.Microsecond * 300,
-			Timeout:  c.Timeout + 5*time.Second, //make sure the retry timeout is longer than the api timeout
+			Timeout:  c.Timeout*3 + 5*time.Second, //make sure the retry timeout is longer than the api timeout
 		},
 	); err != nil {
-		l.Errorf("%s", err)
+		l.Errorf("Failed to get series of %s: %s", mtc, err)
 		return
 	}
 
@@ -508,7 +508,7 @@ func collectMetric(
 			tiuputils.RetryOption{
 				Attempts: 3,
 				Delay:    time.Microsecond * 300,
-				Timeout:  c.Timeout + 5*time.Second, //make sure the retry timeout is longer than the api timeout
+				Timeout:  c.Timeout*3 + 5*time.Second, //make sure the retry timeout is longer than the api timeout
 			},
 		); err != nil {
 			l.Errorf("Error quering metrics %s: %s", mtc, err)
@@ -604,7 +604,7 @@ func (c *TSDBCollectOptions) Prepare(m *Manager, cls *models.TiDBCluster) (map[s
 	hostTasks := make(map[string]*task.Builder)
 
 	topo := cls.Attributes[CollectModeTiUP].(spec.Topology)
-	components := topo.ComponentsByUpdateOrder()
+	components := topo.ComponentsByStartOrder()
 	var (
 		dryRunTasks   []*task.StepDisplay
 		downloadTasks []*task.StepDisplay
@@ -725,7 +725,7 @@ func (c *TSDBCollectOptions) Collect(m *Manager, cls *models.TiDBCluster) error 
 	)
 	uniqueHosts := map[string]int{} // host -> ssh-port
 
-	components := topo.ComponentsByUpdateOrder()
+	components := topo.ComponentsByStartOrder()
 
 	for _, comp := range components {
 		if comp.Name() != spec.ComponentPrometheus {
