@@ -232,7 +232,7 @@ def publish_diag_cli(RELEASE_TAG, TIUP_MIRROR) {
 	]
 
 	sh """
-	curl --proto '=https' --tlsv1.2 -sSf https://tiup-mirrors.pingcap.com/install.sh | sh"
+	curl --proto '=https' --tlsv1.2 -sSf https://tiup-mirrors.pingcap.com/install.sh | sh
 	export PATH=${PATH}:~/.tiup/bin
 	"""
 
