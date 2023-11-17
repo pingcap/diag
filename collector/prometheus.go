@@ -17,6 +17,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"maps"
 	"net/http"
 	"net/url"
 	"os"
@@ -320,7 +321,7 @@ func (c *MetricCollectOptions) Collect(m *Manager, topo *models.TiDBCluster) err
 
 			tsEnd, _ := utils.ParseTime(c.GetBaseOptions().ScrapeEnd)
 			tsStart, _ := utils.ParseTime(c.GetBaseOptions().ScrapeBegin)
-			collectMetric(m.logger, client, key, tsStart, tsEnd, mtc, c.label, c.resultDir, c.limit, c.compress, c.customHeader)
+			collectMetric(m.logger, client, key, tsStart, tsEnd, mtc, c.label, c.resultDir, c.limit, c.compress, c.customHeader, "")
 
 			mu.Lock()
 			done++
@@ -365,6 +366,30 @@ func getMetricList(c *http.Client, prom string, customHeader []string) ([]string
 	return r.Metrics, nil
 }
 
+func getInstanceList(c *http.Client, prom string, name string, customHeader []string) ([]string, error) {
+	req, err := http.NewRequest(
+		http.MethodGet,
+		fmt.Sprintf("http://%s/api/v1/label/instance/values?%s", prom, url.Values{"match[]": {name}}.Encode()),
+		nil)
+	if err != nil {
+		return nil, err
+	}
+	utils.AddHeaders(req.Header, customHeader)
+	resp, err := c.Do(req)
+	if err != nil {
+		return []string{}, err
+	}
+	defer resp.Body.Close()
+
+	r := struct {
+		Instances []string `json:"data"`
+	}{}
+	if err := json.NewDecoder(resp.Body).Decode(&r); err != nil {
+		return []string{}, err
+	}
+	return r.Instances, nil
+}
+
 func getSeriesNum(c *http.Client, promAddr, query string, customHeader []string) (int, error) {
 	req, err := http.NewRequest(
 		http.MethodGet,
@@ -403,13 +428,21 @@ func collectMetric(
 	speedlimit int,
 	compress bool,
 	customHeader []string,
+	instance string,
 ) {
+	nameSuffix := ""
+	if len(instance) > 0 {
+		nameSuffix = "." + strings.ReplaceAll(instance, ":", "-")
+	}
 	query := generateQueryWitLabel(mtc, label)
-	l.Debugf("Querying series of %s...", mtc)
+	l.Debugf("Querying series of %s...", mtc+nameSuffix)
 
 	var series int
 	if err := tiuputils.Retry(
 		func() error {
+			// if len(instance) == 0 && rand.Float64() < 0.9 {
+			// 	return errors.New("mock error")
+			// }
 			seriesNum, err := getSeriesNum(c, promAddr, query, customHeader)
 			series = seriesNum
 			return err
@@ -420,12 +453,41 @@ func collectMetric(
 			Timeout:  c.Timeout*3 + 5*time.Second, //make sure the retry timeout is longer than the api timeout
 		},
 	); err != nil {
-		l.Errorf("Failed to get series of %s: %s", mtc, err)
+		l.Errorf("Failed to get series of %s: %s", mtc+nameSuffix, err)
+		if len(instance) == 0 {
+			// try by-instance dumping
+			var instances []string
+			if err := tiuputils.Retry(
+				func() error {
+					instanceLst, err := getInstanceList(c, promAddr, mtc, customHeader)
+					instances = instanceLst
+					return err
+				},
+				tiuputils.RetryOption{
+					Attempts: 3,
+					Delay:    time.Microsecond * 300,
+					Timeout:  c.Timeout*3 + 5*time.Second, //make sure the retry timeout is longer than the api timeout
+				},
+			); err != nil {
+				l.Errorf("Failed to get instances of %s: %s", mtc, err)
+				return
+			}
+			if len(instances) == 0 {
+				l.Warnf("No instance found for %s", mtc)
+				return
+			}
+			for _, instance := range instances {
+				newLabel := make(map[string]string)
+				maps.Copy(newLabel, label)
+				newLabel["instance"] = instance
+				collectMetric(l, c, promAddr, beginTime, endTime, mtc, newLabel, resultDir, speedlimit, compress, customHeader, instance)
+			}
+		}
 		return
 	}
 
 	if series <= 0 {
-		l.Debugf("metric %s has %d series, ignore", mtc, series)
+		l.Debugf("metric %s has %d series, ignore", mtc+nameSuffix, series)
 		return
 	}
 
@@ -441,7 +503,8 @@ func collectMetric(
 		block = minQueryRange
 	}
 
-	l.Debugf("Dumping metric %s-%s-%s...", mtc, beginTime.Format(time.RFC3339), endTime.Format(time.RFC3339))
+	outName := fmt.Sprintf("%s-%s-%s%s", mtc, beginTime.Format(time.RFC3339), endTime.Format(time.RFC3339), nameSuffix)
+	l.Debugf("Dumping metric %s...", outName)
 	for queryEnd := endTime; queryEnd.After(beginTime); queryEnd = queryEnd.Add(time.Duration(-block) * time.Second) {
 		querySec := block
 		queryBegin := queryEnd.Add(time.Duration(-block) * time.Second)
@@ -464,23 +527,23 @@ func collectMetric(
 				utils.AddHeaders(req.Header, customHeader)
 				resp, err := c.Do(req)
 				if err != nil {
-					l.Errorf("failed query metric %s: %s, retry...", mtc, err)
+					l.Errorf("failed query metric %s: %s, retry...", mtc+nameSuffix, err)
 					return err
 				}
 				// Prometheus API response format is JSON. Every successful API request returns a 2xx status code.
 				if resp.StatusCode/100 != 2 {
-					l.Errorf("failed query metric %s: Status Code %d, retry...", mtc, resp.StatusCode)
+					l.Errorf("failed query metric %s: Status Code %d, retry...", mtc+nameSuffix, resp.StatusCode)
 				}
 				defer resp.Body.Close()
 
 				dst, err := os.Create(
 					filepath.Join(
 						resultDir, subdirMonitor, subdirMetrics, strings.ReplaceAll(promAddr, ":", "-"),
-						fmt.Sprintf("%s_%s_%s.json", mtc, queryBegin.Format(time.RFC3339), queryEnd.Format(time.RFC3339)),
+						fmt.Sprintf("%s.json", outName),
 					),
 				)
 				if err != nil {
-					l.Errorf("collect metric %s: %s, retry...", mtc, err)
+					l.Errorf("collect metric %s: %s, retry...", mtc+nameSuffix, err)
 				}
 				defer dst.Close()
 
@@ -490,7 +553,7 @@ func collectMetric(
 					// compress the metric
 					enc, err = zstd.NewWriter(dst)
 					if err != nil {
-						l.Errorf("failed compressing metric %s: %s, retry...\n", mtc, err)
+						l.Errorf("failed compressing metric %s: %s, retry...\n", mtc+nameSuffix, err)
 						return err
 					}
 					defer enc.Close()
@@ -499,10 +562,10 @@ func collectMetric(
 				}
 				n, err = io.Copy(enc, resp.Body)
 				if err != nil {
-					l.Errorf("failed writing metric %s to file: %s, retry...\n", mtc, err)
+					l.Errorf("failed writing metric %s to file: %s, retry...\n", mtc+nameSuffix, err)
 					return err
 				}
-				l.Debugf(" Dumped metric %s from %s to %s (%d bytes)", mtc, queryBegin.Format(time.RFC3339), queryEnd.Format(time.RFC3339), n)
+				l.Debugf(" Dumped metric %s from %s to %s (%d bytes)", mtc+nameSuffix, queryBegin.Format(time.RFC3339), queryEnd.Format(time.RFC3339), n)
 				return nil
 			},
 			tiuputils.RetryOption{
@@ -511,7 +574,7 @@ func collectMetric(
 				Timeout:  c.Timeout*3 + 5*time.Second, //make sure the retry timeout is longer than the api timeout
 			},
 		); err != nil {
-			l.Errorf("Error quering metrics %s: %s", mtc, err)
+			l.Errorf("Error quering metrics %s: %s", mtc+nameSuffix, err)
 		}
 	}
 }
