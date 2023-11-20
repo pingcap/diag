@@ -503,8 +503,7 @@ func collectMetric(
 		block = minQueryRange
 	}
 
-	outName := fmt.Sprintf("%s-%s-%s%s", mtc, beginTime.Format(time.RFC3339), endTime.Format(time.RFC3339), nameSuffix)
-	l.Debugf("Dumping metric %s...", outName)
+	l.Debugf("Dumping metric %s-%s-%s%s...", mtc, beginTime.Format(time.RFC3339), endTime.Format(time.RFC3339), nameSuffix)
 	for queryEnd := endTime; queryEnd.After(beginTime); queryEnd = queryEnd.Add(time.Duration(-block) * time.Second) {
 		querySec := block
 		queryBegin := queryEnd.Add(time.Duration(-block) * time.Second)
@@ -539,7 +538,7 @@ func collectMetric(
 				dst, err := os.Create(
 					filepath.Join(
 						resultDir, subdirMonitor, subdirMetrics, strings.ReplaceAll(promAddr, ":", "-"),
-						fmt.Sprintf("%s.json", outName),
+						fmt.Sprintf("%s-%s-%s%s.json", mtc, queryBegin.Format(time.RFC3339), queryEnd.Format(time.RFC3339), nameSuffix),
 					),
 				)
 				if err != nil {
