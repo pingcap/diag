@@ -342,79 +342,59 @@ func (c *MetricCollectOptions) Collect(m *Manager, topo *models.TiDBCluster) err
 	return nil
 }
 
-func getMetricList(c *http.Client, prom string, customHeader []string) ([]string, error) {
-	req, err := http.NewRequest(
-		http.MethodGet,
-		fmt.Sprintf("http://%s/api/v1/label/__name__/values", prom),
-		nil)
-	if err != nil {
-		return nil, err
-	}
-	utils.AddHeaders(req.Header, customHeader)
-	resp, err := c.Do(req)
-	if err != nil {
-		return []string{}, err
-	}
-	defer resp.Body.Close()
-
-	r := struct {
-		Metrics []string `json:"data"`
-	}{}
-	if err := json.NewDecoder(resp.Body).Decode(&r); err != nil {
-		return []string{}, err
-	}
-	return r.Metrics, nil
+func getMetricList(c *http.Client, addr string, customHeader []string) ([]string, error) {
+	return getAPIData[[]string](c, makeURL(addr, "/api/v1/label/__name__/values", nil), customHeader)
 }
 
-func getInstanceList(c *http.Client, prom string, name string, customHeader []string) ([]string, error) {
-	req, err := http.NewRequest(
-		http.MethodGet,
-		fmt.Sprintf("http://%s/api/v1/label/instance/values?%s", prom, url.Values{"match[]": {name}}.Encode()),
-		nil)
-	if err != nil {
-		return nil, err
-	}
-	utils.AddHeaders(req.Header, customHeader)
-	resp, err := c.Do(req)
-	if err != nil {
-		return []string{}, err
-	}
-	defer resp.Body.Close()
-
-	r := struct {
-		Instances []string `json:"data"`
-	}{}
-	if err := json.NewDecoder(resp.Body).Decode(&r); err != nil {
-		return []string{}, err
-	}
-	return r.Instances, nil
+func getInstanceList(c *http.Client, addr string, queries map[string]string, customHeader []string) ([]string, error) {
+	return getAPIData[[]string](c, makeURL(addr, "/api/v1/label/instance/values", queries), customHeader)
 }
 
-func getSeriesNum(c *http.Client, promAddr, query string, customHeader []string) (int, error) {
-	req, err := http.NewRequest(
-		http.MethodGet,
-		fmt.Sprintf("http://%s/api/v1/series?match[]=%s", promAddr, query),
-		nil)
+func getSeriesNum(c *http.Client, addr string, queries map[string]string, customHeader []string) (int, error) {
+	series, err := getAPIData[[]interface{}](c, makeURL(addr, "/api/v1/series", queries), customHeader)
 	if err != nil {
 		return 0, err
 	}
+	return len(series), nil
+}
+
+func getAPIData[T any](c *http.Client, url string, customHeader []string) (T, error) {
+	var body struct {
+		Data T `json:"data"`
+	}
+	req, err := http.NewRequest(http.MethodGet, url, nil)
+	if err != nil {
+		return body.Data, err
+	}
 	utils.AddHeaders(req.Header, customHeader)
 	resp, err := c.Do(req)
 	if err != nil {
-		return 0, err
+		return body.Data, err
 	}
+	defer resp.Body.Close()
 	if resp.StatusCode/100 != 2 {
-		return 0, fmt.Errorf("Status Code %d", resp.StatusCode)
+		msg, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return body.Data, fmt.Errorf("[%d] failed read body: %v", resp.StatusCode, err)
+		}
+		return body.Data, fmt.Errorf("[%d] %s", resp.StatusCode, string(msg))
 	}
-	defer resp.Body.Close()
+	if err := json.NewDecoder(resp.Body).Decode(&body); err != nil {
+		return body.Data, err
+	}
+	return body.Data, nil
+}
 
-	r := struct {
-		Series []interface{} `json:"data"`
-	}{}
-	if err := json.NewDecoder(resp.Body).Decode(&r); err != nil {
-		return 0, err
+func makeURL(addr string, path string, queries map[string]string) string {
+	link := "http://" + addr + path
+	if len(queries) == 0 {
+		return link
 	}
-	return len(r.Series), nil
+	vals := make(url.Values, len(queries))
+	for k, v := range queries {
+		vals[k] = []string{v}
+	}
+	return link + "?" + vals.Encode()
 }
 
 func collectMetric(
@@ -435,6 +415,11 @@ func collectMetric(
 		nameSuffix = "." + strings.ReplaceAll(instance, ":", "-")
 	}
 	query := generateQueryWitLabel(mtc, label)
+	queries := map[string]string{
+		"match[]": query,
+		"start":   beginTime.Format(time.RFC3339),
+		"end":     endTime.Format(time.RFC3339),
+	}
 	l.Debugf("Querying series of %s...", mtc+nameSuffix)
 
 	var series int
@@ -443,7 +428,7 @@ func collectMetric(
 			// if len(instance) == 0 && rand.Float64() < 0.9 {
 			// 	return errors.New("mock error")
 			// }
-			seriesNum, err := getSeriesNum(c, promAddr, query, customHeader)
+			seriesNum, err := getSeriesNum(c, promAddr, queries, customHeader)
 			series = seriesNum
 			return err
 		},
@@ -459,7 +444,7 @@ func collectMetric(
 			var instances []string
 			if err := tiuputils.Retry(
 				func() error {
-					instanceLst, err := getInstanceList(c, promAddr, mtc, customHeader)
+					instanceLst, err := getInstanceList(c, promAddr, queries, customHeader)
 					instances = instanceLst
 					return err
 				},
@@ -601,15 +586,14 @@ func filterMetrics(src, filter []string) []string {
 }
 
 func generateQueryWitLabel(metric string, labels map[string]string) string {
-	query := metric
-	if len(labels) > 0 {
-		query += "{"
-		for k, v := range labels {
-			query = fmt.Sprintf("%s%s=\"%s\",", query, k, v)
-		}
-		query = query[:len(query)-1] + "}"
+	buf := new(strings.Builder)
+	buf.WriteString("{")
+	fmt.Fprintf(buf, "__name__=%q", metric)
+	for name, value := range labels {
+		fmt.Fprintf(buf, ",%s=%q", name, value)
 	}
-	return query
+	buf.WriteString("}")
+	return buf.String()
 }
 
 // TSDBCollectOptions is the options collecting TSDB file of prometheus, only work for tiup-cluster deployed cluster
