@@ -170,11 +170,11 @@ func (c *PlanReplayerCollectorOptions) collectTiflashReplicas(zw *zip.Writer, db
 		errs = append(errs, fmt.Errorf("create table_tiflash_replica.txt failed, err:%v", err).Error())
 		return errs
 	}
+	// nolint: gosec
+	sql := "SELECT TABLE_SCHEMA,TABLE_NAME,REPLICA_COUNT FROM INFORMATION_SCHEMA.TIFLASH_REPLICA WHERE TABLE_SCHEMA= ? AND TABLE_NAME = ? AND REPLICA_COUNT >0"
 	for table := range c.tables {
 		err := func() error {
-			// nolint: gosec
-			sql := fmt.Sprintf("SELECT TABLE_SCHEMA,TABLE_NAME,REPLICA_COUNT FROM INFORMATION_SCHEMA.TIFLASH_REPLICA WHERE TABLE_SCHEMA='%s' AND TABLE_NAME ='%s' AND REPLICA_COUNT >0", table.dbName, table.tableName)
-			rows, err := db.Query(sql)
+			rows, err := db.Query(sql, table.dbName, table.tableName)
 			if err != nil {
 				return fmt.Errorf("failed to query tiflash replicas, err:%v", err)
 			}

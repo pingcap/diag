@@ -16,7 +16,7 @@ package checker
 import (
 	"context"
 	"fmt"
-	"path"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -64,7 +64,7 @@ func (opt *Options) RunChecker(ctx context.Context) error {
 	}
 	// if output is not defined, use an auto generated one.
 	if len(opt.OutPath) == 0 {
-		opt.OutPath = path.Join(opt.DataPath, fmt.Sprintf("report-%s", time.Now().Format("060102150405")))
+		opt.OutPath = filepath.Join(opt.DataPath, fmt.Sprintf("report-%s", time.Now().Format("060102150405")))
 	}
 	fetch, err := sourcedata.NewFileFetcher(opt.DataPath,
 		sourcedata.WithCheckFlag(checkFlag),
