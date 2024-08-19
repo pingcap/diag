@@ -244,7 +244,7 @@ func (c *PlanReplayerCollectorOptions) collectDBVars(zw *zip.Writer, db *sql.DB)
 */
 func (c *PlanReplayerCollectorOptions) collectTableStructures(zw *zip.Writer, db *sql.DB) (errs []string) {
 	createTblOrView := func(isTable bool, dbName, name string) error {
-		rows, err := db.Query(fmt.Sprintf("show create table %s.%s", dbName, name))
+		rows, err := db.Query(fmt.Sprintf("show create table `%s`.`%s`", dbName, name))
 		if err != nil {
 			return fmt.Errorf("db:%v, table:%v, err:%v", dbName, name, err.Error())
 		}
