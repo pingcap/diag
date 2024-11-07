@@ -156,6 +156,7 @@ func newCollectCmd() *cobra.Command {
 	cmd.Flags().StringSliceVar(&inc, "include", []string{"system", "config", "monitor", "log.std", "log.slow"}, "types of data to collect")
 	cmd.Flags().StringSliceVar(&ext, "exclude", nil, "types of data not to collect")
 	cmd.Flags().StringSliceVar(&cOpt.MetricsFilter, "metricsfilter", nil, "prefix of metrics to collect")
+	cmd.Flags().StringSliceVar(&cOpt.MetricsExclude, "metricsexclude", []string{"node_interrupts_total"}, "prefix of metrics to exclude")
 	cmd.Flags().IntVar(&cOpt.MetricsLimit, "metricslimit", 10000, "metric size limit of single request, specified in series*hour per request")
 	cmd.Flags().StringVar(&metricsConf, "metricsconfig", "", "config file of metricsfilter")
 	cmd.Flags().StringSliceVar(&labels, "metricslabel", nil, "only collect metrics that match labels")

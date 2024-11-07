@@ -49,3 +49,12 @@ func AddHeaders(exist http.Header, addons []string) {
 		exist.Add(line[:index], TrimLeftSpace(line[index+1:]))
 	}
 }
+
+func MatchPrefixs(str string, prefixs []string) bool {
+	for _, prefix := range prefixs {
+		if strings.HasPrefix(str, prefix) {
+			return true
+		}
+	}
+	return false
+}

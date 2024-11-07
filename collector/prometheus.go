@@ -175,6 +175,7 @@ type MetricCollectOptions struct {
 	label        map[string]string
 	metrics      []string // metric list
 	filter       []string
+	exclude      []string
 	limit        int // series*min per query
 	compress     bool
 	customHeader []string
@@ -259,7 +260,7 @@ func (c *MetricCollectOptions) Prepare(m *Manager, topo *models.TiDBCluster) (ma
 		return nil, fmt.Errorf("failed to get metric list from %s: %s", c.endpoint, err)
 	}
 
-	c.metrics = filterMetrics(c.metrics, c.filter)
+	c.metrics = filterMetrics(c.metrics, c.filter, c.exclude)
 
 	result := make(map[string][]CollectStat)
 	insCnt := len(topo.Components())
@@ -570,18 +571,15 @@ func ensureMonitorDir(base string, sub ...string) error {
 	return os.MkdirAll(dir, 0755)
 }
 
-func filterMetrics(src, filter []string) []string {
-	if filter == nil {
-		return src
-	}
+func filterMetrics(src, filter, exclude []string) []string {
 	var res []string
 	for _, metric := range src {
-		for _, prefix := range filter {
-			if strings.HasPrefix(metric, prefix) {
-				res = append(res, metric)
-			}
+		if (len(filter) < 1 || utils.MatchPrefixs(metric, filter)) &&
+			!utils.MatchPrefixs(metric, exclude) {
+			res = append(res, metric)
 		}
 	}
+
 	return res
 }
 

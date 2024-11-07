@@ -113,7 +113,8 @@ type CollectOptions struct {
 	DiagMode        string            // run diag collect at command line mode or server mode
 	ProfileName     string            // the name of a pre-defined collecting profile
 	Collectors      CollectTree       // struct to show which collector is enabled
-	MetricsFilter   []string          // prefix of metrics to collect"
+	MetricsFilter   []string          // prefix of metrics to collect
+	MetricsExclude  []string          //prefix of metrics to exclude
 	MetricsLabel    map[string]string // label to filte metrics
 	Dir             string            // target directory to store collected data
 	Limit           int               // rate limit of SCP
@@ -299,6 +300,7 @@ func (m *Manager) CollectClusterInfo(
 				resultDir:    resultDir,
 				label:        cOpt.MetricsLabel,
 				filter:       cOpt.MetricsFilter,
+				exclude:      cOpt.MetricsExclude,
 				limit:        cOpt.MetricsLimit,
 				compress:     cOpt.CompressMetrics,
 				customHeader: cOpt.Header,

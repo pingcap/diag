@@ -132,6 +132,7 @@ func newMetricDumpCmd() *cobra.Command {
 	cmd.Flags().StringVarP(&opt.ScrapeBegin, "from", "f", time.Now().Add(time.Hour*-2).Format(time.RFC3339), "start timepoint when collecting timeseries data")
 	cmd.Flags().StringVarP(&opt.ScrapeEnd, "to", "t", time.Now().Format(time.RFC3339), "stop timepoint when collecting timeseries data")
 	cmd.Flags().StringSliceVar(&cOpt.MetricsFilter, "metricsfilter", nil, "prefix of metrics to collect")
+	cmd.Flags().StringSliceVar(&cOpt.MetricsExclude, "metricsexclude", []string{"node_interrupts_total"}, "prefix of metrics to exclude")
 	cmd.Flags().StringSliceVar(&labels, "metricslabel", nil, "only collect metrics that match labels")
 	cmd.Flags().IntVar(&cOpt.MetricsLimit, "metricslimit", 10000, "metric size limit of single request, specified in series*hour per request")
 	cmd.Flags().StringSliceVarP(&cOpt.Header, "header", "H", nil, "custom headers of http request when collect metrics")
