@@ -158,6 +158,7 @@ func newCollectCmd() *cobra.Command {
 	cmd.Flags().StringSliceVar(&cOpt.MetricsFilter, "metricsfilter", nil, "prefix of metrics to collect")
 	cmd.Flags().StringSliceVar(&cOpt.MetricsExclude, "metricsexclude", []string{"node_interrupts_total"}, "prefix of metrics to exclude")
 	cmd.Flags().IntVar(&cOpt.MetricsLimit, "metricslimit", 10000, "metric size limit of single request, specified in series*hour per request")
+	cmd.Flags().IntVar(&cOpt.MetricMinInterval, "metric-min-interval", 2, "the minimum interval of a single request in minutes")
 	cmd.Flags().StringVar(&metricsConf, "metricsconfig", "", "config file of metricsfilter")
 	cmd.Flags().StringSliceVar(&labels, "metricslabel", nil, "only collect metrics that match labels")
 	cmd.Flags().StringVar(&promEndpoint, "overwrite-prometheus-endpoint", "", "Prometheus endpoint")

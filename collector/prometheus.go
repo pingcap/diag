@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"io"
 	"maps"
+	"net"
 	"net/http"
 	"net/url"
 	"os"
@@ -49,12 +50,12 @@ import (
 )
 
 const (
-	subdirMonitor = "monitor"
-	subdirAlerts  = "alerts"
-	subdirMetrics = "metrics"
-	subdirRaw     = "raw"
-	maxQueryRange = 120 * 60 // 120min
-	minQueryRange = 5 * 60   // 5min
+	subdirMonitor   = "monitor"
+	subdirAlerts    = "alerts"
+	subdirMetrics   = "metrics"
+	subdirRaw       = "raw"
+	maxQueryRange   = 120 * 60 // 120min
+	smallQueryRange = 5 * 60   // 5min
 )
 
 type collectMonitor struct {
@@ -177,6 +178,7 @@ type MetricCollectOptions struct {
 	filter       []string
 	exclude      []string
 	limit        int // series*min per query
+	minInterval  int // the minimum interval of a single request in minutes
 	compress     bool
 	customHeader []string
 	endpoint     string
@@ -281,20 +283,21 @@ func (c *MetricCollectOptions) Collect(m *Manager, topo *models.TiDBCluster) err
 	if c.endpoint == "" {
 		return nil
 	}
-	mb := progress.NewMultiBar("+ Dumping metrics")
+	startTime := time.Now()
+	// mb := progress.NewMultiBar("+ Dumping metrics")
 	bars := make(map[string]*progress.MultiBarItem)
 	total := len(c.metrics)
 	mu := sync.Mutex{}
 
 	key := c.endpoint
-	if _, ok := bars[key]; !ok {
-		bars[key] = mb.AddBar(fmt.Sprintf("  - Querying server %s", key))
-	}
+	// if _, ok := bars[key]; !ok {
+	// 	bars[key] = mb.AddBar(fmt.Sprintf("  - Querying server %s", key))
+	// }
 
-	if m.diagMode == DiagModeCmd {
-		mb.StartRenderLoop()
-		defer mb.StopRenderLoop()
-	}
+	// if m.diagMode == DiagModeCmd {
+	// 	mb.StartRenderLoop()
+	// 	defer mb.StopRenderLoop()
+	// }
 
 	qLimit := c.opt.Concurrency
 	cpuCnt := runtime.NumCPU()
@@ -312,33 +315,50 @@ func (c *MetricCollectOptions) Collect(m *Manager, topo *models.TiDBCluster) err
 		return err
 	}
 
-	client := &http.Client{Timeout: time.Second * time.Duration(c.opt.APITimeout)}
+	client := &http.Client{
+		Transport: &http.Transport{
+			MaxIdleConns:          10,
+			MaxIdleConnsPerHost:   5,
+			IdleConnTimeout:       30 * time.Second,
+			ExpectContinueTimeout: 1 * time.Second,
+			DialContext: (&net.Dialer{
+				Timeout:   5 * time.Second,
+				KeepAlive: 30 * time.Second,
+			}).DialContext,
+		},
+		Timeout: time.Second * time.Duration(c.opt.APITimeout),
+	}
+	tokMap := make(map[uint]struct{}, 10)
 	for _, mtc := range c.metrics {
 		go func(tok *utils.Token, mtc string) {
-			bars[key].UpdateDisplay(&progress.DisplayProps{
-				Prefix: fmt.Sprintf("  - Querying server %s", key),
-				Suffix: fmt.Sprintf("%d/%d querying %s ...", done, total, mtc),
-			})
+			// bars[key].UpdateDisplay(&progress.DisplayProps{
+			// 	Prefix: fmt.Sprintf("  - Querying server %s", key),
+			// 	Suffix: fmt.Sprintf("%d/%d querying %s ...", done, total, mtc),
+			// })
 
 			tsEnd, _ := utils.ParseTime(c.GetBaseOptions().ScrapeEnd)
 			tsStart, _ := utils.ParseTime(c.GetBaseOptions().ScrapeBegin)
-			collectMetric(m.logger, client, key, tsStart, tsEnd, mtc, c.label, c.resultDir, c.limit, c.compress, c.customHeader, "")
+			collectMetric(m.logger, client, key, tsStart, tsEnd, mtc, c.label, c.resultDir, c.limit, c.compress, c.customHeader, c.minInterval, "")
 
 			mu.Lock()
 			done++
 			if done >= total {
-				bars[key].UpdateDisplay(&progress.DisplayProps{
-					Prefix: fmt.Sprintf("  - Query server %s", key),
-					Mode:   progress.ModeDone,
-				})
+				// bars[key].UpdateDisplay(&progress.DisplayProps{
+				// 	Prefix: fmt.Sprintf("  - Query server %s", key),
+				// 	Mode:   progress.ModeDone,
+				// })
 			}
 			mu.Unlock()
 
+			if _, ok := tokMap[tok.ID]; !ok {
+				tokMap[tok.ID] = struct{}{}
+			}
 			tl.Put(tok)
 		}(tl.Get(), mtc)
 	}
 
 	tl.Wait()
+	m.logger.Infof("Dumping metric end .......................................... take time:%v, tokMap:%v", time.Since(startTime), tokMap)
 
 	return nil
 }
@@ -409,6 +429,7 @@ func collectMetric(
 	speedlimit int,
 	compress bool,
 	customHeader []string,
+	minInterval int,
 	instance string,
 ) {
 	nameSuffix := ""
@@ -466,7 +487,7 @@ func collectMetric(
 				newLabel := make(map[string]string)
 				maps.Copy(newLabel, label)
 				newLabel["instance"] = instance
-				collectMetric(l, c, promAddr, beginTime, endTime, mtc, newLabel, resultDir, speedlimit, compress, customHeader, instance)
+				collectMetric(l, c, promAddr, beginTime, endTime, mtc, newLabel, resultDir, speedlimit, compress, customHeader, minInterval, instance)
 			}
 		}
 		return
@@ -485,11 +506,35 @@ func collectMetric(
 	if block > maxQueryRange {
 		block = maxQueryRange
 	}
-	if block < minQueryRange {
-		block = minQueryRange
+	if block < smallQueryRange {
+		block = smallQueryRange
 	}
 
-	l.Debugf("Dumping metric %s-%s-%s%s...", mtc, beginTime.Format(time.RFC3339), endTime.Format(time.RFC3339), nameSuffix)
+	concurrency := 1
+	isBlackList := mtc+nameSuffix == "tidb_session_parse_duration_seconds_bucket" || mtc+nameSuffix == "tidb_session_compile_duration_seconds_bucket"
+	if isBlackList {
+		block = minInterval * 60
+		concurrency = 5
+	}
+	if series > 1000 || block < maxQueryRange || isBlackList {
+		l.Infof("Dumping metric %s, speedlimit:%d, series:%d, block:%d min, req timeout:%v, start time:%v ...",
+			mtc+nameSuffix, speedlimit, series, block/60, c.Timeout, time.Now())
+	}
+	retryOption := tiuputils.RetryOption{
+		Attempts: 3,
+		Delay:    time.Microsecond * 300,
+		Timeout:  c.Timeout*3 + 5*time.Second, //make sure the retry timeout is longer than the api timeout
+	}
+	num := 1
+	qInfo := queryInfo{
+		query:        query,
+		promAddr:     promAddr,
+		customHeader: customHeader,
+		compress:     compress,
+		retryOption:  retryOption,
+	}
+	errCh := make(chan error, concurrency)
+	queryInfoCh := make(chan queryInfo, concurrency)
 	for queryEnd := endTime; queryEnd.After(beginTime); queryEnd = queryEnd.Add(time.Duration(-block) * time.Second) {
 		querySec := block
 		queryBegin := queryEnd.Add(time.Duration(-block) * time.Second)
@@ -497,71 +542,152 @@ func collectMetric(
 			querySec = int(queryEnd.Sub(beginTime).Seconds())
 			queryBegin = beginTime
 		}
-		if err := tiuputils.Retry(
-			func() error {
-				req, err := http.NewRequest(
-					http.MethodGet,
-					fmt.Sprintf("http://%s/api/v1/query?%s", promAddr, url.Values{
-						"query": {fmt.Sprintf("%s[%ds]", query, querySec)},
-						"time":  {queryEnd.Format(time.RFC3339)},
-					}.Encode()),
-					nil)
-				if err != nil {
-					return err
-				}
-				utils.AddHeaders(req.Header, customHeader)
-				resp, err := c.Do(req)
-				if err != nil {
-					l.Errorf("failed query metric %s: %s, retry...", mtc+nameSuffix, err)
-					return err
-				}
-				// Prometheus API response format is JSON. Every successful API request returns a 2xx status code.
-				if resp.StatusCode/100 != 2 {
-					l.Errorf("failed query metric %s: Status Code %d, retry...", mtc+nameSuffix, resp.StatusCode)
-				}
-				defer resp.Body.Close()
+		startTime0 := time.Now()
 
-				dst, err := os.Create(
-					filepath.Join(
-						resultDir, subdirMonitor, subdirMetrics, strings.ReplaceAll(promAddr, ":", "-"),
-						fmt.Sprintf("%s-%s-%s%s.json", mtc, queryBegin.Format(time.RFC3339), queryEnd.Format(time.RFC3339), nameSuffix),
-					),
-				)
-				if err != nil {
-					l.Errorf("collect metric %s: %s, retry...", mtc+nameSuffix, err)
-				}
-				defer dst.Close()
-
-				var enc io.WriteCloser
-				var n int64
-				if compress {
-					// compress the metric
-					enc, err = zstd.NewWriter(dst)
-					if err != nil {
-						l.Errorf("failed compressing metric %s: %s, retry...\n", mtc+nameSuffix, err)
-						return err
-					}
-					defer enc.Close()
-				} else {
-					enc = dst
-				}
-				n, err = io.Copy(enc, resp.Body)
-				if err != nil {
-					l.Errorf("failed writing metric %s to file: %s, retry...\n", mtc+nameSuffix, err)
-					return err
-				}
-				l.Debugf(" Dumped metric %s from %s to %s (%d bytes)", mtc+nameSuffix, queryBegin.Format(time.RFC3339), queryEnd.Format(time.RFC3339), n)
-				return nil
-			},
-			tiuputils.RetryOption{
-				Attempts: 3,
-				Delay:    time.Microsecond * 300,
-				Timeout:  c.Timeout*3 + 5*time.Second, //make sure the retry timeout is longer than the api timeout
-			},
-		); err != nil {
-			l.Errorf("Error quering metrics %s: %s", mtc+nameSuffix, err)
+		qInfo.queryRangeInfo = queryRangeInfo{
+			queryBegin:  queryBegin,
+			queryEnd:    queryEnd,
+			intervalSec: querySec,
 		}
+		wg := sync.WaitGroup{}
+		if concurrency == 1 {
+			if err := collectSingleQuery(l, c, resultDir, mtc, nameSuffix, qInfo); err != nil {
+				l.Errorf("Error quering metrics %s: %s... timeout:%v, take time:%v",
+					mtc+nameSuffix, err, c.Timeout*3+5*time.Second, time.Since(startTime0))
+			}
+		} else {
+			queryInfoCh <- qInfo
+			if num >= concurrency {
+				wg.Add(1)
+				go func() {
+					defer wg.Done()
+					collectQueries(l, c, resultDir, mtc, nameSuffix, queryInfoCh, errCh)
+				}()
+			}
+		}
+		wg.Wait()
+		num++
 	}
+	close(queryInfoCh)
+}
+
+type queryInfo struct {
+	query    string
+	promAddr string
+	queryRangeInfo
+	customHeader []string
+	compress     bool
+	retryOption  tiuputils.RetryOption
+}
+
+type queryRangeInfo struct {
+	queryBegin  time.Time
+	queryEnd    time.Time
+	intervalSec int
+}
+
+func collectQueries(l *logprinter.Logger, c *http.Client, resultDir, mtc, nameSuffix string,
+	queryInfoCh chan queryInfo, errCh chan error) {
+	for {
+		qInfo, ok := <-queryInfoCh
+		if !ok {
+			return
+		}
+
+		err := collectSingleQuery(l, c, resultDir, mtc, nameSuffix, qInfo)
+		if err != nil {
+			l.Errorf("Error quering metrics %s: %s... timeout:%v, take time:%v",
+				mtc+nameSuffix, err, c.Timeout*3+5*time.Second, time.Since(startTime0))
+		}
+		// if err != nil && strings.Contains(err.Error(), "connection refused") {
+		// 	querySec := 30
+		// 	beginTime := qInfo.queryBegin
+		// 	for queryEnd := qInfo.queryEnd; queryEnd.After(beginTime); queryEnd = queryEnd.Add(time.Duration(-querySec) * time.Second) {
+		// 		queryBegin := queryEnd.Add(time.Duration(-querySec) * time.Second)
+		// 		if queryBegin.Before(beginTime) {
+		// 			querySec = int(queryEnd.Sub(beginTime).Seconds())
+		// 			queryBegin = beginTime
+		// 		}
+
+		// 		qInfo.queryRangeInfo = queryRangeInfo{
+		// 			queryBegin:  queryBegin,
+		// 			queryEnd:    qInfo.queryBegin,
+		// 			intervalSec: querySec,
+		// 		}
+		// 	}
+		// }
+		// errCh <- err
+	}
+}
+
+func collectSingleQuery(l *logprinter.Logger, c *http.Client, resultDir, mtc, nameSuffix string, qInfo queryInfo) error {
+	i := 0
+	return tiuputils.Retry(
+		func() error {
+			startTime := time.Now()
+			req, err := http.NewRequest(
+				http.MethodGet,
+				fmt.Sprintf("http://%s/api/v1/query?%s", qInfo.promAddr, url.Values{
+					"query": {fmt.Sprintf("%s[%ds]", qInfo.query, qInfo.intervalSec)},
+					"time":  {qInfo.queryEnd.Format(time.RFC3339)},
+				}.Encode()),
+				nil)
+			if err != nil {
+				return err
+			}
+			getTime := time.Since(startTime)
+			utils.AddHeaders(req.Header, qInfo.customHeader)
+			resp, err := c.Do(req)
+			i++
+			if err != nil {
+				l.Errorf("failed query metric no.%d: %s, retry... block:%v min, get time:%v", i, err, qInfo.intervalSec/60, getTime)
+				// l.Errorf("failed query metric %s: %s, retry... block:%v min, get time:%v", mtc+nameSuffix, err, qInfo.intervalSec/60, getTime)
+				return err
+			}
+			// Prometheus API response format is JSON. Every successful API request returns a 2xx status code.
+			if resp.StatusCode/100 != 2 {
+				l.Errorf("failed query metric no.%d: %s: Status Code %d, retry... get time:%v", i, qInfo.intervalSec/60, resp.StatusCode, getTime)
+				// l.Errorf("failed query metric %s: Status Code %d, retry... get time:%v", mtc+nameSuffix, resp.StatusCode, getTime)
+			}
+			defer resp.Body.Close()
+
+			dst, err := os.Create(
+				filepath.Join(
+					resultDir, subdirMonitor, subdirMetrics, strings.ReplaceAll(qInfo.promAddr, ":", "-"),
+					fmt.Sprintf("%s-%s-%s%s.json", mtc, qInfo.queryBegin.Format(time.RFC3339), qInfo.queryEnd.Format(time.RFC3339), nameSuffix),
+				),
+			)
+			if err != nil {
+				l.Errorf("collect metric %s: %s, retry...", mtc+nameSuffix, err)
+			}
+			defer dst.Close()
+
+			var enc io.WriteCloser
+			var n int64
+			if qInfo.compress {
+				// compress the metric
+				enc, err = zstd.NewWriter(dst)
+				if err != nil {
+					l.Errorf("failed compressing metric %s: %s, retry...\n", mtc+nameSuffix, err)
+					return err
+				}
+				defer enc.Close()
+			} else {
+				enc = dst
+			}
+			n, err = io.Copy(enc, resp.Body)
+			if err != nil {
+				l.Errorf("failed writing metric %s to file: %s, retry...get time:%v \n", mtc+nameSuffix, err, time.Since(startTime))
+				return err
+			}
+			if time.Since(startTime) > time.Second {
+				l.Infof(" Dumped metric %s from %s to %s (%d bytes), no.%d take time get:%v",
+					mtc+nameSuffix, qInfo.queryBegin.Format(time.RFC3339), qInfo.queryEnd.Format(time.RFC3339), n, i, time.Since(startTime))
+			}
+			return nil
+		},
+		qInfo.retryOption,
+	)
 }
 
 func ensureMonitorDir(base string, sub ...string) error {
