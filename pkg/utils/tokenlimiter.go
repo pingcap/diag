@@ -19,13 +19,18 @@ import (
 
 // Token is used as a permission to keep on running.
 type Token struct {
-	ID uint
+	ID int
 }
 
 // TokenLimiter is used to limit the number of concurrent tasks.
 type TokenLimiter struct {
-	count uint
+	count int
 	ch    chan *Token
+}
+
+// Cap obtains the cap.
+func (tl *TokenLimiter) Cap() int {
+	return tl.count
 }
 
 // Put releases the token.
@@ -40,15 +45,15 @@ func (tl *TokenLimiter) Get() *Token {
 
 // Wait all token put back
 func (tl *TokenLimiter) Wait() {
-	for len(tl.ch) < int(tl.count) {
+	for len(tl.ch) < tl.count {
 		runtime.Gosched()
 	}
 }
 
 // NewTokenLimiter creates a TokenLimiter with count tokens.
-func NewTokenLimiter(count uint) *TokenLimiter {
+func NewTokenLimiter(count int) *TokenLimiter {
 	tl := &TokenLimiter{count: count, ch: make(chan *Token, count)}
-	for i := uint(0); i < count; i++ {
+	for i := 0; i < count; i++ {
 		tl.ch <- &Token{ID: i}
 	}
 

@@ -108,29 +108,30 @@ type BaseOptions struct {
 
 // CollectOptions contains the options defining which type of data to collect
 type CollectOptions struct {
-	RawRequest        interface{}       // raw collect command or request
-	Mode              string            // the cluster is deployed with what type of tool
-	DiagMode          string            // run diag collect at command line mode or server mode
-	ProfileName       string            // the name of a pre-defined collecting profile
-	Collectors        CollectTree       // struct to show which collector is enabled
-	MetricsFilter     []string          // prefix of metrics to collect
-	MetricsExclude    []string          //prefix of metrics to exclude
-	MetricsLabel      map[string]string // label to filte metrics
-	Dir               string            // target directory to store collected data
-	Limit             int               // rate limit of SCP
-	MetricsLimit      int               // query limit of one request
-	MetricMinInterval int               // query minimum interval of one request, default is 1min.
-	PerfDuration      int               //seconds: profile time(s), default is 30s.
-	CompressScp       bool              // compress of files during collecting
-	CompressMetrics   bool              // compress of files during collecting
-	RawMonitor        bool              // collect raw data for metrics
-	ExitOnError       bool              // break the process and exit when an error occur
-	ExtendedAttrs     map[string]string // extended attributes used for manual collecting mode
-	ExplainSQLPath    string            // File path for explain sql
-	ExplainSqls       []string          // explain sqls
-	CurrDB            string
-	Header            []string
-	UsePortForward    bool // use portforward when call api inside k8s cluster
+	RawRequest         interface{}       // raw collect command or request
+	Mode               string            // the cluster is deployed with what type of tool
+	DiagMode           string            // run diag collect at command line mode or server mode
+	ProfileName        string            // the name of a pre-defined collecting profile
+	Collectors         CollectTree       // struct to show which collector is enabled
+	MetricsFilter      []string          // prefix of metrics to collect
+	MetricsExclude     []string          // prefix of metrics to exclude
+	MetricsLowPriority []string          // prefix of metrics to collect with low priority
+	MetricsLabel       map[string]string // label to filte metrics
+	Dir                string            // target directory to store collected data
+	Limit              int               // rate limit of SCP
+	MetricsLimit       int               // query limit of one request
+	MetricsMinInterval int               // query minimum interval of one request, default is 1min.
+	PerfDuration       int               // seconds: profile time(s), default is 30s.
+	CompressScp        bool              // compress of files during collecting
+	CompressMetrics    bool              // compress of files during collecting
+	RawMonitor         bool              // collect raw data for metrics
+	ExitOnError        bool              // break the process and exit when an error occur
+	ExtendedAttrs      map[string]string // extended attributes used for manual collecting mode
+	ExplainSQLPath     string            // File path for explain sql
+	ExplainSqls        []string          // explain sqls
+	CurrDB             string
+	Header             []string
+	UsePortForward     bool // use portforward when call api inside k8s cluster
 }
 
 // CollectStat is estimated size stats of data to be collected
@@ -302,8 +303,9 @@ func (m *Manager) CollectClusterInfo(
 				label:        cOpt.MetricsLabel,
 				filter:       cOpt.MetricsFilter,
 				exclude:      cOpt.MetricsExclude,
+				lowPriority:  cOpt.MetricsLowPriority,
 				limit:        cOpt.MetricsLimit,
-				minInterval:  cOpt.MetricMinInterval,
+				minInterval:  cOpt.MetricsMinInterval,
 				compress:     cOpt.CompressMetrics,
 				customHeader: cOpt.Header,
 				portForward:  cOpt.UsePortForward,

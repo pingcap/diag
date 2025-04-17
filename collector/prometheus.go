@@ -55,7 +55,7 @@ const (
 	subdirMetrics   = "metrics"
 	subdirRaw       = "raw"
 	maxQueryRange   = 120 * 60 // 120min
-	smallQueryRange = 5 * 60   // 5min
+	smallQueryRange = 15       // 15s.
 )
 
 type collectMonitor struct {
@@ -177,8 +177,9 @@ type MetricCollectOptions struct {
 	metrics      []string // metric list
 	filter       []string
 	exclude      []string
+	lowPriority  []string
 	limit        int // series*min per query
-	minInterval  int // the minimum interval of a single request in minutes
+	minInterval  int // the minimum interval of a single request in seconds
 	compress     bool
 	customHeader []string
 	endpoint     string
@@ -284,29 +285,31 @@ func (c *MetricCollectOptions) Collect(m *Manager, topo *models.TiDBCluster) err
 		return nil
 	}
 	startTime := time.Now()
-	// mb := progress.NewMultiBar("+ Dumping metrics")
+	mb := progress.NewMultiBar("+ Dumping metrics")
 	bars := make(map[string]*progress.MultiBarItem)
-	total := len(c.metrics)
-	mu := sync.Mutex{}
 
 	key := c.endpoint
-	// if _, ok := bars[key]; !ok {
-	// 	bars[key] = mb.AddBar(fmt.Sprintf("  - Querying server %s", key))
-	// }
+	if _, ok := bars[key]; !ok {
+		bars[key] = mb.AddBar(fmt.Sprintf("  - Querying server %s", key))
+	}
 
-	// if m.diagMode == DiagModeCmd {
-	// 	mb.StartRenderLoop()
-	// 	defer mb.StopRenderLoop()
-	// }
+	if m.diagMode == DiagModeCmd {
+		mb.StartRenderLoop()
+		defer mb.StopRenderLoop()
+	}
 
 	qLimit := c.opt.Concurrency
 	cpuCnt := runtime.NumCPU()
 	if cpuCnt < qLimit {
 		qLimit = cpuCnt
 	}
-	tl := utils.NewTokenLimiter(uint(qLimit))
+	// Prometheus default query.max-concurrency is 20, so here set the max qLimit to 20.
+	defaultQueryMaxConcurrency := 20
+	if qLimit > defaultQueryMaxConcurrency {
+		qLimit = defaultQueryMaxConcurrency
+	}
+	tl := utils.NewTokenLimiter(qLimit)
 
-	done := 1
 	if err := ensureMonitorDir(c.resultDir, subdirMetrics, strings.ReplaceAll(c.endpoint, ":", "-")); err != nil {
 		bars[key].UpdateDisplay(&progress.DisplayProps{
 			Prefix: fmt.Sprintf("  - Query server %s: %s", key, err),
@@ -317,8 +320,8 @@ func (c *MetricCollectOptions) Collect(m *Manager, topo *models.TiDBCluster) err
 
 	client := &http.Client{
 		Transport: &http.Transport{
-			MaxIdleConns:          10,
-			MaxIdleConnsPerHost:   5,
+			MaxIdleConns:          defaultQueryMaxConcurrency,
+			MaxIdleConnsPerHost:   10,
 			IdleConnTimeout:       30 * time.Second,
 			ExpectContinueTimeout: 1 * time.Second,
 			DialContext: (&net.Dialer{
@@ -328,39 +331,89 @@ func (c *MetricCollectOptions) Collect(m *Manager, topo *models.TiDBCluster) err
 		},
 		Timeout: time.Second * time.Duration(c.opt.APITimeout),
 	}
-	tokMap := make(map[uint]struct{}, 10)
-	for _, mtc := range c.metrics {
-		go func(tok *utils.Token, mtc string) {
-			// bars[key].UpdateDisplay(&progress.DisplayProps{
-			// 	Prefix: fmt.Sprintf("  - Querying server %s", key),
-			// 	Suffix: fmt.Sprintf("%d/%d querying %s ...", done, total, mtc),
-			// })
+	tsEnd, _ := utils.ParseTime(c.GetBaseOptions().ScrapeEnd)
+	tsStart, _ := utils.ParseTime(c.GetBaseOptions().ScrapeBegin)
+	if len(c.lowPriority) == 0 {
+		c.collectMetrics(m.logger, client, c.metrics, tsStart, tsEnd, midPriority, tl, bars)
+		m.logger.Infof("Dumping metrics finish .......................................... token limit:%d, concurrency:%d, take time:%v",
+			qLimit, c.opt.Concurrency, time.Since(startTime))
+	} else {
+		c.collectMetrics(m.logger, client, c.metrics, tsStart, tsEnd, highPriority, tl, bars)
+		m.logger.Infof("Dumping high priority metrics finish .......................................... token limit:%d, concurrency:%d, take time:%v",
+			qLimit, c.opt.Concurrency, time.Since(startTime))
+		startTime = time.Now()
+		c.collectMetrics(m.logger, client, c.lowPriority, tsStart, tsEnd, lowPriority, tl, bars)
+		m.logger.Infof("Dumping low priority metrics finish .......................................... token limit:%d, concurrency:%d, take time:%v",
+			qLimit, c.opt.Concurrency, time.Since(startTime))
+	}
 
-			tsEnd, _ := utils.ParseTime(c.GetBaseOptions().ScrapeEnd)
-			tsStart, _ := utils.ParseTime(c.GetBaseOptions().ScrapeBegin)
-			collectMetric(m.logger, client, key, tsStart, tsEnd, mtc, c.label, c.resultDir, c.limit, c.compress, c.customHeader, c.minInterval, "")
+	return nil
+}
+
+const (
+	lowPriority  = -1
+	midPriority  = 0
+	highPriority = 1
+)
+
+func (c *MetricCollectOptions) collectMetrics(
+	l *logprinter.Logger,
+	client *http.Client,
+	metrics []string,
+	tsStart, tsEnd time.Time,
+	priority int,
+	tl *utils.TokenLimiter,
+	bars map[string]*progress.MultiBarItem,
+) {
+	done := 1
+	key := c.endpoint
+	mu := sync.Mutex{}
+	minInterval := c.minInterval
+	if minInterval < smallQueryRange {
+		minInterval = smallQueryRange
+	}
+	concurrency := 1
+	if priority > lowPriority {
+		concurrency = c.opt.Concurrency
+	}
+	total := len(c.metrics)
+	if priority == highPriority {
+		total = len(c.metrics) - len(c.lowPriority)
+	} else if priority == lowPriority {
+		total = len(c.lowPriority)
+	}
+	originInfo := queryRangeInfo{
+		queryBegin:  tsStart,
+		queryEnd:    tsEnd,
+		intervalSec: minInterval,
+	}
+	for _, mtc := range metrics {
+		if priority == highPriority && utils.MatchPrefixs(mtc, c.lowPriority) {
+			continue
+		}
+
+		go func(tok *utils.Token, mtc string) {
+			bars[key].UpdateDisplay(&progress.DisplayProps{
+				Prefix: fmt.Sprintf("  - Querying server %s", key),
+				Suffix: fmt.Sprintf("%d/%d querying %s ...", done, total, mtc),
+			})
+
+			collectSingleMetric(l, client, key, originInfo, concurrency, mtc, c.label, c.resultDir, c.limit, c.compress, c.customHeader, "", tok.ID, tl)
 
 			mu.Lock()
 			done++
 			if done >= total {
-				// bars[key].UpdateDisplay(&progress.DisplayProps{
-				// 	Prefix: fmt.Sprintf("  - Query server %s", key),
-				// 	Mode:   progress.ModeDone,
-				// })
+				bars[key].UpdateDisplay(&progress.DisplayProps{
+					Prefix: fmt.Sprintf("  - Query server %s", key),
+					Mode:   progress.ModeDone,
+				})
 			}
 			mu.Unlock()
 
-			if _, ok := tokMap[tok.ID]; !ok {
-				tokMap[tok.ID] = struct{}{}
-			}
 			tl.Put(tok)
 		}(tl.Get(), mtc)
 	}
-
 	tl.Wait()
-	m.logger.Infof("Dumping metric end .......................................... take time:%v, tokMap:%v", time.Since(startTime), tokMap)
-
-	return nil
 }
 
 func getMetricList(c *http.Client, addr string, customHeader []string) ([]string, error) {
@@ -418,25 +471,28 @@ func makeURL(addr string, path string, queries map[string]string) string {
 	return link + "?" + vals.Encode()
 }
 
-func collectMetric(
+func collectSingleMetric(
 	l *logprinter.Logger,
 	c *http.Client,
 	promAddr string,
-	beginTime, endTime time.Time,
+	originInfo queryRangeInfo,
+	concurrency int,
 	mtc string,
 	label map[string]string,
 	resultDir string,
 	speedlimit int,
 	compress bool,
 	customHeader []string,
-	minInterval int,
 	instance string,
+	curTokenID int,
+	tl *utils.TokenLimiter,
 ) {
 	nameSuffix := ""
 	if len(instance) > 0 {
 		nameSuffix = "." + strings.ReplaceAll(instance, ":", "-")
 	}
 	query := generateQueryWitLabel(mtc, label)
+	beginTime, endTime := originInfo.queryBegin, originInfo.queryEnd
 	queries := map[string]string{
 		"match[]": query,
 		"start":   beginTime.Format(time.RFC3339),
@@ -487,7 +543,7 @@ func collectMetric(
 				newLabel := make(map[string]string)
 				maps.Copy(newLabel, label)
 				newLabel["instance"] = instance
-				collectMetric(l, c, promAddr, beginTime, endTime, mtc, newLabel, resultDir, speedlimit, compress, customHeader, minInterval, instance)
+				collectSingleMetric(l, c, promAddr, originInfo, concurrency, mtc, newLabel, resultDir, speedlimit, compress, customHeader, instance, curTokenID, tl)
 			}
 		}
 		return
@@ -506,26 +562,21 @@ func collectMetric(
 	if block > maxQueryRange {
 		block = maxQueryRange
 	}
-	if block < smallQueryRange {
-		block = smallQueryRange
+	if block < originInfo.intervalSec {
+		block = originInfo.intervalSec
 	}
 
-	concurrency := 1
 	isBlackList := mtc+nameSuffix == "tidb_session_parse_duration_seconds_bucket" || mtc+nameSuffix == "tidb_session_compile_duration_seconds_bucket"
-	if isBlackList {
-		block = minInterval * 60
-		concurrency = 5
-	}
 	if series > 1000 || block < maxQueryRange || isBlackList {
-		l.Infof("Dumping metric %s, speedlimit:%d, series:%d, block:%d min, req timeout:%v, start time:%v ...",
-			mtc+nameSuffix, speedlimit, series, block/60, c.Timeout, time.Now())
+		l.Infof("Dumping metric %s, concurrency:%d, speedlimit:%d, series:%d, interval:%d s, req timeout:%v, start time:%v ...",
+			mtc+nameSuffix, concurrency, speedlimit, series, block, c.Timeout, time.Now().Format(time.RFC3339))
 	}
 	retryOption := tiuputils.RetryOption{
 		Attempts: 3,
 		Delay:    time.Microsecond * 300,
 		Timeout:  c.Timeout*3 + 5*time.Second, //make sure the retry timeout is longer than the api timeout
 	}
-	num := 1
+	goCnt := 0
 	qInfo := queryInfo{
 		query:        query,
 		promAddr:     promAddr,
@@ -533,8 +584,9 @@ func collectMetric(
 		compress:     compress,
 		retryOption:  retryOption,
 	}
-	errCh := make(chan error, concurrency)
 	queryInfoCh := make(chan queryInfo, concurrency)
+	wg := WaitGroupWrapper{}
+	startTime := time.Now()
 	for queryEnd := endTime; queryEnd.After(beginTime); queryEnd = queryEnd.Add(time.Duration(-block) * time.Second) {
 		querySec := block
 		queryBegin := queryEnd.Add(time.Duration(-block) * time.Second)
@@ -549,26 +601,44 @@ func collectMetric(
 			queryEnd:    queryEnd,
 			intervalSec: querySec,
 		}
-		wg := sync.WaitGroup{}
 		if concurrency == 1 {
-			if err := collectSingleQuery(l, c, resultDir, mtc, nameSuffix, qInfo); err != nil {
+			if err := collectSingleQuery(l, c, curTokenID, resultDir, mtc, nameSuffix, qInfo); err != nil {
 				l.Errorf("Error quering metrics %s: %s... timeout:%v, take time:%v",
 					mtc+nameSuffix, err, c.Timeout*3+5*time.Second, time.Since(startTime0))
 			}
 		} else {
 			queryInfoCh <- qInfo
-			if num >= concurrency {
-				wg.Add(1)
-				go func() {
-					defer wg.Done()
-					collectQueries(l, c, resultDir, mtc, nameSuffix, queryInfoCh, errCh)
-				}()
+			if goCnt == 0 {
+				wg.RunWithRecover(func() { collectQueries(l, c, curTokenID, resultDir, mtc, nameSuffix, queryInfoCh) }, nil)
+			} else if goCnt < concurrency {
+				token := tl.Get()
+				wg.RunWithRecover(func() {
+					collectQueries(l, c, int(token.ID), resultDir, mtc, nameSuffix, queryInfoCh)
+					tl.Put(token)
+				},
+					nil)
 			}
 		}
-		wg.Wait()
-		num++
+		goCnt++
 	}
-	close(queryInfoCh)
+	if concurrency == 1 {
+		return
+	}
+
+	startTime1 := time.Now()
+	for {
+		if len(queryInfoCh) == 0 {
+			close(queryInfoCh)
+			break
+		}
+		if wg.PanicCnt == concurrency {
+			break
+		}
+		time.Sleep(5 * time.Millisecond)
+	}
+	wg.Wait()
+	l.Infof("Dumped metric %s from %s to %s, concurrency:%d, wait take time:%v, total take time:%v",
+		mtc+nameSuffix, endTime.Format(time.RFC3339), beginTime.Format(time.RFC3339), goCnt, time.Since(startTime1), time.Since(startTime))
 }
 
 type queryInfo struct {
@@ -586,41 +656,25 @@ type queryRangeInfo struct {
 	intervalSec int
 }
 
-func collectQueries(l *logprinter.Logger, c *http.Client, resultDir, mtc, nameSuffix string,
-	queryInfoCh chan queryInfo, errCh chan error) {
+func collectQueries(l *logprinter.Logger, c *http.Client, tokenID int, resultDir, mtc, nameSuffix string,
+	queryInfoCh chan queryInfo) {
 	for {
 		qInfo, ok := <-queryInfoCh
 		if !ok {
+			l.Infof("[ID:%d] collect metric %s finished", tokenID, mtc+nameSuffix)
 			return
 		}
 
-		err := collectSingleQuery(l, c, resultDir, mtc, nameSuffix, qInfo)
+		startTime0 := time.Now()
+		err := collectSingleQuery(l, c, tokenID, resultDir, mtc, nameSuffix, qInfo)
 		if err != nil {
-			l.Errorf("Error quering metrics %s: %s... timeout:%v, take time:%v",
-				mtc+nameSuffix, err, c.Timeout*3+5*time.Second, time.Since(startTime0))
+			l.Errorf("[ID:%d] failed query metric %s: %s... client timeout:%v, take time:%v",
+				tokenID, mtc+nameSuffix, err, c.Timeout*3+5*time.Second, time.Since(startTime0))
 		}
-		// if err != nil && strings.Contains(err.Error(), "connection refused") {
-		// 	querySec := 30
-		// 	beginTime := qInfo.queryBegin
-		// 	for queryEnd := qInfo.queryEnd; queryEnd.After(beginTime); queryEnd = queryEnd.Add(time.Duration(-querySec) * time.Second) {
-		// 		queryBegin := queryEnd.Add(time.Duration(-querySec) * time.Second)
-		// 		if queryBegin.Before(beginTime) {
-		// 			querySec = int(queryEnd.Sub(beginTime).Seconds())
-		// 			queryBegin = beginTime
-		// 		}
-
-		// 		qInfo.queryRangeInfo = queryRangeInfo{
-		// 			queryBegin:  queryBegin,
-		// 			queryEnd:    qInfo.queryBegin,
-		// 			intervalSec: querySec,
-		// 		}
-		// 	}
-		// }
-		// errCh <- err
 	}
 }
 
-func collectSingleQuery(l *logprinter.Logger, c *http.Client, resultDir, mtc, nameSuffix string, qInfo queryInfo) error {
+func collectSingleQuery(l *logprinter.Logger, c *http.Client, tokenID int, resultDir, mtc, nameSuffix string, qInfo queryInfo) error {
 	i := 0
 	return tiuputils.Retry(
 		func() error {
@@ -640,14 +694,16 @@ func collectSingleQuery(l *logprinter.Logger, c *http.Client, resultDir, mtc, na
 			resp, err := c.Do(req)
 			i++
 			if err != nil {
-				l.Errorf("failed query metric no.%d: %s, retry... block:%v min, get time:%v", i, err, qInfo.intervalSec/60, getTime)
-				// l.Errorf("failed query metric %s: %s, retry... block:%v min, get time:%v", mtc+nameSuffix, err, qInfo.intervalSec/60, getTime)
+				l.Errorf("[ID:%d-no.%d] failed query metric retry... interval:%v s, take time:%v. If prometheus OOM is the cause, consider reducing concurrency and metrics-min-interval",
+					tokenID, i, err, qInfo.intervalSec, getTime)
+				time.Sleep(200 * time.Millisecond)
 				return err
 			}
 			// Prometheus API response format is JSON. Every successful API request returns a 2xx status code.
 			if resp.StatusCode/100 != 2 {
-				l.Errorf("failed query metric no.%d: %s: Status Code %d, retry... get time:%v", i, qInfo.intervalSec/60, resp.StatusCode, getTime)
-				// l.Errorf("failed query metric %s: Status Code %d, retry... get time:%v", mtc+nameSuffix, resp.StatusCode, getTime)
+				l.Errorf("[ID:%d-no.%d] failed query metric Status Code %d, retry... interval:%d s, take time:%v",
+					tokenID, i, resp.StatusCode, qInfo.intervalSec, getTime)
+				time.Sleep(200 * time.Millisecond)
 			}
 			defer resp.Body.Close()
 
@@ -658,7 +714,7 @@ func collectSingleQuery(l *logprinter.Logger, c *http.Client, resultDir, mtc, na
 				),
 			)
 			if err != nil {
-				l.Errorf("collect metric %s: %s, retry...", mtc+nameSuffix, err)
+				l.Errorf("[ID:%d-no.%d] collect metric %s: %s, retry...", tokenID, i, mtc+nameSuffix, err)
 			}
 			defer dst.Close()
 
@@ -668,7 +724,7 @@ func collectSingleQuery(l *logprinter.Logger, c *http.Client, resultDir, mtc, na
 				// compress the metric
 				enc, err = zstd.NewWriter(dst)
 				if err != nil {
-					l.Errorf("failed compressing metric %s: %s, retry...\n", mtc+nameSuffix, err)
+					l.Errorf("[ID:%d-no.%d] failed compressing metric %s: %s, retry...\n", tokenID, i, mtc+nameSuffix, err)
 					return err
 				}
 				defer enc.Close()
@@ -677,12 +733,13 @@ func collectSingleQuery(l *logprinter.Logger, c *http.Client, resultDir, mtc, na
 			}
 			n, err = io.Copy(enc, resp.Body)
 			if err != nil {
-				l.Errorf("failed writing metric %s to file: %s, retry...get time:%v \n", mtc+nameSuffix, err, time.Since(startTime))
+				l.Errorf("[ID:%d-no.%d] failed writing metric err %s to file: %s, retry...take time:%v \n",
+					tokenID, i, mtc+nameSuffix, err, time.Since(startTime))
 				return err
 			}
 			if time.Since(startTime) > time.Second {
-				l.Infof(" Dumped metric %s from %s to %s (%d bytes), no.%d take time get:%v",
-					mtc+nameSuffix, qInfo.queryBegin.Format(time.RFC3339), qInfo.queryEnd.Format(time.RFC3339), n, i, time.Since(startTime))
+				l.Infof("[ID:%d-no.%d] Dumped metric %s from %s to %s (%d bytes) take time:%v",
+					tokenID, i, mtc+nameSuffix, qInfo.queryBegin.Format(time.RFC3339), qInfo.queryEnd.Format(time.RFC3339), n, time.Since(startTime))
 			}
 			return nil
 		},

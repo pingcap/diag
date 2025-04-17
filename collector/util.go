@@ -13,22 +13,33 @@
 
 package collector
 
-// WithRecovery wraps goroutine startup call with force recovery.
-// it will dump current goroutine stack into log if catch any recover result.
-//
-//	exec:      execute logic function.
-//	recoverFn: handler will be called after recover and before dump stack, passing `nil` means noop.
-func WithRecovery(exec func(), recoverFn func(r any)) {
-	defer func() {
-		r := recover()
-		if recoverFn != nil {
-			recoverFn(r)
-		}
-		if r != nil {
-			logutil.BgLogger().Error("panic in the recoverable goroutine",
-				zap.Any("r", r),
-				zap.Stack("stack trace"))
-		}
+import (
+	"sync"
+)
+
+// WaitGroupWrapper is a wrapper for sync.WaitGroup
+type WaitGroupWrapper struct {
+	sync.WaitGroup
+	PanicCnt int
+}
+
+// RunWithRecover wraps goroutine startup call with force recovery, add 1 to WaitGroup
+// and call done when function return. it will dump current goroutine stack into log if catch any recover result.
+// exec is that execute logic function. recoverFn is that handler will be called after recover and before dump stack,
+// passing `nil` means noop.
+func (w *WaitGroupWrapper) RunWithRecover(exec func(), recoverFn func(r any)) {
+	w.Add(1)
+	go func() {
+		defer func() {
+			r := recover()
+			if recoverFn != nil {
+				recoverFn(r)
+			}
+			if r != nil {
+				w.PanicCnt++
+			}
+			w.Done()
+		}()
+		exec()
 	}()
-	exec()
 }
