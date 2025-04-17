@@ -694,15 +694,15 @@ func collectSingleQuery(l *logprinter.Logger, c *http.Client, tokenID int, resul
 			resp, err := c.Do(req)
 			i++
 			if err != nil {
-				l.Errorf("[ID:%d-no.%d] failed query metric retry... interval:%v s, take time:%v. If prometheus OOM is the cause, consider reducing concurrency and metrics-min-interval",
-					tokenID, i, err, qInfo.intervalSec, getTime)
+				l.Errorf("[ID:%d-no.%d] failed query metric %s: %s retry... interval:%v s, take time:%v. If prometheus OOM is the cause, consider reducing concurrency and metrics-min-interval",
+					tokenID, i, mtc+nameSuffix, err, qInfo.intervalSec, getTime)
 				time.Sleep(200 * time.Millisecond)
 				return err
 			}
 			// Prometheus API response format is JSON. Every successful API request returns a 2xx status code.
 			if resp.StatusCode/100 != 2 {
-				l.Errorf("[ID:%d-no.%d] failed query metric Status Code %d, retry... interval:%d s, take time:%v",
-					tokenID, i, resp.StatusCode, qInfo.intervalSec, getTime)
+				l.Errorf("[ID:%d-no.%d] failed query metric %s Status Code %d, retry... interval:%d s, take time:%v",
+					tokenID, i, mtc+nameSuffix, resp.StatusCode, qInfo.intervalSec, getTime)
 				time.Sleep(200 * time.Millisecond)
 			}
 			defer resp.Body.Close()

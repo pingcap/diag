@@ -32,6 +32,7 @@ import (
 	operator "github.com/pingcap/tiup/pkg/cluster/operation"
 	"github.com/pingcap/tiup/pkg/crypto/rand"
 	logprinter "github.com/pingcap/tiup/pkg/logger/printer"
+	"k8s.io/klog/v2"
 )
 
 // collect job status
