@@ -43,6 +43,16 @@ func (tl *TokenLimiter) Get() *Token {
 	return <-tl.ch
 }
 
+// TryGet trys to obtain a token.
+func (tl *TokenLimiter) TryGet() *Token {
+	select {
+	case token := <-tl.ch:
+		return token
+	default:
+		return nil
+	}
+}
+
 // Wait all token put back
 func (tl *TokenLimiter) Wait() {
 	for len(tl.ch) < tl.count {

@@ -55,7 +55,8 @@ const (
 	subdirMetrics   = "metrics"
 	subdirRaw       = "raw"
 	maxQueryRange   = 120 * 60 // 120min
-	smallQueryRange = 15       // 15s.
+	smallQueryRange = 15       // 15s
+	logQuerySeries  = 120000   // The value is equal to the result of 3600*speedLimit/300(s), where the default value of speedLimit is 10000.
 )
 
 type collectMonitor struct {
@@ -331,20 +332,19 @@ func (c *MetricCollectOptions) Collect(m *Manager, topo *models.TiDBCluster) err
 		},
 		Timeout: time.Second * time.Duration(c.opt.APITimeout),
 	}
-	tsEnd, _ := utils.ParseTime(c.GetBaseOptions().ScrapeEnd)
-	tsStart, _ := utils.ParseTime(c.GetBaseOptions().ScrapeBegin)
+
 	if len(c.lowPriority) == 0 {
-		c.collectMetrics(m.logger, client, c.metrics, tsStart, tsEnd, midPriority, tl, bars)
-		m.logger.Infof("Dumping metrics finish .......................................... token limit:%d, concurrency:%d, take time:%v",
-			qLimit, c.opt.Concurrency, time.Since(startTime))
+		c.collectMetrics(m.logger, client, c.metrics, midPriority, tl, bars)
+		m.logger.Infof("Dumping metrics finish .......................................... token limit:%d, take time:%v",
+			qLimit, time.Since(startTime))
 	} else {
-		c.collectMetrics(m.logger, client, c.metrics, tsStart, tsEnd, highPriority, tl, bars)
+		c.collectMetrics(m.logger, client, c.metrics, highPriority, tl, bars)
 		m.logger.Infof("Dumping high priority metrics finish .......................................... token limit:%d, concurrency:%d, take time:%v",
 			qLimit, c.opt.Concurrency, time.Since(startTime))
 		startTime = time.Now()
-		c.collectMetrics(m.logger, client, c.lowPriority, tsStart, tsEnd, lowPriority, tl, bars)
-		m.logger.Infof("Dumping low priority metrics finish .......................................... token limit:%d, concurrency:%d, take time:%v",
-			qLimit, c.opt.Concurrency, time.Since(startTime))
+		c.collectMetrics(m.logger, client, c.lowPriority, lowPriority, tl, bars)
+		m.logger.Infof("Dumping low priority metrics finish .......................................... token limit:%d, take time:%v",
+			qLimit, time.Since(startTime))
 	}
 
 	return nil
@@ -360,7 +360,6 @@ func (c *MetricCollectOptions) collectMetrics(
 	l *logprinter.Logger,
 	client *http.Client,
 	metrics []string,
-	tsStart, tsEnd time.Time,
 	priority int,
 	tl *utils.TokenLimiter,
 	bars map[string]*progress.MultiBarItem,
@@ -373,15 +372,15 @@ func (c *MetricCollectOptions) collectMetrics(
 		minInterval = smallQueryRange
 	}
 	concurrency := 1
-	if priority > lowPriority {
-		concurrency = c.opt.Concurrency
-	}
 	total := len(c.metrics)
 	if priority == highPriority {
 		total = len(c.metrics) - len(c.lowPriority)
 	} else if priority == lowPriority {
 		total = len(c.lowPriority)
+		concurrency = tl.Cap()
 	}
+	tsEnd, _ := utils.ParseTime(c.GetBaseOptions().ScrapeEnd)
+	tsStart, _ := utils.ParseTime(c.GetBaseOptions().ScrapeBegin)
 	originInfo := queryRangeInfo{
 		queryBegin:  tsStart,
 		queryEnd:    tsEnd,
@@ -480,7 +479,7 @@ func collectSingleMetric(
 	mtc string,
 	label map[string]string,
 	resultDir string,
-	speedlimit int,
+	speedLimit int,
 	compress bool,
 	customHeader []string,
 	instance string,
@@ -543,7 +542,7 @@ func collectSingleMetric(
 				newLabel := make(map[string]string)
 				maps.Copy(newLabel, label)
 				newLabel["instance"] = instance
-				collectSingleMetric(l, c, promAddr, originInfo, concurrency, mtc, newLabel, resultDir, speedlimit, compress, customHeader, instance, curTokenID, tl)
+				collectSingleMetric(l, c, promAddr, originInfo, concurrency, mtc, newLabel, resultDir, speedLimit, compress, customHeader, instance, curTokenID, tl)
 			}
 		}
 		return
@@ -555,10 +554,10 @@ func collectSingleMetric(
 	}
 
 	// split time into smaller ranges to avoid querying too many data in one request
-	if speedlimit == 0 {
-		speedlimit = 10000
+	if speedLimit == 0 {
+		speedLimit = 10000
 	}
-	block := 3600 * speedlimit / series
+	block := 3600 * speedLimit / series
 	if block > maxQueryRange {
 		block = maxQueryRange
 	}
@@ -566,10 +565,10 @@ func collectSingleMetric(
 		block = originInfo.intervalSec
 	}
 
-	isBlackList := mtc+nameSuffix == "tidb_session_parse_duration_seconds_bucket" || mtc+nameSuffix == "tidb_session_compile_duration_seconds_bucket"
-	if series > 1000 || block < maxQueryRange || isBlackList {
-		l.Infof("Dumping metric %s, concurrency:%d, speedlimit:%d, series:%d, interval:%d s, req timeout:%v, start time:%v ...",
-			mtc+nameSuffix, concurrency, speedlimit, series, block, c.Timeout, time.Now().Format(time.RFC3339))
+	if block == originInfo.intervalSec || series >= logQuerySeries {
+		l.Infof("Collecting single metric %s series %d too large or interval %ds too small, so update concurrency from %d to %d, speedLimit:%d, req timeout:%v ...",
+			mtc+nameSuffix, series, block, concurrency, tl.Cap(), speedLimit, c.Timeout)
+		concurrency = tl.Cap()
 	}
 	retryOption := tiuputils.RetryOption{
 		Attempts: 3,
@@ -601,6 +600,7 @@ func collectSingleMetric(
 			queryEnd:    queryEnd,
 			intervalSec: querySec,
 		}
+		logInfo := ""
 		if concurrency == 1 {
 			if err := collectSingleQuery(l, c, curTokenID, resultDir, mtc, nameSuffix, qInfo); err != nil {
 				l.Errorf("Error quering metrics %s: %s... timeout:%v, take time:%v",
@@ -611,13 +611,19 @@ func collectSingleMetric(
 			if goCnt == 0 {
 				wg.RunWithRecover(func() { collectQueries(l, c, curTokenID, resultDir, mtc, nameSuffix, queryInfoCh) }, nil)
 			} else if goCnt < concurrency {
-				token := tl.Get()
-				wg.RunWithRecover(func() {
-					collectQueries(l, c, int(token.ID), resultDir, mtc, nameSuffix, queryInfoCh)
-					tl.Put(token)
-				},
-					nil)
+				token := tl.TryGet()
+				if token != nil {
+					logInfo = fmt.Sprintf(" with a new goroutine ID:%v", token.ID)
+					wg.RunWithRecover(func() {
+						collectQueries(l, c, token.ID, resultDir, mtc, nameSuffix, queryInfoCh)
+						tl.Put(token)
+					}, nil)
+				} else {
+					logInfo = " try get failed"
+				}
 			}
+			l.Infof("Collecting single metric %s%s, interval:%d s, put task no.%d range[%v:%v] to chan ...",
+				mtc+nameSuffix, logInfo, qInfo.intervalSec, goCnt, queryBegin.Format(time.RFC3339), queryEnd.Format(time.RFC3339))
 		}
 		goCnt++
 	}
@@ -637,8 +643,8 @@ func collectSingleMetric(
 		time.Sleep(5 * time.Millisecond)
 	}
 	wg.Wait()
-	l.Infof("Dumped metric %s from %s to %s, concurrency:%d, wait take time:%v, total take time:%v",
-		mtc+nameSuffix, endTime.Format(time.RFC3339), beginTime.Format(time.RFC3339), goCnt, time.Since(startTime1), time.Since(startTime))
+	l.Infof("Collected single metric %s from %s to %s take time:%v, total task:%v, concurrency:%d, wait take time:%v",
+		mtc+nameSuffix, endTime.Format(time.RFC3339), beginTime.Format(time.RFC3339), time.Since(startTime), goCnt, concurrency, time.Since(startTime1))
 }
 
 type queryInfo struct {
@@ -661,14 +667,14 @@ func collectQueries(l *logprinter.Logger, c *http.Client, tokenID int, resultDir
 	for {
 		qInfo, ok := <-queryInfoCh
 		if !ok {
-			l.Infof("[ID:%d] collect metric %s finished", tokenID, mtc+nameSuffix)
+			l.Infof("[ID:%d] collect metric %s goroutine finished", tokenID, mtc+nameSuffix)
 			return
 		}
 
 		startTime0 := time.Now()
 		err := collectSingleQuery(l, c, tokenID, resultDir, mtc, nameSuffix, qInfo)
 		if err != nil {
-			l.Errorf("[ID:%d] failed query metric %s: %s... client timeout:%v, take time:%v",
+			l.Errorf("[ID:%d] failed retry collecting a query metric %s: %s... client timeout:%v, take time:%v",
 				tokenID, mtc+nameSuffix, err, c.Timeout*3+5*time.Second, time.Since(startTime0))
 		}
 	}
@@ -694,14 +700,14 @@ func collectSingleQuery(l *logprinter.Logger, c *http.Client, tokenID int, resul
 			resp, err := c.Do(req)
 			i++
 			if err != nil {
-				l.Errorf("[ID:%d-no.%d] failed query metric %s: %s retry... interval:%v s, take time:%v. If prometheus OOM is the cause, consider reducing concurrency and metrics-min-interval",
+				l.Errorf("[ID:%d-try:%d] failed query metric %s: %s retry... interval:%v s, take time:%v. If prometheus OOM is the cause, consider reducing concurrency and metrics-min-interval",
 					tokenID, i, mtc+nameSuffix, err, qInfo.intervalSec, getTime)
 				time.Sleep(200 * time.Millisecond)
 				return err
 			}
 			// Prometheus API response format is JSON. Every successful API request returns a 2xx status code.
 			if resp.StatusCode/100 != 2 {
-				l.Errorf("[ID:%d-no.%d] failed query metric %s Status Code %d, retry... interval:%d s, take time:%v",
+				l.Errorf("[ID:%d-try:%d] failed query metric %s Status Code %d, retry... interval:%d s, take time:%v",
 					tokenID, i, mtc+nameSuffix, resp.StatusCode, qInfo.intervalSec, getTime)
 				time.Sleep(200 * time.Millisecond)
 			}
@@ -714,7 +720,7 @@ func collectSingleQuery(l *logprinter.Logger, c *http.Client, tokenID int, resul
 				),
 			)
 			if err != nil {
-				l.Errorf("[ID:%d-no.%d] collect metric %s: %s, retry...", tokenID, i, mtc+nameSuffix, err)
+				l.Errorf("[ID:%d-try:%d] failed query metric %s: %s, retry...", tokenID, i, mtc+nameSuffix, err)
 			}
 			defer dst.Close()
 
@@ -724,7 +730,7 @@ func collectSingleQuery(l *logprinter.Logger, c *http.Client, tokenID int, resul
 				// compress the metric
 				enc, err = zstd.NewWriter(dst)
 				if err != nil {
-					l.Errorf("[ID:%d-no.%d] failed compressing metric %s: %s, retry...\n", tokenID, i, mtc+nameSuffix, err)
+					l.Errorf("[ID:%d-try:%d] failed compressing metric %s: %s, retry...\n", tokenID, i, mtc+nameSuffix, err)
 					return err
 				}
 				defer enc.Close()
@@ -733,12 +739,12 @@ func collectSingleQuery(l *logprinter.Logger, c *http.Client, tokenID int, resul
 			}
 			n, err = io.Copy(enc, resp.Body)
 			if err != nil {
-				l.Errorf("[ID:%d-no.%d] failed writing metric err %s to file: %s, retry...take time:%v \n",
+				l.Errorf("[ID:%d-try:%d] failed writing metric err %s to file: %s, retry...take time:%v \n",
 					tokenID, i, mtc+nameSuffix, err, time.Since(startTime))
 				return err
 			}
 			if time.Since(startTime) > time.Second {
-				l.Infof("[ID:%d-no.%d] Dumped metric %s from %s to %s (%d bytes) take time:%v",
+				l.Infof("[ID:%d-try:%d] Collected a query metric %s from %s to %s (%d bytes) take a long time:%v",
 					tokenID, i, mtc+nameSuffix, qInfo.queryBegin.Format(time.RFC3339), qInfo.queryEnd.Format(time.RFC3339), n, time.Since(startTime))
 			}
 			return nil
