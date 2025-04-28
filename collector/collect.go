@@ -126,7 +126,6 @@ type CollectOptions struct {
 	ExitOnError     bool              // break the process and exit when an error occur
 	ExtendedAttrs   map[string]string // extended attributes used for manual collecting mode
 	ExplainSQLPath  string            // File path for explain sql
-	LogFile         string            // File name for the log
 	ExplainSqls     []string          // explain sqls
 	CurrDB          string
 	Header          []string
