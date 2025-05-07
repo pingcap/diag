@@ -566,9 +566,8 @@ func collectSingleMetric(
 	}
 
 	if block == originInfo.intervalSec || series >= logQuerySeries {
-		l.Infof("Collecting single metric %s series %d too large or interval %ds too small, so update concurrency from %d to %d, speedLimit:%d, req timeout:%v ...",
-			mtc+nameSuffix, series, block, concurrency, tl.Cap(), speedLimit, c.Timeout)
-		concurrency = tl.Cap()
+		l.Infof("Collecting single metric %s series %d too large and the interval is %ds, concurrency: %d, speedLimit:%d, req timeout:%v ...",
+			mtc+nameSuffix, series, block, tl.Cap(), speedLimit, c.Timeout)
 	}
 	retryOption := tiuputils.RetryOption{
 		Attempts: 3,
@@ -576,6 +575,7 @@ func collectSingleMetric(
 		Timeout:  c.Timeout*3 + 5*time.Second, //make sure the retry timeout is longer than the api timeout
 	}
 	goCnt := 0
+	taskCnt := 0
 	qInfo := queryInfo{
 		query:        query,
 		promAddr:     promAddr,
@@ -609,7 +609,9 @@ func collectSingleMetric(
 		} else {
 			queryInfoCh <- qInfo
 			if goCnt == 0 {
+				logInfo = fmt.Sprintf(" with a new goroutine ID:%v", curTokenID)
 				wg.RunWithRecover(func() { collectQueries(l, c, curTokenID, resultDir, mtc, nameSuffix, queryInfoCh) }, nil)
+				goCnt++
 			} else if goCnt < concurrency {
 				token := tl.TryGet()
 				if token != nil {
@@ -618,14 +620,13 @@ func collectSingleMetric(
 						collectQueries(l, c, token.ID, resultDir, mtc, nameSuffix, queryInfoCh)
 						tl.Put(token)
 					}, nil)
-				} else {
-					logInfo = " try get failed"
+					goCnt++
 				}
 			}
-			l.Infof("Collecting single metric %s%s, interval:%d s, put task no.%d range[%v:%v] to chan ...",
-				mtc+nameSuffix, logInfo, qInfo.intervalSec, goCnt, queryBegin.Format(time.RFC3339), queryEnd.Format(time.RFC3339))
+			l.Infof("Collecting single metric %s%s, go:%d, interval:%d s, put task no.%d range[%v:%v] to chan ...",
+				mtc+nameSuffix, logInfo, goCnt, qInfo.intervalSec, taskCnt, queryBegin.Format(time.RFC3339), queryEnd.Format(time.RFC3339))
 		}
-		goCnt++
+		taskCnt++
 	}
 	if concurrency == 1 {
 		return
