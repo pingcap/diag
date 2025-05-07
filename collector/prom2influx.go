@@ -269,7 +269,7 @@ func buildPoints(
 func writeBatchPoints(client influx.Client, data promDump, opts *RebuildOptions) error {
 	// build and write points
 	var errr error
-	tl := utils.NewTokenLimiter(uint(opts.Concurrency))
+	tl := utils.NewTokenLimiter(opts.Concurrency)
 	wg := sync.WaitGroup{}
 	for _, series := range data.Data.Result {
 		ptChan := buildPoints(series, opts)
