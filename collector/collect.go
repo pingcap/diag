@@ -567,8 +567,9 @@ func (m *Manager) CollectClusterInfo(
 	if m.logger.GetDisplayMode() == logprinter.DisplayModeDefault {
 		dir = color.CyanString(resultDir)
 	}
-	fmt.Printf("Collected data and log are stored in %s\n", dir)
-	m.logger.Infof("Collected data and log are stored in %s\n", dir)
+	logStr := fmt.Sprintf("The collected data has been stored in %s. For more details, please refer to the log at %s/diag.log.", dir, dir)
+	fmt.Println(logStr)
+	m.logger.Infof(logStr)
 	return resultDir, nil
 }
 
