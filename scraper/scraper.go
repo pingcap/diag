@@ -28,12 +28,15 @@ type Option struct {
 // map: filename (full path) -> file size (bytes)
 type FileStat map[string]int64
 
+type FileTypes map[string]string
+
 // Sample is the result of scrapping
 type Sample struct {
-	Log    FileStat `json:"log_files,omitempty"`
-	Config FileStat `json:"config_files,omitempty"`
-	File   FileStat `json:"files,omitempty"`
-	TSDB   FileStat `json:"prometheus_data,omitempty"`
+	Log      FileStat  `json:"log_files,omitempty"`
+	Config   FileStat  `json:"config_files,omitempty"`
+	File     FileStat  `json:"files,omitempty"`
+	TSDB     FileStat  `json:"prometheus_data,omitempty"`
+	LogTypes FileTypes `json:"log_types,omitempty"`
 }
 
 // Scrapper is used to scrap a kind of files
