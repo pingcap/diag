@@ -48,6 +48,9 @@ func (s *LogScraper) Scrap(result *Sample) error {
 	if result.Log == nil {
 		result.Log = make(FileStat)
 	}
+	if result.LogTypes == nil {
+		result.LogTypes = make(FileTypes)
+	}
 	fileList := make([]string, 0)
 
 	// extend all file paths
@@ -70,6 +73,7 @@ func (s *LogScraper) Scrap(result *Sample) error {
 			logtype, in, err := getLogType(fp, fi, s.Start, s.End)
 			if s.Types[logtype] && in {
 				result.Log[fp] = fi.Size()
+				result.LogTypes[fp] = logtype
 			}
 			if err != nil {
 				fmt.Fprintf(os.Stderr, "error checking %s: %s\n", fi.Name(), err)
