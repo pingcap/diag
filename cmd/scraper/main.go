@@ -43,7 +43,11 @@ func init() {
 		Version:       version.String(),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			for _, t := range logtype {
-				opt.LogTypes[t] = true
+				if scraper.IsValidLogType(t) {
+					opt.LogTypes[t] = true
+				} else {
+					return fmt.Errorf("invalid log type: %s", t)
+				}
 			}
 			result, err := Scrap(opt)
 			if err != nil {
