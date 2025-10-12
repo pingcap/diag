@@ -233,7 +233,7 @@ func (w *CheckerWriter) Flush() error {
 }
 
 func NewCheckerWriter(dirPath string, filename string) (*CheckerWriter, error) {
-	if err := os.MkdirAll(dirPath, 0777); err != nil {
+	if err := os.MkdirAll(dirPath, 0o777); err != nil {
 		logprinter.Errorf("create path failed, %+v", err.Error())
 		return nil, err
 	}
@@ -244,13 +244,14 @@ func NewCheckerWriter(dirPath string, filename string) (*CheckerWriter, error) {
 	}
 	return &CheckerWriter{
 		fileWriter: bufio.NewWriter(f),
-		f:          f}, nil
+		f:          f,
+	}, nil
 }
 
 // WriteString write content to a file and the given logger TODO handle error
 func (w *CheckerWriter) WriteString(logger *logprinter.Logger, info string) {
 	_, _ = w.fileWriter.WriteString(info + "\n")
-	logger.Infof(info)
+	logger.Infof("%s", info)
 }
 
 // SaveString only write content to a file TODO handle error
@@ -260,7 +261,7 @@ func (w *CheckerWriter) SaveString(info string) {
 
 // PrintString only write content to logger TODO handle error
 func (w *CheckerWriter) PrintString(logger *logprinter.Logger, info string) {
-	logger.Infof(info)
+	logger.Infof("%s", info)
 }
 
 func (w *CheckerWriter) Write(logger *logprinter.Logger, p []byte) (nn int, err error) {
@@ -278,7 +279,7 @@ type LoggerWriter struct {
 
 func (w *LoggerWriter) Write(p []byte) (nn int, err error) {
 	s := string(p)
-	w.Logger.Infof(s)
+	w.Logger.Infof("%s", s)
 	return len(p), nil
 }
 

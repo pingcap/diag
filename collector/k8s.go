@@ -97,7 +97,7 @@ func buildTopoForK8sCluster(
 		if ns == "" {
 			msg := "namespace are not specified"
 			klog.Error(msg)
-			return nil, nil, nil, fmt.Errorf(msg)
+			return nil, nil, nil, fmt.Errorf("%s", msg)
 		}
 		klog.Infof("got namespace '%s'", ns)
 	}
@@ -111,20 +111,20 @@ func buildTopoForK8sCluster(
 	tcList, err := dynCli.Resource(gvrTiDB).Namespace(ns).List(context.TODO(), metav1.ListOptions{})
 	if err != nil {
 		msg := fmt.Sprintf("failed to list tidbclusters in namespace %s: %v", ns, err)
-		klog.Errorf(msg)
-		return nil, nil, nil, fmt.Errorf(msg)
+		klog.Errorf("%s", msg)
+		return nil, nil, nil, fmt.Errorf("%s", msg)
 	}
 	tcData, err := tcList.MarshalJSON()
 	if err != nil {
 		msg := fmt.Sprintf("failed to marshal tidbclusters to json: %v", err)
-		klog.Errorf(msg)
-		return nil, nil, nil, fmt.Errorf(msg)
+		klog.Errorf("%s", msg)
+		return nil, nil, nil, fmt.Errorf("%s", msg)
 	}
 	var tcs pingcapv1alpha1.TidbClusterList
 	if err := json.Unmarshal(tcData, &tcs); err != nil {
 		msg := fmt.Sprintf("failed to unmarshal tidbclusters crd: %v", err)
-		klog.Errorf(msg)
-		return nil, nil, nil, fmt.Errorf(msg)
+		klog.Errorf("%s", msg)
+		return nil, nil, nil, fmt.Errorf("%s", msg)
 	}
 
 	if len(tcs.Items) == 0 {
@@ -135,20 +135,20 @@ func buildTopoForK8sCluster(
 	monList, err := dynCli.Resource(gvrMonitor).Namespace(mns).List(context.TODO(), metav1.ListOptions{})
 	if err != nil {
 		msg := fmt.Sprintf("failed to list tidbmonitors in namespace %s: %v", ns, err)
-		klog.Errorf(msg)
-		return nil, nil, nil, fmt.Errorf(msg)
+		klog.Errorf("%s", msg)
+		return nil, nil, nil, fmt.Errorf("%s", msg)
 	}
 	monData, err := monList.MarshalJSON()
 	if err != nil {
 		msg := fmt.Sprintf("failed to marshal tidbmonitors to json: %v", err)
-		klog.Errorf(msg)
-		return nil, nil, nil, fmt.Errorf(msg)
+		klog.Errorf("%s", msg)
+		return nil, nil, nil, fmt.Errorf("%s", msg)
 	}
 	var mon pingcapv1alpha1.TidbMonitorList
 	if err := json.Unmarshal(monData, &mon); err != nil {
 		msg := fmt.Sprintf("failed to unmarshal tidbmonitors crd: %v", err)
-		klog.Errorf(msg)
-		return nil, nil, nil, fmt.Errorf(msg)
+		klog.Errorf("%s", msg)
+		return nil, nil, nil, fmt.Errorf("%s", msg)
 	}
 	if len(mon.Items) == 0 {
 		klog.Warningf("no tidbmonitors found in namespace '%s'", ns)
