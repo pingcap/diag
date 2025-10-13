@@ -574,7 +574,7 @@ func (m *Manager) CollectClusterInfo(
 	}
 	logStr := fmt.Sprintf("The collected data has been stored in %s. For more details, please refer to the log at %s/diag.log.", dir, dir)
 	fmt.Println(logStr)
-	m.logger.Infof(logStr)
+	m.logger.Infof("%s", logStr)
 	return resultDir, nil
 }
 
