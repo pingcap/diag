@@ -105,7 +105,7 @@ func newCollectDMCmd() *cobra.Command {
 			}
 
 			if cOpt.CompressMetrics == false {
-				log.Warnf(color.YellowString("Uncompressed metrics may not be handled correctly by Clinic, use it only when you really need it"))
+				log.Warnf("%s", color.YellowString("Uncompressed metrics may not be handled correctly by Clinic, use it only when you really need it"))
 			}
 
 			cOpt.Mode = collector.CollectModeTiUP

@@ -114,12 +114,12 @@ type CollectOptions struct {
 	ProfileName     string            // the name of a pre-defined collecting profile
 	Collectors      CollectTree       // struct to show which collector is enabled
 	MetricsFilter   []string          // prefix of metrics to collect
-	MetricsExclude  []string          //prefix of metrics to exclude
+	MetricsExclude  []string          // prefix of metrics to exclude
 	MetricsLabel    map[string]string // label to filte metrics
 	Dir             string            // target directory to store collected data
 	Limit           int               // rate limit of SCP
 	MetricsLimit    int               // query limit of one request
-	PerfDuration    int               //seconds: profile time(s), default is 30s.
+	PerfDuration    int               // seconds: profile time(s), default is 30s.
 	CompressScp     bool              // compress of files during collecting
 	CompressMetrics bool              // compress of files during collecting
 	RawMonitor      bool              // collect raw data for metrics
@@ -213,8 +213,7 @@ func (m *Manager) CollectClusterInfo(
 	var resultDir string
 	var prompt string
 	switch cOpt.Mode {
-	case CollectModeTiUP,
-		CollectModeManual:
+	case CollectModeTiUP, CollectModeManual:
 		prompt, resultDir, err = m.prepareArgsForTiUPCluster(opt, cOpt)
 	case CollectModeK8s:
 		resultDir, err = m.prepareArgsForK8sCluster(opt, cOpt)
@@ -235,7 +234,7 @@ func (m *Manager) CollectClusterInfo(
 		if len(cp.Maintainers) > 0 {
 			msg = fmt.Sprintf("%s by %s", msg, strings.Join(cp.Maintainers, ","))
 		}
-		logprinter.Infof(msg)
+		logprinter.Infof("%s", msg)
 
 		cOpt.Collectors, err = ParseCollectTree(cp.Collectors, nil)
 		if err != nil {
@@ -506,7 +505,7 @@ func (m *Manager) CollectClusterInfo(
 				return "", err
 			}
 			msg := fmt.Sprintf("Error collecting %s: %s, the data might be incomplete.", c.Desc(), err)
-			m.logger.Warnf(color.YellowString(msg))
+			m.logger.Warnf("%s", color.YellowString(msg))
 			prepareErrs[c.Desc()] = err
 		}
 		defer c.Close()
@@ -522,7 +521,7 @@ func (m *Manager) CollectClusterInfo(
 		}
 	}
 
-	err = os.MkdirAll(resultDir, 0755)
+	err = os.MkdirAll(resultDir, 0o755)
 	if err != nil {
 		return "", err
 	}
@@ -544,7 +543,7 @@ func (m *Manager) CollectClusterInfo(
 				return "", err
 			}
 			msg := fmt.Sprintf("Error collecting %s: %s, the data might be incomplete.", c.Desc(), err)
-			m.logger.Warnf(color.YellowString(msg))
+			m.logger.Warnf("%s", color.YellowString(msg))
 			collectErrs[c.Desc()] = err
 		}
 	}
@@ -569,7 +568,7 @@ func (m *Manager) CollectClusterInfo(
 	}
 	logStr := fmt.Sprintf("The collected data has been stored in %s. For more details, please refer to the log at %s/diag.log.", dir, dir)
 	fmt.Println(logStr)
-	m.logger.Infof(logStr)
+	m.logger.Infof("%s", logStr)
 	return resultDir, nil
 }
 
