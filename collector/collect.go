@@ -533,12 +533,17 @@ func (m *Manager) CollectClusterInfo(
 
 	m.collectLock(resultDir)
 
+	logFile := initLogFile(filepath.Join(resultDir, "diag.log"), m.logger)
+	defer logFile.Close()
+
 	defer logger.OutputAuditLogToFileIfEnabled(resultDir, "diag_audit.log")
 
 	// run collectors
 	collectErrs := make(map[string]error)
 	for _, c := range collectors {
-		m.logger.Infof("Collecting %s..., time:%v\n", c.Desc(), time.Now())
+		timeNow := time.Now()
+		fmt.Printf("Collecting %s..., time:%v\n", c.Desc(), timeNow)
+		m.logger.Infof("Collecting %s..., time:%v\n", c.Desc(), timeNow)
 		if err := c.Collect(m, cls); err != nil {
 			if cOpt.ExitOnError {
 				return "", err
@@ -567,7 +572,9 @@ func (m *Manager) CollectClusterInfo(
 	if m.logger.GetDisplayMode() == logprinter.DisplayModeDefault {
 		dir = color.CyanString(resultDir)
 	}
-	m.logger.Infof("Collected data are stored in %s, now:%v\n", dir, time.Now())
+	logStr := fmt.Sprintf("The collected data has been stored in %s. For more details, please refer to the log at %s/diag.log.", dir, dir)
+	fmt.Println(logStr)
+	m.logger.Infof(logStr)
 	return resultDir, nil
 }
 

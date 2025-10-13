@@ -35,5 +35,6 @@ func ListStd() []Parser {
 		&PrometheusLogParser{},
 		&PDLogV2Parser{},
 		&TiKVLogV2Parser{},
+		&AuditJSONLogParser{},
 	}
 }
