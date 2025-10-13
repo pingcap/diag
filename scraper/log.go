@@ -35,6 +35,15 @@ const (
 	LogTypeUnknown = "unknown"
 )
 
+func IsValidLogType(logtype string) bool {
+	switch logtype {
+	case LogTypeStd, LogTypeSlow, LogTypeRocksDB, LogTypeUnknown:
+		return true
+	default:
+		return false
+	}
+}
+
 // LogScraper scraps log files of components
 type LogScraper struct {
 	Paths []string        // paths of log files
