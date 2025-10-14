@@ -488,7 +488,7 @@ bind-address = "{{.Host}}:{{.BindPort}}"
 		return nil, err
 	}
 
-	if err := os.WriteFile(filepath.Join(i.Dir, "influxdb.conf"), content.Bytes(), os.ModePerm); err != nil {
+	if err := os.WriteFile(filepath.Join(i.Dir, "influxdb.conf"), content.Bytes(), 0600); err != nil {
 		return nil, errors.AddStack(err)
 	}
 
@@ -607,7 +607,7 @@ remote_read:
 		return nil, err
 	}
 
-	if err := os.WriteFile(filepath.Join(m.dir, "prometheus.yml"), content.Bytes(), os.ModePerm); err != nil {
+	if err := os.WriteFile(filepath.Join(m.dir, "prometheus.yml"), content.Bytes(), 0600); err != nil {
 		return nil, errors.AddStack(err)
 	}
 
