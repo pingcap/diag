@@ -44,7 +44,7 @@ func (w *Wrapper) Start(ctx context.Context) error {
 	for _, rule := range w.RuleSet {
 		dataSet, err := w.GetDataSet(rule.NameStruct)
 		if err != nil {
-			return fmt.Errorf("get DataSet Faield, %s", err.Error())
+			return fmt.Errorf("get DataSet Failed, %s", err.Error())
 		}
 		for _, data := range dataSet {
 			if cu, ok := w.computeUnitSet[data.UqiTag]; ok {
