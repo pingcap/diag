@@ -58,3 +58,11 @@ func MatchPrefixs(str string, prefixs []string) bool {
 	}
 	return false
 }
+
+func URL2Name(url string) string {
+	url = strings.TrimPrefix(url, "http://")
+	url = strings.TrimPrefix(url, "https://")
+	url = strings.ReplaceAll(url, "/", "_")
+	url = strings.ReplaceAll(url, ":", "_")
+	return url
+}

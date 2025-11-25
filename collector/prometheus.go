@@ -116,25 +116,26 @@ func (c *AlertCollectOptions) Collect(m *Manager, topo *models.TiDBCluster) erro
 		monitors = append(monitors, eps.([]string)...)
 	} else {
 		for _, prom := range topo.Monitors {
-			monitors = append(monitors, fmt.Sprintf("%s:%d", prom.Host(), prom.MainPort()))
+			// todo: check is TLS enabled in tiup deployed prometheus
+			monitors = append(monitors, fmt.Sprintf("http://%s:%d", prom.Host(), prom.MainPort()))
 		}
 	}
 
 	var queryOK bool
 	var queryErr error
 	for _, promAddr := range monitors {
-		if err := ensureMonitorDir(c.resultDir, subdirAlerts, strings.ReplaceAll(promAddr, ":", "-")); err != nil {
+		if err := ensureMonitorDir(c.resultDir, subdirAlerts, utils.URL2Name(promAddr)); err != nil {
 			return err
 		}
 
 		client := &http.Client{Timeout: time.Second * time.Duration(c.opt.APITimeout)}
-		resp, err := client.PostForm(fmt.Sprintf("http://%s/api/v1/query", promAddr), url.Values{"query": {"ALERTS"}})
+		resp, err := client.PostForm(fmt.Sprintf("%s/api/v1/query", promAddr), url.Values{"query": {"ALERTS"}})
 		if err != nil {
 			return err
 		}
 		defer resp.Body.Close()
 
-		f, err := os.Create(filepath.Join(c.resultDir, subdirMonitor, subdirAlerts, strings.ReplaceAll(promAddr, ":", "-"), "alerts.json"))
+		f, err := os.Create(filepath.Join(c.resultDir, subdirMonitor, subdirAlerts, utils.URL2Name(promAddr), "alerts.json"))
 		if err == nil {
 			queryOK = true
 		} else {
@@ -231,9 +232,10 @@ func (c *MetricCollectOptions) Prepare(m *Manager, topo *models.TiDBCluster) (ma
 				return nil, err
 			}
 			c.stopChans = append(c.stopChans, stopChan)
-			c.endpoint = fmt.Sprintf("127.0.0.1:%d", port)
+			c.endpoint = fmt.Sprintf("http://127.0.0.1:%d", port)
 		} else {
-			c.endpoint = fmt.Sprintf("%s:%d", prom.Host(), prom.MainPort())
+			// todo: detect TLS enabled from tiup
+			c.endpoint = fmt.Sprintf("http://%s:%d", prom.Host(), prom.MainPort())
 		}
 	} else {
 		m.logger.Warnf("No Prometheus node found in topology, skip.")
@@ -387,7 +389,10 @@ func getAPIData[T any](c *http.Client, url string, customHeader []string) (T, er
 }
 
 func makeURL(addr string, path string, queries map[string]string) string {
-	link := "http://" + addr + path
+	link := addr + path
+	if !strings.HasPrefix(addr, "http://") && !strings.HasPrefix(addr, "https://") {
+		link = "http://" + link
+	}
 	if len(queries) == 0 {
 		return link
 	}
@@ -501,7 +506,7 @@ func collectMetric(
 			func() error {
 				req, err := http.NewRequest(
 					http.MethodGet,
-					fmt.Sprintf("http://%s/api/v1/query?%s", promAddr, url.Values{
+					fmt.Sprintf("%s/api/v1/query?%s", promAddr, url.Values{
 						"query": {fmt.Sprintf("%s[%ds]", query, querySec)},
 						"time":  {queryEnd.Format(time.RFC3339)},
 					}.Encode()),
