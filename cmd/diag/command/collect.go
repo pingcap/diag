@@ -160,6 +160,7 @@ func newCollectCmd() *cobra.Command {
 	cmd.Flags().IntVar(&cOpt.MetricsLimit, "metricslimit", 10000, "metric size limit of single request, specified in series*hour per request")
 	cmd.Flags().StringVar(&metricsConf, "metricsconfig", "", "config file of metricsfilter")
 	cmd.Flags().StringSliceVar(&labels, "metricslabel", nil, "only collect metrics that match labels")
+	cmd.Flags().IntVar(&cOpt.MetricsMinInterval, "metrics-min-interval", 120, "the minimum interval of a single request in seconds")
 	cmd.Flags().StringVar(&promEndpoint, "overwrite-prometheus-endpoint", "", "Prometheus endpoint")
 	cmd.Flags().StringSliceVarP(&cOpt.Header, "prometheus-header", "H", nil, "custom headers of http request when collect metrics")
 	cmd.Flags().StringVarP(&cOpt.Dir, "output", "o", "", "output directory of collected data")
