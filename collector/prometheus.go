@@ -306,7 +306,7 @@ func (c *MetricCollectOptions) Collect(m *Manager, topo *models.TiDBCluster) err
 	tl := utils.NewTokenLimiter(uint(qLimit))
 
 	done := 1
-	if err := ensureMonitorDir(c.resultDir, subdirMetrics, strings.ReplaceAll(c.endpoint, ":", "-")); err != nil {
+	if err := ensureMonitorDir(c.resultDir, subdirMetrics, utils.URL2Name(c.endpoint)); err != nil {
 		bars[key].UpdateDisplay(&progress.DisplayProps{
 			Prefix: fmt.Sprintf("  - Query server %s: %s", key, err),
 			Mode:   progress.ModeError,
