@@ -55,6 +55,7 @@ const (
 	subdirMetrics = "metrics"
 	subdirRaw     = "raw"
 	maxQueryRange = 120 * 60 // 120min
+	minQueryRange = 1 * 60   // 1min
 )
 
 type collectMonitor struct {
@@ -288,8 +289,11 @@ func (c *MetricCollectOptions) Collect(m *Manager, topo *models.TiDBCluster) err
 	mu := sync.Mutex{}
 
 	key := c.endpoint
+	if c.minInterval < minQueryRange {
+		c.minInterval = minQueryRange
+	}
 	if _, ok := bars[key]; !ok {
-		bars[key] = mb.AddBar(fmt.Sprintf("  - Querying server %s", key))
+		bars[key] = mb.AddBar(fmt.Sprintf("  - Querying server %s, min interval %v", key, c.minInterval))
 	}
 
 	if m.diagMode == DiagModeCmd {
@@ -421,7 +425,7 @@ func collectMetric(
 	label map[string]string,
 	resultDir string,
 	speedlimit int,
-	minQueryRange int,
+	minInterval int,
 	compress bool,
 	customHeader []string,
 	instance string,
@@ -481,7 +485,7 @@ func collectMetric(
 				newLabel := make(map[string]string)
 				maps.Copy(newLabel, label)
 				newLabel["instance"] = instance
-				collectMetric(l, c, promAddr, beginTime, endTime, mtc, newLabel, resultDir, speedlimit, minQueryRange, compress, customHeader, instance)
+				collectMetric(l, c, promAddr, beginTime, endTime, mtc, newLabel, resultDir, speedlimit, minInterval, compress, customHeader, instance)
 			}
 		}
 		return
@@ -500,8 +504,8 @@ func collectMetric(
 	if block > maxQueryRange {
 		block = maxQueryRange
 	}
-	if block < minQueryRange {
-		block = minQueryRange
+	if block < minInterval {
+		block = minInterval
 	}
 
 	l.Debugf("Dumping metric %s-%s-%s%s...", mtc, beginTime.Format(time.RFC3339), endTime.Format(time.RFC3339), nameSuffix)
