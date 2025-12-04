@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"io"
 	"maps"
+	"net"
 	"net/http"
 	"net/url"
 	"os"
@@ -54,7 +55,7 @@ const (
 	subdirMetrics = "metrics"
 	subdirRaw     = "raw"
 	maxQueryRange = 120 * 60 // 120min
-	minQueryRange = 5 * 60   // 5min
+	minQueryRange = 1 * 60   // 1min
 )
 
 type collectMonitor struct {
@@ -178,6 +179,7 @@ type MetricCollectOptions struct {
 	filter       []string
 	exclude      []string
 	limit        int // series*min per query
+	minInterval  int // the minimum interval of a single request in seconds
 	compress     bool
 	customHeader []string
 	endpoint     string
@@ -289,8 +291,11 @@ func (c *MetricCollectOptions) Collect(m *Manager, topo *models.TiDBCluster) err
 	mu := sync.Mutex{}
 
 	key := c.endpoint
+	if c.minInterval < minQueryRange {
+		c.minInterval = minQueryRange
+	}
 	if _, ok := bars[key]; !ok {
-		bars[key] = mb.AddBar(fmt.Sprintf("  - Querying server %s", key))
+		bars[key] = mb.AddBar(fmt.Sprintf("  - Querying server %s, min interval %v", key, c.minInterval))
 	}
 
 	if m.diagMode == DiagModeCmd {
@@ -314,7 +319,19 @@ func (c *MetricCollectOptions) Collect(m *Manager, topo *models.TiDBCluster) err
 		return err
 	}
 
-	client := &http.Client{Timeout: time.Second * time.Duration(c.opt.APITimeout)}
+	client := &http.Client{
+		Transport: &http.Transport{
+			MaxIdleConns:          qLimit * 2,
+			MaxIdleConnsPerHost:   10,
+			IdleConnTimeout:       30 * time.Second,
+			ExpectContinueTimeout: 1 * time.Second,
+			DialContext: (&net.Dialer{
+				Timeout:   5 * time.Second,
+				KeepAlive: 30 * time.Second,
+			}).DialContext,
+		},
+		Timeout: time.Second * time.Duration(c.opt.APITimeout),
+	}
 	for _, mtc := range c.metrics {
 		go func(tok *utils.Token, mtc string) {
 			bars[key].UpdateDisplay(&progress.DisplayProps{
@@ -324,7 +341,7 @@ func (c *MetricCollectOptions) Collect(m *Manager, topo *models.TiDBCluster) err
 
 			tsEnd, _ := utils.ParseTime(c.GetBaseOptions().ScrapeEnd)
 			tsStart, _ := utils.ParseTime(c.GetBaseOptions().ScrapeBegin)
-			collectMetric(m.logger, client, key, tsStart, tsEnd, mtc, c.label, c.resultDir, c.limit, c.compress, c.customHeader, "")
+			collectMetric(m.logger, client, key, tsStart, tsEnd, mtc, c.label, c.resultDir, c.limit, c.minInterval, c.compress, c.customHeader, "")
 
 			mu.Lock()
 			done++
@@ -339,6 +356,7 @@ func (c *MetricCollectOptions) Collect(m *Manager, topo *models.TiDBCluster) err
 			tl.Put(tok)
 		}(tl.Get(), mtc)
 	}
+	m.logger.Infof("Collected metrics ...")
 
 	tl.Wait()
 
@@ -412,6 +430,7 @@ func collectMetric(
 	label map[string]string,
 	resultDir string,
 	speedlimit int,
+	minInterval int,
 	compress bool,
 	customHeader []string,
 	instance string,
@@ -471,7 +490,7 @@ func collectMetric(
 				newLabel := make(map[string]string)
 				maps.Copy(newLabel, label)
 				newLabel["instance"] = instance
-				collectMetric(l, c, promAddr, beginTime, endTime, mtc, newLabel, resultDir, speedlimit, compress, customHeader, instance)
+				collectMetric(l, c, promAddr, beginTime, endTime, mtc, newLabel, resultDir, speedlimit, minInterval, compress, customHeader, instance)
 			}
 		}
 		return
@@ -490,8 +509,8 @@ func collectMetric(
 	if block > maxQueryRange {
 		block = maxQueryRange
 	}
-	if block < minQueryRange {
-		block = minQueryRange
+	if block < minInterval {
+		block = minInterval
 	}
 
 	l.Debugf("Dumping metric %s-%s-%s%s...", mtc, beginTime.Format(time.RFC3339), endTime.Format(time.RFC3339), nameSuffix)
