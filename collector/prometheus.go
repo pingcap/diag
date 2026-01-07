@@ -547,7 +547,7 @@ func collectMetric(
 
 				dst, err := os.Create(
 					filepath.Join(
-						resultDir, subdirMonitor, subdirMetrics, strings.ReplaceAll(promAddr, ":", "-"),
+						resultDir, subdirMonitor, subdirMetrics, utils.URL2Name(promAddr),
 						fmt.Sprintf("%s-%s-%s%s.json", mtc, queryBegin.Format(time.RFC3339), queryEnd.Format(time.RFC3339), nameSuffix),
 					),
 				)
