@@ -688,7 +688,7 @@ func ParseCollectTree(include, exclude []string) (CollectTree, error) {
 			num := reflectV.NumField()
 			var i int
 			for i = 0; i < num; i++ {
-				if strings.ToLower(k) == strings.ToLower(reflectV.Type().Field(i).Name) {
+				if strings.EqualFold(k, reflectV.Type().Field(i).Name) {
 					reflectV = reflectV.Field(i)
 					break
 				}
@@ -710,7 +710,7 @@ func ParseCollectTree(include, exclude []string) (CollectTree, error) {
 			num := reflectV.NumField()
 			var i int
 			for i = 0; i < num; i++ {
-				if strings.ToLower(k) == strings.ToLower(reflectV.Type().Field(i).Name) {
+				if strings.EqualFold(k, reflectV.Type().Field(i).Name) {
 					reflectV = reflectV.Field(i)
 					break
 				}

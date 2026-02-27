@@ -108,10 +108,10 @@ func (c *SchemaCollectOptions) Collect(m *Manager, topo *models.TiDBCluster) err
 				var db *sql.DB
 				for _, inst := range tidbInstants {
 					trydb, err := sql.Open("mysql", fmt.Sprintf("%s:%s@tcp(%s:%d)/", c.dbuser, c.dbpasswd, inst.Host(), inst.MainPort()))
-					defer trydb.Close()
 					if err != nil {
 						return err
 					}
+					defer trydb.Close()
 					err = trydb.Ping()
 					if err == nil {
 						db = trydb
