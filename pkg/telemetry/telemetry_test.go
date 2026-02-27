@@ -21,18 +21,11 @@ import (
 	"testing"
 
 	json "github.com/json-iterator/go"
-	"github.com/pingcap/check"
 	"github.com/pingcap/tiup/pkg/utils"
+	"github.com/stretchr/testify/require"
 )
 
-func Test(t *testing.T) { check.TestingT(t) }
-
-var _ = check.Suite(&TelemetrySuite{})
-
-type TelemetrySuite struct {
-}
-
-func (s *TelemetrySuite) TestReport(c *check.C) {
+func TestReport(t *testing.T) {
 	ts := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		dst, err := io.ReadAll(r.Body)
 		if err != nil {
@@ -63,9 +56,9 @@ func (s *TelemetrySuite) TestReport(c *check.C) {
 	msg := new(Report)
 
 	err := tele.Report(context.TODO(), msg)
-	c.Assert(err, check.NotNil)
+	require.Error(t, err)
 
 	msg.UUID = "dfdfdf"
 	err = tele.Report(context.TODO(), msg)
-	c.Assert(err, check.IsNil)
+	require.NoError(t, err)
 }

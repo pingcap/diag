@@ -24,7 +24,6 @@ require (
 	github.com/lensesio/tableprinter v0.0.0-20201125135848-89e81fc956e7
 	github.com/lorenzosaino/go-sysctl v0.3.1
 	github.com/onsi/gomega v1.26.0
-	github.com/pingcap/check v0.0.0-20211026125417-57bd13f7b5f0
 	github.com/pingcap/errors v0.11.5-0.20210425183316-da1aaba5fb63
 	github.com/pingcap/log v1.1.0
 	github.com/pingcap/tidb-operator/pkg/apis v1.4.1
