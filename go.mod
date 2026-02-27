@@ -29,7 +29,6 @@ require (
 	github.com/pingcap/tidb-operator/pkg/apis v1.4.1
 	github.com/pingcap/tidb/parser v0.0.0-20230202053355-337af61d9521
 	github.com/pingcap/tiup v1.13.2-0.20231017102429-9e47d78b5518
-	github.com/pkg/errors v0.9.1
 	github.com/prometheus/common v0.44.0
 	github.com/shirou/gopsutil v3.21.11+incompatible
 	github.com/sirupsen/logrus v1.9.0
@@ -118,6 +117,7 @@ require (
 	github.com/pingcap/failpoint v0.0.0-20220801062533-2eaa32854a6c // indirect
 	github.com/pingcap/kvproto v0.0.0-20231017055627-c06b434f3c3a // indirect
 	github.com/pingcap/tidb-insight/collector v0.0.0-20220902034607-fb5ae0ddc8c1 // indirect
+	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/prometheus/client_model v0.5.0 // indirect
 	github.com/prometheus/prom2json v1.3.3 // indirect

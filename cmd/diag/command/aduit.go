@@ -14,13 +14,13 @@
 package command
 
 import (
+	"github.com/pingcap/errors"
 	"github.com/pingcap/tiup/pkg/cluster/audit"
 	"github.com/pingcap/tiup/pkg/cluster/spec"
-	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 )
 
-//  retainDays number of days to keep audit logs for deletion
+// retainDays number of days to keep audit logs for deletion
 var retainDays int
 
 func newAuditCmd() *cobra.Command {
