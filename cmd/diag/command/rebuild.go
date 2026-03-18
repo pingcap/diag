@@ -80,6 +80,7 @@ the diagnostic collector, where the meta.yaml is available.
 	cmd.Flags().StringVar(&opt.Passwd, "passwd", "", "The password of user.")
 	cmd.Flags().StringVar(&opt.DBName, "db", "diagcollector", "The database name of imported metrics.")
 	cmd.Flags().IntVar(&opt.Chunk, "chunk", 2000, "The chunk size of writing, larger values could speed the process but may timeout.")
+	cmd.Flags().StringSliceVar(&opt.StripLabels, "strip-labels", nil, "Comma-separated list of label names to strip from metrics before importing.")
 
 	return cmd
 }

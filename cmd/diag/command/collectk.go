@@ -149,6 +149,7 @@ func newCollectkCmd() *cobra.Command {
 	cmd.Flags().Uint64Var(&gOpt.APITimeout, "api-timeout", 60, "Timeout in seconds when querying APIs.")
 	// cmd.Flags().BoolVar(&cOpt.CompressScp, "compress-scp", true, "Compress when transfer config and logs.Only works with system ssh")
 	cmd.Flags().BoolVar(&cOpt.CompressMetrics, "compress-metrics", true, "Compress collected metrics data.")
+	cmd.Flags().StringSliceVar(&cOpt.StripLabels, "strip-labels", nil, "Comma-separated list of label names to strip from collected metrics.")
 	cmd.Flags().BoolVar(&cOpt.ExitOnError, "exit-on-error", false, "Stop collecting and exit if an error occurs.")
 	// cmd.Flags().BoolVar(&cOpt.RawMonitor, "raw-monitor", false, "Collect raw prometheus data")
 	// cmd.Flags().StringVar(&cOpt.ExplainSQLPath, "explain-sql", "", "File path for explain sql")

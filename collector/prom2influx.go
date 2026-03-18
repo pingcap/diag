@@ -242,6 +242,9 @@ func buildPoints(
 	for k, v := range series.Metric {
 		tags[string(k)] = string(v)
 	}
+	for _, label := range opts.StripLabels {
+		delete(tags, label)
+	}
 	tags["cluster"] = opts.Cluster
 	tags["session"] = opts.Session
 	tags["monitor"] = "prometheus"
