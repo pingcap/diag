@@ -594,7 +594,7 @@ func collectMetric(
 							var results []map[string]json.RawMessage
 							if err := json.Unmarshal(data["result"], &results); err == nil {
 								for i, r := range results {
-									var metric map[string]interface{}
+									var metric map[string]any
 									if err := json.Unmarshal(r["metric"], &metric); err == nil {
 										for _, label := range stripLabels {
 											delete(metric, label)
