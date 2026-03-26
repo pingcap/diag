@@ -58,7 +58,8 @@ type RebuildOptions struct {
 	Session     string // collector session ID
 	File        string
 	Chunk       int
-	Concurrency int // max parallel jobs allowed
+	Concurrency int      // max parallel jobs allowed
+	StripLabels []string // label names to strip from metrics
 }
 
 func RunLocal(dumpDir string, opt *RebuildOptions) error {

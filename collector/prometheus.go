@@ -14,6 +14,7 @@
 package collector
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"io"
@@ -185,6 +186,7 @@ type MetricCollectOptions struct {
 	endpoint     string
 	portForward  bool
 	stopChans    []chan struct{}
+	stripLabels  []string
 }
 
 // Desc implements the Collector interface
@@ -252,7 +254,7 @@ func (c *MetricCollectOptions) Prepare(m *Manager, topo *models.TiDBCluster) (ma
 	if err := tiuputils.Retry(
 		func() error {
 			var queryErr error
-			c.metrics, queryErr = getMetricList(client, c.endpoint, c.customHeader)
+			c.metrics, queryErr = getMetricList(client, c.endpoint, c.customHeader, tsStart.Format(time.RFC3339), tsEnd.Format(time.RFC3339))
 			return queryErr
 		},
 		tiuputils.RetryOption{
@@ -341,7 +343,7 @@ func (c *MetricCollectOptions) Collect(m *Manager, topo *models.TiDBCluster) err
 
 			tsEnd, _ := utils.ParseTime(c.GetBaseOptions().ScrapeEnd)
 			tsStart, _ := utils.ParseTime(c.GetBaseOptions().ScrapeBegin)
-			collectMetric(m.logger, client, key, tsStart, tsEnd, mtc, c.label, c.resultDir, c.limit, c.minInterval, c.compress, c.customHeader, "")
+			collectMetric(m.logger, client, key, tsStart, tsEnd, mtc, c.label, c.resultDir, c.limit, c.minInterval, c.compress, c.customHeader, "", c.stripLabels)
 
 			mu.Lock()
 			done++
@@ -363,8 +365,15 @@ func (c *MetricCollectOptions) Collect(m *Manager, topo *models.TiDBCluster) err
 	return nil
 }
 
-func getMetricList(c *http.Client, addr string, customHeader []string) ([]string, error) {
-	return getAPIData[[]string](c, makeURL(addr, "/api/v1/label/__name__/values", nil), customHeader)
+func getMetricList(c *http.Client, addr string, customHeader []string, start, end string) ([]string, error) {
+	queries := make(map[string]string)
+	if start != "" {
+		queries["start"] = start
+	}
+	if end != "" {
+		queries["end"] = end
+	}
+	return getAPIData[[]string](c, makeURL(addr, "/api/v1/label/__name__/values", queries), customHeader)
 }
 
 func getInstanceList(c *http.Client, addr string, queries map[string]string, customHeader []string) ([]string, error) {
@@ -434,6 +443,7 @@ func collectMetric(
 	compress bool,
 	customHeader []string,
 	instance string,
+	stripLabels []string,
 ) {
 	nameSuffix := ""
 	if len(instance) > 0 {
@@ -490,7 +500,7 @@ func collectMetric(
 				newLabel := make(map[string]string)
 				maps.Copy(newLabel, label)
 				newLabel["instance"] = instance
-				collectMetric(l, c, promAddr, beginTime, endTime, mtc, newLabel, resultDir, speedlimit, minInterval, compress, customHeader, instance)
+				collectMetric(l, c, promAddr, beginTime, endTime, mtc, newLabel, resultDir, speedlimit, minInterval, compress, customHeader, instance, stripLabels)
 			}
 		}
 		return
@@ -569,7 +579,47 @@ func collectMetric(
 				} else {
 					enc = dst
 				}
-				n, err = io.Copy(enc, resp.Body)
+
+				var reader io.Reader = resp.Body
+				if len(stripLabels) > 0 {
+					body, readErr := io.ReadAll(resp.Body)
+					if readErr != nil {
+						l.Errorf("failed reading metric %s: %s, retry...\n", mtc+nameSuffix, readErr)
+						return readErr
+					}
+					var raw map[string]json.RawMessage
+					if err := json.Unmarshal(body, &raw); err == nil {
+						var data map[string]json.RawMessage
+						if err := json.Unmarshal(raw["data"], &data); err == nil {
+							var results []map[string]json.RawMessage
+							if err := json.Unmarshal(data["result"], &results); err == nil {
+								for i, r := range results {
+									var metric map[string]any
+									if err := json.Unmarshal(r["metric"], &metric); err == nil {
+										for _, label := range stripLabels {
+											delete(metric, label)
+										}
+										if b, err := json.Marshal(metric); err == nil {
+											results[i]["metric"] = b
+										}
+									}
+								}
+								if b, err := json.Marshal(results); err == nil {
+									data["result"] = b
+								}
+							}
+							if b, err := json.Marshal(data); err == nil {
+								raw["data"] = b
+							}
+						}
+						if b, err := json.Marshal(raw); err == nil {
+							body = b
+						}
+					}
+					reader = bytes.NewReader(body)
+				}
+
+				n, err = io.Copy(enc, reader)
 				if err != nil {
 					l.Errorf("failed writing metric %s to file: %s, retry...\n", mtc+nameSuffix, err)
 					return err

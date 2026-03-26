@@ -37,6 +37,7 @@ type CollectProfile struct {
 	Collectors    []string `toml:"collectors,omitempty"`
 	Roles         []string `toml:"roles,omitempty"`
 	MetricFilters []string `toml:"metric_filters,omitempty"`
+	StripLabels   []string `toml:"strip_labels,omitempty"`
 }
 
 // readProfile tries to load a CollectProfile from file

@@ -124,6 +124,7 @@ type CollectOptions struct {
 	CompressScp        bool              // compress of files during collecting
 	CompressMetrics    bool              // compress of files during collecting
 	RawMonitor         bool              // collect raw data for metrics
+	StripLabels        []string          // label names to strip from collected metrics
 	ExitOnError        bool              // break the process and exit when an error occur
 	ExtendedAttrs      map[string]string // extended attributes used for manual collecting mode
 	ExplainSQLPath     string            // File path for explain sql
@@ -223,6 +224,12 @@ func (m *Manager) CollectClusterInfo(
 		return "", err
 	}
 
+	if cOpt.ProfileName == "" {
+		if _, err := readProfile("default"); err == nil {
+			cOpt.ProfileName = "default"
+		}
+	}
+
 	if cOpt.ProfileName != "" {
 		cp, err := readProfile(cOpt.ProfileName)
 		if err != nil {
@@ -237,12 +244,17 @@ func (m *Manager) CollectClusterInfo(
 		}
 		logprinter.Infof("%s", msg)
 
-		cOpt.Collectors, err = ParseCollectTree(cp.Collectors, nil)
-		if err != nil {
-			return "", err
+		if len(cp.Collectors) > 0 {
+			cOpt.Collectors, err = ParseCollectTree(cp.Collectors, nil)
+			if err != nil {
+				return "", err
+			}
 		}
 		gOpt.Roles = append(gOpt.Roles, cp.Roles...)
 		cOpt.MetricsFilter = append(cOpt.MetricsFilter, cp.MetricFilters...)
+		if len(cp.StripLabels) > 0 && len(cOpt.StripLabels) == 0 {
+			cOpt.StripLabels = cp.StripLabels
+		}
 	}
 
 	var explainSqls []string
@@ -306,6 +318,7 @@ func (m *Manager) CollectClusterInfo(
 				compress:     cOpt.CompressMetrics,
 				customHeader: cOpt.Header,
 				portForward:  cOpt.UsePortForward,
+				stripLabels:  cOpt.StripLabels,
 			},
 		)
 	}
