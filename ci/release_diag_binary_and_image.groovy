@@ -198,9 +198,9 @@ def upload_chart(chartPrefixName) {
 	"""
 
 	echo "	merge index.yaml"
-	sh "curl http://charts.pingcap.com/index.yaml -o index.yaml"
+	sh "curl https://charts.pingcap.com/index.yaml -o index.yaml"
 	sh "cat index.yaml"	
-	sh "./helm repo index . --url http://charts.pingcap.com/ --merge index.yaml"
+	sh "./helm repo index . --url https://charts.pingcap.com/ --merge index.yaml"
 	sh "cat index.yaml"	
 
 	echo "	download Qinui upload tool"
