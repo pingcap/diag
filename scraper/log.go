@@ -15,6 +15,7 @@ package scraper
 
 import (
 	"bufio"
+	"bytes"
 	"compress/gzip"
 	"fmt"
 	"io"
@@ -46,10 +47,11 @@ func IsValidLogType(logtype string) bool {
 
 // LogScraper scraps log files of components
 type LogScraper struct {
-	Paths []string        // paths of log files
-	Types map[string]bool // log type
-	Start time.Time       // start time
-	End   time.Time       // end time
+	Paths     []string        // paths of log files
+	Types     map[string]bool // log type
+	Start     time.Time       // start time
+	End       time.Time       // end time
+	outputDir string
 }
 
 // Scrap implements the Scraper interface
@@ -59,6 +61,9 @@ func (s *LogScraper) Scrap(result *Sample) error {
 	}
 	if result.LogTypes == nil {
 		result.LogTypes = make(FileTypes)
+	}
+	if result.LogTargets == nil {
+		result.LogTargets = make(FileTypes)
 	}
 	fileList := make([]string, 0)
 
@@ -81,8 +86,23 @@ func (s *LogScraper) Scrap(result *Sample) error {
 
 			logtype, in, err := getLogType(fp, fi, s.Start, s.End)
 			if s.Types[logtype] && in {
-				result.Log[fp] = fi.Size()
-				result.LogTypes[fp] = logtype
+				target := fp
+				size := fi.Size()
+				if canFilterLogFile(fp, logtype) {
+					filtered, filteredSize, ok, err := s.filterLogFile(fp, logtype)
+					if err != nil {
+						fmt.Fprintf(os.Stderr, "error filtering %s: %s\n", fi.Name(), err)
+						continue
+					}
+					if !ok {
+						continue
+					}
+					target = filtered
+					size = filteredSize
+				}
+				result.Log[target] = size
+				result.LogTargets[target] = fp
+				result.LogTypes[target] = logtype
 			}
 			if err != nil {
 				fmt.Fprintf(os.Stderr, "error checking %s: %s\n", fi.Name(), err)
@@ -150,6 +170,153 @@ func getLogType(fpath string, fi fs.FileInfo, start, end time.Time) (logtype str
 		return LogTypeUnknown, false, nil
 	}
 	return LogTypeUnknown, true, nil
+}
+
+func canFilterLogFile(fpath, logtype string) bool {
+	if strings.Contains(filepath.Base(fpath), "stderr") {
+		return false
+	}
+	return logtype == LogTypeStd || logtype == LogTypeSlow
+}
+
+func (s *LogScraper) filterLogFile(fpath, logtype string) (string, int64, bool, error) {
+	outputDir, err := s.filteredOutputDir()
+	if err != nil {
+		return "", 0, false, err
+	}
+	outPath := filteredLogPath(outputDir, fpath)
+	if err := os.MkdirAll(filepath.Dir(outPath), 0755); err != nil {
+		return "", 0, false, err
+	}
+
+	in, err := os.Open(fpath)
+	if err != nil {
+		return "", 0, false, err
+	}
+	defer in.Close()
+
+	var reader io.Reader = in
+	var gzReader *gzip.Reader
+	if strings.HasSuffix(fpath, ".gz") {
+		gzReader, err = gzip.NewReader(in)
+		if err != nil {
+			return "", 0, false, err
+		}
+		defer gzReader.Close()
+		reader = gzReader
+	}
+
+	out, err := os.Create(outPath)
+	if err != nil {
+		return "", 0, false, err
+	}
+	var gzWriter *gzip.Writer
+	defer func() {
+		if gzWriter != nil {
+			_ = gzWriter.Close()
+		}
+		_ = out.Close()
+	}()
+
+	var writer io.Writer = out
+	if strings.HasSuffix(outPath, ".gz") {
+		gzWriter = gzip.NewWriter(out)
+		writer = gzWriter
+	}
+
+	written, err := writeFilteredLog(reader, writer, logtype, s.Start, s.End)
+	if err != nil {
+		return "", 0, false, err
+	}
+	if gzWriter != nil {
+		if err := gzWriter.Close(); err != nil {
+			return "", 0, false, err
+		}
+		gzWriter = nil
+	}
+	if err := out.Close(); err != nil {
+		return "", 0, false, err
+	}
+	if !written {
+		_ = os.Remove(outPath)
+		return "", 0, false, nil
+	}
+	fi, err := os.Stat(outPath)
+	if err != nil {
+		return "", 0, false, err
+	}
+	return outPath, fi.Size(), true, nil
+}
+
+func (s *LogScraper) filteredOutputDir() (string, error) {
+	if s.outputDir != "" {
+		return s.outputDir, nil
+	}
+	outputDir, err := os.MkdirTemp("", "diag-scraped-logs-*")
+	if err != nil {
+		return "", err
+	}
+	s.outputDir = outputDir
+	return s.outputDir, nil
+}
+
+func filteredLogPath(outputDir, src string) string {
+	clean := filepath.Clean(src)
+	if filepath.IsAbs(clean) {
+		clean = strings.TrimPrefix(clean, string(filepath.Separator))
+	}
+	return filepath.Join(outputDir, clean)
+}
+
+func writeFilteredLog(reader io.Reader, writer io.Writer, logtype string, start, end time.Time) (bool, error) {
+	bufr := bufio.NewReader(reader)
+	parsers := parser.ListStd()
+	if logtype == LogTypeSlow {
+		parsers = []parser.Parser{&parser.SlowQueryParser{}}
+	}
+
+	var current []byte
+	currentInRange := false
+	written := false
+	flush := func() error {
+		if currentInRange && len(current) > 0 {
+			if _, err := writer.Write(current); err != nil {
+				return err
+			}
+			written = true
+		}
+		current = nil
+		currentInRange = false
+		return nil
+	}
+
+	for {
+		line, err := bufr.ReadBytes('\n')
+		if err != nil && err != io.EOF {
+			return false, err
+		}
+		if len(line) > 0 {
+			if ts := parseLine(bytes.TrimRight(line, "\r\n"), parsers); ts != nil {
+				if err := flush(); err != nil {
+					return false, err
+				}
+				if ts.After(end) {
+					break
+				}
+				current = append(current, line...)
+				currentInRange = !ts.Before(start)
+			} else if current != nil {
+				current = append(current, line...)
+			}
+		}
+		if err == io.EOF {
+			break
+		}
+	}
+	if err := flush(); err != nil {
+		return false, err
+	}
+	return written, nil
 }
 
 func parseLine(line []byte, parsers []parser.Parser) *time.Time {

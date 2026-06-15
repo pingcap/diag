@@ -320,11 +320,17 @@ func (c *LogCollectOptions) Collect(m *Manager, cls *models.TiDBCluster) error {
 				return err
 			}
 			for _, f := range c.fileStats[inst.GetHost()] {
+				source := f.Target
+				if f.Attributes != nil {
+					if v, ok := f.Attributes["source"].(string); ok && v != "" {
+						source = v
+					}
+				}
 				// build checking tasks
 				t2 = t2.
 					// check for listening ports
 					CopyFile(
-						f.Target,
+						source,
 						filepath.Join(c.resultDir, inst.GetHost(), f.Target),
 						inst.GetHost(),
 						true,
@@ -479,9 +485,18 @@ func parseScraperSamples(ctx context.Context, host string) (map[string][]Collect
 		})
 	}
 	for k, v := range s.Log {
+		target := k
+		if s.LogTargets != nil {
+			if original, ok := s.LogTargets[k]; ok && original != "" {
+				target = original
+			}
+		}
 		stats[host] = append(stats[host], CollectStat{
-			Target: k,
+			Target: target,
 			Size:   v,
+			Attributes: map[string]interface{}{
+				"source": k,
+			},
 		})
 	}
 	for k, v := range s.TSDB {

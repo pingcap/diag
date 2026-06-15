@@ -32,11 +32,12 @@ type FileTypes map[string]string
 
 // Sample is the result of scrapping
 type Sample struct {
-	Log      FileStat  `json:"log_files,omitempty"`
-	Config   FileStat  `json:"config_files,omitempty"`
-	File     FileStat  `json:"files,omitempty"`
-	TSDB     FileStat  `json:"prometheus_data,omitempty"`
-	LogTypes FileTypes `json:"log_types,omitempty"`
+	Log        FileStat  `json:"log_files,omitempty"`
+	LogTargets FileTypes `json:"log_targets,omitempty"`
+	Config     FileStat  `json:"config_files,omitempty"`
+	File       FileStat  `json:"files,omitempty"`
+	TSDB       FileStat  `json:"prometheus_data,omitempty"`
+	LogTypes   FileTypes `json:"log_types,omitempty"`
 }
 
 // Scrapper is used to scrap a kind of files

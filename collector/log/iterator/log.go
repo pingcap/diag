@@ -195,7 +195,7 @@ func (iter *LogIterator) carpet(bpos, epos int64, point time.Time) error {
 		if item == nil {
 			continue
 		}
-		if item.GetTime().After(point) {
+		if !item.GetTime().Before(point) {
 			if item.GetTime().After(iter.end) {
 				iter.current = nil
 				iter.nextError = io.EOF
