@@ -18,7 +18,7 @@ diag:
   # get token on clinic web
   clinicToken: ""
 
-  # CN or US
+  # CN, CN2, or US
   clinicRegion: ""
 
   tlsEnabled: true
@@ -84,4 +84,3 @@ service:
   # can be ClusterIP | NodePort | LoadBalancer
   type: NodePort
   sessionAffinity: None
-

@@ -21,8 +21,9 @@ import (
 	"github.com/spf13/cobra"
 )
 
-const RegionInfo = `Clinic Server provides the following two regions to store your diagnostic data:
+const RegionInfo = `Clinic Server provides the following regions to store your diagnostic data:
 [CN] region: Data stored in China Mainland, domain name : https://clinic.pingcap.com.cn
+[CN2] region: Data stored in China Mainland, domain name : https://clinic.pingkai.cn
 [US] region: Data stored in USA ,domain name : https://clinic.pingcap.com`
 
 func newConfigCmd() *cobra.Command {
