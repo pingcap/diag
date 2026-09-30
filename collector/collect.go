@@ -132,6 +132,7 @@ type CollectOptions struct {
 	CurrDB             string
 	Header             []string
 	UsePortForward     bool // use portforward when call api inside k8s cluster
+	CleanLeftoverLogs  bool // remove the trimmed logs an interrupted collection left on the hosts
 }
 
 // CollectStat is estimated size stats of data to be collected
@@ -363,14 +364,16 @@ func (m *Manager) CollectClusterInfo(
 	if canCollect(&cOpt.Collectors.Log) {
 		collectors = append(collectors,
 			&LogCollectOptions{
-				BaseOptions: opt,
-				opt:         gOpt,
-				collector:   cOpt.Collectors.Log,
-				limit:       cOpt.Limit,
-				resultDir:   resultDir,
-				fileStats:   make(map[string][]CollectStat),
-				compress:    cOpt.CompressScp,
-				kubeCli:     kubeCli,
+				BaseOptions:   opt,
+				opt:           gOpt,
+				collector:     cOpt.Collectors.Log,
+				limit:         cOpt.Limit,
+				resultDir:     resultDir,
+				fileStats:     make(map[string][]CollectStat),
+				compress:      cOpt.CompressScp,
+				kubeCli:       kubeCli,
+				skipConfirm:   skipConfirm,
+				cleanLeftover: cOpt.CleanLeftoverLogs,
 			})
 	}
 
@@ -514,6 +517,7 @@ func (m *Manager) CollectClusterInfo(
 	stats := make([]map[string][]CollectStat, 0)
 	for _, c := range collectors {
 		m.logger.Infof("Detecting %s...\n", c.Desc())
+		defer c.Close()
 		stat, err := c.Prepare(m, cls)
 		if err != nil {
 			if cOpt.ExitOnError {
@@ -523,7 +527,6 @@ func (m *Manager) CollectClusterInfo(
 			m.logger.Warnf("%s", color.YellowString(msg))
 			prepareErrs[c.Desc()] = err
 		}
-		defer c.Close()
 		stats = append(stats, stat)
 	}
 

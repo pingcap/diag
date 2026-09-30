@@ -22,6 +22,8 @@ type Option struct {
 	PrometheusDataDir string
 	Start             string // start time
 	End               string // end time
+	Trim              bool   // copy only the lines inside [Start, End]
+	TrimDir           string // directory holding the trimmed copies, used by Trim
 }
 
 // FileStat is the size information of a file to scrap

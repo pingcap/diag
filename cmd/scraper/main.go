@@ -49,6 +49,9 @@ func init() {
 					return fmt.Errorf("invalid log type: %s", t)
 				}
 			}
+			if opt.Trim && opt.TrimDir == "" {
+				return fmt.Errorf("--trim-dir is required when --trim is set")
+			}
 			result, err := Scrap(opt)
 			if err != nil {
 				return err
@@ -69,6 +72,8 @@ func init() {
 	rootCmd.Flags().StringVar(&opt.PrometheusDataDir, "prometheus", "", "paths of prometheus datadir")
 	rootCmd.Flags().StringVarP(&opt.Start, "from", "f", "", "start time of range to scrap, only apply to logs")
 	rootCmd.Flags().StringVarP(&opt.End, "to", "t", "", "start time of range to scrap, only apply to logs")
+	rootCmd.Flags().BoolVar(&opt.Trim, "trim", false, "copy only the log lines inside [from, to] into --trim-dir and report the copies instead of the original files")
+	rootCmd.Flags().StringVar(&opt.TrimDir, "trim-dir", "", "directory to write the trimmed copies to, required by --trim")
 
 	// time range is required, no default values are assumed
 	cobra.MarkFlagRequired(rootCmd.Flags(), "from")

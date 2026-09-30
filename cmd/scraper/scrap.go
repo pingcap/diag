@@ -30,8 +30,10 @@ func Scrap(opt *scraper.Option) (*scraper.Sample, error) {
 	}
 	if len(opt.LogPaths) > 0 {
 		s := &scraper.LogScraper{
-			Paths: opt.LogPaths,
-			Types: opt.LogTypes,
+			Paths:   opt.LogPaths,
+			Types:   opt.LogTypes,
+			Trim:    opt.Trim,
+			TrimDir: opt.TrimDir,
 		}
 		var err error
 		if s.Start, err = utils.ParseTime(opt.Start); err != nil {

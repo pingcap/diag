@@ -172,6 +172,7 @@ func newCollectCmd() *cobra.Command {
 	cmd.Flags().StringSliceVar(&cOpt.StripLabels, "strip-labels", nil, "Comma-separated list of label names to strip from collected metrics.")
 	cmd.Flags().BoolVar(&cOpt.ExitOnError, "exit-on-error", false, "Stop collecting and exit if an error occurs.")
 	cmd.Flags().BoolVar(&cOpt.RawMonitor, "raw-monitor", false, "Collect raw prometheus data")
+	cmd.Flags().BoolVar(&cOpt.CleanLeftoverLogs, "clean-leftover-trimmed-logs", false, "Remove candidate leftover trimmed logs without asking; may interrupt a concurrent collection")
 	cmd.Flags().StringVar(&cOpt.ExplainSQLPath, "explain-sql", "", "File path for explain sql")
 	cmd.Flags().StringVar(&cOpt.CurrDB, "db", "", "default db for plan replayer collector")
 
