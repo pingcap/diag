@@ -29,6 +29,7 @@ import (
 	json "github.com/json-iterator/go"
 	"github.com/klauspost/compress/zstd"
 	"github.com/pingcap/diag/pkg/crypto"
+	"github.com/pingcap/diag/pkg/redact"
 	"github.com/pingcap/tiup/pkg/tui"
 	tiuputils "github.com/pingcap/tiup/pkg/utils"
 )
@@ -250,14 +251,15 @@ func selectInputDir(dir string, skipConfirm bool) (string, error) {
 		}
 		fmt.Printf("found possible input directory: %s\n", dir)
 
-		if skipConfirm {
-			return dir, nil
+		if !skipConfirm {
+			err = tui.PromptForConfirmOrAbortError("Do you want to use it? [y/N]: ")
+			if err != nil {
+				return dir, err
+			}
 		}
-
-		err = tui.PromptForConfirmOrAbortError("Do you want to use it? [y/N]: ")
-		if err != nil {
-			return dir, err
-		}
+	}
+	if err := redact.CheckInPlaceComplete(dir); err != nil {
+		return "", err
 	}
 
 	_, err := os.Stat(filepath.Join(dir, "cluster.json"))

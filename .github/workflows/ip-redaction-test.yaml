@@ -1,0 +1,71 @@
+name: CN2 IP redaction tests
+
+on:
+  push:
+    branches: [codex/cn2-instance-ip-redaction-20261021]
+  pull_request:
+    branches: [fix/clinic-cn-endpoint-pingkai-20260616]
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-go@v6
+        with:
+          go-version: '1.25.5'
+      - name: Validate and test
+        env:
+          CGO_ENABLED: '0'
+        run: |
+          git diff --check
+          test -z "$(gofmt -l pkg/redact cmd/diag/command/redact*.go pkg/packager/redact_test.go)"
+          go vet ./...
+          go test ./...
+      - name: Build Linux amd64 and arm64 test bundles
+        run: bash scripts/build-cn2-redacted.sh
+      - name: Test local installer with disposable prefixes
+        run: sh scripts/test-install-local-tiup.sh
+      - name: Run packaged Linux binary offline
+        run: |
+          smoke_dir="$(mktemp -d)"
+          trap 'rm -rf "$smoke_dir"' EXIT
+          mkdir "$smoke_dir/input"
+          printf 'peer=10.1.1.1:4000\n' > "$smoke_dir/input/tidb.log"
+          for binary in package/cn2-ip-redaction/*-linux-amd64/diag; do
+            "$binary" --version
+            TIUP_HOME="$smoke_dir/empty-tiup" "$binary" redact "$smoke_dir/input" --redact-ips 10.1.1.1 --redact-output "$smoke_dir/output"
+            TIUP_HOME="$smoke_dir/empty-tiup" "$binary" redact "$smoke_dir/input" --redact-all-ips --redact-output "$smoke_dir/auto-output"
+            TIUP_HOME="$smoke_dir/empty-tiup" "$binary" redact "$smoke_dir/input" --redact-all-ips --hide-log-ipv4 --redact-output "$smoke_dir/question-output"
+          done
+          test "$(cat "$smoke_dir/output/tidb.log")" = 'peer=198.18.0.1:4000'
+          test "$(cat "$smoke_dir/auto-output/tidb.log")" = 'peer=198.18.0.1:4000'
+          test "$(cat "$smoke_dir/question-output/tidb.log")" = 'peer=?:4000'
+          mkdir "$smoke_dir/in-place"
+          printf 'peer=10.12.34.56:4000 other=172.16.34.56:4000\n' > "$smoke_dir/in-place/tidb.log"
+          for binary in package/cn2-ip-redaction/*-linux-amd64/diag; do
+            TIUP_HOME="$smoke_dir/empty-tiup" "$binary" redact "$smoke_dir/in-place" --redact-all-ips --keep-ipv4-octets 2 --redact-in-place --ip-map-output Y
+          done
+          test "$(cat "$smoke_dir/in-place/tidb.log")" = 'peer=198.18.34.56:4000 other=198.18.34.56:4000'
+          test ! -e "$smoke_dir/in-place/.redact-in-progress"
+          test -f "$smoke_dir/in-place-ip-map.json"
+          test "$(stat -c '%a' "$smoke_dir/in-place-ip-map.json")" = 600
+          mkdir "$smoke_dir/default-input"
+          printf 'peer=10.12.34.56:4000 other=172.16.34.56:4000\n' > "$smoke_dir/default-input/tidb.log"
+          for binary in package/cn2-ip-redaction/*-linux-amd64/diag-redact; do
+            "$binary" --version
+            TIUP_HOME="$smoke_dir/empty-tiup" "$binary" redact "$smoke_dir/default-input" --ip-map-output Y
+          done
+          test "$(cat "$smoke_dir/default-input/tidb.log")" = 'peer=198.18.34.56:4000 other=198.18.34.56:4000'
+          test ! -e "$smoke_dir/default-input-redacted"
+          test -f "$smoke_dir/default-input-ip-map.json"
+      - name: Save binary bundles
+        uses: actions/upload-artifact@v4
+        with:
+          name: diag-cn2-ip-redaction
+          path: |
+            package/cn2-ip-redaction/*.tar.gz
+            package/cn2-ip-redaction/SHA256SUMS
