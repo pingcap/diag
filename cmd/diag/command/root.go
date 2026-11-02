@@ -44,6 +44,7 @@ import (
 )
 
 var (
+	componentName = "diag"
 	rootCmd       *cobra.Command
 	gOpt          operator.Options
 	skipConfirm   bool
@@ -60,9 +61,9 @@ func getParentNames(cmd *cobra.Command) []string {
 	}
 
 	p := cmd.Parent()
-	// always use 'diag' as the root command name
+	// Preserve the identity of the executable entry point in telemetry.
 	if cmd.Parent() == nil {
-		return []string{"diag"}
+		return []string{componentName}
 	}
 
 	return append(getParentNames(p), cmd.Name())
@@ -95,7 +96,7 @@ func init() {
 			var env *tiupmeta.Environment
 			// unset component data dir to use clusters'
 			os.Unsetenv(localdata.EnvNameComponentDataDir)
-			if err = spec.Initialize("diag"); err != nil {
+			if err = spec.Initialize(componentName); err != nil {
 				return err
 			}
 
@@ -143,6 +144,7 @@ func init() {
 		newCollectCmd(),
 		newCollectDMCmd(),
 		newCollectkCmd(),
+		newRedactCmd(),
 		newPackageCmd(),
 		newRebuildCmd(),
 		newUploadCommand(),

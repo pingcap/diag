@@ -43,6 +43,7 @@ func newCollectCmd() *cobra.Command {
 		},
 	}
 	var cOpt collector.CollectOptions
+	var redaction redactOptions
 	inc := make([]string, 0)
 	ext := make([]string, 0)
 
@@ -52,6 +53,9 @@ func newCollectCmd() *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if len(args) != 1 {
 				return cmd.Help()
+			}
+			if err := redaction.validate(); err != nil {
+				return err
 			}
 			cOpt.DiagMode = collector.DiagModeCmd
 			cOpt.RawRequest = strings.Join(os.Args[1:], " ")
@@ -128,7 +132,7 @@ func newCollectCmd() *cobra.Command {
 				}
 			}
 
-			_, err = cm.CollectClusterInfo(&opt, &cOpt, &gOpt, nil, nil, skipConfirm)
+			collectedDir, collectErr := cm.CollectClusterInfo(&opt, &cOpt, &gOpt, nil, nil, skipConfirm)
 			// time is validated and updated during the collecting process
 			if reportEnabled {
 				st, errs := utils.ParseTime(opt.ScrapeBegin)
@@ -143,10 +147,11 @@ func newCollectCmd() *cobra.Command {
 						DataSize = size
 				}
 			}
-			return err
+			return redaction.afterCollect(collectedDir, collectErr)
 		},
 	}
 
+	redaction.flags(cmd)
 	cmd.Flags().StringVar(&cOpt.ProfileName, "profile", "", "File name of a pre-defined collecting profile")
 	cmd.Flags().StringSliceVarP(&gOpt.Roles, "role", "R", nil, "Only collect data from specified roles")
 	cmd.Flags().StringSliceVarP(&gOpt.Nodes, "node", "N", nil, "Only collect data from specified nodes")
