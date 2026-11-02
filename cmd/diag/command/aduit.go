@@ -28,7 +28,7 @@ func newAuditCmd() *cobra.Command {
 		Use:   "audit [audit-id]",
 		Short: "Show audit log of diag operation",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if err := spec.Initialize("diag"); err != nil {
+			if err := spec.Initialize(componentName); err != nil {
 				return err
 			}
 			switch len(args) {
