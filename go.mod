@@ -18,7 +18,7 @@ require (
 	github.com/joho/sqltocsv v0.0.0-20210428211105-a6d6801d59df
 	github.com/joomcode/errorx v1.1.1
 	github.com/json-iterator/go v1.1.12
-	github.com/klauspost/compress v1.16.0
+	github.com/klauspost/compress v1.18.7
 	github.com/lensesio/tableprinter v0.0.0-20201125135848-89e81fc956e7
 	github.com/lorenzosaino/go-sysctl v0.3.1
 	github.com/onsi/gomega v1.26.0
@@ -29,7 +29,7 @@ require (
 	github.com/pingcap/tiup v1.13.2-0.20231017102429-9e47d78b5518
 	github.com/prometheus/common v0.44.0
 	github.com/shirou/gopsutil v3.21.11+incompatible
-	github.com/sirupsen/logrus v1.9.0
+	github.com/sirupsen/logrus v1.9.3
 	github.com/spf13/cobra v1.7.0
 	github.com/stretchr/testify v1.8.4
 	github.com/vishvananda/netlink v0.0.0-20210530105856-14e832ae1e8f
