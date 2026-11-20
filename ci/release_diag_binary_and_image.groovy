@@ -198,15 +198,15 @@ def upload_chart(chartPrefixName) {
 	"""
 
 	echo "	merge index.yaml"
-	sh "curl http://charts.pingcap.org/index.yaml -o index.yaml"
+	sh "curl https://charts.pingcap.com/index.yaml -o index.yaml"
 	sh "cat index.yaml"	
-	sh "./helm repo index . --url http://charts.pingcap.org/ --merge index.yaml"	
+	sh "./helm repo index . --url https://charts.pingcap.com/ --merge index.yaml"
 	sh "cat index.yaml"	
 
 	echo "	download Qinui upload tool"
 	sh """
 		curl https://raw.githubusercontent.com/pingcap/docs-cn/a4db3fc5171ed8e4e705fb34552126a302d29c94/scripts/upload.py -o upload.py
-		sed -i 's%https://download.pingcap.org%https://charts.pingcap.org%g' upload.py
+		sed -i 's%https://download.pingcap.com%https://charts.pingcap.com%g' upload.py
 		sed -i 's/python3/python/g' upload.py
 		chmod +x upload.py
 	"""
